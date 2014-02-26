@@ -10,10 +10,9 @@
 
 using namespace std;
 
-#include "../frexception.h"
-#include "../frlog.h"
+#define JNIFNS jnif
 
-namespace bci {
+namespace JNIFNS {
 
 /**
  *

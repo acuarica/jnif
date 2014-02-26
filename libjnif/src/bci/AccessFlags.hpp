@@ -1,7 +1,7 @@
 #ifndef __BCI__ACCESS_FLAGS__HPP__
-#define __BCI__ACCESS_FLAGS__HPP__
+#define __JNIF__ACCESS_FLAGS__HPP__
 
-namespace bci {
+namespace jnif {
 
 /**
  *

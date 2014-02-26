@@ -1,10 +1,9 @@
 #ifndef __BCI__INSTR_VISITOR__HPP__
 #define	__BCI__INSTR_VISITOR__HPP__
 
-#include "base.hpp"
-#include "ClassForwardVisitor.hpp"
+#include "jnif.hpp"
 
-using namespace bci;
+using namespace jnif;
 
 template<typename TVisitor>
 class InstrVisitor: public ClassForwardVisitor<TVisitor> {

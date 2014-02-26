@@ -17,22 +17,12 @@
 #include <sstream>
 #include <fstream>
 
-#include "bci/ClassWriterVisitor.hpp"
-#include "bci/ClassPrinterVisitor.hpp"
+#include "jnif.hpp"
 
-#include "bci/parser/ClassBaseParser.hpp"
-#include "bci/parser/SourceFileAttrParser.hpp"
-#include "bci/parser/CodeAttrParser.hpp"
-#include "bci/parser/LntAttrParser.hpp"
-#include "bci/parser/LvtAttrParser.hpp"
-#include "bci/parser/ExceptionsAttrParser.hpp"
-#include "bci/parser/StackMapTableAttrParser.hpp"
-
-#include "bci/InstrVisitor.hpp"
+#include "InstrVisitor.hpp"
 
 using namespace std;
-using namespace bci;
-using namespace bci::parser;
+using namespace jnif;
 
 static string outFileName(const char* className, const char* ext) {
 	string fileName = className;
@@ -74,8 +64,8 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* classFile,
 
 				int len = cwv.getClassFileSize(cwv.cf);
 
-//				ASSERT(classFileLen == len, "%d must be equal to %d on class %s",
-	//					classFileLen, len, className);
+				ASSERT(classFileLen == len, "%d must be equal to %d on class %s",
+						classFileLen, len, className);
 
 				*new_class_data_len = len;
 				jvmtiError error = jvmti->Allocate(len, new_class_data );
@@ -92,6 +82,8 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* classFile,
 
 				BufferWriter bw(*new_class_data, len);
 				cwv.writeClassFile(bw, cwv.cf);
+
+				return;
 
 				for (int i = 0; i < len; i++) {
 					if (classFile[i] != (*new_class_data)[i]) {

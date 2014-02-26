@@ -2,9 +2,9 @@
 #define	__BCI_CLASS_FORWARD_VISITOR_H__
 
 #include "base.hpp"
-#include "ConstPool.hpp"
+#include "tree/ConstPool.hpp"
 
-namespace bci {
+namespace JNIFNS {
 
 /**
  *

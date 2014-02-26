@@ -1,9 +1,9 @@
 #ifndef __BCI__CONST_POOL__HPP__
 #define	__BCI__CONST_POOL__HPP__
 
-#include "base.hpp"
+#include "../base.hpp"
 
-namespace bci {
+namespace JNIFNS {
 
 /**
  * Constant pool enum

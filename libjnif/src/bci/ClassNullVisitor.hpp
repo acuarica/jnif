@@ -2,9 +2,9 @@
 #define	__BCI_NULLCLASSVISITOR_H__
 
 #include "base.hpp"
-#include "ConstPool.hpp"
+#include "tree/ConstPool.hpp"
 
-namespace bci {
+namespace JNIFNS {
 
 /**
  *

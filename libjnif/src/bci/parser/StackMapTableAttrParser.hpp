@@ -2,9 +2,9 @@
 #define __BCI__PARSER__STACK_MAP_TABLE_ATTR_PARSER__HPP__
 
 #include "../base.hpp"
+#include "../tree/ConstPool.hpp"
 
-namespace bci {
-namespace parser {
+namespace JNIFNS {
 
 #define ITEM_Top 0
 #define ITEM_Integer 1
@@ -93,7 +93,6 @@ public:
 	}
 };
 
-}
 }
 
 #endif

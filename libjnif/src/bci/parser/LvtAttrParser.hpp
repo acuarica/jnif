@@ -3,7 +3,7 @@
 
 #include "../base.hpp"
 
-namespace bci {
+namespace JNIFNS {
 
 /**
  *

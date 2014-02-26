@@ -1,9 +1,9 @@
 #ifndef __BCI_BUFFERREADER_H__
 #define	__BCI_BUFFERREADER_H__
 
-#include "base.hpp"
+#include "../base.hpp"
 
-namespace bci {
+namespace JNIFNS {
 
 /*
  *

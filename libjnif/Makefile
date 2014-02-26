@@ -3,7 +3,7 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
-SRC=src
+SRC=src-test
 INCLUDE=src
 BUILD=build
 
@@ -15,7 +15,7 @@ OBJS=$(SRCS:$(SRC)/%=$(BUILD)/%.o) $(BUILD)/__FrInstrProxy.c.o
 LIBNAME=frheapagent
 LIB=$(BUILD)/lib$(LIBNAME).jnilib
 
-CFLAGS += -fPIC -W -Wall -Wextra -O3 -Wno-unused-parameter -I$(JAVA_HOME)/include
+CFLAGS += -fPIC -W -Wall -Wextra -O3 -Wno-unused-parameter -I$(JAVA_HOME)/include -Isrc
 
 .PHONY: all test clean show
 

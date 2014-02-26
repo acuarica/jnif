@@ -2,12 +2,11 @@
 #define	__BCI__PARSER__CLASS_BASE_PARSER_H__
 
 #include "../base.hpp"
-#include "../BufferReader.hpp"
-#include "../ConstPool.hpp"
+#include "../utils/BufferReader.hpp"
+#include "../tree/ConstPool.hpp"
 #include "AttrsParser.hpp"
 
-namespace bci {
-namespace parser {
+namespace JNIFNS {
 
 template<typename TClassAttrsParser, typename TMethodAttrsParser,
 		typename TFieldAttrsParser>
@@ -145,7 +144,6 @@ private:
 	}
 };
 
-}
 }
 
 #endif

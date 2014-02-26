@@ -9,7 +9,7 @@
 #include "frthread.h"
 #include "frlog.h"
 #include "frjvmti.h"
-#include "frtlog.h"
+
 #include "frstamp.h"
 #include "frinstr.h"
 #include "frheapdump.h"
@@ -19,7 +19,6 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jobject protection_domain, jint class_data_len,
 		const unsigned char* class_data, jint* new_class_data_len,
 		unsigned char** new_class_data) {
-	_TLOG("CLASSFILELOAD:%s", name);
 
 	if (!FrIsProxyClassName(name)) {
 		FrInstrClassFile(jvmti, class_data, class_data_len, name,
@@ -31,8 +30,6 @@ static void JNICALL ClassLoadEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
 		jclass klass) {
 	char* classsig;
 	FrGetClassSignature(jvmti, klass, &classsig, NULL );
-
-	_TLOG("CLASSLOAD:%s", classsig);
 
 	FrDeallocate(jvmti, classsig);
 
@@ -47,8 +44,6 @@ static void JNICALL ClassPrepareEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 	char* classsig;
 
 	FrGetClassSignature(jvmti, klass, &classsig, NULL );
-
-	_TLOG("CLASSPREPARE:%s", classsig);
 
 	if (FrIsProxyClassSignature(classsig)) {
 		FrSetInstrHandlerNatives(jvmti, jni, klass);
@@ -74,8 +69,6 @@ extern unsigned int frproxy_FrInstrProxy_class_len;
 static void JNICALL VMStartEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 	NOTICE("VM started");
 
-	_TLOG("VMSTART");
-
 //	jclass proxyClass = (*jni)->DefineClass(jni, FR_PROXY_CLASS, NULL, frproxy_FrInstrProxy_class,
 //			frproxy_FrInstrProxy_class_len);
 //
@@ -87,8 +80,6 @@ static void JNICALL VMStartEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 static void JNICALL VMInitEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread) {
 	NOTICE("VM init");
 
-	_TLOG("VMINIT");
-
 	StampThread(jvmti, thread);
 
 	NextHeapRequest(jvmti);
@@ -99,23 +90,22 @@ static void JNICALL ExceptionEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
 		jmethodID catch_method, jlocation catch_location) {
 	//NOTICE("Exception ocurred");
 
-	_TLOG("EXCEPTION");
 }
 
 static void JNICALL ObjectFreeEvent(jvmtiEnv *jvmti, jlong tag) {
-	_TLOG("FREE:%ld", tag);
+
 }
 
 static void JNICALL GarbageCollectionStartEvent(jvmtiEnv *jvmti) {
 	NOTICE("Garbage Collection started");
 
-	_TLOG("GARBAGECOLLECTIONSTART");
+
 }
 
 static void JNICALL GarbageCollectionFinishEvent(jvmtiEnv *jvmti) {
 	NOTICE("Garbage Collection finished");
 
-	_TLOG("GARBAGECOLLECTIONFINISH");
+
 }
 
 static void JNICALL ThreadStartEvent(jvmtiEnv* jvmti, JNIEnv* jni,
@@ -134,7 +124,6 @@ static void JNICALL ThreadEndEvent(jvmtiEnv* jvmti, JNIEnv* jni, jthread thread)
 static void JNICALL VMDeathEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 	NOTICE("VM end");
 
-	_TLOG("VMDEATH");
 }
 
 static void ParseOptions(const char* options) {
@@ -211,8 +200,6 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options, void* reserved) 
 			JVMTI_EVENT_GARBAGE_COLLECTION_START, NULL );
 
 	FrSetInstrHandlerJvmtiEnv(jvmti);
-
-	//FrOpenTransactionLog();
 
 	return JNI_OK;
 }

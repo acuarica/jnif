@@ -1,13 +1,13 @@
 (Low Level) Java Native Instrumentation Framework
-========================================
+=================================================
 
 # Introduction
+
 
 Why instrument?
 *  Better control
 *  Aspect programming
 *  and?
-
 
 # Related work
 
@@ -32,9 +32,21 @@ Modular parser using templates.
 
 # Evaluation
 
+## TODO: try to come up with an performance evaluation (maybe against asm, disl, bcel) also with gui apps 
+like eclipse, netbeans.
+
+## And also with java agent, i.e., agent with a premain method.
+ 
+## try diffents kind of instrumentations, e.g., instrument heap graph, 
+i.e., all allocations (by bytecode, reflection and native).
+
+## 
 # Conclusions
 
+
 # References
+
+1. ASM
 
 TODO:
 Implement the agent in several JVMs, at least Oracle, Jikes and IBM.
@@ -42,9 +54,3 @@ Implement the agent in several JVMs, at least Oracle, Jikes and IBM.
 > ## To be published in PPPJ'14.
 > Why PPPJ is the best fit for this article?
 > They allow tool papers, and that is exacty what it is.
-
-
-TODO: try to come up with an performance evaluation (maybe against asm, disl, bcel) also with gui apps 
-like eclipse, netbeans.
- 
-try diffents kind of instrumentations.

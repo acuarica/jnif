@@ -1,11 +1,11 @@
 #ifndef __BCI__CLASS_FILE__HPP__
 #define	__BCI__CLASS_FILE__HPP__
 
-#include "base.hpp"
+#include "../base.hpp"
 #include "ConstPool.hpp"
-#include "BufferWriter.hpp"
+#include "../utils/BufferWriter.hpp"
 
-namespace bci {
+namespace JNIFNS {
 
 class ClassFile {
 public:

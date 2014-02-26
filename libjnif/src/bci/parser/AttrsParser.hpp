@@ -2,11 +2,10 @@
 #define	__BCI__PARSER__ATTRS_PARSER__HPP__
 
 #include "../base.hpp"
-#include "../BufferReader.hpp"
-#include "../ConstPool.hpp"
+#include "../utils/BufferReader.hpp"
+#include "../tree/ConstPool.hpp"
 
-namespace bci {
-namespace parser {
+namespace JNIFNS {
 
 template<typename ... TAttrParserList>
 class AttrsParser {
@@ -53,7 +52,6 @@ private:
 	}
 };
 
-}
 }
 
 #endif

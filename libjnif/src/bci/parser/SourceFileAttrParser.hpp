@@ -3,8 +3,7 @@
 
 #include "../base.hpp"
 
-namespace bci {
-namespace parser {
+namespace JNIFNS {
 
 /**
  *
@@ -24,7 +23,6 @@ public:
 	}
 };
 
-}
 }
 
 #endif

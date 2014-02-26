@@ -1,9 +1,9 @@
 #ifndef __BCI__BUFFER_WRITER__HPP__
 #define	__BCI__BUFFER_WRITER__HPP__
 
-#include "base.hpp"
+#include "../base.hpp"
 
-namespace bci {
+namespace JNIFNS {
 
 class BufferWriter {
 public:

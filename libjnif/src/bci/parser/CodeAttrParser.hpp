@@ -2,11 +2,10 @@
 #define	__BCI_CODEATTRPARSER_H__
 
 #include "../base.hpp"
-#include "../ConstPool.hpp"
+#include "../tree/ConstPool.hpp"
 #include "../Opcode.hpp"
 
-namespace bci {
-namespace parser {
+namespace JNIFNS {
 
 template<typename TMethodVisitor>
 class CodeParser {
@@ -525,7 +524,6 @@ public:
 	}
 };
 
-}
 }
 
 #endif

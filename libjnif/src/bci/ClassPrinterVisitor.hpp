@@ -2,11 +2,11 @@
 #define	__BCI__CLASS_PRINTER_VISITOR__HPP__
 
 #include "base.hpp"
-#include "ConstPool.hpp"
 #include "ClassNullVisitor.hpp"
 #include "AccessFlags.hpp"
+#include "tree/ConstPool.hpp"
 
-namespace bci {
+namespace JNIFNS {
 
 /**
  * OPCODES names definition

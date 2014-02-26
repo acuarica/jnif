@@ -2,12 +2,13 @@
 #define	__BCI_CLASSWRITERVISITOR_H__
 
 #include "base.hpp"
-#include "BufferWriter.hpp"
-#include "ClassNullVisitor.hpp"
-#include "ClassFile.hpp"
 #include "Opcode.hpp"
+#include "ClassNullVisitor.hpp"
+#include "tree/ClassFile.hpp"
+#include "utils/BufferWriter.hpp"
 
-namespace bci {
+
+namespace JNIFNS {
 
 template<typename TForward = ClassNullVisitor>
 class ClassWriterVisitor {
