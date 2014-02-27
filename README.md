@@ -26,6 +26,11 @@ connection to instrument code on other JVM process.
 Lowoverhead agent.
 Modular parser, you pay what you need. Full power of templates for better performance.
 
+
+Since the instrumentation should be really really fast, and therefore having a negligent overhead,
+* it could be added in production environments?
+* and also it will be more benefitial in debuggers and profilers where you may instrument on demand. 
+
 # Development
 
 Modular parser using templates.

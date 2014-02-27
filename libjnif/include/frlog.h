@@ -6,7 +6,7 @@
  */
 #include <stdio.h>
 
-#include "frthread.h"
+//#include "frthread.h"
 
 #define _STREXPAND(token) #token
 #define _STR(token) _STREXPAND(token)
@@ -17,7 +17,7 @@
 //			tldget()->threadId, tldget()->threadTag, ##__VA_ARGS__, __func__)
 #define _LOG(levelmsg, format, ...) \
 	fprintf(stderr, levelmsg " | %4d %8ld | " format "\n", \
-			tldget()->threadId, tldget()->threadTag, ##__VA_ARGS__)
+			0/*tldget()->threadId*/, 0l/*tldget()->threadTag*/, ##__VA_ARGS__)
 #else
 #define _LOG(levelmsg, threadId, format, ...)
 #endif

@@ -3,53 +3,39 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
-SRC=src-test
 INCLUDE=src
 BUILD=build
 
 INCS=$(wildcard $(INCLUDE)/*.h)
 HPPS=$(wildcard $(INCLUDE)/**/*.hpp) $(wildcard $(INCLUDE)/**/parser/*.hpp)
-SRCS=$(wildcard $(SRC)/*.c) $(wildcard $(SRC)/*.cpp)
-OBJS=$(SRCS:$(SRC)/%=$(BUILD)/%.o) $(BUILD)/__FrInstrProxy.c.o
 
-LIBNAME=frheapagent
-LIB=$(BUILD)/lib$(LIBNAME).jnilib
+agent:	OUTPUTNAME=libfrheapagent
+agent:	SRC=src-test-agent
+agent:	SRCS:=$(wildcard $(SRC)/*.cpp)
+agent:	OBJS:=$(SRCS:$(SRC)/%=$(BUILD)/%.o) $(BUILD)/__FrInstrProxy.c.o
+agent:	OUTPUT=$(BUILD)/$(OUTPUTNAME)
+agent:	CFLAGS += -fPIC -W -Wall -Wextra -O3 -Wno-unused-parameter -lpthread -shared -I$(JAVA_HOME)/include -Isrc -Iinclude
 
-CFLAGS += -fPIC -W -Wall -Wextra -O3 -Wno-unused-parameter -I$(JAVA_HOME)/include -Isrc
+unit:	OUTPUTNAME=test-unit
+unit:	SRC=src-test-unit
+unit:	SRCS:=$(wildcard $(SRC)/*.cpp)
+unit:	OBJS:=$(SRCS:$(SRC)/%=$(BUILD)/%.o)
+unit:	OUTPUT=$(BUILD)/$(OUTPUTNAME)
+unit:	CFLAGS += -fPIC -W -Wall -Wextra -O3 -Wno-unused-parameter -I$(JAVA_HOME)/include -Isrc -Iinclude
 
-.PHONY: all test clean show
+.PHONY: all agent unit clean show
 
-#EVENTSPERSAMPLE=500
-#XMS=2048m
-#XMX=2048m
-#JOPT="-Xint -Xms$XMS -Xmx$XMX"
-# -verbose:class|gc|jni
-#JDEBUG=-Xcheck:jni -Xdiag -verbose:jni
-#java $JOPT -Xverify:none -agentpath:$AGENT=$EVENTSPERSAMPLE -Xbootclasspath/a:$PROXYBCP -cp $CP "$MAINCLASS"
-#java -Xverify:none -agentpath:$AGENT=5000 -Xbootclasspath/a:$PROXYBCP -jar lib/dacapo-9.12-bach.jar avrora
-#java -Xverify:none $JDEBUG $JOPT -agentpath:$AGENT=5000 -Xbootclasspath/a:$PROXYBCP -jar scala-benchmark-suite-0.1.0-20120216.103539-3.jar -t 1 -s tiny actors
-#java -Xverify:none $JDEBUG $JOPT -agentpath:$AGENT=5000 -Xbootclasspath/a:$PROXYBCP -jar scala-benchmark-suite-0.1.0-20120216.103539-3.jar avrora
+all: agent unit
+#$(LIB) $(BUILD)/frproxy/FrInstrProxy.class
 
-all: $(LIB) $(BUILD)/frproxy/FrInstrProxy.class
+agent: $(BUILD)/java-test/frheapagent/HeapTest.class $(OUTPUT)
+	@echo $(SRC) $(OBJS)
+	java $(JDEBUG) -agentpath:$(OUTPUT) -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest
 
-#-Xbootclasspath/a:$(BUILD)
-#-Xverify:none
-test: $(BUILD)/java-test/frheapagent/HeapTest.class $(LIB)
-	java $(JDEBUG) -agentpath:$(LIB) -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest
+.SECONDEXPANSION:
 
-clean:
-	rm -rf $(BUILD)
-
-show:
-	@echo INCS: $(INCS)
-	@echo HPPS: $(HPPS)
-	@echo SRCS: $(SRCS)
-	@echo OBJS: $(OBJS)
-	@echo LIBNAME: $(LIBNAME)
-	@echo LIB: $(LIB)
-	@echo CC: $(CC)
-	@echo LINK.c: $(LINK.c)
-
+unit: | $(BUILD)
+	$(MAKE) -C src-test-unit
 
 $(BUILD)/frproxy/FrInstrProxy.class: resources/frproxy/FrInstrProxy.java
 	javac -d build/ resources/frproxy/FrInstrProxy.java
@@ -63,14 +49,33 @@ $(BUILD)/java-test/frheapagent/HeapTest.class: java-test/frheapagent/HeapTest.ja
 	mkdir -p $(BUILD)/java-test
 	javac java-test/frheapagent/HeapTest.java -d $(BUILD)/java-test
 
-$(LIB): $(OBJS)
-	clang++ $(CFLAGS) -stdlib=libc++ -lpthread -shared -o $@ $^
+$(BUILD)/libfrheapagent.jnilib: $$(OBJS)
+	clang++ $(CFLAGS) -stdlib=libc++ -o $@ $^
 
-$(BUILD)/%.c.o: $(SRC)/%.c $(INCS) | $(BUILD)
+$(BUILD)/test-unit: $$(OBJS)
+	@echo $(OBJS)
+	@echo $^
+#clang++ $(CFLAGS) -stdlib=libc++ -o $@ $^
+
+$(BUILD)/%.c.o: $$(SRC)/%.c $(INCS) | $(BUILD)
 	$(LINK.c) -c -o $@ $<
-
-$(BUILD)/%.cpp.o: $(SRC)/%.cpp $(INCS) $(HPPS) | $(BUILD)
+	
+$(BUILD)/%.cpp.o: $$(SRC)/%.cpp $(INCS) $(HPPS) | $(BUILD)
+	echo $(SRC) hoaaaaa
 	$(LINK.c) -std=c++11 -stdlib=libc++ -c -o $@ $<
 
 $(BUILD):
 	mkdir -p $(BUILD)
+
+clean:
+	rm -rf $(BUILD)
+
+show:
+	@echo INCS: $(INCS)
+	@echo HPPS: $(HPPS)
+	@echo SRCS: $(SRCS)
+	@echo OBJS: $(OBJS)
+	@echo LIBNAME: $(LIBNAME)
+	@echo LIB: $(LIB)
+	@echo CC: $(CC)
+	@echo LINK.c: $(LINK.c)
