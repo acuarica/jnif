@@ -1,9 +1,9 @@
-#ifndef __BCI__CONST_POOL__HPP__
-#define	__BCI__CONST_POOL__HPP__
+#ifndef JNIF_CONSTPOOL_HPP
+#define JNIF_CONSTPOOL_HPP
 
 #include "../base.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
 /**
  * Constant pool enum
@@ -217,6 +217,7 @@ private:
 public:
 	vector<Entry> entries;
 };
+
 
 }
 

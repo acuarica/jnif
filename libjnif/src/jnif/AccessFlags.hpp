@@ -1,5 +1,5 @@
-#ifndef __BCI__ACCESS_FLAGS__HPP__
-#define __JNIF__ACCESS_FLAGS__HPP__
+#ifndef JNIF_ACCESSFLAGS_HPP
+#define JNIF_ACCESSFLAGS_HPP
 
 namespace jnif {
 

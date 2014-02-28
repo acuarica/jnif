@@ -1,15 +1,14 @@
-#ifndef __BCI_EXCEPTIONSATTRPARSER_H__
-#define __BCI_EXCEPTIONSATTRPARSER_H__
+#ifndef JNIF_EXCEPTIONSATTRPARSER_HPP
+#define JNIF_EXCEPTIONSATTRPARSER_HPP
 
 #include "../base.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
 /**
  *
  * Exceptions
  */
-
 class ExceptionsAttrParser {
 public:
 
@@ -20,7 +19,7 @@ public:
 			u2 nameIndex) {
 		u2 len = br.readu2();
 
-		vector<u2> es;
+		vector < u2 > es;
 		for (int i = 0; i < len; i++) {
 			u2 exceptionIndex = br.readu2();
 

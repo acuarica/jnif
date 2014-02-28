@@ -1,12 +1,11 @@
-#ifndef __BCI__PARSER__SOURCE_FILE_ATTR_PARSER__HPP__
-#define __BCI__PARSER__SOURCE_FILE_ATTR_PARSER__HPP__
+#ifndef JNIF_SOURCEFILEATTRPARSER_HPP
+#define JNIF_SOURCEFILEATTRPARSER_HPP
 
 #include "../base.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
 /**
- *
  * SourceFile attribute parser.
  */
 class SourceFileAttrParser {

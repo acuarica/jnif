@@ -1,9 +1,9 @@
-#ifndef __BCI_LVTATTRPARSER_H__
-#define __BCI_LVTATTRPARSER_H__
+#ifndef JNIF_LVTATTRPARSER_HPP
+#define JNIF_LVTATTRPARSER_HPP
 
 #include "../base.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
 /**
  *

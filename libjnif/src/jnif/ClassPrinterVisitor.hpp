@@ -1,12 +1,9 @@
-#ifndef __BCI__CLASS_PRINTER_VISITOR__HPP__
-#define	__BCI__CLASS_PRINTER_VISITOR__HPP__
+#ifndef JNIF_CLASSPRINTERVISITOR_HPP
+#define JNIF_CLASSPRINTERVISITOR_HPP
 
 #include "base.hpp"
-#include "ClassNullVisitor.hpp"
-#include "AccessFlags.hpp"
-#include "tree/ConstPool.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
 /**
  * OPCODES names definition
@@ -291,8 +288,8 @@ public:
 				os() << endl;
 			}
 
-			inline void visitLnt(u2 startpc, u2 lineno) {
-				bv.visitLnt(startpc, lineno);
+			inline void visitLnt(u2 nameIndex, u2 startpc, u2 lineno) {
+				bv.visitLnt(nameIndex, startpc, lineno);
 
 				line() << "  LocalNumberTable entry: startpc: " << startpc
 						<< ", lineno: " << lineno << endl;

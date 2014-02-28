@@ -28,3 +28,4 @@ $(BUILD)/%.java.o: $(SRC)/%.java
 
 $(BUILD)/%.cpp.o: $(SRC)/%.cpp $(INCS) $(HPPS) | $(BUILD)
 	$(LINK.c) -std=c++11 -stdlib=libc++ -c -o $@ $<
+

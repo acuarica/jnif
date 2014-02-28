@@ -1,19 +1,27 @@
-#ifndef __BCI__PARSER__CLASS_BASE_PARSER_H__
-#define	__BCI__PARSER__CLASS_BASE_PARSER_H__
+#ifndef JNIF_CLASSBASEPARSER_HPP
+#define JNIF_CLASSBASEPARSER_HPP
 
 #include "../base.hpp"
-#include "../utils/BufferReader.hpp"
-#include "../tree/ConstPool.hpp"
-#include "AttrsParser.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
+/**
+ * Represents an abstract java class file parser.
+ *
+ * Only suitable when TClassAttrsParser, TMethodAttrsParser and
+ * TFieldAttrsParser are AttrsParser classes.
+ */
 template<typename TClassAttrsParser, typename TMethodAttrsParser,
 		typename TFieldAttrsParser>
 class ClassBaseParser;
 
 /**
- * Class file parser
+ * Represents an abstract java class file parser.
+ *
+ * Instantiation of the parser implementation.
+ *
+ * The template instantiation is the only one accepted, since it receives
+ * the members and class attributes parsers as templates lists.
  */
 template<typename ... TClassAttrParserList, typename ... TMethodAttrParserList,
 		typename ... TFieldAttrParserList>

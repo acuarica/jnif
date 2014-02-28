@@ -1,12 +1,13 @@
-#ifndef __BCI__PARSER__ATTRS_PARSER__HPP__
-#define	__BCI__PARSER__ATTRS_PARSER__HPP__
+#ifndef JNIF_ATTRSPARSER_HPP
+#define JNIF_ATTRSPARSER_HPP
 
 #include "../base.hpp"
-#include "../utils/BufferReader.hpp"
-#include "../tree/ConstPool.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
+/**
+ *
+ */
 template<typename ... TAttrParserList>
 class AttrsParser {
 public:

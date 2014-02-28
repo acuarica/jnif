@@ -20,23 +20,6 @@
 using namespace std;
 using namespace jnif;
 
-static string outFileName(const char* className, const char* ext) {
-	string fileName = className;
-
-	for (u4 i = 0; i < fileName.length(); i++) {
-		fileName[i] = className[i] == '/' ? '.' : className[i];
-	}
-
-	stringstream path;
-	path << "build/instr/" << fileName << "." << ext;
-
-	return path.str();
-}
-
-typedef ClassBaseParser<AttrsParser<SourceFileAttrParser>,
-		AttrsParser<CodeAttrParser<StackMapTableAttrParser/*, LntAttrParser,
-		 LvtAttrParser*/>, ExceptionsAttrParser>, AttrsParser<> > ClassParser;
-
 void FrInstrClassFile(unsigned char* classFile, int classFileLen,
 		const char* className, unsigned int* new_class_data_len,
 		unsigned char** new_class_data) {
@@ -53,7 +36,7 @@ void FrInstrClassFile(unsigned char* classFile, int classFileLen,
 
 				ASSERT(classFileLen == len, "%d must be equal to %d on class %s",
 						classFileLen, len, className);
-return;
+				return;
 				*new_class_data_len = len;
 				*new_class_data = (u1*)malloc(len);
 				//jvmtiError error = jvmti->Allocate(len, new_class_data );
@@ -86,10 +69,10 @@ return;
 			};
 
 	//if (className == string("java/lang/Object")) {
-		instr(cerr);
+	instr(cerr);
 	//} else {
-		//ofstream os(outFileName(className, "disasm").c_str());
-		//instr(os);
+	//ofstream os(outFileName(className, "disasm").c_str());
+	//instr(os);
 	//}
 }
 

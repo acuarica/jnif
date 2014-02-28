@@ -1,13 +1,13 @@
-#ifndef __BCI_CLASS_FORWARD_VISITOR_H__
-#define	__BCI_CLASS_FORWARD_VISITOR_H__
+#ifndef JNIF_CLASSFORWARDVISITOR_HPP
+#define JNIF_CLASSFORWARDVISITOR_HPP
 
 #include "base.hpp"
-#include "tree/ConstPool.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
 /**
- *
+ * Represents a java class file visitor that the ability to forward
+ * every event to another visitor, in this way visitors can be chained.
  */
 template<typename TVisitor>
 class ClassForwardVisitor {

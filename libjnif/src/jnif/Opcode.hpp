@@ -1,11 +1,9 @@
-#ifndef __BCI_OPCODE_H__
-#define	__BCI_OPCODE_H__
+#ifndef JNIF_OPCODE_HPP
+#define JNIF_OPCODE_HPP
 
-#include "base.hpp"
-
-namespace JNIFNS {
-
+namespace jnif {
 /**
+
  * OPCODES constants definitions
  */
 #define OPCODE_nop			0x00

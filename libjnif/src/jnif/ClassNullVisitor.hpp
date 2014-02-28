@@ -1,13 +1,15 @@
-#ifndef __BCI_NULLCLASSVISITOR_H__
-#define	__BCI_NULLCLASSVISITOR_H__
+#ifndef JNIF_CLASSNULLVISITOR_HPP
+#define JNIF_CLASSNULLVISITOR_HPP
 
 #include "base.hpp"
-#include "tree/ConstPool.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
 /**
- *
+ * Represents the empty visitor for class file, i.e.,
+ * for every method it does nothing.
+ * This class is a singleton class, the only available instance is
+ * inst.
  */
 class ClassNullVisitor {
 public:
@@ -93,8 +95,12 @@ public:
 					u2 catchtype) {
 			}
 
+			inline void visitLnt(u2 nameIndex, u2 startpc, u2 lineno) {
+			}
+
 			inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 			}
+
 		private:
 			friend class Method;
 			inline Code() {
@@ -143,6 +149,9 @@ public:
 	inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 	}
 
+	/**
+	 * The singleton instance.
+	 */
 	static ClassNullVisitor inst;
 
 private:

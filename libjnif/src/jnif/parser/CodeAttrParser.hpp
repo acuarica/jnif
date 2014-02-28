@@ -1,12 +1,13 @@
-#ifndef __BCI_CODEATTRPARSER_H__
-#define	__BCI_CODEATTRPARSER_H__
+#ifndef JNIF_CODEATTRPARSER_HPP
+#define JNIF_CODEATTRPARSER_HPP
 
 #include "../base.hpp"
-#include "../tree/ConstPool.hpp"
-#include "../Opcode.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
+/**
+ *
+ */
 template<typename TMethodVisitor>
 class CodeParser {
 public:
@@ -439,7 +440,7 @@ private:
 		ASSERT(low <= high, "low (%d) must be less or equal than high (%d)",
 				low, high);
 
-		vector<u4> targets;
+		vector < u4 > targets;
 		for (int i = 0; i < high - low + 1; i++) {
 			u4 targetOffset = br.readu4();
 			targets.push_back(targetOffset);
@@ -458,8 +459,8 @@ private:
 		u4 defbyte = br.readu4();
 		u4 npairs = br.readu4();
 
-		vector<u4> keys;
-		vector<u4> targets;
+		vector < u4 > keys;
+		vector < u4 > targets;
 		for (u4 i = 0; i < npairs; i++) {
 			u4 key = br.readu4();
 			u4 offsetTarget = br.readu4();

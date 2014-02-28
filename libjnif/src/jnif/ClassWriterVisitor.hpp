@@ -1,15 +1,13 @@
-#ifndef __BCI_CLASSWRITERVISITOR_H__
-#define	__BCI_CLASSWRITERVISITOR_H__
+#ifndef JNIF_CLASSWRITERVISITOR_HPP
+#define JNIF_CLASSWRITERVISITOR_HPP
 
 #include "base.hpp"
-#include "Opcode.hpp"
-#include "ClassNullVisitor.hpp"
-#include "tree/ClassFile.hpp"
-#include "utils/BufferWriter.hpp"
 
+namespace jnif {
 
-namespace JNIFNS {
-
+/**
+ *
+ */
 template<typename TForward = ClassNullVisitor>
 class ClassWriterVisitor {
 public:
@@ -19,39 +17,39 @@ public:
 	public:
 
 		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
-			f.attrs.add(new ClassFile::UnknownAttr(nameIndex, len, data));
+			f.attrs.add(new UnknownAttr(nameIndex, len, data));
 		}
 
 	private:
 
-		ClassFile::Member& f;
+		Member& f;
 
-		inline Field(ClassFile::Member& f) :
+		inline Field(Member& f) :
 				f(f) {
 		}
 	};
 
 	class Method {
 	public:
-		ClassFile::Member& m;
+		Member& m;
 		ClassWriterVisitor& cpv;
-		inline Method(ClassFile::Member& m, ClassWriterVisitor& cpv) :
+		inline Method(Member& m, ClassWriterVisitor& cpv) :
 				m(m), cpv(cpv) {
 		}
 
 		class Code;
 
 		Code visitCode(u2 nameIndex) {
-			auto attr = new ClassFile::CodeAttr(nameIndex);
+			auto attr = new CodeAttr(nameIndex);
 			m.attrs.add(attr);
 			return Code(attr);
 		}
 
 		class Code {
 		public:
-			ClassFile::CodeAttr* attr;
+			CodeAttr* attr;
 
-			inline Code(ClassFile::CodeAttr* attr) :
+			inline Code(CodeAttr* attr) :
 					attr(attr) {
 			}
 
@@ -62,7 +60,7 @@ public:
 
 			inline void visitExceptionEntry(u2 startpc, u2 endpc, u2 handlerpc,
 					u2 catchtype) {
-				ClassFile::CodeAttr::ExceptionEntry entry;
+				CodeAttr::ExceptionEntry entry;
 				entry.startpc = startpc;
 				entry.endpc = endpc;
 				entry.handlerpc = handlerpc;
@@ -220,8 +218,11 @@ public:
 			}
 
 			inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
-				attr->attrs.add(
-						new ClassFile::UnknownAttr(nameIndex, len, data));
+				attr->attrs.add(new UnknownAttr(nameIndex, len, data));
+			}
+
+			inline void visitLnt(u2 nameIndex, u2 startpc, u2 lineno) {
+				//attr->attrs.add(new LntAttr(nameIndex, startpc, lineno));
 			}
 
 //		inline void visitLvt(u2 startPc, u2 len, u2 varNameIndex,
@@ -269,13 +270,13 @@ public:
 			len += sizeof(u2);
 			len += es.size() * sizeof(u2);
 
-			auto attr = new ClassFile::ExceptionsAttr(nameIndex, len, es);
+			auto attr = new ExceptionsAttr(nameIndex, len, es);
 
 			m.attrs.add(attr);
 		}
 
 		void visitAttr(u2 nameIndex, u4 len, const u1* data) {
-			m.attrs.add(new ClassFile::UnknownAttr(nameIndex, len, data));
+			m.attrs.add(new UnknownAttr(nameIndex, len, data));
 		}
 
 	private:
@@ -377,7 +378,7 @@ public:
 	inline Field visitField(u2 accessFlags, u2 nameIndex, u2 descIndex) {
 		cv.visitField(accessFlags, nameIndex, descIndex);
 
-		ClassFile::Member& f = cf.fields.add(accessFlags, nameIndex, descIndex);
+		Member& f = cf.fields.add(accessFlags, nameIndex, descIndex);
 
 		return Field(f);
 	}
@@ -385,21 +386,19 @@ public:
 	inline Method visitMethod(u2 accessFlags, u2 nameIndex, u2 descIndex) {
 		cv.visitMethod(accessFlags, nameIndex, descIndex);
 
-		ClassFile::Member& m = cf.methods.add(accessFlags, nameIndex,
-				descIndex);
+		Member& m = cf.methods.add(accessFlags, nameIndex, descIndex);
 
 		return Method(m, *this);
 	}
 
 	inline void visitSourceFile(u2 nameIndex, u2 sourceFileIndex) {
-		cf.attrs.add(
-				new ClassFile::SourceFileAttr(nameIndex, 2, sourceFileIndex));
+		cf.attrs.add(new SourceFileAttr(nameIndex, 2, sourceFileIndex));
 
 		cv.visitSourceFile(nameIndex, sourceFileIndex);
 	}
 
 	inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
-		cf.attrs.add(new ClassFile::UnknownAttr(nameIndex, len, data));
+		cf.attrs.add(new UnknownAttr(nameIndex, len, data));
 
 		cv.visitAttr(nameIndex, len, data);
 	}
@@ -492,12 +491,12 @@ public:
 		}
 	}
 
-	static void writeMembers(BufferWriter& bw, ClassFile::Members& members) {
+	static void writeMembers(BufferWriter& bw, Members& members) {
 		bw.writeu2(members.size());
 
 		for (u4 i = 0; i < members.size(); i++) {
 
-			ClassFile::Member& mi = members[i];
+			Member& mi = members[i];
 
 			bw.writeu2(mi.accessFlags);
 			bw.writeu2(mi.nameIndex);
@@ -606,12 +605,12 @@ public:
 		return size;
 	}
 
-	static u4 getMembersSize(ClassFile::Members& members) {
+	static u4 getMembersSize(Members& members) {
 		u4 size = sizeof(u2);
 
 		for (u4 i = 0; i < members.size(); i++) {
 
-			ClassFile::Member& mi = members[i];
+			Member& mi = members[i];
 
 			size += sizeof(mi.accessFlags);
 			size += sizeof(mi.nameIndex);
@@ -623,11 +622,11 @@ public:
 		return size;
 	}
 
-	static u4 getAttrsSize(const ClassFile::Attrs& attrs) {
+	static u4 getAttrsSize(const Attrs& attrs) {
 		u4 size = sizeof(u2);
 
 		for (u4 i = 0; i < attrs.size(); i++) {
-			const ClassFile::Attr& attr = attrs[i];
+			const Attr& attr = attrs[i];
 
 			size += sizeof(attr.nameIndex);
 			size += sizeof(attr.len);

@@ -1,12 +1,12 @@
-#ifndef __BCI_BUFFERREADER_H__
-#define	__BCI_BUFFERREADER_H__
+#ifndef JNIF_BUFFERREADER_HPP
+#define JNIF_BUFFERREADER_HPP
 
 #include "../base.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
-/*
- *
+/**
+ * Implements a memory reader.
  */
 class BufferReader {
 public:

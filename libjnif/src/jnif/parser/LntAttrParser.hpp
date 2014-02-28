@@ -1,9 +1,9 @@
-#ifndef __BCI__LNT_ATTR_PARSER__HPP__
-#define __BCI__LNT_ATTR_PARSER__HPP__
+#ifndef JNIF_LNTATTRPARSER_HPP
+#define JNIF_LNTATTRPARSER_HPP
 
 #include "../base.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
 /**
  *
@@ -19,11 +19,13 @@ public:
 			u2 nameIndex) {
 		u2 lntlen = br.readu2();
 
+		//vector<>
+
 		for (int i = 0; i < lntlen; i++) {
 			u2 startpc = br.readu2();
 			u2 lineno = br.readu2();
 
-			v.visitLnt(startpc, lineno);
+			v.visitLnt(nameIndex, startpc, lineno);
 		}
 	}
 };

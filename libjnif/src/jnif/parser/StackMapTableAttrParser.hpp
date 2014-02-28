@@ -1,10 +1,9 @@
-#ifndef __BCI__PARSER__STACK_MAP_TABLE_ATTR_PARSER__HPP__
-#define __BCI__PARSER__STACK_MAP_TABLE_ATTR_PARSER__HPP__
+#ifndef JNIF_STACKMAPTABLEATTRPARSER_HPP
+#define JNIF_STACKMAPTABLEATTRPARSER_HPP
 
 #include "../base.hpp"
-#include "../tree/ConstPool.hpp"
 
-namespace JNIFNS {
+namespace jnif {
 
 #define ITEM_Top 0
 #define ITEM_Integer 1
