@@ -289,7 +289,7 @@ public:
 			cv(cv), os(os) {
 	}
 
-	inline void visitVersion(u4 magic, u2 minor, u2 major) {
+	inline void visitVersion(Magic magic, u2 minor, u2 major) {
 		cv.visitVersion(magic, minor, major);
 
 		cf.magic = magic;

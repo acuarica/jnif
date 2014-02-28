@@ -8,7 +8,7 @@ namespace jnif {
 
 /**
  *
- * Local variable table
+ * Local variable table parser
  */
 class LvtAttrParser {
 public:

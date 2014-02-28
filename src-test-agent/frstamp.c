@@ -8,6 +8,7 @@
 #include "frlog.h"
 #include "frjvmti.h"
 #include "frstamp.h"
+#include "frtlog.h"
 
 static jlong _nextclassid = 1;
 static jlong _nextobjectid = 1;
@@ -66,6 +67,8 @@ static void PrepareClass(jvmtiEnv *jvmti, JNIEnv* jni, jclass klass, jlong stamp
 	}
 	FrDeallocate(jvmti, interfaces);
 
+	_TLOGBEGIN("PREPARECLASS:%ld:#%d", stamp, interfacecount);
+
 	for (int i = 0; i < interfacecount; i++) {
 		fprintf(tldget()->_tlog, "#%ld", interstamps[i]);
 	}
@@ -120,6 +123,8 @@ jlong StampClass(jvmtiEnv* jvmti, JNIEnv* jni, jclass klass) {
 
 		char* classsig;
 		FrGetClassSignature(jvmti, klass, &classsig, NULL );
+
+		_TLOG("STAMPCLASS:%ld:%ld:%ld:%s", stamp, GetClassIdFromStamp(stamp), superklassstamp, classsig);
 
 		FrDeallocate(jvmti, classsig);
 	}

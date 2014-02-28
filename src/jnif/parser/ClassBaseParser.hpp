@@ -38,12 +38,12 @@ public:
 
 		u4 magic = br.readu4();
 
-		CHECK(magic == 0xcafebabe,
+		CHECK(magic == CLASSFILE_MAGIC,
 				"Invalid magic number. Expected 0xcafebabe, found: %x", magic);
 
 		u2 minor = br.readu2();
 		u2 major = br.readu2();
-		cfv.visitVersion(magic, minor, major);
+		cfv.visitVersion(CLASSFILE_MAGIC, minor, major);
 
 		ConstPool cp;
 		parseConstPool(br, cp);
@@ -90,58 +90,59 @@ private:
 			entry->tag = br.readu1();
 
 			switch (entry->tag) {
-			case CONSTANT_Class:
-				entry->clazz.name_index = br.readu2();
-				break;
-			case CONSTANT_Fieldref:
-			case CONSTANT_Methodref:
-			case CONSTANT_InterfaceMethodref:
-				entry->memberref.class_index = br.readu2();
-				entry->memberref.name_and_type_index = br.readu2();
-				break;
-			case CONSTANT_String:
-				entry->s.string_index = br.readu2();
-				break;
-			case CONSTANT_Integer:
-				entry->i.value = br.readu4();
-				break;
-			case CONSTANT_Float:
-				entry->f.value = br.readu4();
-				break;
-			case CONSTANT_Long:
-				entry->l.high_bytes = br.readu4();
-				entry->l.low_bytes = br.readu4();
-				i++;
-				break;
-			case CONSTANT_Double:
-				entry->d.high_bytes = br.readu4();
-				entry->d.low_bytes = br.readu4();
-				i++;
-				break;
-			case CONSTANT_NameAndType:
-				entry->nameandtype.name_index = br.readu2();
-				entry->nameandtype.descriptor_index = br.readu2();
-				break;
-			case CONSTANT_Utf8: {
-				u2 len = br.readu2();
-				string str((const char*) br.pos(), len);
-				entry->utf8.str = str;
-				br.skip(len);
-				break;
-			}
-			case CONSTANT_MethodHandle:
-				entry->methodhandle.reference_kind = br.readu1();
-				entry->methodhandle.reference_index = br.readu2();
-				break;
-			case CONSTANT_MethodType:
-				entry->methodtype.descriptor_index = br.readu2();
-				break;
-			case CONSTANT_InvokeDynamic:
-				entry->invokedynamic.bootstrap_method_attr_index = br.readu2();
-				entry->invokedynamic.name_and_type_index = br.readu2();
-				break;
-			default:
-				EXCEPTION("Error while reading tag: %i", entry->tag);
+				case CONSTANT_Class:
+					entry->clazz.name_index = br.readu2();
+					break;
+				case CONSTANT_Fieldref:
+				case CONSTANT_Methodref:
+				case CONSTANT_InterfaceMethodref:
+					entry->memberref.class_index = br.readu2();
+					entry->memberref.name_and_type_index = br.readu2();
+					break;
+				case CONSTANT_String:
+					entry->s.string_index = br.readu2();
+					break;
+				case CONSTANT_Integer:
+					entry->i.value = br.readu4();
+					break;
+				case CONSTANT_Float:
+					entry->f.value = br.readu4();
+					break;
+				case CONSTANT_Long:
+					entry->l.high_bytes = br.readu4();
+					entry->l.low_bytes = br.readu4();
+					i++;
+					break;
+				case CONSTANT_Double:
+					entry->d.high_bytes = br.readu4();
+					entry->d.low_bytes = br.readu4();
+					i++;
+					break;
+				case CONSTANT_NameAndType:
+					entry->nameandtype.name_index = br.readu2();
+					entry->nameandtype.descriptor_index = br.readu2();
+					break;
+				case CONSTANT_Utf8: {
+					u2 len = br.readu2();
+					string str((const char*) br.pos(), len);
+					entry->utf8.str = str;
+					br.skip(len);
+					break;
+				}
+				case CONSTANT_MethodHandle:
+					entry->methodhandle.reference_kind = br.readu1();
+					entry->methodhandle.reference_index = br.readu2();
+					break;
+				case CONSTANT_MethodType:
+					entry->methodtype.descriptor_index = br.readu2();
+					break;
+				case CONSTANT_InvokeDynamic:
+					entry->invokedynamic.bootstrap_method_attr_index =
+							br.readu2();
+					entry->invokedynamic.name_and_type_index = br.readu2();
+					break;
+				default:
+					EXCEPTION("Error while reading tag: %i", entry->tag);
 			}
 
 			if (entry->tag == CONSTANT_Long || entry->tag == CONSTANT_Double) {

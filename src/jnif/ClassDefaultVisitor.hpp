@@ -123,7 +123,7 @@ public:
 		}
 	};
 
-	inline void visitVersion(u4 magic, u2 minor, u2 major) {
+	inline void visitVersion(Magic magic, u2 minor, u2 major) {
 	}
 
 	inline void visitConstPool(const ConstPool& cp) {

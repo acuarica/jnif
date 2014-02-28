@@ -394,7 +394,7 @@ public:
 		inc();
 	}
 
-	inline void visitVersion(u4 magic, u2 minor, u2 major) {
+	inline void visitVersion(Magic magic, u2 minor, u2 major) {
 		cv.visitVersion(magic, minor, major);
 
 		line() << "Version = minor: " << minor << ", major: " << major << endl;
@@ -432,56 +432,57 @@ public:
 			line() << "#" << i << " [" << ConstNames[entry->tag] << "]: ";
 
 			switch (entry->tag) {
-			case CONSTANT_Class:
-				os << cp.getClazzName(i) << "#" << entry->clazz.name_index;
-				break;
-			case CONSTANT_Fieldref:
-			case CONSTANT_Methodref:
-			case CONSTANT_InterfaceMethodref: {
-				string clazzName, name, desc;
-				cp.getMemberRef(i, &clazzName, &name, &desc, entry->tag);
+				case CONSTANT_Class:
+					os << cp.getClazzName(i) << "#" << entry->clazz.name_index;
+					break;
+				case CONSTANT_Fieldref:
+				case CONSTANT_Methodref:
+				case CONSTANT_InterfaceMethodref: {
+					string clazzName, name, desc;
+					cp.getMemberRef(i, &clazzName, &name, &desc, entry->tag);
 
-				os << clazzName << "#" << entry->memberref.class_index << "."
-						<< name << ":" << desc << "#"
-						<< entry->memberref.name_and_type_index;
-				break;
-			}
-			case CONSTANT_String:
-				os << cp.getUtf8(entry->s.string_index) << "#"
-						<< entry->s.string_index;
-				break;
-			case CONSTANT_Integer:
-				os << entry->i.value;
-				break;
-			case CONSTANT_Float:
-				os << entry->f.value;
-				break;
-			case CONSTANT_Long:
-				os << entry->l.high_bytes << " " << entry->l.low_bytes;
-				i++;
-				break;
-			case CONSTANT_Double:
-				os << entry->d.high_bytes << " " << entry->d.low_bytes;
-				i++;
-				break;
-			case CONSTANT_NameAndType:
-				os << "#" << entry->nameandtype.name_index << ".#"
-						<< entry->nameandtype.descriptor_index;
-				break;
-			case CONSTANT_Utf8:
-				os << entry->utf8.str;
-				break;
-			case CONSTANT_MethodHandle:
-				os << entry->methodhandle.reference_kind << " #"
-						<< entry->methodhandle.reference_index;
-				break;
-			case CONSTANT_MethodType:
-				os << "#" << entry->methodtype.descriptor_index;
-				break;
-			case CONSTANT_InvokeDynamic:
-				os << "#" << entry->invokedynamic.bootstrap_method_attr_index
-						<< ".#" << entry->invokedynamic.name_and_type_index;
-				break;
+					os << clazzName << "#" << entry->memberref.class_index
+							<< "." << name << ":" << desc << "#"
+							<< entry->memberref.name_and_type_index;
+					break;
+				}
+				case CONSTANT_String:
+					os << cp.getUtf8(entry->s.string_index) << "#"
+							<< entry->s.string_index;
+					break;
+				case CONSTANT_Integer:
+					os << entry->i.value;
+					break;
+				case CONSTANT_Float:
+					os << entry->f.value;
+					break;
+				case CONSTANT_Long:
+					os << entry->l.high_bytes << " " << entry->l.low_bytes;
+					i++;
+					break;
+				case CONSTANT_Double:
+					os << entry->d.high_bytes << " " << entry->d.low_bytes;
+					i++;
+					break;
+				case CONSTANT_NameAndType:
+					os << "#" << entry->nameandtype.name_index << ".#"
+							<< entry->nameandtype.descriptor_index;
+					break;
+				case CONSTANT_Utf8:
+					os << entry->utf8.str;
+					break;
+				case CONSTANT_MethodHandle:
+					os << entry->methodhandle.reference_kind << " #"
+							<< entry->methodhandle.reference_index;
+					break;
+				case CONSTANT_MethodType:
+					os << "#" << entry->methodtype.descriptor_index;
+					break;
+				case CONSTANT_InvokeDynamic:
+					os << "#"
+							<< entry->invokedynamic.bootstrap_method_attr_index
+							<< ".#" << entry->invokedynamic.name_and_type_index;
+					break;
 			}
 
 			os << endl;

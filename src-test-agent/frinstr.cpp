@@ -20,6 +20,7 @@
 using namespace std;
 using namespace jnif;
 
+
 void FrInstrClassFile(unsigned char* classFile, int classFileLen,
 		const char* className, unsigned int* new_class_data_len,
 		unsigned char** new_class_data) {
@@ -76,21 +77,3 @@ void FrInstrClassFile(unsigned char* classFile, int classFileLen,
 	//}
 }
 
-extern u1 __jnif_BasicClass_class[];
-extern u4 __jnif_BasicClass_class_len;
-
-void testParser() {
-
-}
-
-int main(int argc, const char* argv[]) {
-
-	u1* newClassData;
-	u4 newClassDataLen;
-
-	FrInstrClassFile(__jnif_BasicClass_class, __jnif_BasicClass_class_len,
-			"jnif/BasicClass", &newClassDataLen, &newClassData);
-
-	printf("argc: %d, %d\n", argc, __jnif_BasicClass_class_len);
-	return 0;
-}

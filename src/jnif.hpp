@@ -48,7 +48,7 @@ namespace jnif {
  * Defines the full class parser using all known attributes parsers.
  */
 typedef ClassBaseParser<AttrsParser<SourceFileAttrParser>,
-		AttrsParser<CodeAttrParser<LntAttrParser>, ExceptionsAttrParser>,
+		AttrsParser<CodeAttrParser<>, ExceptionsAttrParser>,
 		AttrsParser<>, BufferReader> ClassParser;
 
 }
