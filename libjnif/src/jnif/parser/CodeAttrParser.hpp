@@ -2,6 +2,7 @@
 #define JNIF_CODEATTRPARSER_HPP
 
 #include "../base.hpp"
+#include "../tree/ConstPool.hpp"
 
 namespace jnif {
 
@@ -490,8 +491,8 @@ public:
 
 	static constexpr const char* AttrName = "Code";
 
-	template<typename TCodeVisitor>
-	static void parse(BufferReader& br, TCodeVisitor& mmv, ConstPool& cp,
+	template<typename TCodeVisitor,typename TReader>
+	static void parse(TReader& br, TCodeVisitor& mmv, ConstPool& cp,
 			u2 nameIndex) {
 		auto bv = mmv.visitCode(nameIndex);
 

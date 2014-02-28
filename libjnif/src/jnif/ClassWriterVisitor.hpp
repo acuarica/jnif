@@ -2,13 +2,14 @@
 #define JNIF_CLASSWRITERVISITOR_HPP
 
 #include "base.hpp"
+#include "ClassDefaultVisitor.hpp"
 
 namespace jnif {
 
 /**
  *
  */
-template<typename TForward = ClassNullVisitor>
+template<typename TForward = ClassDefaultVisitor>
 class ClassWriterVisitor {
 public:
 
@@ -284,7 +285,7 @@ public:
 	};
 
 	inline ClassWriterVisitor(ostream& os,
-			TForward& cv = ClassNullVisitor::inst) :
+			TForward& cv = ClassDefaultVisitor::inst) :
 			cv(cv), os(os) {
 	}
 

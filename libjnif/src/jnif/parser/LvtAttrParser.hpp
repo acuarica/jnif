@@ -2,6 +2,7 @@
 #define JNIF_LVTATTRPARSER_HPP
 
 #include "../base.hpp"
+#include "../tree/ConstPool.hpp"
 
 namespace jnif {
 

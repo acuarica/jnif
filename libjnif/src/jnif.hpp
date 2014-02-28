@@ -5,12 +5,9 @@
 #include <sstream>
 #include <fstream>
 #include <iomanip>
-#include <vector>
-#include <utility>
-
-using namespace std;
 
 #include "jnif/utils/BufferReader.hpp"
+
 #include "jnif/utils/BufferWriter.hpp"
 
 #include "jnif/tree/Attr.hpp"
@@ -27,7 +24,6 @@ using namespace std;
 
 #include "jnif/AccessFlags.hpp"
 #include "jnif/Opcode.hpp"
-#include "jnif/ClassNullVisitor.hpp"
 #include "jnif/ClassWriterVisitor.hpp"
 #include "jnif/ClassPrinterVisitor.hpp"
 #include "jnif/ClassForwardVisitor.hpp"
@@ -53,7 +49,7 @@ namespace jnif {
  */
 typedef ClassBaseParser<AttrsParser<SourceFileAttrParser>,
 		AttrsParser<CodeAttrParser<LntAttrParser>, ExceptionsAttrParser>,
-		AttrsParser<> > ClassParser;
+		AttrsParser<>, BufferReader> ClassParser;
 
 }
 

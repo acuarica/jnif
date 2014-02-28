@@ -2,6 +2,7 @@
 #define JNIF_CLASSFILE_HPP
 
 #include "../base.hpp"
+#include <vector>
 
 namespace jnif {
 

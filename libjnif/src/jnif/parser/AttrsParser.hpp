@@ -2,6 +2,7 @@
 #define JNIF_ATTRSPARSER_HPP
 
 #include "../base.hpp"
+#include "../tree/ConstPool.hpp"
 
 namespace jnif {
 
@@ -12,8 +13,8 @@ template<typename ... TAttrParserList>
 class AttrsParser {
 public:
 
-	template<typename TAttrVisitor>
-	inline static void parse(BufferReader& br, ConstPool&cp, TAttrVisitor& av) {
+	template<typename TAttrVisitor, typename TReader>
+	inline static void parse(TReader& br, ConstPool&cp, TAttrVisitor& av) {
 		u2 attrCount = br.readu2();
 
 		for (int i = 0; i < attrCount; i++) {
@@ -23,8 +24,8 @@ public:
 
 			string attrName = cp.getUtf8(nameIndex);
 
-			parse2<TAttrVisitor, TAttrParserList...>(nameIndex, len, data,
-					attrName, cp, av);
+			parse2<TReader, TAttrVisitor, TAttrParserList...>(nameIndex, len,
+					data, attrName, cp, av);
 
 			br.skip(len);
 		}
@@ -32,21 +33,21 @@ public:
 
 private:
 
-	template<typename TAttrVisitor, typename TAttrParser,
+	template<typename TReader, typename TAttrVisitor, typename TAttrParser,
 			typename ... TAttrParserTail>
 	inline static void parse2(u2 nameIndex, u4 len, const u1* data,
 			const string& attrName, ConstPool& cp, TAttrVisitor& av) {
 		if (attrName == TAttrParser::AttrName) {
 			TAttrParser parser;
-			BufferReader br(data, len);
+			TReader br(data, len);
 			parser.parse(br, av, cp, nameIndex);
 		} else {
-			parse2<TAttrVisitor, TAttrParserTail...>(nameIndex, len, data,
-					attrName, cp, av);
+			parse2<TReader, TAttrVisitor, TAttrParserTail...>(nameIndex, len,
+					data, attrName, cp, av);
 		}
 	}
 
-	template<typename TAttrVisitor>
+	template<typename TReader, typename TAttrVisitor>
 	inline static void parse2(u2 nameIndex, u4 len, const u1* data,
 			const string& attrName, ConstPool& cp, TAttrVisitor& av) {
 		av.visitAttr(nameIndex, len, data);

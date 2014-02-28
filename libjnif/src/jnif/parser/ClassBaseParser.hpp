@@ -2,6 +2,7 @@
 #define JNIF_CLASSBASEPARSER_HPP
 
 #include "../base.hpp"
+#include "../tree/ConstPool.hpp"
 
 namespace jnif {
 
@@ -12,7 +13,7 @@ namespace jnif {
  * TFieldAttrsParser are AttrsParser classes.
  */
 template<typename TClassAttrsParser, typename TMethodAttrsParser,
-		typename TFieldAttrsParser>
+		typename TFieldAttrsParser, typename TReader>
 class ClassBaseParser;
 
 /**
@@ -24,16 +25,16 @@ class ClassBaseParser;
  * the members and class attributes parsers as templates lists.
  */
 template<typename ... TClassAttrParserList, typename ... TMethodAttrParserList,
-		typename ... TFieldAttrParserList>
+		typename ... TFieldAttrParserList, typename TReader>
 class ClassBaseParser<AttrsParser<TClassAttrParserList...>,
 		AttrsParser<TMethodAttrParserList...>,
-		AttrsParser<TFieldAttrParserList...> > {
+		AttrsParser<TFieldAttrParserList...>, TReader> {
 public:
 
 	template<typename TVisitor>
 	static void parse(const u1* fileImage, const int fileImageLen,
 			TVisitor& cfv) {
-		BufferReader br(fileImage, fileImageLen);
+		TReader br(fileImage, fileImageLen);
 
 		u4 magic = br.readu4();
 

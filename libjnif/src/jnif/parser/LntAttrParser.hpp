@@ -2,6 +2,7 @@
 #define JNIF_LNTATTRPARSER_HPP
 
 #include "../base.hpp"
+#include "../tree/ConstPool.hpp"
 
 namespace jnif {
 
@@ -14,12 +15,12 @@ public:
 
 	static constexpr const char* AttrName = "LineNumberTable";
 
-	template<typename TMethodVisitor>
-	inline void parse(BufferReader& br, TMethodVisitor& v, ConstPool& cp,
+	template<typename TMethodVisitor,typename TReader>
+	inline void parse(TReader& br, TMethodVisitor& v, ConstPool& cp,
 			u2 nameIndex) {
 		u2 lntlen = br.readu2();
 
-		//vector<>
+//		vector<>
 
 		for (int i = 0; i < lntlen; i++) {
 			u2 startpc = br.readu2();

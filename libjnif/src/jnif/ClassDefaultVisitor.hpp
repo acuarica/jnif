@@ -1,17 +1,18 @@
-#ifndef JNIF_CLASSNULLVISITOR_HPP
-#define JNIF_CLASSNULLVISITOR_HPP
+#ifndef JNIF_CLASSDEFAULTVISITOR_HPP
+#define JNIF_CLASSDEFAULTVISITOR_HPP
 
 #include "base.hpp"
 
 namespace jnif {
 
 /**
- * Represents the empty visitor for class file, i.e.,
+ * Represents the model for visiting class files.
+ * The default implementation is empty, i.e.,
  * for every method it does nothing.
  * This class is a singleton class, the only available instance is
  * inst.
  */
-class ClassNullVisitor {
+class ClassDefaultVisitor {
 public:
 
 	class Field {
@@ -19,7 +20,7 @@ public:
 		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 		}
 	private:
-		friend class ClassNullVisitor;
+		friend class ClassDefaultVisitor;
 		inline Field() {
 		}
 	};
@@ -117,7 +118,7 @@ public:
 		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 		}
 	private:
-		friend class ClassNullVisitor;
+		friend class ClassDefaultVisitor;
 		inline Method() {
 		}
 	};
@@ -152,14 +153,14 @@ public:
 	/**
 	 * The singleton instance.
 	 */
-	static ClassNullVisitor inst;
+	static ClassDefaultVisitor inst;
 
 private:
-	inline ClassNullVisitor() {
+	inline ClassDefaultVisitor() {
 	}
 };
 
-ClassNullVisitor ClassNullVisitor::inst;
+ClassDefaultVisitor ClassDefaultVisitor::inst;
 
 }
 

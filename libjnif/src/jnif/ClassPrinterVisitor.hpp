@@ -50,7 +50,7 @@ static const char* OPCODES[] = { "nop", "aconst_null", "iconst_m1", "iconst_0",
 		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
 		"impdep1", "impdep2", };
 
-template<typename TForward = ClassNullVisitor>
+template<typename TForward = ClassDefaultVisitor>
 class ClassPrinterVisitor {
 public:
 
@@ -387,7 +387,7 @@ public:
 	};
 
 	inline ClassPrinterVisitor(ostream& os, const char* className,
-			int fileImageLen, TForward& cv = ClassNullVisitor::inst) :
+			int fileImageLen, TForward& cv = ClassDefaultVisitor::inst) :
 			cv(cv), os(os), tabs(0) {
 		line() << "Class file " << className << " [file size: " << fileImageLen
 				<< "]" << endl;

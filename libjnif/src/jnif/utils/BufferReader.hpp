@@ -6,7 +6,7 @@
 namespace jnif {
 
 /**
- * Implements a memory reader.
+ * Implements a memory buffer reader in big-endian encoding.
  */
 class BufferReader {
 public:

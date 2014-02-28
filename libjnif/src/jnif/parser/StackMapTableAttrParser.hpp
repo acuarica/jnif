@@ -2,6 +2,7 @@
 #define JNIF_STACKMAPTABLEATTRPARSER_HPP
 
 #include "../base.hpp"
+#include "../tree/ConstPool.hpp"
 
 namespace jnif {
 
@@ -24,8 +25,8 @@ public:
 
 	static constexpr const char* AttrName = "StackMapTable";
 
-	template<typename TMethodVisitor>
-	inline void parse(BufferReader& br, TMethodVisitor& v, ConstPool& cp,
+	template<typename TMethodVisitor, typename TReader>
+	inline void parse(TReader& br, TMethodVisitor& v, ConstPool& cp,
 			u2 nameIndex) {
 		auto parseTs = [&](int count) {
 			for (u1 i = 0; i < count; i++) {
