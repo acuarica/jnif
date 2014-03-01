@@ -89,6 +89,8 @@ void testSimpleModel() {
 	auto m = c.visitMethod(ACC_PUBLIC, aMethodNameIndex, aMethodDescIndex);
 	auto cd = m.visitCode(codeAttrIndex);
 	cd.visitNewArray(OPCODE_newarray + 2, OPCODE_newarray, 5);
+
+	cd.visitJump(-23, OPCODE_ifeq, -1);
 }
 
 void testIdentityParserWriter() {

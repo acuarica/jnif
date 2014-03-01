@@ -395,7 +395,7 @@ public:
 	};
 
 	inline ClassPrinterVisitor(std::ostream& os, const char* className,
-			int fileImageLen, TForward& cv = ClassDefaultVisitor::inst) :
+			int fileImageLen, TForward& cv = ClassDefaultVisitor::inst()) :
 			cv(cv), os(os), tabs(0) {
 		line() << "Class file " << className << " [file size: " << fileImageLen
 				<< "]" << std::endl;
