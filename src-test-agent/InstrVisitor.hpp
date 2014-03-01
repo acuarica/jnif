@@ -73,7 +73,7 @@ public:
 
 			inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 				const std::string& attrName = instr.cp->getUtf8(nameIndex);
-				if (attrName != "StackMapTable2345") {
+				if (attrName != "StackMapTable") {
 					bv.visitAttr(nameIndex, len, data);
 				}
 			}

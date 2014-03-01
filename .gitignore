@@ -1,0 +1,5 @@
+build/*.o
+build/*.log
+build/*.jnilib
+build/**/*.disasm
+build/***/*.class

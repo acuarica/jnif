@@ -17,7 +17,6 @@
 #include <sstream>
 #include <fstream>
 
-
 #include "../src/jnif.hpp"
 #include "InstrVisitor.hpp"
 
@@ -32,7 +31,7 @@ static string outFileName(const char* className, const char* ext) {
 	}
 
 	stringstream path;
-	path << "build/instr/" << fileName << "." << ext;
+	path << "../build/instr/" << fileName << "." << ext;
 
 	return path.str();
 }
@@ -43,24 +42,20 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* classFile,
 		int classFileLen, const char* className, int* new_class_data_len,
 		unsigned char** new_class_data) {
 
-//	if (string(className) != "frheapagent/HeapTest") {
-//		//return;
-//	}
+	if (string(className) != "frheapagent/HeapTest") {
+		return;
+	}
 
 	auto instr =
 			[&](ostream& os) {
 
 				ClassWriterVisitor<> cwv(cout);
 				ClassPrinterVisitor<decltype(cwv)> cpv(os, className, classFileLen, cwv);
-//				InstrVisitor<decltype(cpv)> ii(cpv);
-//				FullClassParser<decltype(ii)>().parse(classFile, classFileLen, ii);
+				InstrVisitor<decltype(cpv)> ii(cpv);
 
-				ClassParser::parse(classFile, classFileLen, cpv);
+				ClassParser::parse(classFile, classFileLen, ii);
 
 				int len = cwv.getClassFileSize(cwv.cf);
-
-//				ASSERT(classFileLen == len, "%d must be equal to %d on class %s",
-	//					classFileLen, len, className);
 
 				*new_class_data_len = len;
 				jvmtiError error = jvmti->Allocate(len, new_class_data );
@@ -72,29 +67,14 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* classFile,
 							("c++ allocate"));
 
 					exit(1);
-
 				}
 
 				BufferWriter bw(*new_class_data, len);
 				cwv.writeClassFile(bw, cwv.cf);
-
-				for (int i = 0; i < len; i++) {
-					if (classFile[i] != (*new_class_data)[i]) {
-
-						ASSERT(false, "error on %d: %d:%d != %d:%d", i,
-								classFile[i],classFile[i+1],
-								(*new_class_data)[i],(*new_class_data)[i+1]
-						);
-					}
-				}
 			};
 
-	if (className == string("java/lang/Object")) {
-		instr(cerr);
-	} else {
-		ofstream os(outFileName(className, "disasm").c_str());
-		instr(os);
-	}
+	ofstream os(outFileName(className, "disasm").c_str());
+	instr(os);
 }
 
 }

@@ -18,12 +18,25 @@ CFLAGS += -fPIC -W -Wall -Wextra -O3 -Wno-unused-parameter -lpthread -shared -I$
 
 .PHONY: all agent unit clean show
 
+
+
+#EVENTSPERSAMPLE=500
+#XMS=2048m
+#XMX=2048m
+#JOPT="-Xint -Xms$XMS -Xmx$XMX"
+# -verbose:class|gc|jni
+#JDEBUG=-Xcheck:jni -Xdiag -verbose:jni
+#java $JOPT -Xverify:none -agentpath:$AGENT=$EVENTSPERSAMPLE -Xbootclasspath/a:$PROXYBCP -cp $CP "$MAINCLASS"
+#java -Xverify:none -agentpath:$AGENT=5000 -Xbootclasspath/a:$PROXYBCP -jar lib/dacapo-9.12-bach.jar avrora
+#java -Xverify:none $JDEBUG $JOPT -agentpath:$AGENT=5000 -Xbootclasspath/a:$PROXYBCP -jar scala-benchmark-suite-0.1.0-20120216.103539-3.jar -t 1 -s tiny actors
+#java -Xverify:none $JDEBUG $JOPT -agentpath:$AGENT=5000 -Xbootclasspath/a:$PROXYBCP -jar scala-benchmark-suite-0.1.0-20120216.103539-3.jar avrora
+JVMARGS=-Xverify:none
+
 all: agent unit
 #$(LIB) $(BUILD)/frproxy/FrInstrProxy.class
 
 agent: $(BUILD)/java-test/frheapagent/HeapTest.class $(OUTPUT)
-	@echo $(SRC) $(OBJS)
-	java $(JDEBUG) -agentpath:$(OUTPUT)=$(BUILD) -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest
+	java $(JVMARGS) -agentpath:$(OUTPUT)=$(BUILD) -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest
 
 $(BUILD)/frproxy/FrInstrProxy.class: resources/frproxy/FrInstrProxy.java
 	javac -d build/ resources/frproxy/FrInstrProxy.java
