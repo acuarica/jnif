@@ -1,4 +1,6 @@
 
+BUILD=build
+
 .PHONY: all agent unit docs clean
 
 all: agent unit

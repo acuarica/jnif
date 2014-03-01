@@ -13,8 +13,6 @@
  */
 namespace jnif {
 
-using namespace std;
-
 /**
  * Represents a byte inside the Java Class File.
  * The sizeof(u1) must be equal to 1.

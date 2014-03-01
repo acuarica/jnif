@@ -22,7 +22,7 @@ public:
 			u4 len = br.readu4();
 			const u1* data = br.pos();
 
-			string attrName = cp.getUtf8(nameIndex);
+			std::string attrName = cp.getUtf8(nameIndex);
 
 			parse2<TReader, TAttrVisitor, TAttrParserList...>(nameIndex, len,
 					data, attrName, cp, av);
@@ -36,7 +36,7 @@ private:
 	template<typename TReader, typename TAttrVisitor, typename TAttrParser,
 			typename ... TAttrParserTail>
 	inline static void parse2(u2 nameIndex, u4 len, const u1* data,
-			const string& attrName, ConstPool& cp, TAttrVisitor& av) {
+			const std::string& attrName, ConstPool& cp, TAttrVisitor& av) {
 		if (attrName == TAttrParser::AttrName) {
 			TAttrParser parser;
 			TReader br(data, len);
@@ -49,7 +49,7 @@ private:
 
 	template<typename TReader, typename TAttrVisitor>
 	inline static void parse2(u2 nameIndex, u4 len, const u1* data,
-			const string& attrName, ConstPool& cp, TAttrVisitor& av) {
+			const std::string& attrName, ConstPool& cp, TAttrVisitor& av) {
 		av.visitAttr(nameIndex, len, data);
 	}
 };

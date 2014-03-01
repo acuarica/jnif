@@ -52,7 +52,7 @@ public:
 
 private:
 
-	vector<Attr*> attrs;
+	std::vector<Attr*> attrs;
 };
 
 }

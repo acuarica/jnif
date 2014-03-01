@@ -50,8 +50,8 @@ public:
 			}
 
 			inline void visitField(int offset, u1 opcode, u2 fieldRefIndex,
-					const string& className, const string& name,
-					const string& desc) {
+					const std::string& className, const std::string& name,
+					const std::string& desc) {
 				bv.visitField(offset, opcode, fieldRefIndex, className, name,
 						desc);
 			}
@@ -69,7 +69,7 @@ public:
 			}
 
 			inline void visitType(int offset, u1 opcode, u2 classIndex,
-					const string& className) {
+					const std::string& className) {
 				bv.visitType(offset, opcode, classIndex, className);
 			}
 
@@ -78,7 +78,7 @@ public:
 			}
 
 			inline void visitMultiArray(int offset, u1 opcode, u2 classIndex,
-					const string& className, u4 dims) {
+					const std::string& className, u4 dims) {
 				bv.visitMultiArray(offset, opcode, classIndex, className, dims);
 			}
 
@@ -91,15 +91,15 @@ public:
 			}
 
 			inline void visitInvokeInterface(int offset, u1 opcode,
-					u2 interMethodrefIndex, const string& className,
-					const string& name, const string& desc, u1 count) {
+					u2 interMethodrefIndex, const std::string& className,
+					const std::string& name, const std::string& desc, u1 count) {
 				bv.visitInvokeInterface(offset, opcode, interMethodrefIndex,
 						className, name, desc, count);
 			}
 
 			inline void visitInvoke(int offset, u1 opcode, u2 methodrefIndex,
-					const string& className, const string& name,
-					const string& desc) {
+					const std::string& className, const std::string& name,
+					const std::string& desc) {
 				bv.visitInvoke(offset, opcode, methodrefIndex, className, name,
 						desc);
 			}
@@ -109,13 +109,13 @@ public:
 			}
 
 			inline void visitTableSwitch(int offset, u1 opcode, int def,
-					int low, int high, const vector<u4>& targets) {
+					int low, int high, const std::vector<u4>& targets) {
 				bv.visitTableSwitch(offset, opcode, def, low, high, targets);
 			}
 
 			inline void visitLookupSwitch(int offset, u1 opcode, u4 defbyte,
-					u4 npairs, const vector<u4>& keys,
-					const vector<u4>& targets) {
+					u4 npairs, const std::vector<u4>& keys,
+					const std::vector<u4>& targets) {
 				bv.visitLookupSwitch(offset, opcode, defbyte, npairs, keys,
 						targets);
 			}
@@ -140,7 +140,7 @@ public:
 			return Code(bv);
 		}
 
-		inline void visitException(u2 exceptionIndex, vector<u2>& es) {
+		inline void visitException(u2 exceptionIndex, std::vector<u2>& es) {
 			mv.visitException(exceptionIndex, es);
 		}
 

@@ -124,7 +124,7 @@ private:
 					break;
 				case CONSTANT_Utf8: {
 					u2 len = br.readu2();
-					string str((const char*) br.pos(), len);
+					std::string str((const char*) br.pos(), len);
 					entry->utf8.str = str;
 					br.skip(len);
 					break;

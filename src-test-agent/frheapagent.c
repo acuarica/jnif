@@ -139,10 +139,14 @@ static void JNICALL VMDeathEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 
 static void ParseOptions(const char* options) {
 	if (options != NULL ) {
-		eventspersample = atoi(options);
+//		eventspersample = atoi(options);
+//
+//		CHECK(eventspersample != 0,
+//				"Invalid options for eventspersample: %s. Got zero.", options);
 
-		CHECK(eventspersample != 0,
-				"Invalid options for eventspersample: %s. Got zero.", options);
+		dbdir = options;
+	} else {
+		dbdir = ".";
 	}
 }
 

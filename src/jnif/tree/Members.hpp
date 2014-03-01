@@ -38,7 +38,7 @@ private:
 	inline Members() {
 	}
 
-	vector<Member> members;
+	std::vector<Member> members;
 };
 
 }

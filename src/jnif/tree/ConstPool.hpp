@@ -70,7 +70,7 @@ public:
 			} invokedynamic;
 		};
 		struct {
-			string str;
+			std::string str;
 		} utf8;
 	};
 
@@ -94,19 +94,19 @@ public:
 		entries.push_back(nullEntry);
 	}
 
-	const string& getUtf8(int utf8Index) const {
+	const std::string& getUtf8(int utf8Index) const {
 		const Entry* entry = getEntry(utf8Index, CONSTANT_Utf8, "Utf8");
 
 		return entry->utf8.str;
 	}
 
-	const string& getClazzName(int classIndex) const {
+	const std::string& getClazzName(int classIndex) const {
 		u2 classNameIndex = getClazzNameIndex(classIndex);
 
 		return getUtf8(classNameIndex);
 	}
 
-	void getNameAndType(int index, string* name, string* desc) const {
+	void getNameAndType(int index, std::string* name, std::string* desc) const {
 		const Entry* entry = getEntry(index, CONSTANT_NameAndType,
 				"NameAndType");
 
@@ -117,7 +117,7 @@ public:
 		*desc = getUtf8(descIndex);
 	}
 
-	void getMemberRef(int index, string* clazzName, string* name, string* desc,
+	void getMemberRef(int index, std::string* clazzName, std::string* name, std::string* desc,
 			u1 tag) const {
 		const Entry* entry = getEntry(index, tag, "memberref");
 
@@ -215,7 +215,7 @@ private:
 	}
 
 public:
-	vector<Entry> entries;
+	std::vector<Entry> entries;
 };
 
 

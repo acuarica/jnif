@@ -2,6 +2,7 @@
 #define JNIF_BUFFERWRITER_HPP
 
 #include "../base.hpp"
+#include <algorithm>
 
 namespace jnif {
 

@@ -22,7 +22,7 @@ public:
 		u2 lineno;
 	};
 
-	vector<Ln> lns;
+	std::vector<Ln> lns;
 
 	virtual void write(BufferWriter& bw) {
 		u2 size = lns.size();

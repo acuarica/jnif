@@ -96,8 +96,8 @@ public:
 			}
 
 			inline void visitField(int offset, u1 opcode, u2 fieldRefIndex,
-					const string& className, const string& name,
-					const string& desc) {
+					const std::string& className, const std::string& name,
+					const std::string& desc) {
 				line(offset, opcode);
 				writeu2(fieldRefIndex);
 			}
@@ -118,7 +118,7 @@ public:
 			}
 
 			void visitType(int offset, u1 opcode, u2 classIndex,
-					const string& className) {
+					const std::string& className) {
 				line(offset, opcode);
 				writeu2(classIndex);
 			}
@@ -129,7 +129,7 @@ public:
 			}
 
 			void visitMultiArray(int offset, u1 opcode, u2 classIndex,
-					const string& className, u1 dims) {
+					const std::string& className, u1 dims) {
 				line(offset, opcode);
 				writeu2(classIndex);
 				writeu1(dims);
@@ -152,8 +152,9 @@ public:
 			}
 
 			void visitInvokeInterface(int offset, u1 opcode,
-					u2 interMethodrefIndex, const string& className,
-					const string& name, const string& desc, u1 count) {
+					u2 interMethodrefIndex, const std::string& className,
+					const std::string& name, const std::string& desc,
+					u1 count) {
 				line(offset, opcode);
 				writeu2(interMethodrefIndex);
 				writeu1(count);
@@ -161,8 +162,8 @@ public:
 			}
 
 			void visitInvoke(int offset, u1 opcode, u2 methodrefIndex,
-					const string& className, const string& name,
-					const string& desc) {
+					const std::string& className, const std::string& name,
+					const std::string& desc) {
 				line(offset, opcode);
 				writeu2(methodrefIndex);
 			}
@@ -173,7 +174,7 @@ public:
 			}
 
 			void visitTableSwitch(int offset, u1 opcode, int def, int low,
-					int high, const vector<u4>& targets) {
+					int high, const std::vector<u4>& targets) {
 				line(offset, opcode);
 
 				int pad = (4 - (pos() % 4)) % 4;
@@ -195,7 +196,8 @@ public:
 			}
 
 			void visitLookupSwitch(int offset, u1 opcode, u4 defbyte, u4 npairs,
-					const vector<u4>& keys, const vector<u4>& targets) {
+					const std::vector<u4>& keys,
+					const std::vector<u4>& targets) {
 				line(offset, opcode);
 
 				int pad = (4 - (pos() % 4)) % 4;
@@ -265,7 +267,7 @@ public:
 			}
 		};
 
-		void visitException(u2 nameIndex, vector<u2>& es) {
+		void visitException(u2 nameIndex, std::vector<u2>& es) {
 			u4 len = 0;
 
 			len += sizeof(u2);
@@ -284,8 +286,8 @@ public:
 
 	};
 
-	inline ClassWriterVisitor(ostream& os,
-			TForward& cv = ClassDefaultVisitor::inst) :
+	inline ClassWriterVisitor(std::ostream& os, TForward& cv =
+			ClassDefaultVisitor::inst()) :
 			cv(cv), os(os) {
 	}
 
@@ -310,53 +312,53 @@ public:
 			line() << entry->tag;
 
 			switch (entry->tag) {
-			case CONSTANT_Class:
-				os << entry->clazz.name_index;
-				break;
-			case CONSTANT_Fieldref:
-			case CONSTANT_Methodref:
-			case CONSTANT_InterfaceMethodref:
-				os << entry->memberref.class_index;
-				os << entry->memberref.name_and_type_index;
-				break;
-			case CONSTANT_String:
-				os << entry->s.string_index;
-				break;
-			case CONSTANT_Integer:
-				os << entry->i.value;
-				break;
-			case CONSTANT_Float:
-				os << entry->f.value;
-				break;
-			case CONSTANT_Long:
-				os << entry->l.high_bytes;
-				os << entry->l.low_bytes;
-				i++;
-				break;
-			case CONSTANT_Double:
-				os << entry->d.high_bytes;
-				os << entry->d.low_bytes;
-				i++;
-				break;
-			case CONSTANT_NameAndType:
-				os << entry->nameandtype.name_index;
-				os << entry->nameandtype.descriptor_index;
-				break;
-			case CONSTANT_Utf8:
-				os << entry->utf8.str.length();
-				os << entry->utf8.str.c_str();
-				break;
-			case CONSTANT_MethodHandle:
-				os << entry->methodhandle.reference_kind;
-				os << entry->methodhandle.reference_index;
-				break;
-			case CONSTANT_MethodType:
-				os << entry->methodtype.descriptor_index;
-				break;
-			case CONSTANT_InvokeDynamic:
-				os << entry->invokedynamic.bootstrap_method_attr_index;
-				os << entry->invokedynamic.name_and_type_index;
-				break;
+				case CONSTANT_Class:
+					os << entry->clazz.name_index;
+					break;
+				case CONSTANT_Fieldref:
+				case CONSTANT_Methodref:
+				case CONSTANT_InterfaceMethodref:
+					os << entry->memberref.class_index;
+					os << entry->memberref.name_and_type_index;
+					break;
+				case CONSTANT_String:
+					os << entry->s.string_index;
+					break;
+				case CONSTANT_Integer:
+					os << entry->i.value;
+					break;
+				case CONSTANT_Float:
+					os << entry->f.value;
+					break;
+				case CONSTANT_Long:
+					os << entry->l.high_bytes;
+					os << entry->l.low_bytes;
+					i++;
+					break;
+				case CONSTANT_Double:
+					os << entry->d.high_bytes;
+					os << entry->d.low_bytes;
+					i++;
+					break;
+				case CONSTANT_NameAndType:
+					os << entry->nameandtype.name_index;
+					os << entry->nameandtype.descriptor_index;
+					break;
+				case CONSTANT_Utf8:
+					os << entry->utf8.str.length();
+					os << entry->utf8.str.c_str();
+					break;
+				case CONSTANT_MethodHandle:
+					os << entry->methodhandle.reference_kind;
+					os << entry->methodhandle.reference_index;
+					break;
+				case CONSTANT_MethodType:
+					os << entry->methodtype.descriptor_index;
+					break;
+				case CONSTANT_InvokeDynamic:
+					os << entry->invokedynamic.bootstrap_method_attr_index;
+					os << entry->invokedynamic.name_and_type_index;
+					break;
 			}
 		}
 	}
@@ -438,56 +440,57 @@ public:
 			bw.writeu1(entry->tag);
 
 			switch (entry->tag) {
-			case CONSTANT_Class:
-				bw.writeu2(entry->clazz.name_index);
-				break;
-			case CONSTANT_Fieldref:
-			case CONSTANT_Methodref:
-			case CONSTANT_InterfaceMethodref:
-				bw.writeu2(entry->memberref.class_index);
-				bw.writeu2(entry->memberref.name_and_type_index);
-				break;
-			case CONSTANT_String:
-				bw.writeu2(entry->s.string_index);
-				break;
-			case CONSTANT_Integer:
-				bw.writeu4(entry->i.value);
-				break;
-			case CONSTANT_Float:
-				bw.writeu4(entry->f.value);
-				break;
-			case CONSTANT_Long:
-				bw.writeu4(entry->l.high_bytes);
-				bw.writeu4(entry->l.low_bytes);
-				i++;
-				break;
-			case CONSTANT_Double:
-				bw.writeu4(entry->d.high_bytes);
-				bw.writeu4(entry->d.low_bytes);
-				i++;
-				break;
-			case CONSTANT_NameAndType:
-				bw.writeu2(entry->nameandtype.name_index);
-				bw.writeu2(entry->nameandtype.descriptor_index);
-				break;
-			case CONSTANT_Utf8: {
-				u2 len = entry->utf8.str.length();
-				const char* str = entry->utf8.str.c_str();
-				bw.writeu2(len);
-				bw.writecount(str, len);
-				break;
-			}
-			case CONSTANT_MethodHandle:
-				bw.writeu1(entry->methodhandle.reference_kind);
-				bw.writeu2(entry->methodhandle.reference_index);
-				break;
-			case CONSTANT_MethodType:
-				bw.writeu2(entry->methodtype.descriptor_index);
-				break;
-			case CONSTANT_InvokeDynamic:
-				bw.writeu2(entry->invokedynamic.bootstrap_method_attr_index);
-				bw.writeu2(entry->invokedynamic.name_and_type_index);
-				break;
+				case CONSTANT_Class:
+					bw.writeu2(entry->clazz.name_index);
+					break;
+				case CONSTANT_Fieldref:
+				case CONSTANT_Methodref:
+				case CONSTANT_InterfaceMethodref:
+					bw.writeu2(entry->memberref.class_index);
+					bw.writeu2(entry->memberref.name_and_type_index);
+					break;
+				case CONSTANT_String:
+					bw.writeu2(entry->s.string_index);
+					break;
+				case CONSTANT_Integer:
+					bw.writeu4(entry->i.value);
+					break;
+				case CONSTANT_Float:
+					bw.writeu4(entry->f.value);
+					break;
+				case CONSTANT_Long:
+					bw.writeu4(entry->l.high_bytes);
+					bw.writeu4(entry->l.low_bytes);
+					i++;
+					break;
+				case CONSTANT_Double:
+					bw.writeu4(entry->d.high_bytes);
+					bw.writeu4(entry->d.low_bytes);
+					i++;
+					break;
+				case CONSTANT_NameAndType:
+					bw.writeu2(entry->nameandtype.name_index);
+					bw.writeu2(entry->nameandtype.descriptor_index);
+					break;
+				case CONSTANT_Utf8: {
+					u2 len = entry->utf8.str.length();
+					const char* str = entry->utf8.str.c_str();
+					bw.writeu2(len);
+					bw.writecount(str, len);
+					break;
+				}
+				case CONSTANT_MethodHandle:
+					bw.writeu1(entry->methodhandle.reference_kind);
+					bw.writeu2(entry->methodhandle.reference_index);
+					break;
+				case CONSTANT_MethodType:
+					bw.writeu2(entry->methodtype.descriptor_index);
+					break;
+				case CONSTANT_InvokeDynamic:
+					bw.writeu2(
+							entry->invokedynamic.bootstrap_method_attr_index);
+					bw.writeu2(entry->invokedynamic.name_and_type_index);
+					break;
 			}
 		}
 	}
@@ -512,9 +515,9 @@ public:
 	ClassFile cf;
 
 	TForward& cv;
-	ostream& os;
+	std::ostream& os;
 
-	inline ostream& line() {
+	inline std::ostream& line() {
 		return os;
 	}
 
@@ -550,56 +553,56 @@ public:
 			size += sizeof(entry->tag);
 
 			switch (entry->tag) {
-			case CONSTANT_Class:
-				size += sizeof(entry->clazz.name_index);
-				break;
-			case CONSTANT_Fieldref:
-			case CONSTANT_Methodref:
-			case CONSTANT_InterfaceMethodref:
-				size += sizeof(entry->memberref.class_index);
-				size += sizeof(entry->memberref.name_and_type_index);
-				break;
-			case CONSTANT_String:
-				size += sizeof(entry->s.string_index);
-				break;
-			case CONSTANT_Integer:
-				size += sizeof(entry->i.value);
-				break;
-			case CONSTANT_Float:
-				size += sizeof(entry->f.value);
-				break;
-			case CONSTANT_Long:
-				size += sizeof(entry->l.high_bytes);
-				size += sizeof(entry->l.low_bytes);
-				i++;
-				break;
-			case CONSTANT_Double:
-				size += sizeof(entry->d.high_bytes);
-				size += sizeof(entry->d.low_bytes);
-				i++;
-				break;
-			case CONSTANT_NameAndType:
-				size += sizeof(entry->nameandtype.name_index);
-				size += sizeof(entry->nameandtype.descriptor_index);
-				break;
-			case CONSTANT_Utf8:
-				size += sizeof(u2);
-				size += entry->utf8.str.length();
-				break;
-			case CONSTANT_MethodHandle:
-				size += sizeof(entry->methodhandle.reference_kind);
-				size += sizeof(entry->methodhandle.reference_index);
-				break;
-			case CONSTANT_MethodType:
-				size += sizeof(entry->methodtype.descriptor_index);
-				break;
-			case CONSTANT_InvokeDynamic:
-				size +=
-						sizeof(entry->invokedynamic.bootstrap_method_attr_index);
-				size += sizeof(entry->invokedynamic.name_and_type_index);
-				break;
-			default:
-				EXCEPTION("Error while writing tag: %i", entry->tag);
+				case CONSTANT_Class:
+					size += sizeof(entry->clazz.name_index);
+					break;
+				case CONSTANT_Fieldref:
+				case CONSTANT_Methodref:
+				case CONSTANT_InterfaceMethodref:
+					size += sizeof(entry->memberref.class_index);
+					size += sizeof(entry->memberref.name_and_type_index);
+					break;
+				case CONSTANT_String:
+					size += sizeof(entry->s.string_index);
+					break;
+				case CONSTANT_Integer:
+					size += sizeof(entry->i.value);
+					break;
+				case CONSTANT_Float:
+					size += sizeof(entry->f.value);
+					break;
+				case CONSTANT_Long:
+					size += sizeof(entry->l.high_bytes);
+					size += sizeof(entry->l.low_bytes);
+					i++;
+					break;
+				case CONSTANT_Double:
+					size += sizeof(entry->d.high_bytes);
+					size += sizeof(entry->d.low_bytes);
+					i++;
+					break;
+				case CONSTANT_NameAndType:
+					size += sizeof(entry->nameandtype.name_index);
+					size += sizeof(entry->nameandtype.descriptor_index);
+					break;
+				case CONSTANT_Utf8:
+					size += sizeof(u2);
+					size += entry->utf8.str.length();
+					break;
+				case CONSTANT_MethodHandle:
+					size += sizeof(entry->methodhandle.reference_kind);
+					size += sizeof(entry->methodhandle.reference_index);
+					break;
+				case CONSTANT_MethodType:
+					size += sizeof(entry->methodtype.descriptor_index);
+					break;
+				case CONSTANT_InvokeDynamic:
+					size +=
+							sizeof(entry->invokedynamic.bootstrap_method_attr_index);
+					size += sizeof(entry->invokedynamic.name_and_type_index);
+					break;
+				default:
+					EXCEPTION("Error while writing tag: %i", entry->tag);
 			}
 		}
 

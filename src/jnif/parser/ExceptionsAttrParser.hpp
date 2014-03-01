@@ -20,7 +20,7 @@ public:
 			u2 nameIndex) {
 		u2 len = br.readu2();
 
-		vector<u2> es;
+		std::vector<u2> es;
 		for (int i = 0; i < len; i++) {
 			u2 exceptionIndex = br.readu2();
 

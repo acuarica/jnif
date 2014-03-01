@@ -1,6 +1,9 @@
 #ifndef JNIF_CLASSPRINTERVISITOR_HPP
 #define JNIF_CLASSPRINTERVISITOR_HPP
 
+#include <ostream>
+#include <iomanip>
+
 #include "base.hpp"
 
 namespace jnif {
@@ -60,7 +63,8 @@ public:
 				value(value), sep(sep) {
 		}
 
-		friend ostream& operator<<(ostream& out, AccessFlagsPrinter self) {
+		friend std::ostream& operator<<(std::ostream& out,
+				AccessFlagsPrinter self) {
 			bool empty = true;
 
 			auto check = [&](AccessFlags accessFlags, const char* name) {
@@ -103,14 +107,14 @@ public:
 		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 			fv.visitAttr(nameIndex, len, data);
 
-			const string& attrName = cpv.cp.getUtf8(nameIndex);
+			const std::string& attrName = cpv.cp.getUtf8(nameIndex);
 
 			line() << "  Attribute unknown '" << attrName << "' #" << nameIndex
-					<< "[" << len << "]" << endl;
+					<< "[" << len << "]" << std::endl;
 		}
 
 	private:
-		inline ostream& line() {
+		inline std::ostream& line() {
 			return cpv.line();
 		}
 	};
@@ -135,7 +139,7 @@ public:
 
 			inline void enter(u2 maxStack, u2 maxLocals) {
 				line(1) << "maxStack: " << maxStack << ", maxLocals: "
-						<< maxLocals << endl;
+						<< maxLocals << std::endl;
 				cpv.inc();
 
 				bv.enter(maxStack, maxLocals);
@@ -151,7 +155,7 @@ public:
 					u2 catchtype) {
 				line(1) << "exception entry: startpc: " << startpc
 						<< ", endpc: " << endpc << ", handlerpc: " << handlerpc
-						<< ", catchtype: " << catchtype << endl;
+						<< ", catchtype: " << catchtype << std::endl;
 
 				bv.visitExceptionEntry(startpc, endpc, handlerpc, catchtype);
 			}
@@ -159,28 +163,28 @@ public:
 			void visitZero(int offset, u1 opcode) {
 				bv.visitZero(offset, opcode);
 
-				line(offset, opcode) << "" << endl;
+				line(offset, opcode) << "" << std::endl;
 			}
 
 			void visitField(int offset, u1 opcode, u2 fieldRefIndex,
-					const string& className, const string& name,
-					const string& desc) {
+					const std::string& className, const std::string& name,
+					const std::string& desc) {
 				bv.visitField(offset, opcode, fieldRefIndex, className, name,
 						desc);
 
-				line(offset, opcode) << className << name << desc << endl;
+				line(offset, opcode) << className << name << desc << std::endl;
 			}
 
 			void visitBiPush(int offset, u1 opcode, u1 bytevalue) {
 				bv.visitBiPush(offset, opcode, bytevalue);
 
-				line(offset, opcode) << int(bytevalue) << endl;
+				line(offset, opcode) << int(bytevalue) << std::endl;
 			}
 
 			void visitSiPush(int offset, u1 opcode, u2 shortvalue) {
 				bv.visitSiPush(offset, opcode, shortvalue);
 
-				line(offset, opcode) << int(shortvalue) << endl;
+				line(offset, opcode) << int(shortvalue) << std::endl;
 			}
 
 			void visitNewArray(int offset, u1 opcode, u1 atype) {
@@ -195,60 +199,63 @@ public:
 
 				bv.visitNewArray(offset, opcode, atype);
 
-				line(offset, opcode) << int(atype) << endl;
+				line(offset, opcode) << int(atype) << std::endl;
 			}
 
 			void visitType(int offset, u1 opcode, u2 classIndex,
-					const string& className) {
+					const std::string& className) {
 				bv.visitType(offset, opcode, classIndex, className);
 
-				line(offset, opcode) << className << endl;
+				line(offset, opcode) << className << std::endl;
 			}
 
 			void visitJump(int offset, u1 opcode, u2 targetOffset) {
 				bv.visitJump(offset, opcode, targetOffset);
 
-				line(offset, opcode) << offset + targetOffset << endl;
+				line(offset, opcode) << offset + targetOffset << std::endl;
 			}
 
 			void visitMultiArray(int offset, u1 opcode, u2 classIndex,
-					const string& className, u4 dims) {
+					const std::string& className, u4 dims) {
 				bv.visitMultiArray(offset, opcode, classIndex, className, dims);
 
-				line(offset, opcode) << className << " " << dims << endl;
+				line(offset, opcode) << className << " " << dims << std::endl;
 			}
 
 			void visitIinc(int offset, u1 opcode, u1 index, u1 value) {
 				bv.visitIinc(offset, opcode, index, value);
 
-				line(offset, opcode) << int(index) << " " << int(value) << endl;
+				line(offset, opcode) << int(index) << " " << int(value)
+						<< std::endl;
 			}
 
 			void visitLdc(int offset, u1 opcode, u2 arg) {
 				bv.visitLdc(offset, opcode, arg);
 
-				line(offset, opcode) << arg << endl;
+				line(offset, opcode) << arg << std::endl;
 			}
 
 			void visitInvokeInterface(int offset, u1 opcode,
-					u2 interMethodrefIndex, const string& className,
-					const string& name, const string& desc, u1 count) {
+					u2 interMethodrefIndex, const std::string& className,
+					const std::string& name, const std::string& desc,
+					u1 count) {
 				bv.visitInvokeInterface(offset, opcode, interMethodrefIndex,
 						className, name, desc, count);
 
 				line(offset, opcode) << className << "." << name << ": " << desc
-						<< "(" << count << ")" << endl;
+						<< "(" << count << ")" << std::endl;
 			}
 
 			void visitInvoke(int offset, u1 opcode, u2 methodrefIndex,
-					const string&, const string&, const string&) {
+					const std::string&, const std::string&,
+					const std::string&) {
 
-				string className, name, desc;
+				std::string className, name, desc;
 				cpv.cp.getMemberRef(methodrefIndex, &className, &name, &desc,
 						CONSTANT_Methodref);
 
 				line(offset, opcode) << className << "." << name << ": " << desc
-						<< endl;
+						<< std::endl;
 
 				bv.visitInvoke(offset, opcode, methodrefIndex, className, name,
 						desc);
@@ -257,11 +264,11 @@ public:
 			void visitVar(int offset, u1 opcode, u2 lvindex) {
 				bv.visitVar(offset, opcode, lvindex);
 
-				line(offset, opcode) << lvindex << endl;
+				line(offset, opcode) << lvindex << std::endl;
 			}
 
 			void visitTableSwitch(int offset, u1 opcode, int def, int low,
-					int high, const vector<u4>& targets) {
+					int high, const std::vector<u4>& targets) {
 				bv.visitTableSwitch(offset, opcode, def, low, high, targets);
 
 				line(offset, opcode) << def << " " << " " << low << " " << high
@@ -271,11 +278,12 @@ public:
 					os() << " " << targets[i];
 				}
 
-				os() << endl;
+				os() << std::endl;
 			}
 
 			void visitLookupSwitch(int offset, u1 opcode, u4 defbyte, u4 npairs,
-					const vector<u4>& keys, const vector<u4>& targets) {
+					const std::vector<u4>& keys,
+					const std::vector<u4>& targets) {
 				bv.visitLookupSwitch(offset, opcode, defbyte, npairs, keys,
 						targets);
 
@@ -285,14 +293,14 @@ public:
 					cpv.os << " " << keys[i] << " -> " << targets[i];
 				}
 
-				os() << endl;
+				os() << std::endl;
 			}
 
 			inline void visitLnt(u2 nameIndex, u2 startpc, u2 lineno) {
 				bv.visitLnt(nameIndex, startpc, lineno);
 
 				line() << "  LocalNumberTable entry: startpc: " << startpc
-						<< ", lineno: " << lineno << endl;
+						<< ", lineno: " << lineno << std::endl;
 			}
 
 			inline void visitLvt(u2 startPc, u2 len, u2 varNameIndex,
@@ -302,41 +310,41 @@ public:
 				line() << "  LocalVariableTable entry: start: " << startPc
 						<< ", len: " << len << ", varNameIndex: "
 						<< varNameIndex << ", varDescIndex: " << varDescIndex
-						<< ", index: " << endl;
+						<< ", index: " << std::endl;
 			}
 
 			inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 				bv.visitAttr(nameIndex, len, data);
 
-				const string& attrName = cpv.cp.getUtf8(nameIndex);
+				const std::string& attrName = cpv.cp.getUtf8(nameIndex);
 
 				line() << "  Attribute unknown '" << attrName << "' # "
-						<< nameIndex << "[" << len << "]" << endl;
+						<< nameIndex << "[" << len << "]" << std::endl;
 			}
 
 			inline void visitFrameSame(u1 frameType) {
-				line() << "Stack entry SAME: " << int(frameType) << endl;
+				line() << "Stack entry SAME: " << int(frameType) << std::endl;
 			}
 
 			inline void visitFrameSameLocals1StackItem(u1 frameType) {
 				line() << "Stack entry SAME LOCALS 1 STACK ITEM: "
-						<< int(frameType) << endl;
+						<< int(frameType) << std::endl;
 			}
 
 		private:
 			ClassPrinterVisitor& cpv;
 
-			inline ostream& os() {
+			inline std::ostream& os() {
 				return cpv.os;
 			}
 
-			inline ostream& line(int moretabs = 0) {
+			inline std::ostream& line(int moretabs = 0) {
 				return cpv.line(moretabs);
 			}
 
-			inline ostream& line(int offset, u1 opcode, int moretabs = 0) {
-				return cpv.line(moretabs) << setw(4) << offset << ": ("
-						<< setw(3) << (int) opcode << ") " << OPCODES[opcode]
+			inline std::ostream& line(int offset, u1 opcode, int moretabs = 0) {
+				return cpv.line(moretabs) << std::setw(4) << offset << ": ("
+						<< std::setw(3) << (int) opcode << ") " << OPCODES[opcode]
 						<< " ";
 			}
 		};
@@ -347,57 +355,58 @@ public:
 			return Code(cpv, bv);
 		}
 
-		inline void visitException(u2 nameIndex, vector<u2>& es) {
+		inline void visitException(u2 nameIndex, std::vector<u2>& es) {
 			mv.visitException(nameIndex, es);
 
 			for (u4 i = 0; i < es.size(); i++) {
 				u2 exceptionIndex = es[i];
 
-				const string& exceptionName = cpv.cp.getClazzName(
+				const std::string& exceptionName = cpv.cp.getClazzName(
 						exceptionIndex);
 
 				line() << "  Exceptions entry: '" << exceptionName << "'#"
-						<< exceptionIndex << endl;
+						<< exceptionIndex << std::endl;
 			}
 		}
 
 		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 			mv.visitAttr(nameIndex, len, data);
 
-			const string& attrName = cpv.cp.getUtf8(nameIndex);
+			const std::string& attrName = cpv.cp.getUtf8(nameIndex);
 
 			line() << "  Attribute unknown '" << attrName << "' # " << nameIndex
-					<< "[" << len << "]" << endl;
+					<< "[" << len << "]" << std::endl;
 		}
 
 	private:
 
-		inline ostream& os() {
+		inline std::ostream& os() {
 			return cpv.os;
 		}
 
-		inline ostream& line(int moretabs = 0) {
+		inline std::ostream& line(int moretabs = 0) {
 			return cpv.line(moretabs);
 		}
 
-		inline ostream& line(int offset, u1 opcode, int moretabs = 0) {
-			return cpv.line(moretabs) << setw(4) << offset << ": (" << setw(3)
+		inline std::ostream& line(int offset, u1 opcode, int moretabs = 0) {
+			return cpv.line(moretabs) << std::setw(4) << offset << ": (" << std::setw(3)
 					<< (int) opcode << ") " << OPCODES[opcode] << " ";
 		}
 	};
 
-	inline ClassPrinterVisitor(ostream& os, const char* className,
+	inline ClassPrinterVisitor(std::ostream& os, const char* className,
 			int fileImageLen, TForward& cv = ClassDefaultVisitor::inst) :
 			cv(cv), os(os), tabs(0) {
 		line() << "Class file " << className << " [file size: " << fileImageLen
-				<< "]" << endl;
+				<< "]" << std::endl;
 		inc();
 	}
 
 	inline void visitVersion(Magic magic, u2 minor, u2 major) {
 		cv.visitVersion(magic, minor, major);
 
-		line() << "Version = minor: " << minor << ", major: " << major << endl;
+		line() << "Version = minor: " << minor << ", major: " << major
+				<< std::endl;
 	}
 
 	inline void visitConstPool(ConstPool& cp) {
@@ -438,7 +447,7 @@ public:
 				case CONSTANT_Fieldref:
 				case CONSTANT_Methodref:
 				case CONSTANT_InterfaceMethodref: {
-					string clazzName, name, desc;
+					std::string clazzName, name, desc;
 					cp.getMemberRef(i, &clazzName, &name, &desc, entry->tag);
 
 					os << clazzName << "#" << entry->memberref.class_index
@@ -485,20 +494,20 @@ public:
 					break;
 			}
 
-			os << endl;
+			os << std::endl;
 		}
 	}
 
 	void visitThis(u2 accessFlags, u2 thisClassIndex, u2 superClassIndex) {
 		cv.visitThis(accessFlags, thisClassIndex, superClassIndex);
 
-		line() << "accessFlags: " << accessFlags << endl;
+		line() << "accessFlags: " << accessFlags << std::endl;
 		line() << "thisClassIndex: " << cp.getClazzName(thisClassIndex) << "#"
-				<< thisClassIndex << endl;
+				<< thisClassIndex << std::endl;
 
 		if (superClassIndex != 0) {
 			line() << "superClassIndex: " << cp.getClazzName(superClassIndex)
-					<< "#" << superClassIndex << endl;
+					<< "#" << superClassIndex << std::endl;
 		}
 	}
 
@@ -506,7 +515,7 @@ public:
 		cv.visitInterface(interIndex);
 
 		line() << "Interface '" << cp.getClazzName(interIndex) << "'#"
-				<< interIndex << endl;
+				<< interIndex << std::endl;
 	}
 
 	Field visitField(u2 accessFlags, u2 nameIndex, u2 descIndex) {
@@ -515,7 +524,7 @@ public:
 
 		line() << "Field " << cp.getUtf8(nameIndex) << ": "
 				<< AccessFlagsPrinter(accessFlags) << " #" << nameIndex << ": "
-				<< cp.getUtf8(descIndex) << "#" << descIndex << endl;
+				<< cp.getUtf8(descIndex) << "#" << descIndex << std::endl;
 
 		return Field(fv, *this);
 	}
@@ -526,7 +535,7 @@ public:
 
 		line() << "+Method " << AccessFlagsPrinter(accessFlags) << " "
 				<< cp.getUtf8(nameIndex) << ": " << " #" << nameIndex << ": "
-				<< cp.getUtf8(descIndex) << "#" << descIndex << endl;
+				<< cp.getUtf8(descIndex) << "#" << descIndex << std::endl;
 
 		return Method(mv, *this);
 	}
@@ -534,16 +543,16 @@ public:
 	inline void visitSourceFile(u2 nameIndex, u2 sourceFileIndex) {
 		cv.visitSourceFile(nameIndex, sourceFileIndex);
 
-		const string& sourceFileName = cp.getUtf8(sourceFileIndex);
+		const std::string& sourceFileName = cp.getUtf8(sourceFileIndex);
 		line() << "Source file: " << sourceFileName << "#" << sourceFileIndex
-				<< endl;
+				<< std::endl;
 	}
 
 	inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 		cv.visitAttr(nameIndex, len, data);
 
 		line() << "Class attribute unknown '" << cp.getUtf8(nameIndex) << "' #"
-				<< nameIndex << "[" << len << "]" << endl;
+				<< nameIndex << "[" << len << "]" << std::endl;
 	}
 
 private:
@@ -556,11 +565,11 @@ private:
 		tabs--;
 	}
 
-	inline ostream& line(int moretabs = 0) {
+	inline std::ostream& line(int moretabs = 0) {
 		return tab(os, moretabs);
 	}
 
-	inline ostream& tab(ostream& os, int moretabs = 0) {
+	inline std::ostream& tab(std::ostream& os, int moretabs = 0) {
 		for (int _ii = 0; _ii < tabs + moretabs; _ii++) {
 			os << "  ";
 		}
@@ -571,7 +580,7 @@ private:
 	TForward& cv;
 
 	ConstPool cp;
-	ostream& os;
+	std::ostream& os;
 	int tabs;
 };
 

@@ -1,21 +1,12 @@
 /*
  * Includes
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <errno.h>
-
 #include "frlog.h"
 #include "frexception.h"
 
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <fstream>
-
 #include "jnif.hpp"
+
+#include <iostream>
 
 using namespace std;
 using namespace jnif;
@@ -124,8 +115,8 @@ void testParser() {
 }
 
 int main(int argc, const char* argv[]) {
-	//testSimpleModel();
-	//testIdentityParserWriter();
+	testSimpleModel();
+	testIdentityParserWriter();
 	testParser();
 
 	printf("argc: %d, %d\n", argc, jnif_BasicClass_class_len);

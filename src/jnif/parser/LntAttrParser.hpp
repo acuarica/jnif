@@ -20,7 +20,9 @@ public:
 			u2 nameIndex) {
 		u2 lntlen = br.readu2();
 
-//		vector<>
+		LntAttr lnt(nameIndex);
+
+		//std::vector<u2> es;
 
 		for (int i = 0; i < lntlen; i++) {
 			u2 startpc = br.readu2();

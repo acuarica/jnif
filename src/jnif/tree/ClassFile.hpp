@@ -22,7 +22,7 @@ public:
 	u2 accessFlags;
 	u2 thisClassIndex;
 	u2 superClassIndex;
-	vector<u2> interfaces;
+	std::vector<u2> interfaces;
 	Members fields;
 	Members methods;
 	Attrs attrs;

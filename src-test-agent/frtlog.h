@@ -19,6 +19,8 @@ static inline jlong getglobal() {
 //#define _TLOG(format, ...) ( FrOpenTransactionLog(&tldget()->_tlog, tldget()->threadId), fprintf( tldget()->_tlog, format "\n", ##__VA_ARGS__) )
 #define _TLOG(format, ...) _TLOGBEGIN(format "\n", ##__VA_ARGS__)
 
+extern const char* dbdir;
+
 static inline void FrOpenTransactionLog(FILE** _log, int tid) {
 	if (*_log != NULL) {
 		return;
@@ -30,7 +32,7 @@ static inline void FrOpenTransactionLog(FILE** _log, int tid) {
 	//_logbuf = malloc(size);
 
 	char filename[512];
-	sprintf(filename, "db/tlog.%04d.log", tid);
+	sprintf(filename, "%s/tlog.%04d.log", dbdir, tid);
 
 	//NOTICE("%s", filename);
 
@@ -48,9 +50,9 @@ static inline void FrOpenTransactionLog(FILE** _log, int tid) {
 }
 
 //static void FrCloseTransactionLog() {
-	//NOTICE("Closing transaction log...");
+//NOTICE("Closing transaction log...");
 
-	//fclose(_log);
+//fclose(_log);
 
-	//free(_logbuf);
+//free(_logbuf);
 //}

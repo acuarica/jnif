@@ -11,8 +11,6 @@
 
 #define FR_PROXY_CLASS "frproxy/FrInstrProxy"
 
-extern int eventspersample;
-
 static inline bool FrIsProxyClassName(const char* className) {
 	return strcmp(className, FR_PROXY_CLASS) == 0;
 }

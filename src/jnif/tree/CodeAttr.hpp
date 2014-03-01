@@ -1,6 +1,8 @@
 #ifndef JNIF_CODEATTR_HPP
 #define JNIF_CODEATTR_HPP
 
+#include <sstream>
+
 #include "../base.hpp"
 
 namespace jnif {
@@ -28,9 +30,9 @@ public:
 	u2 maxStack;
 	u2 maxLocals;
 
-	basic_stringstream<u1> codeBuffer;
+	std::basic_stringstream<u1> codeBuffer;
 
-	vector<ExceptionEntry> exceptions;
+	std::vector<ExceptionEntry> exceptions;
 
 	Attrs attrs;
 
@@ -45,7 +47,7 @@ public:
 		bw.skip(codeLen);
 		{
 			BufferWriter bw(codeStart, codeLen);
-			const basic_string<u1>& str = codeBuffer.str();
+			const std::basic_string<u1>& str = codeBuffer.str();
 			bw.writecount(str.c_str(), codeLen);
 		}
 

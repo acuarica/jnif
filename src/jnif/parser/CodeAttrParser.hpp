@@ -305,7 +305,7 @@ private:
 			CodeParser& code) {
 		u2 fieldRefIndex = br.readu2();
 
-		string className, name, desc;
+		std::string className, name, desc;
 
 		code.cp.getMemberRef(fieldRefIndex, &className, &name, &desc,
 				CONSTANT_Fieldref);
@@ -339,7 +339,7 @@ private:
 			CodeParser& code) {
 		u2 classIndex = br.readu2();
 
-		string className = code.cp.getClazzName(classIndex);
+		std::string className = code.cp.getClazzName(classIndex);
 
 		code.mv.visitType(offset, opcode, classIndex, className);
 	}
@@ -356,7 +356,7 @@ private:
 		u2 classIndex = br.readu2();
 		u1 dims = br.readu1();
 
-		string className = code.cp.getClazzName(classIndex);
+		std::string className = code.cp.getClazzName(classIndex);
 
 		code.mv.visitMultiArray(offset, opcode, classIndex, className, dims);
 	}
@@ -397,7 +397,7 @@ private:
 		ASSERT(count != 0, "count must be non-zero");
 		ASSERT(zero == 0, "Fourth operand must be zero");
 
-		string className, name, desc;
+		std::string className, name, desc;
 		code.cp.getMemberRef(interMethodrefIndex, &className, &name, &desc,
 				CONSTANT_InterfaceMethodref);
 
@@ -409,7 +409,7 @@ private:
 			CodeParser& code) {
 		u2 methodrefIndex = br.readu2();
 
-		string className, name, desc;
+		std::string className, name, desc;
 		code.cp.getMemberRef(methodrefIndex, &className, &name, &desc,
 				CONSTANT_Methodref);
 
@@ -441,7 +441,7 @@ private:
 		ASSERT(low <= high, "low (%d) must be less or equal than high (%d)",
 				low, high);
 
-		vector < u4 > targets;
+		std::vector<u4> targets;
 		for (int i = 0; i < high - low + 1; i++) {
 			u4 targetOffset = br.readu4();
 			targets.push_back(targetOffset);
@@ -460,8 +460,8 @@ private:
 		u4 defbyte = br.readu4();
 		u4 npairs = br.readu4();
 
-		vector < u4 > keys;
-		vector < u4 > targets;
+		std::vector<u4> keys;
+		std::vector<u4> targets;
 		for (u4 i = 0; i < npairs; i++) {
 			u4 key = br.readu4();
 			u4 offsetTarget = br.readu4();
@@ -491,7 +491,7 @@ public:
 
 	static constexpr const char* AttrName = "Code";
 
-	template<typename TCodeVisitor,typename TReader>
+	template<typename TCodeVisitor, typename TReader>
 	static void parse(TReader& br, TCodeVisitor& mmv, ConstPool& cp,
 			u2 nameIndex) {
 		auto bv = mmv.visitCode(nameIndex);

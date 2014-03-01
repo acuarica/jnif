@@ -1,13 +1,7 @@
 #ifndef JNIF_HPP
 #define JNIF_HPP
 
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <iomanip>
-
 #include "jnif/utils/BufferReader.hpp"
-
 #include "jnif/utils/BufferWriter.hpp"
 
 #include "jnif/tree/Attr.hpp"
@@ -35,21 +29,18 @@
 #include "jnif/parser/LntAttrParser.hpp"
 #include "jnif/parser/LvtAttrParser.hpp"
 #include "jnif/parser/ExceptionsAttrParser.hpp"
-#include "jnif/parser/StackMapTableAttrParser.hpp"
-
-//typedef ClassBaseParser<AttrsParser<SourceFileAttrParser>,
-//		AttrsParser<
-//				CodeAttrParser<StackMapTableAttrParser, LntAttrParser,
-//						LvtAttrParser>, ExceptionsAttrParser>, AttrsParser<> > ClassParser;
+//#include "jnif/parser/StackMapTableAttrParser.hpp"
 
 namespace jnif {
 
+//StackMapTableAttrParser, LntAttrParser,LvtAttrParser
 /**
  * Defines the full class parser using all known attributes parsers.
  */
 typedef ClassBaseParser<AttrsParser<SourceFileAttrParser>,
-		AttrsParser<CodeAttrParser<>, ExceptionsAttrParser>,
-		AttrsParser<>, BufferReader> ClassParser;
+		AttrsParser<
+				CodeAttrParser<>, ExceptionsAttrParser>, AttrsParser<>,
+		BufferReader> ClassParser;
 
 }
 

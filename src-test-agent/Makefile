@@ -9,7 +9,6 @@ BUILD=../build
 INCS=$(wildcard $(INCLUDE)/*.h)
 HPPS=$(wildcard $(INCLUDE)/**/*.hpp) $(wildcard $(INCLUDE)/**/parser/*.hpp)
 
-
 SRC=.
 OUTPUTNAME=libfrheapagent.jnilib
 SRCS=$(wildcard $(SRC)/*.c) $(wildcard $(SRC)/*.cpp) $(wildcard $(SRC)/**/*.java)
@@ -24,7 +23,7 @@ all: agent unit
 
 agent: $(BUILD)/java-test/frheapagent/HeapTest.class $(OUTPUT)
 	@echo $(SRC) $(OBJS)
-	java $(JDEBUG) -agentpath:$(OUTPUT) -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest
+	java $(JDEBUG) -agentpath:$(OUTPUT)=$(BUILD) -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest
 
 $(BUILD)/frproxy/FrInstrProxy.class: resources/frproxy/FrInstrProxy.java
 	javac -d build/ resources/frproxy/FrInstrProxy.java

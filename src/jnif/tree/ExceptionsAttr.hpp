@@ -12,14 +12,14 @@ namespace jnif {
  */
 class ExceptionsAttr: public Attr {
 public:
-	ExceptionsAttr(u2 nameIndex, u4 len, const vector<u2>& es) :
+	ExceptionsAttr(u2 nameIndex, u4 len, const std::vector<u2>& es) :
 			Attr(nameIndex, len), es(es) {
 	}
 
 	virtual ~ExceptionsAttr() {
 	}
 
-	vector<u2> es;
+	std::vector<u2> es;
 
 	virtual void write(BufferWriter& bw) {
 		u2 size = es.size();
