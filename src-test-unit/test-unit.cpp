@@ -21,7 +21,8 @@ void FrInstrClassFile(unsigned char* classFile, int classFileLen,
 				ClassWriterVisitor<> cwv(cout);
 				ClassPrinterVisitor<decltype(cwv)> cpv(os, className, classFileLen, cwv);
 
-				ClassParser::parse(classFile, classFileLen, cpv);
+				BufferReader br(classFile, classFileLen);
+				ClassParser::parse(br,cpv);
 
 				int len = cwv.getClassFileSize(cwv.cf);
 
@@ -81,16 +82,18 @@ void testSimpleModel() {
 void testIdentityParserWriter() {
 	auto instr =
 			[&](unsigned char* classFile, int classFileLen, const char* className) {
-				ClassWriterVisitor<> cwv(cout);
-				ClassParser::parse(classFile, classFileLen, cwv);
+				ClassWriterVisitor<> cw(cout);
 
-				int len = cwv.getClassFileSize(cwv.cf);
+				BufferReader br(classFile, classFileLen);
+				ClassParser::parse(br,cw);
+
+
+				int len = cw.getClassFileSize(cw.cf);
 				ASSERT(classFileLen == len, "%d must be equal to %d on class %s",
 						classFileLen, len, className);
 			};
 
-	instr(jnif_BasicClass_class, jnif_BasicClass_class_len,
-			"jnif/BasicClass");
+	instr(jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass");
 }
 
 void testParser() {
@@ -105,15 +108,15 @@ void testWriter() {
 	auto instr =
 			[&](unsigned char* classFile, int classFileLen, const char* className) {
 				ClassWriter<> cw;
-				ClassParser::parse(classFile, classFileLen, cw);
+				BufferReader br(classFile, classFileLen);
+				ClassParser::parse(br,cw);
 
 				int len = cw.getClassFileSize(cw.cf);
 				ASSERT(classFileLen == len, "%d must be equal to %d on class %s",
 						classFileLen, len, className);
 			};
 
-	instr(jnif_BasicClass_class, jnif_BasicClass_class_len,
-			"jnif/BasicClass");
+	instr(jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass");
 }
 
 int main(int argc, const char* argv[]) {

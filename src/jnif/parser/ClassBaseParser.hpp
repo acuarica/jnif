@@ -13,7 +13,7 @@ namespace jnif {
  * TFieldAttrsParser are AttrsParser classes.
  */
 template<typename TClassAttrsParser, typename TMethodAttrsParser,
-		typename TFieldAttrsParser, typename TReader>
+		typename TFieldAttrsParser>
 class ClassBaseParser;
 
 /**
@@ -25,17 +25,14 @@ class ClassBaseParser;
  * the members and class attributes parsers as templates lists.
  */
 template<typename ... TClassAttrParserList, typename ... TMethodAttrParserList,
-		typename ... TFieldAttrParserList, typename TReader>
+		typename ... TFieldAttrParserList>
 class ClassBaseParser<AttrsParser<TClassAttrParserList...>,
 		AttrsParser<TMethodAttrParserList...>,
-		AttrsParser<TFieldAttrParserList...>, TReader> {
+		AttrsParser<TFieldAttrParserList...>> {
 public:
 
-	template<typename TVisitor>
-	static void parse(const u1* fileImage, const int fileImageLen,
-			TVisitor& cfv) {
-		TReader br(fileImage, fileImageLen);
-
+	template<typename TVisitor, typename TReader>
+	static void parse(TReader& br, TVisitor& cfv) {
 		u4 magic = br.readu4();
 
 		CHECK(magic == CLASSFILE_MAGIC,

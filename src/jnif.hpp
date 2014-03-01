@@ -36,13 +36,12 @@
 namespace jnif {
 
 //StackMapTableAttrParser, LntAttrParser,LvtAttrParser
+
 /**
  * Defines the full class parser using all known attributes parsers.
  */
 typedef ClassBaseParser<AttrsParser<SourceFileAttrParser>,
-		AttrsParser<
-				CodeAttrParser<>, ExceptionsAttrParser>, AttrsParser<>,
-		BufferReader> ClassParser;
+		AttrsParser<CodeAttrParser<>, ExceptionsAttrParser>, AttrsParser<>> ClassParser;
 
 }
 
