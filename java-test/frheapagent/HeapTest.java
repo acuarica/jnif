@@ -23,12 +23,17 @@ public class HeapTest {
 
 	public static void main(String[] args) throws IOException {
 		int[] as = new int[34];
+		int[] as1 = new int[34];
+		int[] as2 = new int[34];
+
+		System.out.println("HeapTest: " + as.length);
 
 		for (int i = 0; i < as.length; i++) {
-			as[i] = i;
+			//int[] arr = new int[i];
+			//System.out.println("HeapTest: " + arr.length);
 		}
-		;
 
-		System.out.println("HeapTest: " + as[as.length - 1]);
+		System.out.println("HeapTest: " + as.length);
+		// System.out.println("HeapTest: " + as[as.length - 1]);
 	}
 }

@@ -34,11 +34,15 @@ static inline jlong FrLiveStamp(JNIEnv* jni, jobject object) {
 DEFHANDLER(alloc) (JNIEnv* jni, jclass proxyClass, jobject thisObject) {
 	jlong stamp = StampObject(_jvmti, jni, thisObject);
 
+	fprintf(stderr, "hola q tal\n");
+
 	_TLOG("ALLOC:%ld", stamp);
 }
 
 DEFHANDLER(newArrayEvent) (JNIEnv* jni, jclass proxyClass, jint count, jobject thisArray, jint atype) {
 	jlong stamp = StampObject(_jvmti, jni, thisArray);
+
+	fprintf(stderr, "hola q tal desde el new array event\n");
 
 	_TLOG("NEWARRAY:%ld:%d:%d", stamp, count, atype);
 }
