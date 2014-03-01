@@ -30,16 +30,6 @@ void FrInstrClassFile(unsigned char* classFile, int classFileLen,
 				return;
 				*new_class_data_len = len;
 				*new_class_data = (u1*)malloc(len);
-				//jvmtiError error = jvmti->Allocate(len, new_class_data );
-//				if (error != JVMTI_ERROR_NONE) {
-				//				char* errnum_str = NULL;
-				//			jvmti->GetErrorName(error, &errnum_str);
-
-				//		FATAL("%sJVMTI: %d(%s): Unable to %s.\n", "err", error, (errnum_str == NULL ? "Unknown" : errnum_str),
-				//			("c++ allocate"));
-
-				//exit(1);
-				//}
 
 				BufferWriter bw(*new_class_data, len);
 				cwv.writeClassFile(bw, cwv.cf);
@@ -59,12 +49,7 @@ void FrInstrClassFile(unsigned char* classFile, int classFileLen,
 				// TODO: free of *new_class_data.
 			};
 
-	//if (className == string("java/lang/Object")) {
 	instr(cerr);
-	//} else {
-	//ofstream os(outFileName(className, "disasm").c_str());
-	//instr(os);
-	//}
 }
 
 extern u1 jnif_BasicClass_class[];
@@ -116,10 +101,26 @@ void testParser() {
 			"jnif/BasicClass", &newClassDataLen, &newClassData);
 }
 
+void testWriter() {
+	auto instr =
+			[&](unsigned char* classFile, int classFileLen, const char* className) {
+				ClassWriter<> cw;
+				ClassParser::parse(classFile, classFileLen, cw);
+
+				int len = cw.getClassFileSize(cw.cf);
+				ASSERT(classFileLen == len, "%d must be equal to %d on class %s",
+						classFileLen, len, className);
+			};
+
+	instr(jnif_BasicClass_class, jnif_BasicClass_class_len,
+			"jnif/BasicClass");
+}
+
 int main(int argc, const char* argv[]) {
 	testSimpleModel();
 	testIdentityParserWriter();
 	testParser();
+	testWriter();
 
 	printf("argc: %d, %d\n", argc, jnif_BasicClass_class_len);
 	return 0;

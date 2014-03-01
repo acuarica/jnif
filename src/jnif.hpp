@@ -22,6 +22,8 @@
 #include "jnif/ClassPrinterVisitor.hpp"
 #include "jnif/ClassForwardVisitor.hpp"
 
+#include "jnif/ClassWriter.hpp"
+
 #include "jnif/parser/AttrsParser.hpp"
 #include "jnif/parser/ClassBaseParser.hpp"
 #include "jnif/parser/SourceFileAttrParser.hpp"
