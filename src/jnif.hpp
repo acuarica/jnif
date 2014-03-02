@@ -3,6 +3,7 @@
 
 #include "jnif/utils/BufferReader.hpp"
 #include "jnif/utils/BufferWriter.hpp"
+#include "jnif/utils/BufferSize.hpp"
 
 #include "jnif/tree/Attr.hpp"
 #include "jnif/tree/Attrs.hpp"
@@ -19,10 +20,8 @@
 #include "jnif/AccessFlags.hpp"
 #include "jnif/Opcode.hpp"
 #include "jnif/ClassWriterVisitor.hpp"
-#include "jnif/ClassPrinterVisitor.hpp"
+//#include "jnif/ClassPrinterVisitor.hpp"
 #include "jnif/ClassForwardVisitor.hpp"
-
-#include "jnif/ClassWriter.hpp"
 
 #include "jnif/parser/AttrsParser.hpp"
 #include "jnif/parser/ClassBaseParser.hpp"
@@ -35,13 +34,14 @@
 
 namespace jnif {
 
-//StackMapTableAttrParser, LntAttrParser,LvtAttrParser
+// StackMapTableAttrParser,
 
 /**
  * Defines the full class parser using all known attributes parsers.
  */
 typedef ClassBaseParser<AttrsParser<SourceFileAttrParser>,
-		AttrsParser<CodeAttrParser<>, ExceptionsAttrParser>, AttrsParser<>> ClassParser;
+		AttrsParser<CodeAttrParser<LntAttrParser, LvtAttrParser>,
+				ExceptionsAttrParser>, AttrsParser<>> ClassParser;
 
 }
 

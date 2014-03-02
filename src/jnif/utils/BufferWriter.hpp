@@ -52,6 +52,10 @@ public:
 		offset += count;
 	}
 
+	inline int offset2() {
+		return offset;
+	}
+
 	inline u1* pos() {
 		return buffer + offset;
 	}

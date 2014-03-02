@@ -491,10 +491,12 @@ public:
 
 	static constexpr const char* AttrName = "Code";
 
-	template<typename TCodeVisitor, typename TReader>
-	static void parse(TReader& br, TCodeVisitor& mmv, ConstPool& cp,
-			u2 nameIndex) {
-		auto bv = mmv.visitCode(nameIndex);
+	typedef AttrsParser<TAttrParserList...> CodeAttrsParser;
+
+	template<typename TReader, typename TVisitor>
+	static void parse(TReader& br, TVisitor& mmv, ConstPool& cp, u2 nameIndex) {
+		//auto bv = mmv.visitCode(nameIndex);
+		TVisitor& bv = mmv;
 
 		u2 maxStack = br.readu2();
 		u2 maxLocals = br.readu2();
@@ -505,25 +507,214 @@ public:
 		const u1* codeBuf = br.pos();
 		br.skip(codeLen);
 
+		bv.beginCode(codeLen);
+
 		{
 			BufferReader br(codeBuf, codeLen);
 			CodeParser<decltype(bv)>(bv, cp).parse(br);
 		}
 
 		u2 exceptionTableCount = br.readu2();
+		bv.visitExceptionTableCount(exceptionTableCount);
+
 		for (int i = 0; i < exceptionTableCount; i++) {
 			u2 startpc = br.readu2();
 			u2 endpc = br.readu2();
 			u2 handlerpc = br.readu2();
 			u2 catchtype = br.readu2();
 
-			bv.visitExceptionEntry(startpc, endpc, handlerpc, catchtype);
+			bv.visitExceptionTableEntry(startpc, endpc, handlerpc, catchtype);
 		}
 
-		AttrsParser<TAttrParserList...>::parse(br, cp, bv);
+		CodeAttrsParser::parse(br, cp, bv);
 
 		bv.exit();
 	}
+
+	template<typename TWriter>
+	class Writer: public CodeAttrsParser::template Writer<TWriter> {
+	public:
+
+		inline Writer(TWriter& w) :
+				CodeAttrsParser::template Writer<TWriter>(w), w(w) {
+		}
+
+		void enter(u2 maxStack, u2 maxLocals) {
+			w.writeu2(maxStack);
+			w.writeu2(maxLocals);
+		}
+
+		inline void beginCode(u4 codeLen) {
+			writeu4(codeLen);
+		}
+
+		inline void visitExceptionTableCount(u2 count) {
+			w.writeu2(count);
+		}
+
+		inline void visitExceptionTableEntry(u2 startpc, u2 endpc, u2 handlerpc,
+				u2 catchtype) {
+			w.writeu2(startpc);
+			w.writeu2(endpc);
+			w.writeu2(handlerpc);
+			w.writeu2(catchtype);
+		}
+
+		inline void exit() {
+		}
+
+		void visitZero(int offset, u1 opcode) {
+			line(offset, opcode);
+		}
+
+		inline void visitField(int offset, u1 opcode, u2 fieldRefIndex,
+				const std::string& className, const std::string& name,
+				const std::string& desc) {
+			line(offset, opcode);
+			writeu2(fieldRefIndex);
+		}
+
+		inline void visitBiPush(int offset, u1 opcode, u1 bytevalue) {
+			line(offset, opcode);
+			writeu1(bytevalue);
+		}
+
+		void visitSiPush(int offset, u1 opcode, u2 shortvalue) {
+			line(offset, opcode);
+			writeu2(shortvalue);
+		}
+
+		void visitNewArray(int offset, u1 opcode, u1 atype) {
+			line(offset, opcode);
+			writeu1(atype);
+		}
+
+		void visitType(int offset, u1 opcode, u2 classIndex,
+				const std::string& className) {
+			line(offset, opcode);
+			writeu2(classIndex);
+		}
+
+		void visitJump(int offset, u1 opcode, u2 targetOffset) {
+			line(offset, opcode);
+			writeu2(targetOffset);
+		}
+
+		void visitMultiArray(int offset, u1 opcode, u2 classIndex,
+				const std::string& className, u1 dims) {
+			line(offset, opcode);
+			writeu2(classIndex);
+			writeu1(dims);
+		}
+
+		void visitIinc(int offset, u1 opcode, u1 index, u1 value) {
+			line(offset, opcode);
+			writeu1(index);
+			writeu1(value);
+		}
+
+		void visitLdc(int offset, u1 opcode, u2 arg) {
+			line(offset, opcode);
+
+			if (opcode == OPCODE_ldc) {
+				writeu1(arg);
+			} else {
+				writeu2(arg);
+			}
+		}
+
+		void visitInvokeInterface(int offset, u1 opcode, u2 interMethodrefIndex,
+				const std::string& className, const std::string& name,
+				const std::string& desc, u1 count) {
+			line(offset, opcode);
+			writeu2(interMethodrefIndex);
+			writeu1(count);
+			writeu1(0);
+		}
+
+		void visitInvoke(int offset, u1 opcode, u2 methodrefIndex,
+				const std::string& className, const std::string& name,
+				const std::string& desc) {
+			line(offset, opcode);
+			writeu2(methodrefIndex);
+		}
+
+		void visitVar(int offset, u1 opcode, u2 lvindex) {
+			line(offset, opcode);
+			writeu1(lvindex);
+		}
+
+		void visitTableSwitch(int offset, u1 opcode, int def, int low, int high,
+				const std::vector<u4>& targets) {
+			line(offset, opcode);
+
+			int pad = (4 - (pos() % 4)) % 4;
+			for (int i = 0; i < pad; i++) {
+				writeu1(0);
+			}
+
+			bool check = pos() % 4 == 0;
+			ASSERT(check, "Padding offset must be mod 4: %d", pos());
+
+			writeu4(def);
+			writeu4(low);
+			writeu4(high);
+
+			for (int i = 0; i < high - low + 1; i++) {
+				u4 t = targets[i];
+				writeu4(t);
+			}
+		}
+
+		void visitLookupSwitch(int offset, u1 opcode, u4 defbyte, u4 npairs,
+				const std::vector<u4>& keys, const std::vector<u4>& targets) {
+			line(offset, opcode);
+
+			int pad = (4 - (pos() % 4)) % 4;
+			for (int i = 0; i < pad; i++) {
+				writeu1(0);
+			}
+
+			bool check = pos() % 4 == 0;
+			ASSERT(check, "Padding offset must be mod 4: %d", pos());
+
+			writeu4(defbyte);
+			writeu4(npairs);
+
+			for (u4 i = 0; i < npairs; i++) {
+				u4 k = keys[i];
+				writeu4(k);
+
+				u4 t = targets[i];
+				writeu4(t);
+			}
+		}
+
+	private:
+		inline void line(int offset, u1 opcode) {
+			writeu1(opcode);
+		}
+
+		inline void writeu1(u1 value) {
+			w.writeu1(value);
+		}
+
+		inline void writeu2(u2 value) {
+			w.writeu2(value);
+		}
+
+		inline void writeu4(u4 value) {
+			w.writeu4(value);
+		}
+
+		inline int pos() const {
+			return w.offset2();
+		}
+
+	private:
+		TWriter& w;
+	};
+
 };
 
 }

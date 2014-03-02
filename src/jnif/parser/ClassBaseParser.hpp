@@ -3,6 +3,8 @@
 
 #include "../base.hpp"
 #include "../tree/ConstPool.hpp"
+#include "ConstPoolParser.hpp"
+#include "AttrsParser.hpp"
 
 namespace jnif {
 
@@ -31,7 +33,25 @@ class ClassBaseParser<AttrsParser<TClassAttrParserList...>,
 		AttrsParser<TFieldAttrParserList...>> {
 public:
 
-	template<typename TVisitor, typename TReader>
+	/**
+	 *
+	 */
+	typedef AttrsParser<TClassAttrParserList...> ClassAttrsParser;
+
+	/**
+	 *
+	 */
+	typedef AttrsParser<TMethodAttrParserList...> MethodAttrsParser;
+
+	/**
+	 *
+	 */
+	typedef AttrsParser<TFieldAttrParserList...> FieldAttrsParser;
+
+	/**
+	 *
+	 */
+	template<typename TReader, typename TVisitor>
 	static void parse(TReader& br, TVisitor& cfv) {
 		u4 magic = br.readu4();
 
@@ -43,25 +63,35 @@ public:
 		cfv.visitVersion(CLASSFILE_MAGIC, minor, major);
 
 		ConstPool cp;
-		parseConstPool(br, cp);
+		ConstPoolParser::parse(br, cp);
 
 		cfv.visitConstPool(cp);
 
 		cfv.visitThis(br.readu2(), br.readu2(), br.readu2());
 
 		u2 interCount = br.readu2();
+		cfv.visitInterfaceCount(interCount);
+
 		for (int i = 0; i < interCount; i++) {
 			cfv.visitInterface(br.readu2());
 		}
 
 		u2 fieldCount = br.readu2();
-		for (int i = 0; i < fieldCount; i++) {
-			auto fv = cfv.visitField(br.readu2(), br.readu2(), br.readu2());
+		cfv.visitFieldCount(fieldCount);
 
-			AttrsParser<TFieldAttrParserList...>::parse(br, cp, fv);
+		for (int i = 0; i < fieldCount; i++) {
+			u2 accessFlags = br.readu2();
+			u2 nameIndex = br.readu2();
+			u2 descIndex = br.readu2();
+
+			auto fv = cfv.visitField(accessFlags, nameIndex, descIndex);
+
+			FieldAttrsParser::parse(br, cp, fv);
 		}
 
 		u2 methodCount = br.readu2();
+		cfv.visitMethodCount(methodCount);
+
 		for (int i = 0; i < methodCount; i++) {
 			u2 accessFlags = br.readu2();
 			u2 nameIndex = br.readu2();
@@ -69,86 +99,96 @@ public:
 
 			auto mv = cfv.visitMethod(accessFlags, nameIndex, descIndex);
 
-			AttrsParser<TMethodAttrParserList...>::parse(br, cp, mv);
+			MethodAttrsParser::parse(br, cp, mv);
 		}
 
-		AttrsParser<TClassAttrParserList...>::parse(br, cp, cfv);
+		ClassAttrsParser::parse(br, cp, cfv);
 	}
+
+	template<typename TWriter>
+	class Writer: public ClassAttrsParser::template Writer<TWriter> {
+	public:
+
+		/**
+		 *
+		 */
+		class Field: public FieldAttrsParser::template Writer<TWriter> {
+		public:
+			inline Field(TWriter& w) :
+					FieldAttrsParser::template Writer<TWriter>(w) {
+			}
+		};
+
+		/**
+		 *
+		 */
+		class Method: public MethodAttrsParser::template Writer<TWriter> {
+		public:
+			inline Method(TWriter& w) :
+					MethodAttrsParser::template Writer<TWriter>(w)
+					{
+			}
+		};
+
+		inline Writer(TWriter& w) :
+				ClassAttrsParser::template Writer<TWriter>(w), w(w) {
+		}
+
+		inline void visitVersion(Magic magic, u2 minor, u2 major) {
+			w.writeu4(magic);
+			w.writeu2(minor);
+			w.writeu2(major);
+		}
+
+		inline void visitConstPool(ConstPool& cp) {
+			ConstPoolParser::write(w, cp);
+		}
+
+		inline void visitThis(u2 accessFlags, u2 thisClassIndex,
+				u2 superClassIndex) {
+			w.writeu2(accessFlags);
+			w.writeu2(thisClassIndex);
+			w.writeu2(superClassIndex);
+		}
+
+		inline void visitInterfaceCount(u2 count) {
+			w.writeu2(count);
+		}
+
+		inline void visitInterface(u2 interIndex) {
+			w.writeu2(interIndex);
+		}
+
+		inline void visitFieldCount(u2 count) {
+			w.writeu2(count);
+		}
+
+		inline Field visitField(u2 accessFlags, u2 nameIndex, u2 descIndex) {
+			w.writeu2(accessFlags);
+			w.writeu2(nameIndex);
+			w.writeu2(descIndex);
+
+			return Field(w);
+		}
+
+		inline void visitMethodCount(u2 count) {
+			w.writeu2(count);
+		}
+
+		inline Method visitMethod(u2 accessFlags, u2 nameIndex, u2 descIndex) {
+			w.writeu2(accessFlags);
+			w.writeu2(nameIndex);
+			w.writeu2(descIndex);
+
+			return Method(w);
+		}
+
+	private:
+		TWriter& w;
+	};
 
 private:
 
-	static void parseConstPool(BufferReader& br, ConstPool& cp) {
-		u2 count = br.readu2();
-
-		for (int i = 1; i < count; i++) {
-			ConstPool::Entry e;
-			ConstPool::Entry* entry = &e;
-
-			entry->tag = br.readu1();
-
-			switch (entry->tag) {
-				case CONSTANT_Class:
-					entry->clazz.name_index = br.readu2();
-					break;
-				case CONSTANT_Fieldref:
-				case CONSTANT_Methodref:
-				case CONSTANT_InterfaceMethodref:
-					entry->memberref.class_index = br.readu2();
-					entry->memberref.name_and_type_index = br.readu2();
-					break;
-				case CONSTANT_String:
-					entry->s.string_index = br.readu2();
-					break;
-				case CONSTANT_Integer:
-					entry->i.value = br.readu4();
-					break;
-				case CONSTANT_Float:
-					entry->f.value = br.readu4();
-					break;
-				case CONSTANT_Long:
-					entry->l.high_bytes = br.readu4();
-					entry->l.low_bytes = br.readu4();
-					i++;
-					break;
-				case CONSTANT_Double:
-					entry->d.high_bytes = br.readu4();
-					entry->d.low_bytes = br.readu4();
-					i++;
-					break;
-				case CONSTANT_NameAndType:
-					entry->nameandtype.name_index = br.readu2();
-					entry->nameandtype.descriptor_index = br.readu2();
-					break;
-				case CONSTANT_Utf8: {
-					u2 len = br.readu2();
-					std::string str((const char*) br.pos(), len);
-					entry->utf8.str = str;
-					br.skip(len);
-					break;
-				}
-				case CONSTANT_MethodHandle:
-					entry->methodhandle.reference_kind = br.readu1();
-					entry->methodhandle.reference_index = br.readu2();
-					break;
-				case CONSTANT_MethodType:
-					entry->methodtype.descriptor_index = br.readu2();
-					break;
-				case CONSTANT_InvokeDynamic:
-					entry->invokedynamic.bootstrap_method_attr_index =
-							br.readu2();
-					entry->invokedynamic.name_and_type_index = br.readu2();
-					break;
-				default:
-					EXCEPTION("Error while reading tag: %i", entry->tag);
-			}
-
-			if (entry->tag == CONSTANT_Long || entry->tag == CONSTANT_Double) {
-				cp.addDouble(e);
-			} else {
-				cp.addSingle(e);
-			}
-		}
-	}
 };
 
 }
