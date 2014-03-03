@@ -11,6 +11,36 @@
 using namespace std;
 using namespace jnif;
 
+template<typename TVisitor>
+class NopAdderInstr: public ClassForwardVisitor<TVisitor> {
+	typedef ClassForwardVisitor<TVisitor> base;
+	using base::cv;
+public:
+
+	class Method: public base::Method {
+		using base::Method::mv;
+	public:
+
+		Method(typename TVisitor::Method& mv) :
+				base::Method(mv) {
+		}
+
+		inline void codeStart() {
+			bv.visitZero(-42, OPCODE_nop);
+		}
+	};
+
+	NopAdderInstr(TVisitor& cv) :
+			ClassForwardVisitor<TVisitor>(cv) {
+	}
+
+	inline Method visitMethod(u2 accessFlags, u2 nameIndex, u2 descIndex) {
+		auto mv = base::cv.visitMethod(accessFlags, nameIndex, descIndex);
+
+		return Method(mv);
+	}
+};
+
 extern u1 jnif_BasicClass_class[];
 extern u4 jnif_BasicClass_class_len;
 
@@ -101,11 +131,14 @@ void testIdentityParserWriter() {
 
 }
 
+#define RUN(test) ( fprintf(stderr, "Running test " #test "... "), \
+	test(), fprintf(stderr, "[OK]\n") )
+
 int main(int argc, const char* argv[]) {
-	testIdentityComputeSize();
-	testIdentityParserWriter();
+	RUN(testIdentityComputeSize);
+	RUN(testIdentityParserWriter);
 	//testSimpleModel();
 
-	printf("argc: %d, %d\n", argc, jnif_BasicClass_class_len);
+	fprintf(stderr, "argc: %d, %d\n", argc, jnif_BasicClass_class_len);
 	return 0;
 }

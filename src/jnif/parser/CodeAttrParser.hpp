@@ -509,10 +509,14 @@ public:
 
 		bv.beginCode(codeLen);
 
+		bv.codeStart();
+
 		{
 			BufferReader br(codeBuf, codeLen);
 			CodeParser<decltype(bv)>(bv, cp).parse(br);
 		}
+
+		bv.codeEnd();
 
 		u2 exceptionTableCount = br.readu2();
 		bv.visitExceptionTableCount(exceptionTableCount);
@@ -546,6 +550,12 @@ public:
 
 		inline void beginCode(u4 codeLen) {
 			writeu4(codeLen);
+		}
+
+		inline void codeStart() {
+		}
+
+		inline void codeEnd() {
 		}
 
 		inline void visitExceptionTableCount(u2 count) {
