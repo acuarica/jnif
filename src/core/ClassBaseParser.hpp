@@ -105,152 +105,165 @@ public:
 		ClassAttrsParser::parse(br, cp, cfv);
 	}
 
+	/**
+	 *
+	 */
 	template<typename TWriter>
-	class Writer: public ClassAttrsParser::template Writer<TWriter> {
-	public:
+	struct FieldWriter: FieldAttrsParser::template Writer<TWriter> {
+		FieldWriter(TWriter& w) :
+				FieldAttrsParser::template Writer<TWriter>(w) {
+		}
+	};
+
+	/**
+	 *
+	 */
+	template<typename TWriter>
+	struct MethodWriter: public MethodAttrsParser::template Writer<TWriter> {
+		MethodWriter(TWriter& w) :
+				MethodAttrsParser::template Writer<TWriter>(w) {
+		}
+	};
+
+	/**
+	 *
+	 */
+	template<typename TWriter>
+	struct ClassWriter: ClassAttrsParser::template Writer<TWriter> {
 
 		/**
 		 *
 		 */
-		class Field: public FieldAttrsParser::template Writer<TWriter> {
-		public:
-			inline Field(TWriter& w) :
-					FieldAttrsParser::template Writer<TWriter>(w) {
-			}
-		};
+		TWriter& w;
 
-		/**
-		 *
-		 */
-		class Method: public MethodAttrsParser::template Writer<TWriter> {
-		public:
-			inline Method(TWriter& w) :
-					MethodAttrsParser::template Writer<TWriter>(w) {
-			}
-		};
-
-		inline Writer(TWriter& w) :
+		ClassWriter(TWriter& w) :
 				ClassAttrsParser::template Writer<TWriter>(w), w(w) {
 		}
 
-		inline void visitVersion(Magic magic, u2 minor, u2 major) {
+		void visitVersion(Magic magic, u2 minor, u2 major) {
 			w.writeu4(magic);
 			w.writeu2(minor);
 			w.writeu2(major);
 		}
 
-		inline void visitConstPool(ConstPool& cp) {
+		void visitConstPool(ConstPool& cp) {
 			ConstPoolParser::write(w, cp);
 		}
 
-		inline void visitThis(u2 accessFlags, u2 thisClassIndex,
-				u2 superClassIndex) {
+		void visitThis(u2 accessFlags, u2 thisClassIndex, u2 superClassIndex) {
 			w.writeu2(accessFlags);
 			w.writeu2(thisClassIndex);
 			w.writeu2(superClassIndex);
 		}
 
-		inline void visitInterfaceCount(u2 count) {
+		void visitInterfaceCount(u2 count) {
 			w.writeu2(count);
 		}
 
-		inline void visitInterface(u2 interIndex) {
+		void visitInterface(u2 interIndex) {
 			w.writeu2(interIndex);
 		}
 
-		inline void visitFieldCount(u2 count) {
+		void visitFieldCount(u2 count) {
 			w.writeu2(count);
 		}
 
-		inline Field visitField(u2 accessFlags, u2 nameIndex, u2 descIndex) {
+		FieldWriter<TWriter> visitField(u2 accessFlags, u2 nameIndex,
+				u2 descIndex) {
 			w.writeu2(accessFlags);
 			w.writeu2(nameIndex);
 			w.writeu2(descIndex);
 
-			return Field(w);
+			return FieldWriter<TWriter>(w);
 		}
 
-		inline void visitMethodCount(u2 count) {
+		void visitMethodCount(u2 count) {
 			w.writeu2(count);
 		}
 
-		inline Method visitMethod(u2 accessFlags, u2 nameIndex, u2 descIndex) {
+		MethodWriter<TWriter> visitMethod(u2 accessFlags, u2 nameIndex,
+				u2 descIndex) {
 			w.writeu2(accessFlags);
 			w.writeu2(nameIndex);
 			w.writeu2(descIndex);
 
-			return Method(w);
+			return MethodWriter<TWriter>(w);
 		}
-
-	private:
-		TWriter& w;
 	};
 
+	/**
+	 *
+	 */
 	template<typename TVisitor>
-	struct Forward: ClassAttrsParser::template Forward<TVisitor> {
+	struct FieldForward: FieldAttrsParser::template Forward<TVisitor> {
+		TVisitor fv;
+
+		FieldForward(TVisitor& fv) :
+				FieldAttrsParser::template Forward<TVisitor>(fv), fv(fv) {
+		}
+	};
+
+	/**
+	 *
+	 */
+	template<typename TVisitor>
+	struct MethodForward: MethodAttrsParser::template Forward<TVisitor> {
+		TVisitor mv;
+
+		MethodForward(TVisitor& mv) :
+				MethodAttrsParser::template Forward<TVisitor>(mv), mv(mv) {
+		}
+	};
+
+	/**
+	 *
+	 */
+	template<typename TVisitor>
+	struct ClassForward: ClassAttrsParser::template Forward<TVisitor> {
 		TVisitor& cv;
 
-		inline Forward(TVisitor& cv) :
+		ClassForward(TVisitor& cv) :
 				ClassAttrsParser::template Forward<TVisitor>(cv), cv(cv) {
 		}
 
-		struct Field: FieldAttrsParser::template Forward<
-				typename TVisitor::Field> {
-			typename TVisitor::Field fv;
-
-			Field(typename TVisitor::Field& fv) :
-					FieldAttrsParser::template Forward<typename TVisitor::Field>(
-							fv), fv(fv) {
-			}
-		};
-
-		struct Method: MethodAttrsParser::template Forward<
-				typename TVisitor::Method> {
-			typename TVisitor::Method mv;
-
-			Method(typename TVisitor::Method & mv) :
-					MethodAttrsParser::template Forward<
-							typename TVisitor::Method>(mv), mv(mv) {
-			}
-		};
-
-		inline void visitVersion(Magic magic, u2 minor, u2 major) {
+		void visitVersion(Magic magic, u2 minor, u2 major) {
 			cv.visitVersion(magic, minor, major);
 		}
 
-		inline void visitConstPool(ConstPool& cp) {
+		void visitConstPool(ConstPool& cp) {
 			cv.visitConstPool(cp);
 		}
 
-		inline void visitThis(u2 accessFlags, u2 thisClassIndex,
-				u2 superClassIndex) {
+		void visitThis(u2 accessFlags, u2 thisClassIndex, u2 superClassIndex) {
 			cv.visitThis(accessFlags, thisClassIndex, superClassIndex);
 		}
 
-		inline void visitInterfaceCount(u2 count) {
+		void visitInterfaceCount(u2 count) {
 			cv.visitInterfaceCount(count);
 		}
 
-		inline void visitInterface(u2 interIndex) {
+		void visitInterface(u2 interIndex) {
 			cv.visitInterface(interIndex);
 		}
 
-		inline void visitFieldCount(u2 count) {
+		void visitFieldCount(u2 count) {
 			cv.visitFieldCount(count);
 		}
 
-		inline Field visitField(u2 accessFlags, u2 nameIndex, u2 descIndex) {
+		auto visitField(u2 accessFlags, u2 nameIndex,
+				u2 descIndex)-> decltype(cv.visitField(0, 0, 0)) {
 			auto fv = cv.visitField(accessFlags, nameIndex, descIndex);
-			return Field(fv);
+			return fv;
 		}
 
-		inline void visitMethodCount(u2 count) {
+		void visitMethodCount(u2 count) {
 			cv.visitInterfaceCount(count);
 		}
 
-		inline Method visitMethod(u2 accessFlags, u2 nameIndex, u2 descIndex) {
+		auto visitMethod(u2 accessFlags, u2 nameIndex,
+				u2 descIndex)-> decltype(cv.visitMethod(0, 0, 0)) {
 			auto mv = cv.visitMethod(accessFlags, nameIndex, descIndex);
-			return Method(mv);
+			return mv;
 		}
 	};
 };

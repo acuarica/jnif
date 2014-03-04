@@ -11,20 +11,14 @@
 using namespace std;
 using namespace jnif;
 
-template<typename TVisitor>
-struct NopAdderInstr: ClassParser::Forward<TVisitor> {
-	typedef ClassParser::Forward<TVisitor> base;
-	using base::cv;
+struct NopAdderInstr {
 
-	NopAdderInstr(TVisitor& cv) :
-			ClassParser::Forward<TVisitor>(cv) {
-	}
+	template<typename TVisitor>
+	struct Method: ClassParser::MethodForward<TVisitor> {
+		using ClassParser::MethodForward<TVisitor>::mv;
 
-	struct Method: base::Method {
-		using base::Method::mv;
-
-		Method(typename TVisitor::Method& mv) :
-				base::Method(mv) {
+		Method(TVisitor& mv) :
+				ClassParser::MethodForward<TVisitor>(mv) {
 		}
 
 		inline void codeStart() {
@@ -33,11 +27,22 @@ struct NopAdderInstr: ClassParser::Forward<TVisitor> {
 		}
 	};
 
-	inline Method visitMethod(u2 accessFlags, u2 nameIndex, u2 descIndex) {
-		auto mv = base::cv.visitMethod(accessFlags, nameIndex, descIndex);
+	template<typename TVisitor>
+	struct Class: ClassParser::ClassForward<TVisitor> {
+		typedef ClassParser::ClassForward<TVisitor> base;
+		using base::cv;
 
-		return Method(mv);
-	}
+		Class(TVisitor& cv) :
+				ClassParser::ClassForward<TVisitor>(cv) {
+		}
+
+		auto visitMethod(u2 accessFlags, u2 nameIndex,
+				u2 descIndex)-> Method<decltype(base::cv.visitMethod(0, 0, 0))> {
+			auto mv = base::cv.visitMethod(accessFlags, nameIndex, descIndex);
+
+			return Method<decltype(mv)>(mv);
+		}
+	};
 };
 
 extern u1 jnif_BasicClass_class[];
@@ -88,7 +93,7 @@ void testIdentityComputeSize() {
 			[&](unsigned char* classFile, int classFileLen, const char* className) {
 				BufferSize w;
 				BufferReader r(classFile, classFileLen);
-				ClassParser::Writer<BufferSize> cw(w);
+				ClassParser::ClassWriter<BufferSize> cw(w);
 				ClassParser::parse(r, cw);
 
 				int len = w.size();
@@ -108,7 +113,7 @@ void testIdentityParserWriter() {
 				int newlen = [&]() {
 					BufferSize w;
 					BufferReader br(classFile, classFileLen);
-					ClassParser::Writer<BufferSize> cw(w);
+					ClassParser::ClassWriter<BufferSize> cw(w);
 					ClassParser::parse(br, cw);
 					return w.size();
 				}();
@@ -120,7 +125,7 @@ void testIdentityParserWriter() {
 				{
 					BufferWriter w(new_class_data, newlen);
 					BufferReader r(classFile, classFileLen);
-					ClassParser::Writer<BufferWriter> cw(w);
+					PatchWriter cw(w);
 					ClassParser::parse(r, cw);
 				}
 
@@ -145,8 +150,8 @@ void testNopAdderInstrSize() {
 			[&](unsigned char* classFile, int classFileLen, const char* className,int diff) {
 				BufferSize w;
 				BufferReader r(classFile, classFileLen);
-				ClassParser::Writer<BufferSize> cw(w);
-				NopAdderInstr<decltype(cw)> iv(cw);
+				ClassParser::ClassWriter<BufferSize> cw(w);
+				NopAdderInstr::Class<decltype(cw)> iv(cw);
 				ClassParser::parse(r, iv);
 
 				int len = w.size();
@@ -168,30 +173,41 @@ void testNopAdderInstr() {
 				int newlen = [&]() {
 					BufferSize w;
 					BufferReader r(classFile, classFileLen);
-					ClassParser::Writer<BufferSize> cw(w);
-					NopAdderInstr<decltype(cw)> iv(cw);
+					ClassParser::ClassWriter<BufferSize> cw(w);
+					NopAdderInstr::Class<decltype(cw)> iv(cw);
 					ClassParser::parse(r, iv);
 					return w.size();
 				}();
 
-				ASSERT(classFileLen+diff == newlen, "Expected class file len %d, actual was %d, on class %s",
+				ASSERT(classFileLen + diff == newlen, "Expected class file len %d, actual was %d, on class %s",
 						classFileLen+diff, newlen, className);
 
 				u1* newdata = new u1[newlen];
 				{
 					BufferWriter w(newdata, newlen);
 					BufferReader r(classFile, classFileLen);
-					ClassParser::Writer<BufferWriter> cw(w);
-					NopAdderInstr<decltype(cw)> iv(cw);
+					PatchWriter cw(w);
+					NopAdderInstr::Class<decltype(cw)> iv(cw);
 					ClassParser::parse(r, iv);
 				}
 
-				for (int i = 0; i < newlen; i++) {
-					ASSERT(classFile[i] == newdata[i], "error on %d: %d:%d != %d:%d", i,
-							classFile[i],classFile[i+1],
-							newdata[i],newdata[i+1]
-					);
-				}
+				int newlen2 = [&]() {
+					BufferSize w;
+					BufferReader r(newdata, newlen);
+					ClassParser::ClassWriter<BufferSize> cw(w);
+					ClassParser::parse(r, cw);
+					return w.size();
+				}();
+
+				ASSERT(newlen == newlen2, "Expected class file len %d, actual was %d, on class %s",
+						newlen, newlen2, className);
+
+//				for (int i = 0; i < newlen; i++) {
+//					ASSERT(classFile[i] == newdata[i], "error on %d: %d:%d != %d:%d", i,
+//							classFile[i],classFile[i+1],
+//							newdata[i],newdata[i+1]
+//					);
+//				}
 
 				delete [] newdata;
 			};
@@ -209,7 +225,7 @@ int main(int argc, const char* argv[]) {
 	RUN(testIdentityComputeSize);
 	RUN(testIdentityParserWriter);
 	RUN(testNopAdderInstrSize);
-	//RUN(testNopAdderInstr);
+	RUN(testNopAdderInstr);
 	//testSimpleModel();
 
 	fprintf(stderr, "argc: %d, %d\n", argc, jnif_BasicClass_class_len);

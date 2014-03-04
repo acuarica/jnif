@@ -1,6 +1,9 @@
 #ifndef JNIF_CONSTPOOL_HPP
 #define JNIF_CONSTPOOL_HPP
 
+#include <vector>
+#include <string>
+
 #include "../base.hpp"
 
 namespace jnif {

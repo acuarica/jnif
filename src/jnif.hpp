@@ -1,35 +1,19 @@
 #ifndef JNIF_HPP
 #define JNIF_HPP
 
-#include "jnif/utils/BufferReader.hpp"
-#include "jnif/utils/BufferWriter.hpp"
-#include "jnif/utils/BufferSize.hpp"
+#include "base.hpp"
+#include "AccessFlags.hpp"
+#include "Opcode.hpp"
 
-#include "jnif/tree/Attr.hpp"
-#include "jnif/tree/Attrs.hpp"
-#include "jnif/tree/UnknownAttr.hpp"
-#include "jnif/tree/CodeAttr.hpp"
-#include "jnif/tree/ExceptionsAttr.hpp"
-#include "jnif/tree/SourceFileAttr.hpp"
-#include "jnif/tree/Member.hpp"
-#include "jnif/tree/Members.hpp"
-#include "jnif/tree/ConstPool.hpp"
-#include "jnif/tree/ClassFile.hpp"
-#include "jnif/tree/LntAttr.hpp"
+#include "core/AttrsParser.hpp"
+#include "core/ClassBaseParser.hpp"
+#include "core/SourceFileAttrParser.hpp"
+#include "core/CodeAttrParser.hpp"
+#include "core/LntAttrParser.hpp"
+#include "core/LvtAttrParser.hpp"
+#include "core/ExceptionsAttrParser.hpp"
+//#include "core/StackMapTableAttrParser.hpp"
 
-#include "jnif/AccessFlags.hpp"
-#include "jnif/Opcode.hpp"
-
-#include "jnif/parser/AttrsParser.hpp"
-#include "jnif/parser/ClassBaseParser.hpp"
-#include "jnif/parser/SourceFileAttrParser.hpp"
-#include "jnif/parser/CodeAttrParser.hpp"
-#include "jnif/parser/LntAttrParser.hpp"
-#include "jnif/parser/LvtAttrParser.hpp"
-#include "jnif/parser/ExceptionsAttrParser.hpp"
-//#include "jnif/parser/StackMapTableAttrParser.hpp"
-
-//#include "jnif/ClassPrinter.hpp"
 
 namespace jnif {
 
@@ -41,10 +25,31 @@ namespace jnif {
 //typedef ClassBaseParser<AttrsParser<SourceFileAttrParser>,
 //		AttrsParser<CodeAttrParser<LntAttrParser, LvtAttrParser>,
 //				ExceptionsAttrParser>, AttrsParser<>> ClassParser;
+typedef CodeAttrParser<LntAttrParser, LvtAttrParser> CodeFullParser;
+
 typedef ClassBaseParser<AttrsParser<SourceFileAttrParser>,
-		AttrsParser<CodeAttrParser<LntAttrParser, LvtAttrParser>,
-				ExceptionsAttrParser>, AttrsParser<>> ClassParser;
+		AttrsParser<CodeFullParser, ExceptionsAttrParser>, AttrsParser<>> ClassParser;
 
 }
+
+#include "utils/BufferReader.hpp"
+#include "utils/BufferWriter.hpp"
+#include "utils/BufferSize.hpp"
+
+#include "tree/ConstPool.hpp"
+#include "tree/Attr.hpp"
+#include "tree/Attrs.hpp"
+#include "tree/UnknownAttr.hpp"
+#include "tree/CodeAttr.hpp"
+#include "tree/ExceptionsAttr.hpp"
+#include "tree/SourceFileAttr.hpp"
+#include "tree/Member.hpp"
+#include "tree/Members.hpp"
+#include "tree/ClassFile.hpp"
+#include "tree/LntAttr.hpp"
+
+
+#include "backends/PatchWriter.hpp"
+//#include "ClassPrinter.hpp"
 
 #endif

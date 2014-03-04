@@ -9,7 +9,7 @@ namespace jnif {
 /**
  *
  */
-template<typename TMethodVisitor>
+template<typename TReader, typename TMethodVisitor>
 class CodeParser {
 public:
 	TMethodVisitor& mv;
@@ -19,10 +19,10 @@ public:
 			mv(mv), cp(cp) {
 	}
 
-	typedef void (*FrFuncPtr)(int offset, u1 opcode, BufferReader& br,
+	typedef void (*FrFuncPtr)(int offset, u1 opcode, TReader& br,
 			CodeParser& code);
 
-	void parse(BufferReader& br) {
+	void parse(TReader& br) {
 		static FrFuncPtr OPVTABLE[256] = { /* nop */&FrParseZeroInstr,
 		/*aconst_null*/&FrParseZeroInstr, &FrParseZeroInstr, // iconst_m1
 				&FrParseZeroInstr, // iconst_0
@@ -292,7 +292,7 @@ public:
 
 private:
 
-	static void FrParseZeroInstr(int offset, u1 opcode, BufferReader& br,
+	static void FrParseZeroInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 
 		if (opcode == OPCODE_wide)
@@ -301,7 +301,7 @@ private:
 		code.mv.visitZero(offset, opcode);
 	}
 
-	static void FrParseFieldInstr(int offset, u1 opcode, BufferReader& br,
+	static void FrParseFieldInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		u2 fieldRefIndex = br.readu2();
 
@@ -314,28 +314,28 @@ private:
 				desc);
 	}
 
-	static void _FrParseBiPushInstr(int offset, u1 opcode, BufferReader& br,
+	static void _FrParseBiPushInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		u1 bytevalue = br.readu1();
 
 		code.mv.visitBiPush(offset, opcode, bytevalue);
 	}
 
-	static void _FrParseSiPushInstr(int offset, u1 opcode, BufferReader& br,
+	static void _FrParseSiPushInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		u2 shortvalue = br.readu2();
 
 		code.mv.visitSiPush(offset, opcode, shortvalue);
 	}
 
-	static void _FrParseNewArrayInstr(int offset, u1 opcode, BufferReader& br,
+	static void _FrParseNewArrayInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		u1 atype = br.readu1();
 
 		code.mv.visitNewArray(offset, opcode, atype);
 	}
 
-	static void FrParseTypeInstr(int offset, u1 opcode, BufferReader& br,
+	static void FrParseTypeInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		u2 classIndex = br.readu2();
 
@@ -344,14 +344,14 @@ private:
 		code.mv.visitType(offset, opcode, classIndex, className);
 	}
 
-	static void FrParseJumpInstr(int offset, u1 opcode, BufferReader& br,
+	static void FrParseJumpInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		u2 targetOffset = br.readu2();
 
 		code.mv.visitJump(offset, opcode, targetOffset);
 	}
 
-	static void FrParseMultiArrayInstr(int offset, u1 opcode, BufferReader& br,
+	static void FrParseMultiArrayInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		u2 classIndex = br.readu2();
 		u1 dims = br.readu1();
@@ -361,7 +361,7 @@ private:
 		code.mv.visitMultiArray(offset, opcode, classIndex, className, dims);
 	}
 
-	static void FrParseIincInstr(int offset, u1 opcode, BufferReader& br,
+	static void FrParseIincInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		u1 index = br.readu1();
 		u1 value = br.readu1();
@@ -369,7 +369,7 @@ private:
 		code.mv.visitIinc(offset, opcode, index, value);
 	}
 
-	static void FrParseLdcInstr(int offset, u1 opcode, BufferReader& br,
+	static void FrParseLdcInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		u2 arg;
 		if (opcode == OPCODE_ldc) {
@@ -383,13 +383,13 @@ private:
 		code.mv.visitLdc(offset, opcode, arg);
 	}
 
-	static void FrParseInvokeDynamicInstr(int offset, u1 opcode,
-			BufferReader& br, CodeParser& code) {
+	static void FrParseInvokeDynamicInstr(int offset, u1 opcode, TReader& br,
+			CodeParser& code) {
 		EXCEPTION("FrParseInvokeDynamicInstr not implemented");
 	}
 
-	static void FrParseInvokeInterfaceInstr(int offset, u1 opcode,
-			BufferReader& br, CodeParser& code) {
+	static void FrParseInvokeInterfaceInstr(int offset, u1 opcode, TReader& br,
+			CodeParser& code) {
 		u2 interMethodrefIndex = br.readu2();
 		u1 count = br.readu1();
 		u1 zero = br.readu1();
@@ -405,7 +405,7 @@ private:
 				className, name, desc, count);
 	}
 
-	static void FrParseInvokeInstr(int offset, u1 opcode, BufferReader& br,
+	static void FrParseInvokeInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		u2 methodrefIndex = br.readu2();
 
@@ -417,15 +417,15 @@ private:
 				desc);
 	}
 
-	static void FrParseVarInstr(int offset, u1 opcode, BufferReader& br,
+	static void FrParseVarInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		u1 lvindex = br.readu1();
 
 		code.mv.visitVar(offset, opcode, lvindex);
 	}
 
-	static void _FrParseTableSwitchInstr(int offset, u1 opcode,
-			BufferReader& br, CodeParser& code) {
+	static void _FrParseTableSwitchInstr(int offset, u1 opcode, TReader& br,
+			CodeParser& code) {
 		for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 			u1 pad = br.readu1();
 			ASSERT(pad == 0, "Padding must be zero");
@@ -450,8 +450,8 @@ private:
 		code.mv.visitTableSwitch(offset, opcode, def, low, high, targets);
 	}
 
-	static void _FrParseLookupSwitchInstr(int offset, u1 opcode,
-			BufferReader& br, CodeParser& code) {
+	static void _FrParseLookupSwitchInstr(int offset, u1 opcode, TReader& br,
+			CodeParser& code) {
 		for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 			u1 pad = br.readu1();
 			ASSERT(pad == 0, "Padding must be zero");
@@ -474,12 +474,12 @@ private:
 				targets);
 	}
 
-	static void FrParse4__TODO__Instr(int offset, u1 opcode, BufferReader& br,
+	static void FrParse4__TODO__Instr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		EXCEPTION("FrParse4__TODO__Instr not implemented");
 	}
 
-	static void FrParseReservedInstr(int offset, u1 opcode, BufferReader& br,
+	static void FrParseReservedInstr(int offset, u1 opcode, TReader& br,
 			CodeParser& code) {
 		EXCEPTION("FrParseReservedInstr not implemented");
 	}
@@ -490,7 +490,7 @@ private:
 //
 //	TWriter& w;
 //
-//	inline WriterBase4(TWriter& w) :
+//	 WriterBase4(TWriter& w) :
 //			w(w) {
 //	}
 //
@@ -499,21 +499,21 @@ private:
 //		w.writeu2(maxLocals);
 //	}
 //
-//	inline void beginCode(u4 codeLen) {
+//	 void beginCode(u4 codeLen) {
 //		writeu4(codeLen);
 //	}
 //
-//	inline void codeStart() {
+//	 void codeStart() {
 //	}
 //
-//	inline void codeEnd() {
+//	 void codeEnd() {
 //	}
 //
-//	inline void visitExceptionTableCount(u2 count) {
+//	 void visitExceptionTableCount(u2 count) {
 //		w.writeu2(count);
 //	}
 //
-//	inline void visitExceptionTableEntry(u2 startpc, u2 endpc, u2 handlerpc,
+//	 void visitExceptionTableEntry(u2 startpc, u2 endpc, u2 handlerpc,
 //			u2 catchtype) {
 //		w.writeu2(startpc);
 //		w.writeu2(endpc);
@@ -521,21 +521,21 @@ private:
 //		w.writeu2(catchtype);
 //	}
 //
-//	inline void exit() {
+//	 void exit() {
 //	}
 //
 //	void visitZero(int offset, u1 opcode) {
 //		line(offset, opcode);
 //	}
 //
-//	inline void visitField(int offset, u1 opcode, u2 fieldRefIndex,
+//	 void visitField(int offset, u1 opcode, u2 fieldRefIndex,
 //			const std::string& className, const std::string& name,
 //			const std::string& desc) {
 //		line(offset, opcode);
 //		writeu2(fieldRefIndex);
 //	}
 //
-//	inline void visitBiPush(int offset, u1 opcode, u1 bytevalue) {
+//	 void visitBiPush(int offset, u1 opcode, u1 bytevalue) {
 //		line(offset, opcode);
 //		writeu1(bytevalue);
 //	}
@@ -652,23 +652,23 @@ private:
 //	}
 //
 //private:
-//	inline void line(int offset, u1 opcode) {
+//	 void line(int offset, u1 opcode) {
 //		writeu1(opcode);
 //	}
 //
-//	inline void writeu1(u1 value) {
+//	 void writeu1(u1 value) {
 //		w.writeu1(value);
 //	}
 //
-//	inline void writeu2(u2 value) {
+//	 void writeu2(u2 value) {
 //		w.writeu2(value);
 //	}
 //
-//	inline void writeu4(u4 value) {
+//	 void writeu4(u4 value) {
 //		w.writeu4(value);
 //	}
 //
-//	inline int pos() const {
+//	 int pos() const {
 //		return w.offset2();
 //	}
 //};
@@ -688,7 +688,7 @@ private:
 //
 //	u1* codeStartsPatch;
 //	int offset;
-//	inline void beginCode(u4 codeLen) {
+//	 void beginCode(u4 codeLen) {
 //		codeStartsPatch = w.pos();
 //
 //		w.skip(4);
@@ -696,7 +696,7 @@ private:
 //		offset = w.offset2();
 //	}
 //
-//	inline void codeEnd() {
+//	 void codeEnd() {
 //		int size = w.offset2() - offset;
 //
 //		BufferWriter bw(codeStartsPatch, 4);
@@ -730,8 +730,8 @@ struct CodeAttrParser {
 		bv.codeStart();
 
 		{
-			BufferReader br(codeBuf, codeLen);
-			CodeParser<decltype(bv)>(bv, cp).parse(br);
+			TReader br(codeBuf, codeLen);
+			CodeParser<TReader, decltype(bv)>(bv, cp).parse(br);
 		}
 
 		bv.codeEnd();
@@ -756,11 +756,12 @@ struct CodeAttrParser {
 	}
 
 	template<typename TWriter>
-	struct WriterBase {
+	struct Writer: CodeAttrsParser::template Writer<TWriter> {
+
 		TWriter& w;
 
-		inline WriterBase(TWriter& w) :
-				w(w) {
+		Writer(TWriter& w) :
+				CodeAttrsParser::template Writer<TWriter>(w), w(w) {
 		}
 
 		void enter(u2 maxStack, u2 maxLocals) {
@@ -768,21 +769,21 @@ struct CodeAttrParser {
 			w.writeu2(maxLocals);
 		}
 
-		inline void beginCode(u4 codeLen) {
+		void beginCode(u4 codeLen) {
 			writeu4(codeLen);
 		}
 
-		inline void codeStart() {
+		void codeStart() {
 		}
 
-		inline void codeEnd() {
+		void codeEnd() {
 		}
 
-		inline void visitExceptionTableCount(u2 count) {
+		void visitExceptionTableCount(u2 count) {
 			w.writeu2(count);
 		}
 
-		inline void visitExceptionTableEntry(u2 startpc, u2 endpc, u2 handlerpc,
+		void visitExceptionTableEntry(u2 startpc, u2 endpc, u2 handlerpc,
 				u2 catchtype) {
 			w.writeu2(startpc);
 			w.writeu2(endpc);
@@ -790,21 +791,21 @@ struct CodeAttrParser {
 			w.writeu2(catchtype);
 		}
 
-		inline void exit() {
+		void exit() {
 		}
 
 		void visitZero(int offset, u1 opcode) {
 			line(offset, opcode);
 		}
 
-		inline void visitField(int offset, u1 opcode, u2 fieldRefIndex,
+		void visitField(int offset, u1 opcode, u2 fieldRefIndex,
 				const std::string& className, const std::string& name,
 				const std::string& desc) {
 			line(offset, opcode);
 			writeu2(fieldRefIndex);
 		}
 
-		inline void visitBiPush(int offset, u1 opcode, u1 bytevalue) {
+		void visitBiPush(int offset, u1 opcode, u1 bytevalue) {
 			line(offset, opcode);
 			writeu1(bytevalue);
 		}
@@ -926,70 +927,29 @@ struct CodeAttrParser {
 			}
 		};
 
-		inline CodeAttrs visitCodeAttrs() {
+		CodeAttrs visitCodeAttrs() {
 			return CodeAttrs(w);
 		}
 
 	private:
-		inline void line(int offset, u1 opcode) {
+		void line(int offset, u1 opcode) {
 			writeu1(opcode);
 		}
 
-		inline void writeu1(u1 value) {
+		void writeu1(u1 value) {
 			w.writeu1(value);
 		}
 
-		inline void writeu2(u2 value) {
+		void writeu2(u2 value) {
 			w.writeu2(value);
 		}
 
-		inline void writeu4(u4 value) {
+		void writeu4(u4 value) {
 			w.writeu4(value);
 		}
 
-		inline int pos() const {
+		int pos() const {
 			return w.offset2();
-		}
-	};
-
-	template<typename TWriter, typename _T = void>
-	struct WriterSp: WriterBase<TWriter> {
-		WriterSp(TWriter& w) :
-				WriterBase<TWriter>(w) {
-		}
-	};
-
-	template<typename _T>
-	struct WriterSp<BufferWriter, _T> : WriterBase<BufferWriter> {
-		WriterSp(BufferWriter& w) :
-				WriterBase<BufferWriter>(w), codeStartsPatch(0), offset(0) {
-		}
-
-		u1* codeStartsPatch;
-		int offset;
-
-		inline void beginCode(u4 codeLen) {
-			codeStartsPatch = this->w.pos();
-
-			this->w.skip(4);
-
-			offset = this->w.offset2();
-		}
-
-		inline void codeEnd() {
-			int size = this->w.offset2() - offset;
-
-			BufferWriter bw(codeStartsPatch, 4);
-			bw.writeu4(size);
-		}
-	};
-
-	template<typename TWriter>
-	struct Writer: CodeAttrsParser::template Writer<TWriter>, WriterSp<TWriter> {
-
-		inline Writer(TWriter& w) :
-				CodeAttrsParser::template Writer<TWriter>(w), WriterSp<TWriter>(
-						w) {
 		}
 	};
 
@@ -997,109 +957,108 @@ struct CodeAttrParser {
 	struct Forward: CodeAttrsParser::template Forward<TVisitor> {
 		TVisitor bv;
 
-		inline Forward(TVisitor& bv) :
+		Forward(TVisitor& bv) :
 				CodeAttrsParser::template Forward<TVisitor>(bv), bv(bv) {
 		}
 
-		inline void enter(u2 maxStack, u2 maxLocals) {
+		void enter(u2 maxStack, u2 maxLocals) {
 			bv.enter(maxStack, maxLocals);
 		}
 
-		inline void beginCode(u4 codeLen) {
+		void beginCode(u4 codeLen) {
 			bv.beginCode(codeLen);
 		}
 
-		inline void codeStart() {
+		void codeStart() {
 			bv.codeStart();
 		}
 
-		inline void codeEnd() {
+		void codeEnd() {
 			bv.codeEnd();
 		}
 
-		inline void visitExceptionTableCount(u2 count) {
+		void visitExceptionTableCount(u2 count) {
 			bv.visitExceptionTableCount(count);
 		}
 
-		inline void visitExceptionTableEntry(u2 startpc, u2 endpc, u2 handlerpc,
+		void visitExceptionTableEntry(u2 startpc, u2 endpc, u2 handlerpc,
 				u2 catchtype) {
 			bv.visitExceptionTableEntry(startpc, endpc, handlerpc, catchtype);
 		}
 
-		inline void exit() {
+		void exit() {
 			bv.exit();
 		}
 
-		inline void visitZero(int offset, u1 opcode) {
+		void visitZero(int offset, u1 opcode) {
 			bv.visitZero(offset, opcode);
 		}
 
-		inline void visitField(int offset, u1 opcode, u2 fieldRefIndex,
+		void visitField(int offset, u1 opcode, u2 fieldRefIndex,
 				const std::string& className, const std::string& name,
 				const std::string& desc) {
 			bv.visitField(offset, opcode, fieldRefIndex, className, name, desc);
 		}
 
-		inline void visitBiPush(int offset, u1 opcode, u1 bytevalue) {
+		void visitBiPush(int offset, u1 opcode, u1 bytevalue) {
 			bv.visitBiPush(offset, opcode, bytevalue);
 		}
 
-		inline void visitSiPush(int offset, u1 opcode, u2 shortvalue) {
+		void visitSiPush(int offset, u1 opcode, u2 shortvalue) {
 			bv.visitSiPush(offset, opcode, shortvalue);
 		}
 
-		inline void visitNewArray(int offset, u1 opcode, u1 atype) {
+		void visitNewArray(int offset, u1 opcode, u1 atype) {
 			bv.visitNewArray(offset, opcode, atype);
 		}
 
-		inline void visitType(int offset, u1 opcode, u2 classIndex,
+		void visitType(int offset, u1 opcode, u2 classIndex,
 				const std::string& className) {
 			bv.visitType(offset, opcode, classIndex, className);
 		}
 
-		inline void visitJump(int offset, u1 opcode, u2 targetOffset) {
+		void visitJump(int offset, u1 opcode, u2 targetOffset) {
 			bv.visitJump(offset, opcode, targetOffset);
 		}
 
-		inline void visitMultiArray(int offset, u1 opcode, u2 classIndex,
+		void visitMultiArray(int offset, u1 opcode, u2 classIndex,
 				const std::string& className, u4 dims) {
 			bv.visitMultiArray(offset, opcode, classIndex, className, dims);
 		}
 
-		inline void visitIinc(int offset, u1 opcode, u1 index, u1 value) {
+		void visitIinc(int offset, u1 opcode, u1 index, u1 value) {
 			bv.visitIinc(offset, opcode, index, value);
 		}
 
-		inline void visitLdc(int offset, u1 opcode, u2 arg) {
+		void visitLdc(int offset, u1 opcode, u2 arg) {
 			bv.visitLdc(offset, opcode, arg);
 		}
 
-		inline void visitInvokeInterface(int offset, u1 opcode,
-				u2 interMethodrefIndex, const std::string& className,
-				const std::string& name, const std::string& desc, u1 count) {
+		void visitInvokeInterface(int offset, u1 opcode, u2 interMethodrefIndex,
+				const std::string& className, const std::string& name,
+				const std::string& desc, u1 count) {
 			bv.visitInvokeInterface(offset, opcode, interMethodrefIndex,
 					className, name, desc, count);
 		}
 
-		inline void visitInvoke(int offset, u1 opcode, u2 methodrefIndex,
+		void visitInvoke(int offset, u1 opcode, u2 methodrefIndex,
 				const std::string& className, const std::string& name,
 				const std::string& desc) {
 			bv.visitInvoke(offset, opcode, methodrefIndex, className, name,
 					desc);
 		}
 
-		inline void visitVar(int offset, u1 opcode, u2 lvindex) {
+		void visitVar(int offset, u1 opcode, u2 lvindex) {
 			bv.visitVar(offset, opcode, lvindex);
 		}
 
-		inline void visitTableSwitch(int offset, u1 opcode, int def, int low,
-				int high, const std::vector<u4>& targets) {
+		void visitTableSwitch(int offset, u1 opcode, int def, int low, int high,
+				const std::vector<u4>& targets) {
 			bv.visitTableSwitch(offset, opcode, def, low, high, targets);
 		}
 
-		inline void visitLookupSwitch(int offset, u1 opcode, u4 defbyte,
-				u4 npairs, const std::vector<u4>& keys,
-				const std::vector<u4>& targets) {
+		void visitLookupSwitch(int offset, u1 opcode, u4 defbyte, u4 npairs,
+				const std::vector<u4>& keys, const std::vector<u4>& targets) {
 			bv.visitLookupSwitch(offset, opcode, defbyte, npairs, keys,
 					targets);
 		}
@@ -1112,7 +1071,7 @@ struct CodeAttrParser {
 			}
 		};
 
-		inline CodeAttrs visitCodeAttrs() {
+		CodeAttrs visitCodeAttrs() {
 			auto dv = bv.visitCodeAttrs();
 			return CodeAttrs(dv);
 		}
