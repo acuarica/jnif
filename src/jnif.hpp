@@ -19,9 +19,6 @@
 
 #include "jnif/AccessFlags.hpp"
 #include "jnif/Opcode.hpp"
-#include "jnif/ClassWriterVisitor.hpp"
-//#include "jnif/ClassPrinterVisitor.hpp"
-#include "jnif/ClassForwardVisitor.hpp"
 
 #include "jnif/parser/AttrsParser.hpp"
 #include "jnif/parser/ClassBaseParser.hpp"
@@ -31,6 +28,8 @@
 #include "jnif/parser/LvtAttrParser.hpp"
 #include "jnif/parser/ExceptionsAttrParser.hpp"
 //#include "jnif/parser/StackMapTableAttrParser.hpp"
+
+//#include "jnif/ClassPrinter.hpp"
 
 namespace jnif {
 

@@ -68,6 +68,21 @@ extern u4 jnif_ExceptionClass_class_len;
 //	mv.visitExceptionEntry(exceptionIndex);
 //}
 
+//void testClassPrinter() {
+//	auto instr =
+//			[&](unsigned char* classFile, int classFileLen, const char* className) {
+//				BufferSize w;
+//				BufferReader r(classFile, classFileLen);
+//				ClassParser::Writer<BufferSize> cw(w);
+//				ClassPrinter<decltype(cw)> cp(cout, className, classFileLen, cw);
+//				ClassParser::parse(r, cp);
+//			};
+//
+//	instr(jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass");
+//	instr(jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
+//			"jnif/ExceptionClass");
+//}
+
 void testIdentityComputeSize() {
 	auto instr =
 			[&](unsigned char* classFile, int classFileLen, const char* className) {
@@ -90,28 +105,26 @@ void testIdentityParserWriter() {
 	auto instr =
 			[&](unsigned char* classFile, int classFileLen, const char* className) {
 
-				int new_class_data_len;
-				{
+				int newlen = [&]() {
 					BufferSize w;
 					BufferReader br(classFile, classFileLen);
 					ClassParser::Writer<BufferSize> cw(w);
 					ClassParser::parse(br, cw);
-					new_class_data_len = w.size();
-				}
+					return w.size();
+				}();
 
-				ASSERT(classFileLen == new_class_data_len, "Expected class file len %d, actual was %d, on class %s",
-						classFileLen, new_class_data_len, className);
+				ASSERT(classFileLen == newlen, "Expected class file len %d, actual was %d, on class %s",
+						classFileLen, newlen, className);
 
-				u1* new_class_data = new u1[new_class_data_len];
-
+				u1* new_class_data = new u1[newlen];
 				{
-					BufferWriter w(new_class_data, new_class_data_len);
+					BufferWriter w(new_class_data, newlen);
 					BufferReader r(classFile, classFileLen);
 					ClassParser::Writer<BufferWriter> cw(w);
 					ClassParser::parse(r, cw);
 				}
 
-				for (int i = 0; i < new_class_data_len; i++) {
+				for (int i = 0; i < newlen; i++) {
 					ASSERT(classFile[i] == new_class_data[i], "error on %d: %d:%d != %d:%d", i,
 							classFile[i],classFile[i+1],
 							new_class_data[i],new_class_data[i+1]
@@ -132,11 +145,8 @@ void testNopAdderInstrSize() {
 			[&](unsigned char* classFile, int classFileLen, const char* className,int diff) {
 				BufferSize w;
 				BufferReader r(classFile, classFileLen);
-
 				ClassParser::Writer<BufferSize> cw(w);
-
 				NopAdderInstr<decltype(cw)> iv(cw);
-
 				ClassParser::parse(r, iv);
 
 				int len = w.size();
@@ -151,6 +161,47 @@ void testNopAdderInstrSize() {
 			"jnif/ExceptionClass", 1 * 2);
 }
 
+void testNopAdderInstr() {
+	auto instr =
+			[&](unsigned char* classFile, int classFileLen, const char* className,int diff) {
+
+				int newlen = [&]() {
+					BufferSize w;
+					BufferReader r(classFile, classFileLen);
+					ClassParser::Writer<BufferSize> cw(w);
+					NopAdderInstr<decltype(cw)> iv(cw);
+					ClassParser::parse(r, iv);
+					return w.size();
+				}();
+
+				ASSERT(classFileLen+diff == newlen, "Expected class file len %d, actual was %d, on class %s",
+						classFileLen+diff, newlen, className);
+
+				u1* newdata = new u1[newlen];
+				{
+					BufferWriter w(newdata, newlen);
+					BufferReader r(classFile, classFileLen);
+					ClassParser::Writer<BufferWriter> cw(w);
+					NopAdderInstr<decltype(cw)> iv(cw);
+					ClassParser::parse(r, iv);
+				}
+
+				for (int i = 0; i < newlen; i++) {
+					ASSERT(classFile[i] == newdata[i], "error on %d: %d:%d != %d:%d", i,
+							classFile[i],classFile[i+1],
+							newdata[i],newdata[i+1]
+					);
+				}
+
+				delete [] newdata;
+			};
+
+	instr(jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass",
+			4 * 2);
+	instr(jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
+			"jnif/ExceptionClass", 1 * 2);
+}
+
 #define RUN(test) ( fprintf(stderr, "Running test " #test "... "), \
 	test(), fprintf(stderr, "[OK]\n") )
 
@@ -158,6 +209,7 @@ int main(int argc, const char* argv[]) {
 	RUN(testIdentityComputeSize);
 	RUN(testIdentityParserWriter);
 	RUN(testNopAdderInstrSize);
+	//RUN(testNopAdderInstr);
 	//testSimpleModel();
 
 	fprintf(stderr, "argc: %d, %d\n", argc, jnif_BasicClass_class_len);

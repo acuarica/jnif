@@ -53,12 +53,18 @@ static const char* OPCODES[] = { "nop", "aconst_null", "iconst_m1", "iconst_0",
 		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
 		"impdep1", "impdep2", };
 
-template<typename TForward = ClassDefaultVisitor>
-class ClassPrinterVisitor {
-public:
+template<typename TForward>
+struct ClassPrinter {
 
-	class AccessFlagsPrinter {
-	public:
+	ClassPrinter(std::ostream& os, const char* className, int fileImageLen,
+			TForward& cv) :
+			cv(cv), os(os), tabs(0) {
+		line() << "Class file " << className << " [file size: " << fileImageLen
+				<< "]" << std::endl;
+		inc();
+	}
+
+	struct AccessFlagsPrinter {
 		AccessFlagsPrinter(u2 value, const char* sep = " ") :
 				value(value), sep(sep) {
 		}
@@ -98,9 +104,9 @@ public:
 	class Field {
 	public:
 		typename TForward::Field fv;
-		ClassPrinterVisitor& cpv;
+		ClassPrinter& cpv;
 
-		inline Field(typename TForward::Field& fv, ClassPrinterVisitor& cpv) :
+		inline Field(typename TForward::Field& fv, ClassPrinter& cpv) :
 				fv(fv), cpv(cpv) {
 		}
 
@@ -122,9 +128,9 @@ public:
 	class Method {
 	public:
 		typename TForward::Method mv;
-		ClassPrinterVisitor& cpv;
+		ClassPrinter& cpv;
 
-		inline Method(typename TForward::Method& mv, ClassPrinterVisitor& cpv) :
+		inline Method(typename TForward::Method& mv, ClassPrinter& cpv) :
 				mv(mv), cpv(cpv) {
 		}
 
@@ -132,7 +138,7 @@ public:
 		public:
 			typename TForward::Method::Code bv;
 
-			inline Code(ClassPrinterVisitor& cpv,
+			inline Code(ClassPrinter& cpv,
 					typename TForward::Method::Code& bv) :
 					bv(std::move(bv)), cpv(cpv) {
 			}
@@ -332,7 +338,7 @@ public:
 			}
 
 		private:
-			ClassPrinterVisitor& cpv;
+			ClassPrinter& cpv;
 
 			inline std::ostream& os() {
 				return cpv.os;
@@ -344,8 +350,8 @@ public:
 
 			inline std::ostream& line(int offset, u1 opcode, int moretabs = 0) {
 				return cpv.line(moretabs) << std::setw(4) << offset << ": ("
-						<< std::setw(3) << (int) opcode << ") " << OPCODES[opcode]
-						<< " ";
+						<< std::setw(3) << (int) opcode << ") "
+						<< OPCODES[opcode] << " ";
 			}
 		};
 
@@ -389,18 +395,11 @@ public:
 		}
 
 		inline std::ostream& line(int offset, u1 opcode, int moretabs = 0) {
-			return cpv.line(moretabs) << std::setw(4) << offset << ": (" << std::setw(3)
-					<< (int) opcode << ") " << OPCODES[opcode] << " ";
+			return cpv.line(moretabs) << std::setw(4) << offset << ": ("
+					<< std::setw(3) << (int) opcode << ") " << OPCODES[opcode]
+					<< " ";
 		}
 	};
-
-	inline ClassPrinterVisitor(std::ostream& os, const char* className,
-			int fileImageLen, TForward& cv = ClassDefaultVisitor::inst()) :
-			cv(cv), os(os), tabs(0) {
-		line() << "Class file " << className << " [file size: " << fileImageLen
-				<< "]" << std::endl;
-		inc();
-	}
 
 	inline void visitVersion(Magic magic, u2 minor, u2 major) {
 		cv.visitVersion(magic, minor, major);

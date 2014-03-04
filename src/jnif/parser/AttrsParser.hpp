@@ -29,7 +29,7 @@ public:
 
 			std::string attrName = cp.getUtf8(nameIndex);
 
-			parse2<TReader, TAttrVisitor, TAttrParserList...>(nameIndex, len,
+			parseBase<TReader, TAttrVisitor, TAttrParserList...>(nameIndex, len,
 					data, attrName, cp, av);
 
 			br.skip(len);
@@ -95,7 +95,8 @@ public:
 		int offset;
 
 		inline Writer(BufferWriter& w) :
-				WriterBase<BufferWriter, TAttrParserList...>(w), w(w) {
+				WriterBase<BufferWriter, TAttrParserList...>(w), w(w), patch(0), offset(
+						0) {
 		}
 
 		inline void visitAttrCount(u2 attrCount) {
@@ -110,8 +111,8 @@ public:
 
 			offset = w.offset2();
 
-			fprintf(stderr, "%d, %d - %p, %d\n", nameIndex, len, (void*) patch,
-					offset);
+//			fprintf(stderr, "%d, %d - %p, %d\n", nameIndex, len, (void*) patch,
+//					offset);
 		}
 
 		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
@@ -121,7 +122,7 @@ public:
 		inline void visitAttrEnd() {
 			int size = w.offset2() - offset;
 
-			fprintf(stderr, "  :: %p, %d, %d\n", (void*) patch, offset, size);
+			//fprintf(stderr, "  :: %p, %d, %d\n", (void*) patch, offset, size);
 
 			BufferWriter bw(patch, 4);
 			bw.writeu4(size);
@@ -178,23 +179,20 @@ private:
 
 	template<typename TReader, typename TAttrVisitor, typename TAttrParser,
 			typename ... TAttrParserTail>
-	inline static void parse2(u2 nameIndex, u4 len, const u1* data,
+	inline static void parseBase(u2 nameIndex, u4 len, const u1* data,
 			const std::string& attrName, ConstPool& cp, TAttrVisitor& av) {
 		if (attrName == TAttrParser::AttrName) {
-
-			//av.TAttrParser::AttrName();
-
 			TAttrParser parser;
 			TReader br(data, len);
 			parser.parse(br, av, cp, nameIndex);
 		} else {
-			parse2<TReader, TAttrVisitor, TAttrParserTail...>(nameIndex, len,
+			parseBase<TReader, TAttrVisitor, TAttrParserTail...>(nameIndex, len,
 					data, attrName, cp, av);
 		}
 	}
 
 	template<typename TReader, typename TAttrVisitor>
-	inline static void parse2(u2 nameIndex, u4 len, const u1* data,
+	inline static void parseBase(u2 nameIndex, u4 len, const u1* data,
 			const std::string& attrName, ConstPool& cp, TAttrVisitor& av) {
 		av.visitAttr(nameIndex, len, data);
 	}

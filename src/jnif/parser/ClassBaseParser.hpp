@@ -199,7 +199,8 @@ public:
 			typename TVisitor::Field fv;
 
 			Field(typename TVisitor::Field& fv) :
-					FieldAttrsParser::template Forward<typename TVisitor::Field>(fv), fv(fv) {
+					FieldAttrsParser::template Forward<typename TVisitor::Field>(
+							fv), fv(fv) {
 			}
 		};
 
@@ -208,7 +209,8 @@ public:
 			typename TVisitor::Method mv;
 
 			Method(typename TVisitor::Method & mv) :
-					MethodAttrsParser::template Forward<typename TVisitor::Method>(mv), mv(mv) {
+					MethodAttrsParser::template Forward<
+							typename TVisitor::Method>(mv), mv(mv) {
 			}
 		};
 
