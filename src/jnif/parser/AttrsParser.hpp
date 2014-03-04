@@ -33,6 +33,8 @@ public:
 					data, attrName, cp, av);
 
 			br.skip(len);
+
+			av.visitAttrEnd();
 		}
 	}
 
@@ -57,7 +59,7 @@ public:
 		}
 	};
 
-	template<typename TWriter>
+	template<typename TWriter, typename _T = void>
 	struct Writer: WriterBase<TWriter, TAttrParserList...> {
 
 		TWriter& w;
@@ -70,13 +72,59 @@ public:
 			w.writeu2(attrCount);
 		}
 
+		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
+			w.writecount(data, len);
+		}
+
 		inline void visitAttrHeader(u2 nameIndex, u4 len) {
 			w.writeu2(nameIndex);
 			w.writeu4(len);
 		}
 
+		inline void visitAttrEnd() {
+		}
+	};
+
+	template<typename _T>
+	struct Writer<BufferWriter, _T> : WriterBase<BufferWriter,
+			TAttrParserList...> {
+
+		BufferWriter& w;
+
+		u1* patch;
+		int offset;
+
+		inline Writer(BufferWriter& w) :
+				WriterBase<BufferWriter, TAttrParserList...>(w), w(w) {
+		}
+
+		inline void visitAttrCount(u2 attrCount) {
+			w.writeu2(attrCount);
+		}
+
+		inline void visitAttrHeader(u2 nameIndex, u4 len) {
+			w.writeu2(nameIndex);
+
+			patch = w.pos();
+			w.skip(4);
+
+			offset = w.offset2();
+
+			fprintf(stderr, "%d, %d - %p, %d\n", nameIndex, len, (void*) patch,
+					offset);
+		}
+
 		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 			w.writecount(data, len);
+		}
+
+		inline void visitAttrEnd() {
+			int size = w.offset2() - offset;
+
+			fprintf(stderr, "  :: %p, %d, %d\n", (void*) patch, offset, size);
+
+			BufferWriter bw(patch, 4);
+			bw.writeu4(size);
 		}
 	};
 
@@ -96,8 +144,8 @@ public:
 			ForwardBase<TVisitor, TAttrParserTail...> {
 
 		inline ForwardBase(TVisitor& w) :
-				TAttrParser::template Forward<TVisitor>(w), ForwardBase<TVisitor,
-						TAttrParserTail...>(w) {
+				TAttrParser::template Forward<TVisitor>(w), ForwardBase<
+						TVisitor, TAttrParserTail...>(w) {
 		}
 	};
 
@@ -119,6 +167,10 @@ public:
 
 		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 			v.visitAttr(nameIndex, len, data);
+		}
+
+		inline void visitAttrEnd() {
+			v.visitAttrEnd();
 		}
 	};
 
