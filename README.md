@@ -37,7 +37,13 @@ instrument on demand.
 
 # Development
 
-Modular parser using templates.
+Goals:
+* Modular parser/writer using templates.
+  Each attribute kind can be plugged into the main parser.
+* Zero-memory footprint.
+  The API is built so that it uses zero dynamic memory, i.e., no calls to 
+  malloc/new! to gain more performance and memory consumption.
+
 
 # Evaluation
 

@@ -36,38 +36,34 @@ public:
 		}
 	}
 
-	template<typename T, typename ... TAttrParserList2>
-	class Writer2;
+	template<typename TWriter, typename ... TAttrParserList2>
+	struct WriterBase;
 
 	template<typename TWriter>
-	class Writer2<TWriter> {
-	public:
-		inline Writer2(TWriter& w) {
+	struct WriterBase<TWriter> {
+		inline WriterBase(TWriter& w) {
 		}
 	};
 
 	template<typename TWriter, typename TAttrParser,
 			typename ... TAttrParserTail>
-	class Writer2<TWriter, TAttrParser, TAttrParserTail...> : public TAttrParser::template Writer<
+	struct WriterBase<TWriter, TAttrParser, TAttrParserTail...> : TAttrParser::template Writer<
 			TWriter>,
-			public Writer2<TWriter, TAttrParserTail...> {
+			WriterBase<TWriter, TAttrParserTail...> {
 
-	public:
-
-		inline Writer2(TWriter& w) :
-				TAttrParser::template Writer<TWriter>(w), Writer2<TWriter,
-						TAttrParserTail...>(w)
-
-		{
+		inline WriterBase(TWriter& w) :
+				TAttrParser::template Writer<TWriter>(w), WriterBase<TWriter,
+						TAttrParserTail...>(w) {
 		}
-
 	};
 
 	template<typename TWriter>
-	class Writer: public Writer2<TWriter, TAttrParserList...> {
-	public:
+	struct Writer: WriterBase<TWriter, TAttrParserList...> {
+
+		TWriter& w;
+
 		inline Writer(TWriter& w) :
-				Writer2<TWriter, TAttrParserList...>(w), w(w) {
+				WriterBase<TWriter, TAttrParserList...>(w), w(w) {
 		}
 
 		inline void visitAttrCount(u2 attrCount) {
@@ -82,9 +78,48 @@ public:
 		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 			w.writecount(data, len);
 		}
+	};
 
-	private:
-		TWriter& w;
+	template<typename TVisitor, typename ... TAttrParserList2>
+	struct ForwardBase;
+
+	template<typename TVisitor>
+	struct ForwardBase<TVisitor> {
+		inline ForwardBase(TVisitor& w) {
+		}
+	};
+
+	template<typename TVisitor, typename TAttrParser,
+			typename ... TAttrParserTail>
+	struct ForwardBase<TVisitor, TAttrParser, TAttrParserTail...> : TAttrParser::template Forward<
+			TVisitor>,
+			ForwardBase<TVisitor, TAttrParserTail...> {
+
+		inline ForwardBase(TVisitor& w) :
+				TAttrParser::template Forward<TVisitor>(w), ForwardBase<TVisitor,
+						TAttrParserTail...>(w) {
+		}
+	};
+
+	template<typename TVisitor>
+	struct Forward: ForwardBase<TVisitor, TAttrParserList...> {
+		TVisitor& v;
+
+		inline Forward(TVisitor& v) :
+				ForwardBase<TVisitor, TAttrParserList...>(v), v(v) {
+		}
+
+		inline void visitAttrCount(u2 attrCount) {
+			v.visitAttrCount(attrCount);
+		}
+
+		inline void visitAttrHeader(u2 nameIndex, u4 len) {
+			v.visitAttrHeader(nameIndex, len);
+		}
+
+		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
+			v.visitAttr(nameIndex, len, data);
+		}
 	};
 
 private:
@@ -94,6 +129,9 @@ private:
 	inline static void parse2(u2 nameIndex, u4 len, const u1* data,
 			const std::string& attrName, ConstPool& cp, TAttrVisitor& av) {
 		if (attrName == TAttrParser::AttrName) {
+
+			//av.TAttrParser::AttrName();
+
 			TAttrParser parser;
 			TReader br(data, len);
 			parser.parse(br, av, cp, nameIndex);

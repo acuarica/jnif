@@ -10,8 +10,7 @@ namespace jnif {
  *
  * Local variable table parser
  */
-class LvtAttrParser {
-public:
+struct LvtAttrParser {
 
 	static constexpr const char* AttrName = "LocalVariableTable";
 
@@ -33,8 +32,9 @@ public:
 	}
 
 	template<typename TWriter>
-	class Writer {
-	public:
+	struct Writer {
+		TWriter& w;
+
 		inline Writer(TWriter& w) :
 				w(w) {
 		}
@@ -51,9 +51,24 @@ public:
 			w.writeu2(varDescIndex);
 			w.writeu2(index);
 		}
+	};
 
-	private:
-		TWriter& w;
+	template<typename TVisitor>
+	struct Forward {
+		TVisitor av;
+
+		inline Forward(TVisitor& av) :
+				av(av) {
+		}
+
+		inline void visitLvtCount(u2 count) {
+			av.visitLvtCount(count);
+		}
+
+		inline void visitLvtEntry(u2 startPc, u2 len, u2 varNameIndex,
+				u2 varDescIndex, u2 index) {
+			av.visitLvtEntry(startPc, len, varNameIndex, varDescIndex, index);
+		}
 	};
 };
 

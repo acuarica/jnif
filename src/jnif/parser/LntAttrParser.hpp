@@ -10,14 +10,12 @@ namespace jnif {
  *
  * Line number table
  */
-class LntAttrParser {
-public:
+struct LntAttrParser {
 
 	static constexpr const char* AttrName = "LineNumberTable";
 
-	template<typename TMethodVisitor, typename TReader>
-	inline void parse(TReader& br, TMethodVisitor& v, ConstPool& cp,
-			u2 nameIndex) {
+	template<typename TReader, typename TVisitor>
+	inline void parse(TReader& br, TVisitor& v, ConstPool& cp, u2 nameIndex) {
 		u2 lntlen = br.readu2();
 
 		v.visitLntCount(lntlen);
@@ -31,8 +29,9 @@ public:
 	}
 
 	template<typename TWriter>
-	class Writer {
-	public:
+	struct Writer {
+		TWriter& w;
+
 		inline Writer(TWriter& w) :
 				w(w) {
 		}
@@ -45,9 +44,23 @@ public:
 			w.writeu2(startpc);
 			w.writeu2(lineno);
 		}
+	};
 
-	private:
-		TWriter& w;
+	template<typename TVisitor>
+	struct Forward {
+		TVisitor av;
+
+		inline Forward(TVisitor& av) :
+				av(av) {
+		}
+
+		inline void visitLntCount(u2 lntlen) {
+			av.visitLntCount(lntlen);
+		}
+
+		inline void visitLntEntry(u2 nameIndex, u2 startpc, u2 lineno) {
+			av.visitLntEntry(nameIndex, startpc, lineno);
+		}
 	};
 };
 

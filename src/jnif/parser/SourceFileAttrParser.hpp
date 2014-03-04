@@ -26,8 +26,9 @@ public:
 	 * Defines the writer for this attribute.
 	 */
 	template<typename TWriter>
-	class Writer {
-	public:
+	struct Writer {
+		TWriter& w;
+
 		inline Writer(TWriter& w) :
 				w(w) {
 		}
@@ -35,10 +36,19 @@ public:
 		inline void visitSourceFile(u2 nameIndex, u2 sourceFileIndex) {
 			w.writeu2(sourceFileIndex);
 		}
+	};
 
-	private:
-		TWriter& w;
+	template<typename TVisitor>
+	struct Forward {
+		TVisitor& av;
 
+		inline Forward(TVisitor& av) :
+				av(av) {
+		}
+
+		inline void visitSourceFile(u2 nameIndex, u2 sourceFileIndex) {
+			av.visitSourceFile(nameIndex, sourceFileIndex);
+		}
 	};
 };
 

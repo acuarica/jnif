@@ -9,8 +9,7 @@ namespace jnif {
 /**
  * Exceptions
  */
-class ExceptionsAttrParser {
-public:
+struct ExceptionsAttrParser {
 
 	static constexpr const char* AttrName = "Exceptions";
 
@@ -29,8 +28,9 @@ public:
 	}
 
 	template<typename TWriter>
-	class Writer {
-	public:
+	struct Writer {
+		TWriter& w;
+
 		inline Writer(TWriter& w) :
 				w(w) {
 		}
@@ -41,10 +41,23 @@ public:
 		inline void visitExceptionEntry(u2 exceptionIndex) {
 			w.writeu2(exceptionIndex);
 		}
+	};
 
-	private:
-		TWriter& w;
+	template<typename TVisitor>
+	struct Forward {
+		TVisitor& av;
 
+		inline Forward(TVisitor& av) :
+				av(av) {
+		}
+
+		inline void visitExceptionCount(u2 count) {
+			av.visitExceptionCount(count);
+		}
+
+		inline void visitExceptionEntry(u2 exceptionIndex) {
+			av.visitExceptionEntry(exceptionIndex);
+		}
 	};
 };
 

@@ -12,27 +12,26 @@ using namespace std;
 using namespace jnif;
 
 template<typename TVisitor>
-class NopAdderInstr: public ClassForwardVisitor<TVisitor> {
-	typedef ClassForwardVisitor<TVisitor> base;
+struct NopAdderInstr: ClassParser::Forward<TVisitor> {
+	typedef ClassParser::Forward<TVisitor> base;
 	using base::cv;
-public:
 
-	class Method: public base::Method {
+	NopAdderInstr(TVisitor& cv) :
+			ClassParser::Forward<TVisitor>(cv) {
+	}
+
+	struct Method: base::Method {
 		using base::Method::mv;
-	public:
 
 		Method(typename TVisitor::Method& mv) :
 				base::Method(mv) {
 		}
 
 		inline void codeStart() {
-			bv.visitZero(-42, OPCODE_nop);
+			mv.visitZero(-42, OPCODE_nop);
+			mv.visitZero(-42, OPCODE_nop);
 		}
 	};
-
-	NopAdderInstr(TVisitor& cv) :
-			ClassForwardVisitor<TVisitor>(cv) {
-	}
 
 	inline Method visitMethod(u2 accessFlags, u2 nameIndex, u2 descIndex) {
 		auto mv = base::cv.visitMethod(accessFlags, nameIndex, descIndex);
@@ -46,7 +45,6 @@ extern u4 jnif_BasicClass_class_len;
 
 extern u1 jnif_ExceptionClass_class[];
 extern u4 jnif_ExceptionClass_class_len;
-
 //
 //void testSimpleModel() {
 //	ClassPrinterVisitor<> c(cout, "Hola", 123);
@@ -57,20 +55,18 @@ extern u4 jnif_ExceptionClass_class_len;
 //	u2 thisIndex = cp.addClass("jnif/java/dynamic/SimpleClass");
 //	u2 aMethodNameIndex = cp.addUtf8("aMethod");
 //	u2 aMethodDescIndex = cp.addUtf8("()V");
+//	u2 exceptionIndex = cp.addClass("java/lang/Exception");
 //
 //	c.visitVersion(CLASSFILE_MAGIC, 0, 1);
 //	c.visitConstPool(cp);
 //	c.visitThis(ACC_PUBLIC, thisIndex, 0);
 //
-//	c.visitField(1, 1, 1);
+//	auto fv = c.visitField(ACC_PUBLIC, 1, 1);
 //
-//	auto m = c.visitMethod(ACC_PUBLIC, aMethodNameIndex, aMethodDescIndex);
-//	auto cd = m.visitCode(codeAttrIndex);
-//	cd.visitNewArray(OPCODE_newarray + 2, OPCODE_newarray, 5);
-//
-//	cd.visitJump(-23, OPCODE_ifeq, -1);
+//	auto mv = c.visitMethod(ACC_PUBLIC | ACC_ABSTRACT, aMethodNameIndex,
+//			aMethodDescIndex);
+//	mv.visitExceptionEntry(exceptionIndex);
 //}
-//
 
 void testIdentityComputeSize() {
 	auto instr =
@@ -131,12 +127,37 @@ void testIdentityParserWriter() {
 
 }
 
+void testNopAdderInstrSize() {
+	auto instr =
+			[&](unsigned char* classFile, int classFileLen, const char* className,int diff) {
+				BufferSize w;
+				BufferReader r(classFile, classFileLen);
+
+				ClassParser::Writer<BufferSize> cw(w);
+
+				NopAdderInstr<decltype(cw)> iv(cw);
+
+				ClassParser::parse(r, iv);
+
+				int len = w.size();
+				ASSERT(classFileLen+diff == len, "Expected class file len %d, actual was %d, on class %s",
+						classFileLen+diff, len, className);
+			};
+
+	instr(jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass",
+			4 * 2);
+
+	instr(jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
+			"jnif/ExceptionClass", 1 * 2);
+}
+
 #define RUN(test) ( fprintf(stderr, "Running test " #test "... "), \
 	test(), fprintf(stderr, "[OK]\n") )
 
 int main(int argc, const char* argv[]) {
 	RUN(testIdentityComputeSize);
 	RUN(testIdentityParserWriter);
+	RUN(testNopAdderInstrSize);
 	//testSimpleModel();
 
 	fprintf(stderr, "argc: %d, %d\n", argc, jnif_BasicClass_class_len);

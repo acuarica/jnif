@@ -125,8 +125,7 @@ public:
 		class Method: public MethodAttrsParser::template Writer<TWriter> {
 		public:
 			inline Method(TWriter& w) :
-					MethodAttrsParser::template Writer<TWriter>(w)
-					{
+					MethodAttrsParser::template Writer<TWriter>(w) {
 			}
 		};
 
@@ -187,8 +186,71 @@ public:
 		TWriter& w;
 	};
 
-private:
+	template<typename TVisitor>
+	struct Forward: ClassAttrsParser::template Forward<TVisitor> {
+		TVisitor& cv;
 
+		inline Forward(TVisitor& cv) :
+				ClassAttrsParser::template Forward<TVisitor>(cv), cv(cv) {
+		}
+
+		struct Field: FieldAttrsParser::template Forward<
+				typename TVisitor::Field> {
+			typename TVisitor::Field fv;
+
+			Field(typename TVisitor::Field& fv) :
+					FieldAttrsParser::template Forward<typename TVisitor::Field>(fv), fv(fv) {
+			}
+		};
+
+		struct Method: MethodAttrsParser::template Forward<
+				typename TVisitor::Method> {
+			typename TVisitor::Method mv;
+
+			Method(typename TVisitor::Method & mv) :
+					MethodAttrsParser::template Forward<typename TVisitor::Method>(mv), mv(mv) {
+			}
+		};
+
+		inline void visitVersion(Magic magic, u2 minor, u2 major) {
+			cv.visitVersion(magic, minor, major);
+		}
+
+		inline void visitConstPool(ConstPool& cp) {
+			cv.visitConstPool(cp);
+		}
+
+		inline void visitThis(u2 accessFlags, u2 thisClassIndex,
+				u2 superClassIndex) {
+			cv.visitThis(accessFlags, thisClassIndex, superClassIndex);
+		}
+
+		inline void visitInterfaceCount(u2 count) {
+			cv.visitInterfaceCount(count);
+		}
+
+		inline void visitInterface(u2 interIndex) {
+			cv.visitInterface(interIndex);
+		}
+
+		inline void visitFieldCount(u2 count) {
+			cv.visitFieldCount(count);
+		}
+
+		inline Field visitField(u2 accessFlags, u2 nameIndex, u2 descIndex) {
+			auto fv = cv.visitField(accessFlags, nameIndex, descIndex);
+			return Field(fv);
+		}
+
+		inline void visitMethodCount(u2 count) {
+			cv.visitInterfaceCount(count);
+		}
+
+		inline Method visitMethod(u2 accessFlags, u2 nameIndex, u2 descIndex) {
+			auto mv = cv.visitMethod(accessFlags, nameIndex, descIndex);
+			return Method(mv);
+		}
+	};
 };
 
 }
