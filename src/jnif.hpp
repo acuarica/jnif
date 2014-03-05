@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <deque>
 
 #define _STREXPAND(token) #token
 #define _STR(token) _STREXPAND(token)
@@ -451,6 +452,17 @@ using namespace std;
  */
 struct Inst {
 
+	Inst() {
+	}
+
+	Inst(Opcode opcode) :
+			opcode(opcode), kind(KIND_ZERO) {
+	}
+
+	Inst(Opcode opcode, OpKind kind) :
+			opcode(opcode), kind(kind) {
+	}
+
 	/**
 	 * The opcode of this instruction.
 	 */
@@ -518,7 +530,7 @@ struct Inst {
 /**
  * Represents the bytecode of a method.
  */
-typedef vector<Inst> InstList;
+typedef deque<Inst> InstList;
 
 /**
  *
@@ -749,7 +761,6 @@ struct CodeAttr: Attr {
 
 	u2 maxStack;
 	u2 maxLocals;
-
 	u4 codeLen;
 
 	InstList instList;
@@ -782,16 +793,39 @@ struct Member: Attrs {
 
 	Member(Member&&) = default;
 
-	u2 accessFlags;
+	AccessFlags accessFlags;
 	u2 nameIndex;
 	u2 descIndex;
 
+	bool hasCode() {
+		for (Attr* attr : attrs) {
+			if (attr->kind == ATTR_CODE) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	InstList& instList() {
+		for (Attr* attr : attrs) {
+			if (attr->kind == ATTR_CODE) {
+				return ((CodeAttr*) attr)->instList;
+			}
+		}
+
+		EXCEPTION("ERROR!");
+	}
+
 private:
 
-	Member(u2 accessFlags, u2 nameIndex, u2 descIndex) :
+	Member(AccessFlags accessFlags, u2 nameIndex, u2 descIndex) :
 			accessFlags(accessFlags), nameIndex(nameIndex), descIndex(descIndex) {
 	}
 };
+
+typedef Member Field;
+typedef Member Method;
 
 /**
  * Represents a collection of members within a class file, i.e.,
@@ -802,11 +836,11 @@ struct Members {
 	friend struct ClassFile;
 	Members(const Members&) = delete;
 
-	inline Member& add(u2 accessFlags, u2 nameIndex, u2 descIndex) {
-		Member member(accessFlags, nameIndex, descIndex);
-		members.push_back(move(member));
+	inline Member& add(AccessFlags accessFlags, u2 nameIndex, u2 descIndex) {
+		Member* member = new Member(accessFlags, nameIndex, descIndex);
+		members.push_back(member);
 
-		return members.back();
+		return *members.back();
 	}
 
 	inline u2 size() const {
@@ -814,14 +848,14 @@ struct Members {
 	}
 
 	inline Member& operator[](u2 index) {
-		return members[index];
+		return *members[index];
 	}
 
-	vector<Member>::iterator begin() {
+	vector<Member*>::iterator begin() {
 		return members.begin();
 	}
 
-	vector<Member>::iterator end() {
+	vector<Member*>::iterator end() {
 		return members.end();
 	}
 
@@ -830,7 +864,7 @@ private:
 	inline Members() {
 	}
 
-	vector<Member> members;
+	vector<Member*> members;
 };
 
 /**
@@ -872,6 +906,11 @@ u4 getClassFileSize(ClassFile& cf);
  *
  */
 void writeClassFile(ClassFile& cf, u1* fileImage, const int fileImageLen);
+
+/**
+ *
+ */
+void printClassFile(ClassFile& cf, ostream& os, int tabs = 0);
 
 }
 

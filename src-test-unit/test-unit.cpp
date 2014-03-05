@@ -4,147 +4,198 @@
 #include "jnif.hpp"
 
 #include <iostream>
+#include <functional>
 
 using namespace std;
 using namespace jnif;
 
+struct JavaFile {
+	u1* data;
+	int len;
+	const char* name;
+};
+
 extern u1 jnif_BasicClass_class[];
-extern u4 jnif_BasicClass_class_len;
+extern int jnif_BasicClass_class_len;
 
 extern u1 jnif_ExceptionClass_class[];
-extern u4 jnif_ExceptionClass_class_len;
+extern int jnif_ExceptionClass_class_len;
 
-void testIdentityComputeSize() {
-	auto instr =
-			[&](unsigned char* classFile, int classFileLen, const char* className) {
-				ClassFile cf;
-				parseClassFile(classFile, classFileLen, cf);
+extern u1 jnif_TestProxy_class[];
+extern int jnif_TestProxy_class_len;
 
-				int newlen = getClassFileSize(cf);
+JavaFile tests[] = {
 
-				ASSERT(classFileLen == newlen, "Expected class file len %d, actual was %d, on class %s",
-						classFileLen, newlen, className);
-			};
+{ jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass" },
 
-	instr(jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass");
-	instr(jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
-			"jnif/ExceptionClass");
+{ jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
+		"jnif/ExceptionClass" },
+
+{ jnif_TestProxy_class, jnif_TestProxy_class_len, "jnif/TestProxy" },
+
+};
+
+template<typename T>
+void apply(T instr) {
+	for (auto& jf : tests) {
+		instr(jf);
+	}
 }
 
-void testIdentityParserWriter() {
-	auto instr =
-			[&](unsigned char* classFile, int classFileLen, const char* className) {
+static void testPrinter() {
+	auto instr = [&](JavaFile& jf) {
+		ClassFile cf;
+		parseClassFile(jf.data, jf.len, cf);
+		printClassFile(cf, cerr);
+	};
 
-				ClassFile cf;
-				parseClassFile(classFile, classFileLen, cf);
+	apply(instr);
+}
 
-				int newlen = getClassFileSize(cf);
+static void testIdentityComputeSize() {
+	auto instr = [&](JavaFile& jf) {
+		ClassFile cf;
+		parseClassFile(jf.data, jf.len, cf);
 
-				ASSERT(classFileLen == newlen, "Expected class file len %d, actual was %d, on class %s",
-						classFileLen, newlen, className);
+		int newlen = getClassFileSize(cf);
 
-				u1* newClassData = new u1[newlen];
+		ASSERT(newlen == jf.len,
+				"Expected class file len %d, actual was %d, on class %s",
+				jf.len, newlen, jf.name);
+	};
 
-				writeClassFile(cf, newClassData, newlen);
+	for (auto& jf : tests) {
+		instr(jf);
+	}
+}
 
-				for (int i = 0; i < newlen; i++) {
-					ASSERT(classFile[i] == newClassData[i], "error on %d: %d:%d != %d:%d", i,
-							classFile[i],classFile[i+1],
-							newClassData[i],newClassData[i+1]
-					);
-				}
+static void testIdentityParserWriter() {
+	auto instr = [&](JavaFile& jf) {
+		ClassFile cf;
+		parseClassFile(jf.data, jf.len, cf);
 
-				delete [] newClassData;
-			};
+		int newlen = getClassFileSize(cf);
 
-	instr(jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass");
-	instr(jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
-			"jnif/ExceptionClass");
+		ASSERT(jf.len == newlen, "Expected class file len %d, "
+				"actual was %d, on class %s",
+				jf.len, newlen, jf.name);
 
+		u1* newdata = new u1[newlen];
+
+		writeClassFile(cf, newdata, newlen);
+
+		for (int i = 0; i < newlen; i++) {
+			ASSERT(jf.data[i] == newdata[i], "error on %d: "
+					"%d:%d != %d:%d", i,
+					jf.data[i],jf.data[i+1],
+					newdata[i],newdata[i+1]
+			);
+		}
+
+		delete [] newdata;
+	};
+
+	for (auto& jf : tests) {
+		instr(jf);
+	}
 }
 
 void testNopAdderInstrSize() {
-	auto instr =
-			[&](unsigned char* classFile, int classFileLen, const char* className,int diff) {
-//				BufferSize w;
-//				BufferReader r(classFile, classFileLen);
-//				ClassParser::ClassWriter<BufferSize> cw(w);
-//				NopAdderInstr::Class<decltype(cw)> iv(cw);
-//				ClassParser::parse(r, iv);
-//
-//				int len = w.size();
-//				ASSERT(classFileLen+diff == len, "Expected class file len %d, actual was %d, on class %s",
-//						classFileLen+diff, len, className);
-			};
+	auto instr = [&](JavaFile& jf) {
+		ClassFile cf;
+		parseClassFile(jf.data, jf.len , cf);
 
-	instr(jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass",
-			4 * 2);
+		int methodsWithCode = 0;
+		for (Method* m: cf.methods) {
+			if (m->hasCode()) {
+				InstList& instList = m->instList();
 
-	instr(jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
-			"jnif/ExceptionClass", 1 * 2);
+				Inst nop (OPCODE_nop);
+				instList.push_front(nop);
+				instList.push_front(nop);
+
+				methodsWithCode++;
+			}
+		}
+
+		int diff = methodsWithCode * 2;
+
+		int newlen = getClassFileSize(cf);
+
+		ASSERT(jf.len + diff == newlen,
+				"Expected class file len %d, actual was %d, on class %s",
+				jf.len, newlen, jf.name);
+
+	};
+
+	apply(instr);
 }
 
 void testNopAdderInstr() {
-	auto instr =
-			[&](unsigned char* classFile, int classFileLen, const char* className,int diff) {
+	auto instr = [&](JavaFile& jf) {
+		ClassFile cf;
+		parseClassFile(jf.data, jf.len , cf);
 
-//				int newlen = [&]() {
-//					BufferSize w;
-//					BufferReader r(classFile, classFileLen);
-//					ClassParser::ClassWriter<BufferSize> cw(w);
-//					NopAdderInstr::Class<decltype(cw)> iv(cw);
-//					ClassParser::parse(r, iv);
-//					return w.size();
-//				}();
-//
-//				ASSERT(classFileLen + diff == newlen, "Expected class file len %d, actual was %d, on class %s",
-//						classFileLen+diff, newlen, className);
-//
-//				u1* newdata = new u1[newlen];
-//				{
-//					BufferWriter w(newdata, newlen);
-//					BufferReader r(classFile, classFileLen);
-//					PatchWriter cw(w);
-//					NopAdderInstr::Class<decltype(cw)> iv(cw);
-//					ClassParser::parse(r, iv);
-//				}
-//
-//				int newlen2 = [&]() {
-//					BufferSize w;
-//					BufferReader r(newdata, newlen);
-//					ClassParser::ClassWriter<BufferSize> cw(w);
-//					ClassParser::parse(r, cw);
-//					return w.size();
-//				}();
-//
-//				ASSERT(newlen == newlen2, "Expected class file len %d, actual was %d, on class %s",
-//						newlen, newlen2, className);
-//
-////				for (int i = 0; i < newlen; i++) {
-////					ASSERT(classFile[i] == newdata[i], "error on %d: %d:%d != %d:%d", i,
-////							classFile[i],classFile[i+1],
-////							newdata[i],newdata[i+1]
-////					);
-////				}
+		int methodsWithCode = 0;
+		for (Method* m: cf.methods) {
+			if (m->hasCode()) {
+				InstList& instList = m->instList();
 
-//		delete [] newdata;
-			};
+				Inst nop (OPCODE_nop);
+				instList.push_front(nop);
+				instList.push_front(nop);
 
-	instr(jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass",
-			4 * 2);
-	instr(jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
-			"jnif/ExceptionClass", 1 * 2);
+				methodsWithCode++;
+			}
+		}
+
+		int diff = methodsWithCode * 2;
+
+		int newlen = getClassFileSize(cf);
+
+		ASSERT(jf.len + diff == newlen,
+				"Expected class file len %d, actual was %d, on class %s",
+				jf.len, newlen, jf.name);
+
+		u1* newdata = new u1[newlen];
+		writeClassFile(cf, newdata, newlen);
+
+		ClassFile newcf;
+		parseClassFile(newdata, newlen, newcf);
+
+		int newlen2 = getClassFileSize(cf);
+
+		ASSERT(newlen2 == newlen,
+				"Expected class file len %d, actual was %d, on class %s",
+				newlen2, newlen, jf.name);
+
+		u1* newdata2 = new u1[newlen2];
+		writeClassFile(cf, newdata2, newlen2);
+
+		for (int i = 0; i < newlen2; i++) {
+			ASSERT(newdata2[i] == newdata[i],
+					"error on %d: %d:%d != %d:%d", i,
+					newdata[i],newdata[i+1],
+					newdata2[i],newdata2[i+1]
+			);
+		}
+
+		delete [] newdata;
+
+	};
+
+	apply(instr);
 }
 
 #define RUN(test) ( fprintf(stderr, "Running test " #test "... "), \
 	test(), fprintf(stderr, "[OK]\n") )
 
 int main(int argc, const char* argv[]) {
+	RUN(testPrinter);
 	RUN(testIdentityComputeSize);
 	RUN(testIdentityParserWriter);
 	RUN(testNopAdderInstrSize);
 	RUN(testNopAdderInstr);
 
-	fprintf(stderr, "argc: %d, %d\n", argc, jnif_BasicClass_class_len);
 	return 0;
 }

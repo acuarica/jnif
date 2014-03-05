@@ -55,11 +55,6 @@ struct ClassPrinter {
 			cf(cf), os(os), tabs(tabs) {
 	}
 
-	static void print(ClassFile& cf, ostream& os, int tabs = 0) {
-		ClassPrinter cp(cf, os, tabs);
-		cp.print();
-	}
-
 	void print() {
 		line() << "Version = minor: " << cf.minor << ", major: " << cf.major
 				<< endl;
@@ -81,7 +76,8 @@ struct ClassPrinter {
 					<< interIndex << endl;
 		}
 
-		for (Member& f : cf.fields) {
+		for (Field* fp : cf.fields) {
+			Field& f = *fp;
 			line() << "Field " << cf.cp.getUtf8(f.nameIndex) << ": "
 					<< AccessFlagsPrinter(f.accessFlags) << " #" << f.nameIndex
 					<< ": " << cf.cp.getUtf8(f.descIndex) << "#" << f.descIndex
@@ -90,7 +86,9 @@ struct ClassPrinter {
 			printAttrs(f);
 		}
 
-		for (Member& m : cf.methods) {
+		for (Method* mp : cf.methods) {
+			Method& m = *mp;
+
 			line() << "+Method " << AccessFlagsPrinter(m.accessFlags) << " "
 					<< cf.cp.getUtf8(m.nameIndex) << ": " << " #" << m.nameIndex
 					<< ": " << cf.cp.getUtf8(m.descIndex) << "#" << m.descIndex
@@ -459,5 +457,10 @@ const char* ClassPrinter::OPCODES[] = { "nop", "aconst_null", "iconst_m1",
 		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
 		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "impdep1",
 		"impdep2" };
+
+void printClassFile(ClassFile& cf, ostream& os, int tabs) {
+	ClassPrinter cp(cf, os, tabs);
+	cp.print();
+}
 
 }

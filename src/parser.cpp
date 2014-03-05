@@ -365,7 +365,6 @@ static Attr* parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 
 	ca->maxStack = br.readu2();
 	ca->maxLocals = br.readu2();
-
 	ca->codeLen = br.readu4();
 
 	//fprintf(stderr, "code len in parser: %d\n", ca->codeLen );
@@ -572,7 +571,7 @@ void parseClassFile(const u1* fileImage, const int fileImageLen,
 	auto mm = [&](Members& ms) {
 		u2 memberCount = br.readu2();
 		for (int i = 0; i < memberCount; i++) {
-			u2 accessFlags = br.readu2();
+			AccessFlags accessFlags = (AccessFlags)br.readu2();
 			u2 nameIndex = br.readu2();
 			u2 descIndex = br.readu2();
 
