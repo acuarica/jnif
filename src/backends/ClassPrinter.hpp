@@ -53,53 +53,109 @@ static const char* OPCODES[] = { "nop", "aconst_null", "iconst_m1", "iconst_0",
 		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
 		"impdep1", "impdep2", };
 
-template<typename TForward>
+struct PrinterData {
+	std::ostream& os;
+
+	ConstPool cp;
+
+	int tabs;
+
+	void inc() {
+		tabs++;
+	}
+
+	void dec() {
+		tabs--;
+	}
+
+	std::ostream& line(int moretabs = 0) {
+		return tab(os, moretabs);
+	}
+
+	std::ostream& tab(std::ostream& os, int moretabs = 0) {
+		for (int _ii = 0; _ii < tabs + moretabs; _ii++) {
+			os << "  ";
+		}
+
+		return os;
+	}
+};
+
+struct BasePrinter {
+	PrinterData& pd;
+
+	BasePrinter(PrinterData& pd) :
+			pd(pd) {
+	}
+};
+
+struct AccessFlagsPrinter {
+	AccessFlagsPrinter(u2 value, const char* sep = " ") :
+			value(value), sep(sep) {
+	}
+
+	friend std::ostream& operator<<(std::ostream& out,
+			AccessFlagsPrinter self) {
+		bool empty = true;
+
+		auto check = [&](AccessFlags accessFlags, const char* name) {
+			if (self.value & accessFlags) {
+				out << (empty ? "" : self.sep) << name;
+				empty = false;
+			}
+		};
+
+		check(ACC_PUBLIC, "public");
+		check(ACC_PRIVATE, "private");
+		check(ACC_PROTECTED, "protected");
+		check(ACC_STATIC, "static");
+		check(ACC_FINAL, "final");
+		check(ACC_SYNCHRONIZED, "synchronized");
+		check(ACC_BRIDGE, "bridge");
+		check(ACC_VARARGS, "varargs");
+		check(ACC_NATIVE, "native");
+		check(ACC_ABSTRACT, "abstract");
+		check(ACC_STRICT, "strict");
+		check(ACC_SYNTHETIC, "synthetic");
+
+		return out;
+	}
+
+private:
+	const u2 value;
+	const char* const sep;
+};
+
+struct ExceptionsAttrPrinter {
+
+	struct Printer: BasePrinter {
+
+		Printer(PrinterData& pd) :
+				BasePrinter(pd) {
+		}
+
+		void visitExceptionCount(u2 count) {
+			pd.os << "Excep count: " << count << std::endl;
+		}
+
+		void visitExceptionEntry(u2 exceptionIndex) {
+			const std::string& exceptionName = pd.cp.getClazzName(
+					exceptionIndex);
+
+			pd.line() << "  Exceptions entry: '" << exceptionName << "'#"
+					<< exceptionIndex << std::endl;
+		}
+	};
+};
+
 struct ClassPrinter {
 
-	ClassPrinter(std::ostream& os, const char* className, int fileImageLen,
-			TForward& cv) :
+	ClassPrinter(std::ostream& os) :
 			cv(cv), os(os), tabs(0) {
 		line() << "Class file " << className << " [file size: " << fileImageLen
 				<< "]" << std::endl;
 		inc();
 	}
-
-	struct AccessFlagsPrinter {
-		AccessFlagsPrinter(u2 value, const char* sep = " ") :
-				value(value), sep(sep) {
-		}
-
-		friend std::ostream& operator<<(std::ostream& out,
-				AccessFlagsPrinter self) {
-			bool empty = true;
-
-			auto check = [&](AccessFlags accessFlags, const char* name) {
-				if (self.value & accessFlags) {
-					out << (empty ? "" : self.sep) << name;
-					empty = false;
-				}
-			};
-
-			check(ACC_PUBLIC, "public");
-			check(ACC_PRIVATE, "private");
-			check(ACC_PROTECTED, "protected");
-			check(ACC_STATIC, "static");
-			check(ACC_FINAL, "final");
-			check(ACC_SYNCHRONIZED, "synchronized");
-			check(ACC_BRIDGE, "bridge");
-			check(ACC_VARARGS, "varargs");
-			check(ACC_NATIVE, "native");
-			check(ACC_ABSTRACT, "abstract");
-			check(ACC_STRICT, "strict");
-			check(ACC_SYNTHETIC, "synthetic");
-
-			return out;
-		}
-
-	private:
-		const u2 value;
-		const char* const sep;
-	};
 
 	class Field {
 	public:
@@ -138,8 +194,7 @@ struct ClassPrinter {
 		public:
 			typename TForward::Method::Code bv;
 
-			inline Code(ClassPrinter& cpv,
-					typename TForward::Method::Code& bv) :
+			inline Code(ClassPrinter& cpv, typename TForward::Method::Code& bv) :
 					bv(std::move(bv)), cpv(cpv) {
 			}
 
@@ -361,19 +416,19 @@ struct ClassPrinter {
 			return Code(cpv, bv);
 		}
 
-		inline void visitException(u2 nameIndex, std::vector<u2>& es) {
-			mv.visitException(nameIndex, es);
-
-			for (u4 i = 0; i < es.size(); i++) {
-				u2 exceptionIndex = es[i];
-
-				const std::string& exceptionName = cpv.cp.getClazzName(
-						exceptionIndex);
-
-				line() << "  Exceptions entry: '" << exceptionName << "'#"
-						<< exceptionIndex << std::endl;
-			}
-		}
+//		inline void visitException(u2 nameIndex, std::vector<u2>& es) {
+//			mv.visitException(nameIndex, es);
+//
+//			for (u4 i = 0; i < es.size(); i++) {
+//				u2 exceptionIndex = es[i];
+//
+//				const std::string& exceptionName = cpv.cp.getClazzName(
+//						exceptionIndex);
+//
+//				line() << "  Exceptions entry: '" << exceptionName << "'#"
+//						<< exceptionIndex << std::endl;
+//			}
+//		}
 
 		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
 			mv.visitAttr(nameIndex, len, data);

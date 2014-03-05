@@ -5,6 +5,10 @@
 #include "AccessFlags.hpp"
 #include "Opcode.hpp"
 
+#include "utils/BufferReader.hpp"
+#include "utils/BufferWriter.hpp"
+#include "utils/BufferSize.hpp"
+
 #include "core/AttrsParser.hpp"
 #include "core/ClassBaseParser.hpp"
 #include "core/SourceFileAttrParser.hpp"
@@ -13,6 +17,8 @@
 #include "core/LvtAttrParser.hpp"
 #include "core/ExceptionsAttrParser.hpp"
 //#include "core/StackMapTableAttrParser.hpp"
+
+#include "backends/ClassPrinter.hpp"
 
 
 namespace jnif {
@@ -27,14 +33,15 @@ namespace jnif {
 //				ExceptionsAttrParser>, AttrsParser<>> ClassParser;
 typedef CodeAttrParser<LntAttrParser, LvtAttrParser> CodeFullParser;
 
+template<typename ... TList>
+struct L: TList... {
+};
+
 typedef ClassBaseParser<AttrsParser<SourceFileAttrParser>,
-		AttrsParser<CodeFullParser, ExceptionsAttrParser>, AttrsParser<>> ClassParser;
+		AttrsParser<CodeFullParser,
+				L<ExceptionsAttrParser, ExceptionsAttrPrinter>>, AttrsParser<>> ClassParser;
 
 }
-
-#include "utils/BufferReader.hpp"
-#include "utils/BufferWriter.hpp"
-#include "utils/BufferSize.hpp"
 
 #include "tree/ConstPool.hpp"
 #include "tree/Attr.hpp"
@@ -48,8 +55,7 @@ typedef ClassBaseParser<AttrsParser<SourceFileAttrParser>,
 #include "tree/ClassFile.hpp"
 #include "tree/LntAttr.hpp"
 
-
 #include "backends/PatchWriter.hpp"
-//#include "ClassPrinter.hpp"
+#include "backends/ClassPrinter.hpp"
 
 #endif

@@ -8,30 +8,33 @@
 namespace jnif {
 
 template<typename ...TAttrParserList>
-struct PatchCodeWriter: CodeAttrParser<TAttrParserList...>::template Writer<
-		BufferWriter> {
-	PatchCodeWriter(BufferWriter& w) :
-			CodeAttrParser<TAttrParserList...>::template Writer<BufferWriter>(
-					w), codeStartsPatch(0), offset(0) {
-	}
+struct CodeAttrPatchWriter {
 
-	u1* codeStartsPatch;
-	int offset;
+	struct PatchCodeWriter: CodeAttrParser<TAttrParserList...>::template Writer<
+			BufferWriter> {
+		PatchCodeWriter(BufferWriter& w) :
+				CodeAttrParser<TAttrParserList...>::template Writer<BufferWriter>(
+						w), codeStartsPatch(0), offset(0) {
+		}
 
-	void beginCode(u4 codeLen) {
-		codeStartsPatch = this->w.pos();
+		u1* codeStartsPatch;
+		int offset;
 
-		this->w.skip(4);
+		void beginCode(u4 codeLen) {
+			codeStartsPatch = this->w.pos();
 
-		offset = this->w.offset2();
-	}
+			this->w.skip(4);
 
-	void codeEnd() {
-		int size = this->w.offset2() - offset;
+			offset = this->w.offset2();
+		}
 
-		BufferWriter bw(codeStartsPatch, 4);
-		bw.writeu4(size);
-	}
+		void codeEnd() {
+			int size = this->w.offset2() - offset;
+
+			BufferWriter bw(codeStartsPatch, 4);
+			bw.writeu4(size);
+		}
+	};
 };
 
 template<typename ...TAttrParserList>

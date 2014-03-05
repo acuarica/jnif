@@ -16,7 +16,6 @@ public:
 	template<typename TAttrVisitor, typename TReader>
 	inline static void parse(TReader& br, ConstPool&cp, TAttrVisitor& av) {
 		u2 attrCount = br.readu2();
-
 		av.visitAttrCount(attrCount);
 
 		for (int i = 0; i < attrCount; i++) {
@@ -38,34 +37,13 @@ public:
 		}
 	}
 
-	template<typename TWriter, typename ... TAttrParserList2>
-	struct _WriterBase;
-
 	template<typename TWriter>
-	struct _WriterBase<TWriter> {
-		_WriterBase(TWriter& w) {
-		}
-	};
-
-	template<typename TWriter, typename TAttrParser,
-			typename ... TAttrParserTail>
-	struct _WriterBase<TWriter, TAttrParser, TAttrParserTail...> : TAttrParser::template Writer<
-			TWriter>,
-			_WriterBase<TWriter, TAttrParserTail...> {
-
-		_WriterBase(TWriter& w) :
-				TAttrParser::template Writer<TWriter>(w), _WriterBase<TWriter,
-						TAttrParserTail...>(w) {
-		}
-	};
-
-	template<typename TWriter, typename _T = void>
-	struct Writer: _WriterBase<TWriter, TAttrParserList...> {
+	struct Writer: TAttrParserList::template Writer<TWriter>... {
 
 		TWriter& w;
 
 		Writer(TWriter& w) :
-				_WriterBase<TWriter, TAttrParserList...>(w), w(w) {
+				TAttrParserList::template Writer<TWriter>(w)..., w(w) {
 		}
 
 		void visitAttrCount(u2 attrCount) {
@@ -85,32 +63,12 @@ public:
 		}
 	};
 
-	template<typename TVisitor, typename ... TAttrParserList2>
-	struct _ForwardBase;
-
 	template<typename TVisitor>
-	struct _ForwardBase<TVisitor> {
-		_ForwardBase(TVisitor& w) {
-		}
-	};
-
-	template<typename TVisitor, typename TAttrParser,
-			typename ... TAttrParserTail>
-	struct _ForwardBase<TVisitor, TAttrParser, TAttrParserTail...> : TAttrParser::template Forward<
-			TVisitor>,
-			_ForwardBase<TVisitor, TAttrParserTail...> {
-		_ForwardBase(TVisitor& w) :
-				TAttrParser::template Forward<TVisitor>(w), _ForwardBase<
-						TVisitor, TAttrParserTail...>(w) {
-		}
-	};
-
-	template<typename TVisitor>
-	struct Forward: _ForwardBase<TVisitor, TAttrParserList...> {
+	struct Forward: TAttrParserList::template Forward<TVisitor>... {
 		TVisitor& v;
 
 		Forward(TVisitor& v) :
-				_ForwardBase<TVisitor, TAttrParserList...>(v), v(v) {
+				TAttrParserList::template Forward<TVisitor>(v)..., v(v) {
 		}
 
 		void visitAttrCount(u2 attrCount) {
