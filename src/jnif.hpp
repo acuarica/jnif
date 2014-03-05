@@ -846,7 +846,7 @@ struct ClassFile: Attrs {
 	u2 accessFlags;
 	u2 thisClassIndex;
 	u2 superClassIndex;
-	std::vector<u2> interfaces;
+	vector<u2> interfaces;
 	Members fields;
 	Members methods;
 };

@@ -18,9 +18,9 @@ void testIdentityComputeSize() {
 	auto instr =
 			[&](unsigned char* classFile, int classFileLen, const char* className) {
 				ClassFile cf;
-				ClassParser::parse(classFile, classFileLen, cf);
+				parseClassFile(classFile, classFileLen, cf);
 
-				int newlen = cf.size();
+				int newlen = getClassFileSize(cf);
 
 				ASSERT(classFileLen == newlen, "Expected class file len %d, actual was %d, on class %s",
 						classFileLen, newlen, className);
@@ -36,16 +36,16 @@ void testIdentityParserWriter() {
 			[&](unsigned char* classFile, int classFileLen, const char* className) {
 
 				ClassFile cf;
-				ClassParser::parse(classFile, classFileLen, cf);
+				parseClassFile(classFile, classFileLen, cf);
 
-				int newlen = ClassWriter::getSize(cf);
+				int newlen = getClassFileSize(cf);
 
 				ASSERT(classFileLen == newlen, "Expected class file len %d, actual was %d, on class %s",
 						classFileLen, newlen, className);
 
 				u1* newClassData = new u1[newlen];
 
-				ClassWriter::write(cf, newClassData, newlen);
+				writeClassFile(cf, newClassData, newlen);
 
 				for (int i = 0; i < newlen; i++) {
 					ASSERT(classFile[i] == newClassData[i], "error on %d: %d:%d != %d:%d", i,
