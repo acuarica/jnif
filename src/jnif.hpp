@@ -744,11 +744,13 @@ struct CodeExceptionEntry {
 struct CodeAttr: Attr {
 
 	CodeAttr(u2 nameIndex) :
-			Attr(ATTR_CODE, nameIndex), maxStack(0), maxLocals(0) {
+			Attr(ATTR_CODE, nameIndex), maxStack(0), maxLocals(0), codeLen(0) {
 	}
 
 	u2 maxStack;
 	u2 maxLocals;
+
+	u4 codeLen;
 
 	InstList instList;
 

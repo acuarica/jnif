@@ -207,14 +207,17 @@ static void parseConstPool(BufferReader& br, ConstPool& cp) {
 	}
 }
 
-static void parseSourceFile(BufferReader& br, Attrs& as, ConstPool& cp,
+static Attr* parseSourceFile(BufferReader& br, Attrs& as, ConstPool& cp,
 		u2 nameIndex) {
 	u2 sourceFileIndex = br.readu2();
 
-	as.add(new SourceFileAttr(nameIndex, 2, sourceFileIndex));
+	Attr* attr = new SourceFileAttr(nameIndex, 2, sourceFileIndex);
+	as.add(attr);
+
+	return attr;
 }
 
-static void parseExceptions(BufferReader& br, Attrs& as, ConstPool& cp,
+static Attr* parseExceptions(BufferReader& br, Attrs& as, ConstPool& cp,
 		u2 nameIndex) {
 	u2 len = br.readu2();
 
@@ -225,7 +228,10 @@ static void parseExceptions(BufferReader& br, Attrs& as, ConstPool& cp,
 		es.push_back(exceptionIndex);
 	}
 
-	as.add(new ExceptionsAttr(nameIndex, len * 2 + 2, es));
+	Attr* attr = new ExceptionsAttr(nameIndex, len * 2 + 2, es);
+	as.add(attr);
+
+	return attr;
 }
 
 static void parseInstList(BufferReader& br, InstList& instList, ConstPool& cp) {
@@ -352,7 +358,7 @@ static void parseInstList(BufferReader& br, InstList& instList, ConstPool& cp) {
 	}
 }
 
-static void parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
+static Attr* parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 		u2 nameIndex) {
 
 	CodeAttr* ca = new CodeAttr(nameIndex);
@@ -360,12 +366,15 @@ static void parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 	ca->maxStack = br.readu2();
 	ca->maxLocals = br.readu2();
 
-	u4 codeLen = br.readu4();
+	ca->codeLen = br.readu4();
+
+	//fprintf(stderr, "code len in parser: %d\n", ca->codeLen );
+
 	const u1* codeBuf = br.pos();
-	br.skip(codeLen);
+	br.skip(ca->codeLen);
 
 	{
-		BufferReader br(codeBuf, codeLen);
+		BufferReader br(codeBuf, ca->codeLen);
 		parseInstList(br, ca->instList, cp);
 	}
 
@@ -383,9 +392,11 @@ static void parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 	parseAttrs(br, cp, ca->attrs);
 
 	as.add(ca);
+
+	return ca;
 }
 
-static void parseLnt(BufferReader& br, Attrs& as, ConstPool& cp, u2 nameIndex) {
+static Attr* parseLnt(BufferReader& br, Attrs& as, ConstPool& cp, u2 nameIndex) {
 	u2 lntlen = br.readu2();
 
 	LntAttr* lnt = new LntAttr(nameIndex);
@@ -399,9 +410,12 @@ static void parseLnt(BufferReader& br, Attrs& as, ConstPool& cp, u2 nameIndex) {
 	}
 
 	as.add(lnt);
+
+	return lnt;
 }
 
-static void parseLvt(BufferReader& br, Attrs& as, ConstPool& cp, u2 nameIndex) {
+static Attr* parseLvt(BufferReader& br, Attrs& as, ConstPool& cp,
+		u2 nameIndex) {
 	u2 count = br.readu2();
 
 	LvtAttr* lvt = new LvtAttr(nameIndex);
@@ -419,6 +433,8 @@ static void parseLvt(BufferReader& br, Attrs& as, ConstPool& cp, u2 nameIndex) {
 	}
 
 	as.add(lvt);
+
+	return lvt;
 }
 
 static void parseSmt(BufferReader& br, Attrs& as, ConstPool& cp, u2 nameIndex) {
@@ -499,27 +515,31 @@ static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as) {
 
 		std::string attrName = cp.getUtf8(nameIndex);
 
+		Attr* a;
 		if (attrName == "SourceFile") {
 			BufferReader br(data, len);
-			parseSourceFile(br, as, cp, nameIndex);
+			a = parseSourceFile(br, as, cp, nameIndex);
 		} else if (attrName == "Exceptions") {
 			BufferReader br(data, len);
-			parseExceptions(br, as, cp, nameIndex);
+			a = parseExceptions(br, as, cp, nameIndex);
 		} else if (attrName == "Code") {
 			BufferReader br(data, len);
-			parseCode(br, as, cp, nameIndex);
+			a = parseCode(br, as, cp, nameIndex);
 		} else if (attrName == "LineNumberTable") {
 			BufferReader br(data, len);
-			parseLnt(br, as, cp, nameIndex);
+			a = parseLnt(br, as, cp, nameIndex);
 		} else if (attrName == "LocalVariableTable") {
 			BufferReader br(data, len);
-			parseLvt(br, as, cp, nameIndex);
+			a = parseLvt(br, as, cp, nameIndex);
 //		} else if (attrName == "StackMapTable") {
 //			BufferReader br(data, len);
 //			parseSmt(br, as, cp, nameIndex);
 		} else {
-			as.add(new UnknownAttr(nameIndex, len, data));
+			a = new UnknownAttr(nameIndex, len, data);
+			as.add(a);
 		}
+
+		a->len = len;
 
 		br.skip(len);
 	}

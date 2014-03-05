@@ -69,7 +69,7 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* classFile,
 					exit(1);
 				}
 
-				BufferWriter bw(*new_class_data, len);
+				BaseWriter bw(*new_class_data, len);
 				cwv.writeClassFile(bw, cwv.cf);
 			};
 
