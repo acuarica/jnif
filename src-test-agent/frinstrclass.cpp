@@ -8,6 +8,7 @@
 #include <errno.h>
 
 #include <jvmti.h>
+#include <jnif.hpp>
 
 #include "frlog.h"
 #include "frexception.h"
@@ -16,9 +17,6 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-
-#include "../src/jnif.hpp"
-#include "InstrVisitor.hpp"
 
 using namespace std;
 using namespace jnif;
