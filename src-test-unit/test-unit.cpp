@@ -1,9 +1,6 @@
 /*
  * Includes
  */
-#include "frlog.h"
-#include "frexception.h"
-
 #include "jnif.hpp"
 
 #include <iostream>
@@ -41,13 +38,14 @@ void testIdentityParserWriter() {
 				ClassFile cf;
 				ClassParser::parse(classFile, classFileLen, cf);
 
-				int newlen = cf.size();
+				int newlen = ClassWriter::getSize(cf);
 
 				ASSERT(classFileLen == newlen, "Expected class file len %d, actual was %d, on class %s",
 						classFileLen, newlen, className);
 
 				u1* newClassData = new u1[newlen];
-				cf.write(newClassData, newlen);
+
+				ClassWriter::write(cf, newClassData, newlen);
 
 				for (int i = 0; i < newlen; i++) {
 					ASSERT(classFile[i] == newClassData[i], "error on %d: %d:%d != %d:%d", i,

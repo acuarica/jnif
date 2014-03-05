@@ -2,12 +2,11 @@
 INCLUDE=../src
 BUILD=../build
 
-INCS=$(wildcard $(INCLUDE)/*.h)
-HPPS=$(wildcard $(INCLUDE)/*.hpp) $(wildcard $(INCLUDE)/**/*.hpp)
+HPPS=$(wildcard $(INCLUDE)/*.hpp)
 
 SRC=.
 OUTPUT=$(BUILD)/test-unit
-SRCS=$(wildcard $(SRC)/*.cpp) $(wildcard $(SRC)/**/*.java)
+SRCS=$(wildcard $(INCLUDE)/*.cpp) $(wildcard $(SRC)/*.cpp) $(wildcard $(SRC)/**/*.java)
 OBJS=$(SRCS:$(SRC)/%=$(BUILD)/%.o)
 
 CFLAGS += -fPIC -W -O3 -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -I../src -I../include
@@ -26,4 +25,7 @@ $(BUILD)/%.java.o: $(SRC)/%.java
 	$(LINK.c) -c -o $@ $(BUILD)/$*.c
 
 $(BUILD)/%.cpp.o: $(SRC)/%.cpp $(INCS) $(HPPS) | $(BUILD)
+	$(LINK.c) -std=c++11 -stdlib=libc++ -c -o $@ $<
+
+$(BUILD)/%.cpp.o: $(INCLUDE)/%.cpp $(INCS) $(HPPS) | $(BUILD)
 	$(LINK.c) -std=c++11 -stdlib=libc++ -c -o $@ $<

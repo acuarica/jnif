@@ -9,6 +9,7 @@ agent: | $(BUILD)
 	$(MAKE) -C src-test-agent
 
 unit: | $(BUILD)
+	$(MAKE) -C src
 	$(MAKE) -C src-test-unit
 
 docs:
