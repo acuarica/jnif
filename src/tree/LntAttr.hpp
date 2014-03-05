@@ -8,8 +8,8 @@ namespace jnif {
 /**
  * Represents the LineNumberTable attribute within the Code attribute.
  */
-class LntAttr: Attr {
-public:
+struct LntAttr: Attr {
+
 	LntAttr(u2 nameIndex) :
 			Attr(nameIndex) {
 	}
@@ -17,25 +17,25 @@ public:
 	virtual ~LntAttr() {
 	}
 
-	struct Ln {
+	struct LnEntry {
 		u2 startpc;
 		u2 lineno;
 	};
 
-	std::vector<Ln> lns;
+	std::vector<LnEntry> lnt;
 
 	virtual void write(BufferWriter& bw) {
-		u2 size = lns.size();
-		bw.writeu2(size);
+		u2 count = lnt.size();
 
-		for (u4 i = 0; i < size; i++) {
-			Ln& ln = lns[i];
+		bw.writeu2(count);
 
-			bw.writeu2(ln.startpc);
-			bw.writeu2(ln.lineno);
+		for (u4 i = 0; i < count; i++) {
+			LnEntry& lne = lnt[i];
+
+			bw.writeu2(lne.startpc);
+			bw.writeu2(lne.lineno);
 		}
 	}
-
 };
 
 }

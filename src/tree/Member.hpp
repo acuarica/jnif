@@ -8,21 +8,19 @@ namespace jnif {
 /**
  *
  */
-class Member {
-	friend class Members;
+struct Member: Attrs {
+	friend struct Members;
 	Member(const Member&) = delete;
 
-public:
 	Member(Member&&) = default;
 
 	u2 accessFlags;
 	u2 nameIndex;
 	u2 descIndex;
-	Attrs attrs;
 
 private:
 
-	inline Member(u2 accessFlags, u2 nameIndex, u2 descIndex) :
+	Member(u2 accessFlags, u2 nameIndex, u2 descIndex) :
 			accessFlags(accessFlags), nameIndex(nameIndex), descIndex(descIndex) {
 	}
 };

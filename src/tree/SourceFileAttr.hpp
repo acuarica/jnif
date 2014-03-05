@@ -19,6 +19,10 @@ public:
 
 	const u2 sourceFileIndex;
 
+	virtual void accept(Visitor& av) {
+		av.visitSourceFile(*this);
+	}
+
 	virtual void write(BufferWriter& bw) {
 		bw.writeu2(sourceFileIndex);
 	}

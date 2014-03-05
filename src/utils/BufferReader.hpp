@@ -8,8 +8,7 @@ namespace jnif {
 /**
  * Implements a memory buffer reader in big-endian encoding.
  */
-class BufferReader {
-public:
+struct BufferReader {
 
 	inline BufferReader(const u1* buffer, int len) :
 			buffer(buffer), len(len), off(0) {

@@ -12,112 +12,48 @@ namespace jnif {
  * OPCODES names definition
  *
  */
-static const char* OPCODES[] = { "nop", "aconst_null", "iconst_m1", "iconst_0",
-		"iconst_1", "iconst_2", "iconst_3", "iconst_4", "iconst_5", "lconst_0",
-		"lconst_1", "fconst_0", "fconst_1", "fconst_2", "dconst_0", "dconst_1",
-		"bipush", "sipush", "ldc", "ldc_w", "ldc2_w", "iload", "lload", "fload",
-		"dload", "aload", "iload_0", "iload_1", "iload_2", "iload_3", "lload_0",
-		"lload_1", "lload_2", "lload_3", "fload_0", "fload_1", "fload_2",
-		"fload_3", "dload_0", "dload_1", "dload_2", "dload_3", "aload_0",
-		"aload_1", "aload_2", "aload_3", "iaload", "laload", "faload", "daload",
-		"aaload", "baload", "caload", "saload", "istore", "lstore", "fstore",
-		"dstore", "astore", "istore_0", "istore_1", "istore_2", "istore_3",
-		"lstore_0", "lstore_1", "lstore_2", "lstore_3", "fstore_0", "fstore_1",
-		"fstore_2", "fstore_3", "dstore_0", "dstore_1", "dstore_2", "dstore_3",
-		"astore_0", "astore_1", "astore_2", "astore_3", "iastore", "lastore",
-		"fastore", "dastore", "aastore", "bastore", "castore", "sastore", "pop",
-		"pop2", "dup", "dup_x1", "dup_x2", "dup2", "dup2_x1", "dup2_x2", "swap",
-		"iadd", "ladd", "fadd", "dadd", "isub", "lsub", "fsub", "dsub", "imul",
-		"lmul", "fmul", "dmul", "idiv", "ldiv", "fdiv", "ddiv", "irem", "lrem",
-		"frem", "drem", "ineg", "lneg", "fneg", "dneg", "ishl", "lshl", "ishr",
-		"lshr", "iushr", "lushr", "iand", "land", "ior", "lor", "ixor", "lxor",
-		"iinc", "i2l", "i2f", "i2d", "l2i", "l2f", "l2d", "f2i", "f2l", "f2d",
-		"d2i", "d2l", "d2f", "i2b", "i2c", "i2s", "lcmp", "fcmpl", "fcmpg",
-		"dcmpl", "dcmpg", "ifeq", "ifne", "iflt", "ifge", "ifgt", "ifle",
-		"if_icmpeq", "if_icmpne", "if_icmplt", "if_icmpge", "if_icmpgt",
-		"if_icmple", "if_acmpeq", "if_acmpne", "goto", "jsr", "ret",
-		"tableswitch", "lookupswitch", "ireturn", "lreturn", "freturn",
-		"dreturn", "areturn", "return", "getstatic", "putstatic", "getfield",
-		"putfield", "invokevirtual", "invokespecial", "invokestatic",
-		"invokeinterface", "invokedynamic", "new", "newarray", "anewarray",
-		"arraylength", "athrow", "checkcast", "instanceof", "monitorenter",
-		"monitorexit", "wide", "multianewarray", "ifnull", "ifnonnull",
-		"goto_w", "jsr_w", "breakpoint", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"impdep1", "impdep2", };
+struct AccessFlagsPrinter {
+	AccessFlagsPrinter(u2 value, const char* sep = " ") :
+			value(value), sep(sep) {
+	}
 
-template<typename TForward = ClassDefaultVisitor>
-class ClassPrinterVisitor {
-public:
+	friend std::ostream& operator<<(std::ostream& out,
+			AccessFlagsPrinter self) {
+		bool empty = true;
 
-	class AccessFlagsPrinter {
-	public:
-		AccessFlagsPrinter(u2 value, const char* sep = " ") :
-				value(value), sep(sep) {
-		}
+		auto check = [&](AccessFlags accessFlags, const char* name) {
+			if (self.value & accessFlags) {
+				out << (empty ? "" : self.sep) << name;
+				empty = false;
+			}
+		};
 
-		friend std::ostream& operator<<(std::ostream& out,
-				AccessFlagsPrinter self) {
-			bool empty = true;
+		check(ACC_PUBLIC, "public");
+		check(ACC_PRIVATE, "private");
+		check(ACC_PROTECTED, "protected");
+		check(ACC_STATIC, "static");
+		check(ACC_FINAL, "final");
+		check(ACC_SYNCHRONIZED, "synchronized");
+		check(ACC_BRIDGE, "bridge");
+		check(ACC_VARARGS, "varargs");
+		check(ACC_NATIVE, "native");
+		check(ACC_ABSTRACT, "abstract");
+		check(ACC_STRICT, "strict");
+		check(ACC_SYNTHETIC, "synthetic");
 
-			auto check = [&](AccessFlags accessFlags, const char* name) {
-				if (self.value & accessFlags) {
-					out << (empty ? "" : self.sep) << name;
-					empty = false;
-				}
-			};
+		return out;
+	}
 
-			check(ACC_PUBLIC, "public");
-			check(ACC_PRIVATE, "private");
-			check(ACC_PROTECTED, "protected");
-			check(ACC_STATIC, "static");
-			check(ACC_FINAL, "final");
-			check(ACC_SYNCHRONIZED, "synchronized");
-			check(ACC_BRIDGE, "bridge");
-			check(ACC_VARARGS, "varargs");
-			check(ACC_NATIVE, "native");
-			check(ACC_ABSTRACT, "abstract");
-			check(ACC_STRICT, "strict");
-			check(ACC_SYNTHETIC, "synthetic");
+private:
+	const u2 value;
+	const char* const sep;
+};
 
-			return out;
-		}
+struct ClassPrinter {
 
-	private:
-		const u2 value;
-		const char* const sep;
-	};
+	static const char* OPCODES[];
 
-	class Field {
-	public:
-		typename TForward::Field fv;
-		ClassPrinterVisitor& cpv;
-
-		inline Field(typename TForward::Field& fv, ClassPrinterVisitor& cpv) :
-				fv(fv), cpv(cpv) {
-		}
-
-		inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
-			fv.visitAttr(nameIndex, len, data);
-
-			const std::string& attrName = cpv.cp.getUtf8(nameIndex);
-
-			line() << "  Attribute unknown '" << attrName << "' #" << nameIndex
-					<< "[" << len << "]" << std::endl;
-		}
-
-	private:
-		inline std::ostream& line() {
-			return cpv.line();
-		}
-	};
+	static const char* ConstNames[];
 
 	class Method {
 	public:
@@ -344,8 +280,8 @@ public:
 
 			inline std::ostream& line(int offset, u1 opcode, int moretabs = 0) {
 				return cpv.line(moretabs) << std::setw(4) << offset << ": ("
-						<< std::setw(3) << (int) opcode << ") " << OPCODES[opcode]
-						<< " ";
+						<< std::setw(3) << (int) opcode << ") "
+						<< OPCODES[opcode] << " ";
 			}
 		};
 
@@ -389,52 +325,53 @@ public:
 		}
 
 		inline std::ostream& line(int offset, u1 opcode, int moretabs = 0) {
-			return cpv.line(moretabs) << std::setw(4) << offset << ": (" << std::setw(3)
-					<< (int) opcode << ") " << OPCODES[opcode] << " ";
+			return cpv.line(moretabs) << std::setw(4) << offset << ": ("
+					<< std::setw(3) << (int) opcode << ") " << OPCODES[opcode]
+					<< " ";
 		}
 	};
 
-	inline ClassPrinterVisitor(std::ostream& os, const char* className,
-			int fileImageLen, TForward& cv = ClassDefaultVisitor::inst()) :
-			cv(cv), os(os), tabs(0) {
-		line() << "Class file " << className << " [file size: " << fileImageLen
-				<< "]" << std::endl;
-		inc();
+	static void print(std::ostream& os, ClassFile& cf) {
+
 	}
 
-	inline void visitVersion(Magic magic, u2 minor, u2 major) {
-		cv.visitVersion(magic, minor, major);
-
-		line() << "Version = minor: " << minor << ", major: " << major
+	void printClassFile(std::ostream& os, ClassFile& cf) {
+		line() << "Version = minor: " << cf.minor << ", major: " << cf.major
 				<< std::endl;
+
+		printConstPool(cf.cp);
+
+		line() << "accessFlags: " << cf.accessFlags << std::endl;
+		line() << "thisClassIndex: " << cf.cp.getClazzName(cf.thisClassIndex)
+				<< "#" << cf.thisClassIndex << std::endl;
+
+		if (cf.superClassIndex != 0) {
+			line() << "superClassIndex: "
+					<< cf.cp.getClazzName(cf.superClassIndex) << "#"
+					<< cf.superClassIndex << std::endl;
+		}
+
+		for (u2 interIndex : cf.interfaces) {
+			line() << "Interface '" << cf.cp.getClazzName(interIndex) << "'#"
+					<< interIndex << std::endl;
+		}
+
+		for (Member& f : cf.fields) {
+			line() << "Field " << cf.cp.getUtf8(f.nameIndex) << ": "
+					<< AccessFlagsPrinter(f.accessFlags) << " #" << f.nameIndex
+					<< ": " << cf.cp.getUtf8(f.descIndex) << "#" << f.descIndex
+					<< std::endl;
+		}
+
+		for (Member& m : cf.methods) {
+			line() << "+Method " << AccessFlagsPrinter(m.accessFlags) << " "
+					<< cf.cp.getUtf8(m.nameIndex) << ": " << " #" << m.nameIndex
+					<< ": " << cf.cp.getUtf8(m.descIndex) << "#" << m.descIndex
+					<< std::endl;
+		}
 	}
 
-	inline void visitConstPool(ConstPool& cp) {
-		cv.visitConstPool(cp);
-
-		this->cp = cp;
-
-		static const char* ConstNames[] = { "**** 0 ****", // 0
-				"Utf8",			// 1
-				"**** 2 ****",	// 2
-				"Integer",		// 3
-				"Float",		// 4
-				"Long",			// 5
-				"Double",		// 6
-				"Class",		// 7
-				"String",		// 8
-				"Fieldref",		// 9
-				"Methodref",		// 10
-				"InterfaceMethodref",	// 11
-				"NameAndType",		// 12
-				"**** 13 ****",	// 13
-				"**** 14 ****",	// 14
-				"MethodHandle",	// 15
-				"MethodType",	// 16
-				"**** 17 ****",	// 17
-				"InvokeDynamic",	// 18
-				};
-
+	static void printConstPool(ConstPool& cp) {
 		for (u4 i = 1; i < cp.entries.size(); i++) {
 			const ConstPool::Entry* entry = &cp.entries[i];
 
@@ -498,62 +435,24 @@ public:
 		}
 	}
 
-	void visitThis(u2 accessFlags, u2 thisClassIndex, u2 superClassIndex) {
-		cv.visitThis(accessFlags, thisClassIndex, superClassIndex);
-
-		line() << "accessFlags: " << accessFlags << std::endl;
-		line() << "thisClassIndex: " << cp.getClazzName(thisClassIndex) << "#"
-				<< thisClassIndex << std::endl;
-
-		if (superClassIndex != 0) {
-			line() << "superClassIndex: " << cp.getClazzName(superClassIndex)
-					<< "#" << superClassIndex << std::endl;
+	struct PrinterVisitor: Visitor {
+		ClassFile& cf;
+		PrinterVisitor(ClassFile& cf) :
+				cf(cf) {
 		}
-	}
 
-	void visitInterface(u2 interIndex) {
-		cv.visitInterface(interIndex);
+		void visitSourceFile(SourceFileAttr& attr) {
+			const std::string& sourceFileName = cf.cp.getUtf8(
+					attr.sourceFileIndex);
+			line() << "Source file: " << sourceFileName << "#"
+					<< attr.sourceFileIndex << std::endl;
+		}
 
-		line() << "Interface '" << cp.getClazzName(interIndex) << "'#"
-				<< interIndex << std::endl;
-	}
-
-	Field visitField(u2 accessFlags, u2 nameIndex, u2 descIndex) {
-		typename TForward::Field fv = cv.visitField(accessFlags, nameIndex,
-				descIndex);
-
-		line() << "Field " << cp.getUtf8(nameIndex) << ": "
-				<< AccessFlagsPrinter(accessFlags) << " #" << nameIndex << ": "
-				<< cp.getUtf8(descIndex) << "#" << descIndex << std::endl;
-
-		return Field(fv, *this);
-	}
-
-	Method visitMethod(u2 accessFlags, u2 nameIndex, u2 descIndex) {
-		typename TForward::Method mv = cv.visitMethod(accessFlags, nameIndex,
-				descIndex);
-
-		line() << "+Method " << AccessFlagsPrinter(accessFlags) << " "
-				<< cp.getUtf8(nameIndex) << ": " << " #" << nameIndex << ": "
-				<< cp.getUtf8(descIndex) << "#" << descIndex << std::endl;
-
-		return Method(mv, *this);
-	}
-
-	inline void visitSourceFile(u2 nameIndex, u2 sourceFileIndex) {
-		cv.visitSourceFile(nameIndex, sourceFileIndex);
-
-		const std::string& sourceFileName = cp.getUtf8(sourceFileIndex);
-		line() << "Source file: " << sourceFileName << "#" << sourceFileIndex
-				<< std::endl;
-	}
-
-	inline void visitAttr(u2 nameIndex, u4 len, const u1* data) {
-		cv.visitAttr(nameIndex, len, data);
-
-		line() << "Class attribute unknown '" << cp.getUtf8(nameIndex) << "' #"
-				<< nameIndex << "[" << len << "]" << std::endl;
-	}
+		void visitUnknown(UnknownAttr& attr) {
+			line() << "Class attribute unknown '" << cp.getUtf8(nameIndex)
+					<< "' #" << nameIndex << "[" << len << "]" << std::endl;
+		}
+	};
 
 private:
 
@@ -577,12 +476,75 @@ private:
 		return os;
 	}
 
-	TForward& cv;
+	ClassFile& cf;
 
-	ConstPool cp;
 	std::ostream& os;
+
 	int tabs;
 };
+
+static const char* ClassPrinter::ConstNames[] = { "**** 0 ****", // 0
+		"Utf8",			// 1
+		"**** 2 ****",	// 2
+		"Integer",		// 3
+		"Float",		// 4
+		"Long",			// 5
+		"Double",		// 6
+		"Class",		// 7
+		"String",		// 8
+		"Fieldref",		// 9
+		"Methodref",		// 10
+		"InterfaceMethodref",	// 11
+		"NameAndType",		// 12
+		"**** 13 ****",	// 13
+		"**** 14 ****",	// 14
+		"MethodHandle",	// 15
+		"MethodType",	// 16
+		"**** 17 ****",	// 17
+		"InvokeDynamic",	// 18
+		};
+
+static const char* ClassPrinter::OPCODES[] = { "nop", "aconst_null",
+		"iconst_m1", "iconst_0", "iconst_1", "iconst_2", "iconst_3", "iconst_4",
+		"iconst_5", "lconst_0", "lconst_1", "fconst_0", "fconst_1", "fconst_2",
+		"dconst_0", "dconst_1", "bipush", "sipush", "ldc", "ldc_w", "ldc2_w",
+		"iload", "lload", "fload", "dload", "aload", "iload_0", "iload_1",
+		"iload_2", "iload_3", "lload_0", "lload_1", "lload_2", "lload_3",
+		"fload_0", "fload_1", "fload_2", "fload_3", "dload_0", "dload_1",
+		"dload_2", "dload_3", "aload_0", "aload_1", "aload_2", "aload_3",
+		"iaload", "laload", "faload", "daload", "aaload", "baload", "caload",
+		"saload", "istore", "lstore", "fstore", "dstore", "astore", "istore_0",
+		"istore_1", "istore_2", "istore_3", "lstore_0", "lstore_1", "lstore_2",
+		"lstore_3", "fstore_0", "fstore_1", "fstore_2", "fstore_3", "dstore_0",
+		"dstore_1", "dstore_2", "dstore_3", "astore_0", "astore_1", "astore_2",
+		"astore_3", "iastore", "lastore", "fastore", "dastore", "aastore",
+		"bastore", "castore", "sastore", "pop", "pop2", "dup", "dup_x1",
+		"dup_x2", "dup2", "dup2_x1", "dup2_x2", "swap", "iadd", "ladd", "fadd",
+		"dadd", "isub", "lsub", "fsub", "dsub", "imul", "lmul", "fmul", "dmul",
+		"idiv", "ldiv", "fdiv", "ddiv", "irem", "lrem", "frem", "drem", "ineg",
+		"lneg", "fneg", "dneg", "ishl", "lshl", "ishr", "lshr", "iushr",
+		"lushr", "iand", "land", "ior", "lor", "ixor", "lxor", "iinc", "i2l",
+		"i2f", "i2d", "l2i", "l2f", "l2d", "f2i", "f2l", "f2d", "d2i", "d2l",
+		"d2f", "i2b", "i2c", "i2s", "lcmp", "fcmpl", "fcmpg", "dcmpl", "dcmpg",
+		"ifeq", "ifne", "iflt", "ifge", "ifgt", "ifle", "if_icmpeq",
+		"if_icmpne", "if_icmplt", "if_icmpge", "if_icmpgt", "if_icmple",
+		"if_acmpeq", "if_acmpne", "goto", "jsr", "ret", "tableswitch",
+		"lookupswitch", "ireturn", "lreturn", "freturn", "dreturn", "areturn",
+		"return", "getstatic", "putstatic", "getfield", "putfield",
+		"invokevirtual", "invokespecial", "invokestatic", "invokeinterface",
+		"invokedynamic", "new", "newarray", "anewarray", "arraylength",
+		"athrow", "checkcast", "instanceof", "monitorenter", "monitorexit",
+		"wide", "multianewarray", "ifnull", "ifnonnull", "goto_w", "jsr_w",
+		"breakpoint", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "impdep1",
+		"impdep2" };
 
 }
 

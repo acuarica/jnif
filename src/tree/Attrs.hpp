@@ -50,7 +50,7 @@ public:
 		}
 	}
 
-private:
+//private:
 
 	std::vector<Attr*> attrs;
 };

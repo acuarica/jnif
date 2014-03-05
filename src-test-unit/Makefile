@@ -3,14 +3,14 @@ INCLUDE=../src
 BUILD=../build
 
 INCS=$(wildcard $(INCLUDE)/*.h)
-HPPS=$(wildcard $(INCLUDE)/**/*.hpp) $(wildcard $(INCLUDE)/**/parser/*.hpp)
+HPPS=$(wildcard $(INCLUDE)/*.hpp) $(wildcard $(INCLUDE)/**/*.hpp)
 
 SRC=.
 OUTPUT=$(BUILD)/test-unit
 SRCS=$(wildcard $(SRC)/*.cpp) $(wildcard $(SRC)/**/*.java)
 OBJS=$(SRCS:$(SRC)/%=$(BUILD)/%.o)
 
-CFLAGS += -fPIC -W -O3 -Wall -Wextra -Wno-unused-parameter -I../src -I../include
+CFLAGS += -fPIC -W -O3 -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -I../src -I../include
 
 .PHONY: all
 

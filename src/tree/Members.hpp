@@ -11,12 +11,10 @@ namespace jnif {
  * Represents a collection of members within a class file, i.e.,
  * fields or methods.
  */
-class Members {
+struct Members {
 
-	friend class ClassFile;
+	friend struct ClassFile;
 	Members(const Members&) = delete;
-
-public:
 
 	inline Member& add(u2 accessFlags, u2 nameIndex, u2 descIndex) {
 		Member member(accessFlags, nameIndex, descIndex);
