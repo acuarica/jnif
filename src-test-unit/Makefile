@@ -15,7 +15,7 @@ CFLAGS += -fPIC -W -O3 -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter 
 all: $(OUTPUT)
 	$(OUTPUT)
 
-$(OUTPUT): $(OBJS) ../build/libjnif.a
+$(OUTPUT): $(OBJS) $(BUILD)/libjnif.a
 	clang++ $(CFLAGS) -stdlib=libc++ -o $@ $^
 
 $(BUILD)/%.java.o: %.java
@@ -25,3 +25,6 @@ $(BUILD)/%.java.o: %.java
 
 $(BUILD)/%.cpp.o: %.cpp $(HPPS) | $(BUILD)
 	$(LINK.c) -std=c++11 -stdlib=libc++ -c -o $@ $<
+
+$(BUILD)/libjnif.a:
+	$(MAKE) -C ../src

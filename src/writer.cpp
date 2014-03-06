@@ -367,6 +367,10 @@ static void writeSmt(BaseWriter& bw, SmtAttr& attr) {
 }
 
 static void writeInstList(BaseWriter& bw, InstList& instList) {
+	int offset = bw.getOffset();
+
+	auto pos = [&]() {return bw.getOffset() - offset;};
+
 	for (Inst& inst : instList) {
 		bw.writeu1(inst.opcode);
 
@@ -397,14 +401,15 @@ static void writeInstList(BaseWriter& bw, InstList& instList) {
 				bw.writeu2(inst.jump.label);
 				break;
 			case KIND_TABLESWITCH: {
-				int pad = (4 - (bw.getOffset() % 4)) % 4;
+			//	fprintf(stderr, "writer ts: offset: %d\n", pos());
+
+				int pad = (4 - (pos() % 4)) % 4;
 				for (int i = 0; i < pad; i++) {
 					bw.writeu1(0);
 				}
 
-				bool check = bw.getOffset() % 4 == 0;
-				ASSERT(check, "Padding offset must be mod 4: %d",
-						bw.getOffset());
+				bool check = pos() % 4 == 0;
+				ASSERT(check, "Padding offset must be mod 4: %d", pos());
 
 				bw.writeu4(inst.ts.def);
 				bw.writeu4(inst.ts.low);
@@ -414,17 +419,19 @@ static void writeInstList(BaseWriter& bw, InstList& instList) {
 					u4 t = inst.ts.targets[i];
 					bw.writeu4(t);
 				}
+
+			//	fprintf(stderr, "writer ts: offset: %d\n", pos());
+
 				break;
 			}
 			case KIND_LOOKUPSWITCH: {
-				int pad = (4 - (bw.getOffset() % 4)) % 4;
+				int pad = (4 - (pos() % 4)) % 4;
 				for (int i = 0; i < pad; i++) {
 					bw.writeu1(0);
 				}
 
-				bool check = bw.getOffset() % 4 == 0;
-				ASSERT(check, "Padding offset must be mod 4: %d",
-						bw.getOffset());
+				bool check = pos() % 4 == 0;
+				ASSERT(check, "Padding offset must be mod 4: %d", pos());
 
 				bw.writeu4(inst.ls.defbyte);
 				bw.writeu4(inst.ls.npairs);
@@ -478,6 +485,11 @@ static void writeCode(BaseWriter& bw, CodeAttr& attr) {
 
 	u4 offset = bw.getOffset();
 	writeInstList(bw, attr.instList);
+
+	u4 len = bw.getOffset() - offset;
+	ASSERT(attr.codeLen == len, "writeCode:: Expected %d, actual %d in %d",
+			attr.codeLen, len, attr.kind);
+
 	attr.codeLen = bw.getOffset() - offset;
 
 	u2 esize = attr.exceptions.size();
@@ -535,12 +547,11 @@ static void writeAttrs(BaseWriter& bw, Attrs& attrs) {
 			}
 		}
 
+		u4 len = bw.getOffset() - offset;
+		ASSERT(attr.len == len, "Expected %d, actual %d in %d", attr.len, len,
+				attr.kind);
+
 		attr.len = bw.getOffset() - offset;
-
-//		ASSERT(attr.len == len, "Expected %d, actual %d in %d", attr.len, len,
-//				attr.kind);
-
-		//bw.skip(attr.len);
 	}
 }
 

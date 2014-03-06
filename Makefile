@@ -6,6 +6,7 @@ BUILD=build
 all: agent unit
 
 agent: | $(BUILD)
+	$(MAKE) -C src
 	$(MAKE) -C src-test-agent
 
 unit: | $(BUILD)

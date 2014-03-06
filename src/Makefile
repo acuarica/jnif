@@ -6,7 +6,7 @@ INCS=$(wildcard *.hpp)
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:%=$(BUILD)/%.o)
 
-CFLAGS += -fPIC -W -O3 -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter
+CFLAGS += -fPIC -W -O3 -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -Wno-unused-function
 
 .PHONY: all clean
 

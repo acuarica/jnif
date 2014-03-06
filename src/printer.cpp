@@ -211,6 +211,9 @@ struct ClassPrinter {
 	void printCode(CodeAttr& c) {
 		line(1) << "maxStack: " << c.maxStack << ", maxLocals: " << c.maxLocals
 				<< endl;
+
+		line(1) << "Code length: " << c.codeLen << endl;
+
 		inc();
 
 		for (Inst& inst : c.instList) {
@@ -227,7 +230,7 @@ struct ClassPrinter {
 	}
 
 	void printInst(Inst& inst) {
-		int offset = -1;
+		int offset = 0;
 
 		line() << setw(4) << offset << ": (" << setw(3) << (int) inst.opcode
 				<< ") " << OPCODES[inst.opcode] << " ";
@@ -236,6 +239,7 @@ struct ClassPrinter {
 
 		switch (inst.kind) {
 			case KIND_ZERO:
+				instos << endl;
 				break;
 			case KIND_BIPUSH:
 				instos << int(inst.push.value) << endl;
@@ -244,17 +248,17 @@ struct ClassPrinter {
 				instos << int(inst.push.value) << endl;
 				break;
 			case KIND_LDC:
-				instos << inst.ldc.valueIndex << endl;
+				instos << int(inst.ldc.valueIndex) << endl;
 				break;
 			case KIND_VAR:
-				instos << inst.var.lvindex << endl;
+				instos << int(inst.var.lvindex) << endl;
 				break;
 			case KIND_IINC:
 				instos << int(inst.iinc.index) << " " << int(inst.iinc.value)
 						<< endl;
 				break;
 			case KIND_JUMP:
-				instos << offset + inst.jump.label << endl;
+				instos << offset + short(inst.jump.label) << endl;
 				break;
 			case KIND_TABLESWITCH:
 				instos << inst.ts.def << " " << " " << inst.ts.low << " "
@@ -298,7 +302,7 @@ struct ClassPrinter {
 			case KIND_INVOKEINTERFACE: {
 				string className, name, desc;
 				cf.cp.getMemberRef(inst.invokeinterface.interMethodRefIndex,
-						&className, &name, &desc, CONSTANT_Methodref);
+						&className, &name, &desc, CONSTANT_InterfaceMethodref);
 
 				instos << className << "." << name << ": " << desc << "("
 						<< inst.invokeinterface.count << ")" << endl;

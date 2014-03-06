@@ -275,6 +275,8 @@ static void parseInstList(BufferReader& br, InstList& instList, ConstPool& cp) {
 				break;
 			}
 			case KIND_TABLESWITCH:
+//				fprintf(stderr, "parser ts: offset: %d\n", br.offset());
+
 				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 					u1 pad = br.readu1();
 					ASSERT(pad == 0, "Padding must be zero");
@@ -297,6 +299,8 @@ static void parseInstList(BufferReader& br, InstList& instList, ConstPool& cp) {
 					u4 targetOffset = br.readu4();
 					inst.ts.targets.push_back(targetOffset);
 				}
+
+		//		fprintf(stderr, "parser ts: offset: %d\n", br.offset());
 
 				break;
 			case KIND_LOOKUPSWITCH:
