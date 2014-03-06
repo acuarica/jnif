@@ -814,7 +814,18 @@ struct Member: Attrs {
 			}
 		}
 
-		EXCEPTION("ERROR!");
+		EXCEPTION("ERROR! get inst list");
+	}
+
+	void instList(const InstList& newcode) {
+		for (Attr* attr : attrs) {
+			if (attr->kind == ATTR_CODE) {
+				((CodeAttr*) attr)->instList = newcode;
+				return;
+			}
+		}
+
+		EXCEPTION("ERROR! setting inst list");
 	}
 
 private:

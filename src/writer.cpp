@@ -486,9 +486,9 @@ static void writeCode(BaseWriter& bw, CodeAttr& attr) {
 	u4 offset = bw.getOffset();
 	writeInstList(bw, attr.instList);
 
-	u4 len = bw.getOffset() - offset;
-	ASSERT(attr.codeLen == len, "writeCode:: Expected %d, actual %d in %d",
-			attr.codeLen, len, attr.kind);
+//	u4 len = bw.getOffset() - offset;
+//	ASSERT(attr.codeLen == len, "writeCode:: Expected %d, actual %d in %d",
+//			attr.codeLen, len, attr.kind);
 
 	attr.codeLen = bw.getOffset() - offset;
 
@@ -547,9 +547,9 @@ static void writeAttrs(BaseWriter& bw, Attrs& attrs) {
 			}
 		}
 
-		u4 len = bw.getOffset() - offset;
-		ASSERT(attr.len == len, "Expected %d, actual %d in %d", attr.len, len,
-				attr.kind);
+//		u4 len = bw.getOffset() - offset;
+//		ASSERT(attr.len == len, "Expected %d, actual %d in %d", attr.len, len,
+//				attr.kind);
 
 		attr.len = bw.getOffset() - offset;
 	}

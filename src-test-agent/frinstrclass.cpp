@@ -56,7 +56,7 @@ static string outFileName(const char* className, const char* ext) {
 
 extern "C" {
 
-void FrInstrClassFile0(jvmtiEnv* jvmti, unsigned char* data, int len,
+void FrInstrClassFile1(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
 	if (string(className) != "frheapagent/HeapTest") {
@@ -74,7 +74,7 @@ void FrInstrClassFile0(jvmtiEnv* jvmti, unsigned char* data, int len,
 	writeClassFile(cf, *newdata, *newlen);
 }
 
-void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
+void FrInstrClassFile2(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlenp, unsigned char** newdatap) {
 
 	ofstream os(outFileName(className, "disasm").c_str());
@@ -103,7 +103,7 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
 	*newdatap = newdata;
 }
 
-void FrInstrClassFile3(jvmtiEnv* jvmti, unsigned char* data, int len,
+void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
 	if (string(className) != "frheapagent/HeapTest") {
@@ -115,6 +115,82 @@ void FrInstrClassFile3(jvmtiEnv* jvmti, unsigned char* data, int len,
 	ClassFile cf;
 	parseClassFile(data, len, cf);
 	printClassFile(cf, os);
+
+	u2 classIndex = cf.cp.addClass("frproxy/FrInstrProxy");
+
+	u2 methodRefIndex = cf.cp.addMethodRef(classIndex, "alloc",
+			"(Ljava/lang/Object;)V");
+
+	u2 methodRefIndex2 = cf.cp.addMethodRef(classIndex, "newArrayEvent",
+			"(ILjava/lang/Object;I)V");
+
+	auto newarray = [&](u1 atype) {
+		Inst inst;
+		inst.kind = KIND_NEWARRAY;
+		inst.opcode = OPCODE_newarray;
+		inst.newarray.atype = atype;
+
+		return inst;
+	};
+
+	auto bipush = [&](u1 value) {
+		Inst inst;
+		inst.kind = KIND_BIPUSH;
+		inst.opcode = OPCODE_bipush;
+		inst.push.value = value;
+
+		return inst;
+	};
+
+	auto invoke = [&] (Opcode opcode, u2 index) {
+		Inst inst;
+		inst.kind = KIND_INVOKE;
+		inst.opcode = opcode;
+		inst.invoke.methodRefIndex = index;
+
+		return inst;
+	};
+
+	for (Method* m : cf.methods) {
+		if (m->hasCode()) {
+			InstList& instList = m->instList();
+
+			InstList code;
+
+			for (Inst inst : instList) {
+				if (inst.opcode == OPCODE_newarray) {
+					// FORMAT: newarray atype
+					// OPERAND STACK: ... | count: int -> ... | arrayref
+
+					// STACK: ... | count
+
+					code.push_back(Inst(OPCODE_dup));
+					// STACK: ... | count | count
+
+					code.push_back(newarray(inst.newarray.atype)); // newarray
+					// STACK: ... | count | arrayref
+
+					code.push_back(Inst(OPCODE_dup_x1));
+					// STACK: ... | arrayref | count | arrayref
+
+					code.push_back(bipush(inst.newarray.atype));
+					//u2 typeindex = instr.cp->addInteger(atype);
+
+					//bv.visitLdc(offset, OPCODE_ldc_w, typeindex);
+					// STACK: ... | arrayref | count | arrayref | atype
+
+					code.push_back(
+							invoke(OPCODE_invokestatic, methodRefIndex2));
+					// STACK: ... | arrayref
+
+				} else {
+					code.push_back(inst);
+				}
+			}
+
+			m->instList(code);
+		}
+	}
 
 	*newlen = getClassFileSize(cf);
 	*newdata = Allocate(jvmti, *newlen);
