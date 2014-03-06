@@ -42,7 +42,7 @@ DEFHANDLER(alloc) (JNIEnv* jni, jclass proxyClass, jobject thisObject) {
 DEFHANDLER(newArrayEvent) (JNIEnv* jni, jclass proxyClass, jint count, jobject thisArray, jint atype) {
 	jlong stamp = StampObject(_jvmti, jni, thisArray);
 
-	fprintf(stderr, "hola q tal desde el new array event\n");
+	fprintf(stderr, "hello jnif!!! @ new array 123\n");
 
 	_TLOG("NEWARRAY:%ld:%d:%d", stamp, count, atype);
 }
@@ -134,7 +134,9 @@ DEFHANDLER(aastoreEvent) (JNIEnv* jni, jclass proxyClass, jint index, jobject ne
 DEFHANDLER(enterMainMethod) (JNIEnv* jni, jclass proxyClass) {
 	_TLOG("ENTERMAIN");
 
-	NextHeapRequest(_jvmti);
+	fprintf(stderr, "we are in object init!\n");
+
+	//NextHeapRequest(_jvmti);
 
 	inmain = true;
 }
@@ -142,7 +144,7 @@ DEFHANDLER(enterMainMethod) (JNIEnv* jni, jclass proxyClass) {
 DEFHANDLER(exitMainMethod) (JNIEnv* jni, jclass proxyClass) {
 	inmain = false;
 
-	NextHeapRequest(_jvmti);
+	//NextHeapRequest(_jvmti);
 
 	_TLOG("EXITMAIN");
 }

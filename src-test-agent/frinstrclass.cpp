@@ -106,7 +106,10 @@ void FrInstrClassFile2(jvmtiEnv* jvmti, unsigned char* data, int len,
 void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
-	if (string(className) != "frheapagent/HeapTest") {
+//	if (string(className) != "frheapagent/HeapTest") {
+//		return;
+//	}
+	if (string(className) != "java/lang/Object") {
 		return;
 	}
 
@@ -118,11 +121,12 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 	u2 classIndex = cf.cp.addClass("frproxy/FrInstrProxy");
 
-	u2 methodRefIndex = cf.cp.addMethodRef(classIndex, "alloc",
-			"(Ljava/lang/Object;)V");
-
-	u2 methodRefIndex2 = cf.cp.addMethodRef(classIndex, "newArrayEvent",
-			"(ILjava/lang/Object;I)V");
+//	u2 methodRefIndex = cf.cp.addMethodRef(classIndex, "alloc",
+//			"(Ljava/lang/Object;)V");
+//
+//	u2 methodRefIndex2 = cf.cp.addMethodRef(classIndex, "newArrayEvent",
+//			"(ILjava/lang/Object;I)V");
+	u2 mindex = cf.cp.addMethodRef(classIndex, "enterMainMethod", "()V");
 
 	auto newarray = [&](u1 atype) {
 		Inst inst;
@@ -152,43 +156,49 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
 	};
 
 	for (Method* m : cf.methods) {
-		if (m->hasCode()) {
+
+		string name = cf.cp.getUtf8(m->nameIndex);
+
+		if (m->hasCode() && m->nameIndex && name == "<init>") {
 			InstList& instList = m->instList();
 
-			InstList code;
+			instList.push_front(invoke(OPCODE_invokestatic, mindex));
 
-			for (Inst inst : instList) {
-				if (inst.opcode == OPCODE_newarray) {
-					// FORMAT: newarray atype
-					// OPERAND STACK: ... | count: int -> ... | arrayref
-
-					// STACK: ... | count
-
-					code.push_back(Inst(OPCODE_dup));
-					// STACK: ... | count | count
-
-					code.push_back(newarray(inst.newarray.atype)); // newarray
-					// STACK: ... | count | arrayref
-
-					code.push_back(Inst(OPCODE_dup_x1));
-					// STACK: ... | arrayref | count | arrayref
-
-					code.push_back(bipush(inst.newarray.atype));
-					//u2 typeindex = instr.cp->addInteger(atype);
-
-					//bv.visitLdc(offset, OPCODE_ldc_w, typeindex);
-					// STACK: ... | arrayref | count | arrayref | atype
-
-					code.push_back(
-							invoke(OPCODE_invokestatic, methodRefIndex2));
-					// STACK: ... | arrayref
-
-				} else {
-					code.push_back(inst);
-				}
-			}
-
-			m->instList(code);
+//			InstList code;
+//
+//			for (Inst inst : instList) {
+//				if (inst.opcode == OPCODE_newarray) {
+//					// FORMAT: newarray atype
+//					// OPERAND STACK: ... | count: int -> ... | arrayref
+//
+//					// STACK: ... | count
+//
+//					code.push_back(Inst(OPCODE_dup));
+//					// STACK: ... | count | count
+//
+//					code.push_back(inst);
+//					//code.push_back(newarray(inst.newarray.atype)); // newarray
+//					// STACK: ... | count | arrayref
+//
+//					code.push_back(Inst(OPCODE_dup_x1));
+//					// STACK: ... | arrayref | count | arrayref
+//
+//					code.push_back(bipush(inst.newarray.atype));
+//					//u2 typeindex = instr.cp->addInteger(atype);
+//
+//					//bv.visitLdc(offset, OPCODE_ldc_w, typeindex);
+//					// STACK: ... | arrayref | count | arrayref | atype
+//
+//					code.push_back(
+//							invoke(OPCODE_invokestatic, methodRefIndex2));
+//					// STACK: ... | arrayref
+//
+//				} else {
+//					code.push_back(inst);
+//				}
+//			}
+//
+//			m->instList(code);
 		}
 	}
 

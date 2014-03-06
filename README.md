@@ -56,6 +56,11 @@ like eclipse, netbeans.
 ## try diffents kind of instrumentations, e.g., instrument heap graph, 
 i.e., all allocations (by bytecode, reflection and native).
 
+## Features TODO:
+- Control flow graph statically.
+- Control flow graph dynamically.
+- Object tagging/identification.
+
 ## 
 # Conclusions
 
