@@ -134,7 +134,7 @@ DEFHANDLER(aastoreEvent) (JNIEnv* jni, jclass proxyClass, jint index, jobject ne
 DEFHANDLER(enterMainMethod) (JNIEnv* jni, jclass proxyClass) {
 	_TLOG("ENTERMAIN");
 
-	fprintf(stderr, "we are in object init!\n");
+	fprintf(stdout, "we are in object init!\n");
 
 	//NextHeapRequest(_jvmti);
 

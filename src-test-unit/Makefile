@@ -2,20 +2,21 @@
 INCLUDE=../src
 BUILD=../build
 
+EXE=test-unit
 HPPS=$(wildcard $(INCLUDE)/*.hpp)
-
-OUTPUT=$(BUILD)/test-unit
 SRCS=$(wildcard *.cpp) $(wildcard jnif/*.java)
 OBJS=$(SRCS:%=$(BUILD)/%.o)
 
-CFLAGS += -fPIC -W -O3 -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -I../src -I../include
+CFLAGS += -fPIC -W -O3 -Wall -Wextra -I$(INCLUDE)
 
-.PHONY: all
+.PHONY: all run
 
-all: $(OUTPUT)
-	$(OUTPUT)
+all: $(BUILD)/$(EXE)
 
-$(OUTPUT): $(OBJS) $(BUILD)/libjnif.a
+run: $(BUILD)/$(EXE)
+	$(BUILD)/$(EXE) > $(BUILD)/$(EXE).out
+
+$(BUILD)/$(EXE): $(OBJS) $(BUILD)/libjnif.a
 	clang++ $(CFLAGS) -stdlib=libc++ -o $@ $^
 
 $(BUILD)/%.java.o: %.java

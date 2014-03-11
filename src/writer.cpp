@@ -1,48 +1,31 @@
 #include "jnif.hpp"
+#include "jniferr.hpp"
 
 namespace jnif {
 
 /**
  *
  */
-struct BaseWriter {
-
-	virtual ~BaseWriter() {
-	}
-
-	virtual void writeu1(u1 value) = 0;
-	virtual void writeu2(u2 value) = 0;
-	virtual void writeu4(u4 value) = 0;
-	virtual void writecount(const void* source, int count) = 0;
-	virtual int getOffset() const = 0;
-
-};
-
-/**
- *
- */
-struct SizeWriter: BaseWriter {
+class SizeWriter {
+public:
 
 	SizeWriter() :
 			offset(0) {
 	}
 
-	virtual ~SizeWriter() {
-	}
-
-	void writeu1(u1 value) {
+	void writeu1(u1) {
 		offset += 1;
 	}
 
-	void writeu2(u2 value) {
+	void writeu2(u2) {
 		offset += 2;
 	}
 
-	void writeu4(u4 value) {
+	void writeu4(u4) {
 		offset += 4;
 	}
 
-	void writecount(const void* source, int count) {
+	void writecount(const void*, int count) {
 		offset += count;
 	}
 
@@ -57,7 +40,8 @@ private:
 /**
  * Implements a memory buffer writer in big-endian encoding.
  */
-struct BufferWriter: BaseWriter {
+class BufferWriter {
+public:
 
 	BufferWriter(u1* buffer, int len) :
 			buffer(buffer), len(len), offset(0) {
@@ -67,7 +51,7 @@ struct BufferWriter: BaseWriter {
 		end();
 	}
 
-	inline void writeu1(u1 value) {
+	void writeu1(u1 value) {
 		ASSERT(offset + 1 <= len, "Invalid write");
 
 		buffer[offset] = value;
@@ -75,7 +59,7 @@ struct BufferWriter: BaseWriter {
 		offset += 1;
 	}
 
-	inline void writeu2(u2 value) {
+	void writeu2(u2 value) {
 		ASSERT(offset + 2 <= len, "Invalid write");
 
 		buffer[offset + 0] = ((u1*) &value)[1];
@@ -84,7 +68,7 @@ struct BufferWriter: BaseWriter {
 		offset += 2;
 	}
 
-	inline void writeu4(u4 value) {
+	void writeu4(u4 value) {
 		ASSERT(offset + 4 <= len, "Invalid write");
 
 		buffer[offset + 0] = ((u1*) &value)[3];
@@ -95,7 +79,7 @@ struct BufferWriter: BaseWriter {
 		offset += 4;
 	}
 
-	inline void writecount(const void* source, int count) {
+	void writecount(const void* source, int count) {
 		ASSERT(offset + count <= len, "Invalid write count");
 
 		copy((u1*) source, (u1*) source + count, buffer + offset);
@@ -103,508 +87,403 @@ struct BufferWriter: BaseWriter {
 		offset += count;
 	}
 
-	inline int getOffset() const {
+	int getOffset() const {
 		return offset;
 	}
 
-//	inline u1* pos() {
-//		return buffer + offset;
-//	}
-//
-//	inline void skip(int count) {
-//		ASSERT(offset + count <= len, "Invalid skip count");
-//
-//		offset += count;
-//	}
+private:
+
+	void end() {
+		ASSERT(offset == len,
+				"%d != %d. End of buffer writer not reached while expecting "
+
+				"end of buffer", offset, len);
+	}
 
 private:
-	inline void end() {
-		ASSERT(offset == len,
-				"%d != %d. End of buffer writer not reached while expecting end of buffer",
-				offset, len);
-	}
 
 	u1* const buffer;
 	const int len;
 	int offset;
 };
 
-u4 getClassFileSize32(ClassFile & cf) {
+template<typename TWriter>
+class ClassWriter {
+public:
 
-	auto getAttrsSize = [&](const Attrs& attrs) {
-		u4 size = sizeof(u2);
+	ClassWriter(TWriter& bw) :
+			bw(bw) {
+	}
 
-		for (u4 i = 0; i < attrs.size(); i++) {
-			const Attr& attr = attrs[i];
+	void writeClassFile(ClassFile& cf) {
+		auto writeMembers = [this](Members& members) {
+			bw.writeu2(members.size());
 
-			size += sizeof(attr.nameIndex);
-			size += sizeof(attr.len);
-			size += attr.len;
+			for (u4 i = 0; i < members.size(); i++) {
+
+				Member& mi = members[i];
+
+				bw.writeu2(mi.accessFlags);
+				bw.writeu2(mi.nameIndex);
+				bw.writeu2(mi.descIndex);
+
+				writeAttrs(mi);
+			}
+		};
+
+		bw.writeu4(CLASSFILE_MAGIC);
+
+		Version version = cf.getVersion();
+		bw.writeu2(version.getMinor());
+		bw.writeu2(version.getMajor());
+
+		writeConstPool(cf);
+
+		bw.writeu2(cf.accessFlags);
+		bw.writeu2(cf.thisClassIndex);
+		bw.writeu2(cf.superClassIndex);
+
+		u2 interCount = cf.interfaces.size();
+		bw.writeu2(interCount);
+
+		for (u4 i = 0; i < cf.interfaces.size(); i++) {
+			u2 interIndex = cf.interfaces[i];
+			bw.writeu2(interIndex);
 		}
 
-		return size;
-	};
+		writeMembers(cf.fields);
+		writeMembers(cf.methods);
+		writeAttrs(cf);
+	}
 
-	auto getConstPoolSize = [&](const ConstPool& cp) {
-		u4 size = sizeof(u2);
+private:
+
+	void writeConstPool(const ConstPool& cp) {
+		u2 count = cp.entries.size();
+		bw.writeu2(count);
 
 		for (u4 i = 1; i < cp.entries.size(); i++) {
 			const ConstPoolEntry* entry = &cp.entries[i];
 
-			size += sizeof(entry->tag);
+			bw.writeu1(entry->tag);
 
 			switch (entry->tag) {
 				case CONSTANT_Class:
-				size += sizeof(entry->clazz.name_index);
-				break;
+					bw.writeu2(entry->clazz.name_index);
+					break;
 				case CONSTANT_Fieldref:
 				case CONSTANT_Methodref:
 				case CONSTANT_InterfaceMethodref:
-				size += sizeof(entry->memberref.class_index);
-				size += sizeof(entry->memberref.name_and_type_index);
-				break;
+					bw.writeu2(entry->memberref.class_index);
+					bw.writeu2(entry->memberref.name_and_type_index);
+					break;
 				case CONSTANT_String:
-				size += sizeof(entry->s.string_index);
-				break;
+					bw.writeu2(entry->s.string_index);
+					break;
 				case CONSTANT_Integer:
-				size += sizeof(entry->i.value);
-				break;
+					bw.writeu4(entry->i.value);
+					break;
 				case CONSTANT_Float:
-				size += sizeof(entry->f.value);
-				break;
+					bw.writeu4(entry->f.value);
+					break;
 				case CONSTANT_Long:
-				size += sizeof(entry->l.high_bytes);
-				size += sizeof(entry->l.low_bytes);
-				i++;
-				break;
+					bw.writeu4(entry->l.high_bytes);
+					bw.writeu4(entry->l.low_bytes);
+					i++;
+					break;
 				case CONSTANT_Double:
-				size += sizeof(entry->d.high_bytes);
-				size += sizeof(entry->d.low_bytes);
-				i++;
-				break;
+					bw.writeu4(entry->d.high_bytes);
+					bw.writeu4(entry->d.low_bytes);
+					i++;
+					break;
 				case CONSTANT_NameAndType:
-				size += sizeof(entry->nameandtype.name_index);
-				size += sizeof(entry->nameandtype.descriptor_index);
-				break;
-				case CONSTANT_Utf8:
-				size += sizeof(u2);
-				size += entry->utf8.str.length();
-				break;
+					bw.writeu2(entry->nameandtype.name_index);
+					bw.writeu2(entry->nameandtype.descriptor_index);
+					break;
+				case CONSTANT_Utf8: {
+					u2 len = entry->utf8.str.length();
+					const char* str = entry->utf8.str.c_str();
+					bw.writeu2(len);
+					bw.writecount(str, len);
+					break;
+				}
 				case CONSTANT_MethodHandle:
-				size += sizeof(entry->methodhandle.reference_kind);
-				size += sizeof(entry->methodhandle.reference_index);
-				break;
+					bw.writeu1(entry->methodhandle.reference_kind);
+					bw.writeu2(entry->methodhandle.reference_index);
+					break;
 				case CONSTANT_MethodType:
-				size += sizeof(entry->methodtype.descriptor_index);
-				break;
+					bw.writeu2(entry->methodtype.descriptor_index);
+					break;
 				case CONSTANT_InvokeDynamic:
-				size +=
-				sizeof(entry->invokedynamic.bootstrap_method_attr_index);
-				size += sizeof(entry->invokedynamic.name_and_type_index);
-				break;
-				default:
-				EXCEPTION("Error while writing tag: %i", entry->tag);
+					bw.writeu2(
+							entry->invokedynamic.bootstrap_method_attr_index);
+					bw.writeu2(entry->invokedynamic.name_and_type_index);
+					break;
 			}
 		}
+	}
 
-		return size;
-	};
+	void writeUnknown(UnknownAttr& attr) {
+		bw.writecount(attr.data, attr.len);
+	}
 
-	auto getMembersSize = [&](Members& members) {
-		u4 size = sizeof(u2);
+	void writeExceptions(ExceptionsAttr& attr) {
+		u2 size = attr.es.size();
 
-		for (u4 i = 0; i < members.size(); i++) {
-
-			Member& mi = members[i];
-
-			size += sizeof(mi.accessFlags);
-			size += sizeof(mi.nameIndex);
-			size += sizeof(mi.descIndex);
-
-			size += getAttrsSize(mi);
+		bw.writeu2(size);
+		for (u4 i = 0; i < size; i++) {
+			u2 e = attr.es[i];
+			bw.writeu2(e);
 		}
+	}
 
-		return size;
-	};
+	void writeLnt(LntAttr& attr) {
+		u2 count = attr.lnt.size();
 
-	u4 size = 0;
+		bw.writeu2(count);
 
-	size += sizeof(cf.magic);
-	size += sizeof(cf.minor);
-	size += sizeof(cf.major);
+		for (u4 i = 0; i < count; i++) {
+			LntAttr::LnEntry& lne = attr.lnt[i];
 
-	size += getConstPoolSize(cf.cp);
+			bw.writeu2(lne.startpc);
+			bw.writeu2(lne.lineno);
+		}
+	}
 
-	size += sizeof(cf.accessFlags);
-	size += sizeof(cf.thisClassIndex);
-	size += sizeof(cf.superClassIndex);
+	void writeLvt(LvtAttr& attr) {
+		u2 count = attr.lvt.size();
 
-	size += sizeof(u2);
-	size += cf.interfaces.size() * sizeof(u2);
+		bw.writeu2(count);
 
-	size += getMembersSize(cf.fields);
-	size += getMembersSize(cf.methods);
-	size += getAttrsSize(cf);
+		for (u4 i = 0; i < count; i++) {
+			LvtAttr::LvEntry& lve = attr.lvt[i];
 
-	return size;
-}
+			bw.writeu2(lve.startPc);
+			bw.writeu2(lve.len);
+			bw.writeu2(lve.varNameIndex);
+			bw.writeu2(lve.varDescIndex);
+			bw.writeu2(lve.index);
+		}
+	}
 
-static void writeAttrs(BaseWriter& bw, Attrs& attrs);
+	void writeSourceFile(SourceFileAttr& attr) {
+		bw.writeu2(attr.sourceFileIndex);
+	}
 
-static void writeConstPool(BaseWriter& bw, const ConstPool& cp) {
-	u2 count = cp.entries.size();
-	bw.writeu2(count);
+	void writeSmt(SmtAttr& /*attr*/) {
+	}
 
-	for (u4 i = 1; i < cp.entries.size(); i++) {
-		const ConstPoolEntry* entry = &cp.entries[i];
+	void writeInstList(InstList& instList) {
+		int offset = bw.getOffset();
 
-		bw.writeu1(entry->tag);
+		auto pos = [&]() {return bw.getOffset() - offset;};
 
-		switch (entry->tag) {
-			case CONSTANT_Class:
-				bw.writeu2(entry->clazz.name_index);
-				break;
-			case CONSTANT_Fieldref:
-			case CONSTANT_Methodref:
-			case CONSTANT_InterfaceMethodref:
-				bw.writeu2(entry->memberref.class_index);
-				bw.writeu2(entry->memberref.name_and_type_index);
-				break;
-			case CONSTANT_String:
-				bw.writeu2(entry->s.string_index);
-				break;
-			case CONSTANT_Integer:
-				bw.writeu4(entry->i.value);
-				break;
-			case CONSTANT_Float:
-				bw.writeu4(entry->f.value);
-				break;
-			case CONSTANT_Long:
-				bw.writeu4(entry->l.high_bytes);
-				bw.writeu4(entry->l.low_bytes);
-				i++;
-				break;
-			case CONSTANT_Double:
-				bw.writeu4(entry->d.high_bytes);
-				bw.writeu4(entry->d.low_bytes);
-				i++;
-				break;
-			case CONSTANT_NameAndType:
-				bw.writeu2(entry->nameandtype.name_index);
-				bw.writeu2(entry->nameandtype.descriptor_index);
-				break;
-			case CONSTANT_Utf8: {
-				u2 len = entry->utf8.str.length();
-				const char* str = entry->utf8.str.c_str();
-				bw.writeu2(len);
-				bw.writecount(str, len);
-				break;
+		for (Inst* instp : instList) {
+			Inst& inst = *instp;
+
+			if (inst.kind == KIND_LABEL) {
+				continue;
+
 			}
-			case CONSTANT_MethodHandle:
-				bw.writeu1(entry->methodhandle.reference_kind);
-				bw.writeu2(entry->methodhandle.reference_index);
-				break;
-			case CONSTANT_MethodType:
-				bw.writeu2(entry->methodtype.descriptor_index);
-				break;
-			case CONSTANT_InvokeDynamic:
-				bw.writeu2(entry->invokedynamic.bootstrap_method_attr_index);
-				bw.writeu2(entry->invokedynamic.name_and_type_index);
-				break;
-		}
-	}
-}
 
-static void writeUnknown(BaseWriter& bw, UnknownAttr& attr) {
-	bw.writecount(attr.data, attr.len);
-}
+			bw.writeu1(inst.opcode);
 
-static void writeExceptions(BaseWriter& bw, ExceptionsAttr& attr) {
-	u2 size = attr.es.size();
+			switch (inst.kind) {
+				case KIND_ZERO:
+					break;
+				case KIND_BIPUSH:
+					bw.writeu1(inst.push.value);
+					break;
+				case KIND_SIPUSH:
+					bw.writeu2(inst.push.value);
+					break;
+				case KIND_LDC:
+					if (inst.opcode == OPCODE_ldc) {
+						bw.writeu1(inst.ldc.valueIndex);
+					} else {
+						bw.writeu2(inst.ldc.valueIndex);
+					}
+					break;
+				case KIND_VAR:
+					bw.writeu1(inst.var.lvindex);
+					break;
+				case KIND_IINC:
+					bw.writeu1(inst.iinc.index);
+					bw.writeu1(inst.iinc.value);
+					break;
+				case KIND_JUMP:
+					bw.writeu2(inst.jump.label);
+					break;
+				case KIND_TABLESWITCH: {
+					//	fprintf(stderr, "writer ts: offset: %d\n", pos());
 
-	bw.writeu2(size);
-	for (u4 i = 0; i < size; i++) {
-		u2 e = attr.es[i];
-		bw.writeu2(e);
-	}
-}
+					int pad = (4 - (pos() % 4)) % 4;
+					for (int i = 0; i < pad; i++) {
+						bw.writeu1(0);
+					}
 
-static void writeLnt(BaseWriter& bw, LntAttr& attr) {
-	u2 count = attr.lnt.size();
+					bool check = pos() % 4 == 0;
+					ASSERT(check, "Padding offset must be mod 4: %d", pos());
 
-	bw.writeu2(count);
+					bw.writeu4(inst.ts.def);
+					bw.writeu4(inst.ts.low);
+					bw.writeu4(inst.ts.high);
 
-	for (u4 i = 0; i < count; i++) {
-		LntAttr::LnEntry& lne = attr.lnt[i];
+					for (int i = 0; i < inst.ts.high - inst.ts.low + 1; i++) {
+						u4 t = inst.ts.targets[i];
+						bw.writeu4(t);
+					}
 
-		bw.writeu2(lne.startpc);
-		bw.writeu2(lne.lineno);
-	}
-}
+					//	fprintf(stderr, "writer ts: offset: %d\n", pos());
 
-static void writeLvt(BaseWriter& bw, LvtAttr& attr) {
-	u2 count = attr.lvt.size();
-
-	bw.writeu2(count);
-
-	for (u4 i = 0; i < count; i++) {
-		LvtAttr::LvEntry& lve = attr.lvt[i];
-
-		bw.writeu2(lve.startPc);
-		bw.writeu2(lve.len);
-		bw.writeu2(lve.varNameIndex);
-		bw.writeu2(lve.varDescIndex);
-		bw.writeu2(lve.index);
-	}
-}
-
-static void writeSourceFile(BaseWriter& bw, SourceFileAttr& attr) {
-	bw.writeu2(attr.sourceFileIndex);
-}
-
-static void writeSmt(BaseWriter& bw, SmtAttr& attr) {
-
-}
-
-static void writeInstList(BaseWriter& bw, InstList& instList) {
-	int offset = bw.getOffset();
-
-	auto pos = [&]() {return bw.getOffset() - offset;};
-
-	for (Inst& inst : instList) {
-		bw.writeu1(inst.opcode);
-
-		switch (inst.kind) {
-			case KIND_ZERO:
-				break;
-			case KIND_BIPUSH:
-				bw.writeu1(inst.push.value);
-				break;
-			case KIND_SIPUSH:
-				bw.writeu2(inst.push.value);
-				break;
-			case KIND_LDC:
-				if (inst.opcode == OPCODE_ldc) {
-					bw.writeu1(inst.ldc.valueIndex);
-				} else {
-					bw.writeu2(inst.ldc.valueIndex);
+					break;
 				}
-				break;
-			case KIND_VAR:
-				bw.writeu1(inst.var.lvindex);
-				break;
-			case KIND_IINC:
-				bw.writeu1(inst.iinc.index);
-				bw.writeu1(inst.iinc.value);
-				break;
-			case KIND_JUMP:
-				bw.writeu2(inst.jump.label);
-				break;
-			case KIND_TABLESWITCH: {
-			//	fprintf(stderr, "writer ts: offset: %d\n", pos());
+				case KIND_LOOKUPSWITCH: {
+					int pad = (4 - (pos() % 4)) % 4;
+					for (int i = 0; i < pad; i++) {
+						bw.writeu1(0);
+					}
 
-				int pad = (4 - (pos() % 4)) % 4;
-				for (int i = 0; i < pad; i++) {
+					bool check = pos() % 4 == 0;
+					ASSERT(check, "Padding offset must be mod 4: %d", pos());
+
+					bw.writeu4(inst.ls.defbyte);
+					bw.writeu4(inst.ls.npairs);
+
+					for (u4 i = 0; i < inst.ls.npairs; i++) {
+						u4 k = inst.ls.keys[i];
+						bw.writeu4(k);
+
+						u4 t = inst.ls.targets[i];
+						bw.writeu4(t);
+					}
+					break;
+				}
+				case KIND_FIELD:
+					bw.writeu2(inst.field.fieldRefIndex);
+					break;
+				case KIND_INVOKE:
+					bw.writeu2(inst.invoke.methodRefIndex);
+					break;
+				case KIND_INVOKEINTERFACE:
+					bw.writeu2(inst.invokeinterface.interMethodRefIndex);
+					bw.writeu1(inst.invokeinterface.count);
 					bw.writeu1(0);
-				}
-
-				bool check = pos() % 4 == 0;
-				ASSERT(check, "Padding offset must be mod 4: %d", pos());
-
-				bw.writeu4(inst.ts.def);
-				bw.writeu4(inst.ts.low);
-				bw.writeu4(inst.ts.high);
-
-				for (int i = 0; i < inst.ts.high - inst.ts.low + 1; i++) {
-					u4 t = inst.ts.targets[i];
-					bw.writeu4(t);
-				}
-
-			//	fprintf(stderr, "writer ts: offset: %d\n", pos());
-
-				break;
+					break;
+				case KIND_INVOKEDYNAMIC:
+					break;
+				case KIND_TYPE:
+					bw.writeu2(inst.type.classIndex);
+					break;
+				case KIND_NEWARRAY:
+					bw.writeu1(inst.newarray.atype);
+					break;
+				case KIND_MULTIARRAY:
+					bw.writeu2(inst.multiarray.classIndex);
+					bw.writeu1(inst.multiarray.dims);
+					break;
+				case KIND_PARSE4TODO:
+					EXCEPTION("not implemetd");
+					break;
+				case KIND_RESERVED:
+					EXCEPTION("not implemetd");
+					break;
 			}
-			case KIND_LOOKUPSWITCH: {
-				int pad = (4 - (pos() % 4)) % 4;
-				for (int i = 0; i < pad; i++) {
-					bw.writeu1(0);
-				}
-
-				bool check = pos() % 4 == 0;
-				ASSERT(check, "Padding offset must be mod 4: %d", pos());
-
-				bw.writeu4(inst.ls.defbyte);
-				bw.writeu4(inst.ls.npairs);
-
-				for (u4 i = 0; i < inst.ls.npairs; i++) {
-					u4 k = inst.ls.keys[i];
-					bw.writeu4(k);
-
-					u4 t = inst.ls.targets[i];
-					bw.writeu4(t);
-				}
-				break;
-			}
-			case KIND_FIELD:
-				bw.writeu2(inst.field.fieldRefIndex);
-				break;
-			case KIND_INVOKE:
-				bw.writeu2(inst.invoke.methodRefIndex);
-				break;
-			case KIND_INVOKEINTERFACE:
-				bw.writeu2(inst.invokeinterface.interMethodRefIndex);
-				bw.writeu1(inst.invokeinterface.count);
-				bw.writeu1(0);
-				break;
-			case KIND_INVOKEDYNAMIC:
-				break;
-			case KIND_TYPE:
-				bw.writeu2(inst.type.classIndex);
-				break;
-			case KIND_NEWARRAY:
-				bw.writeu1(inst.newarray.atype);
-				break;
-			case KIND_MULTIARRAY:
-				bw.writeu2(inst.multiarray.classIndex);
-				bw.writeu1(inst.multiarray.dims);
-				break;
-			case KIND_PARSE4TODO:
-				EXCEPTION("not implemetd");
-				break;
-			case KIND_RESERVED:
-				EXCEPTION("not implemetd");
-				break;
 		}
 	}
-}
 
-static void writeCode(BaseWriter& bw, CodeAttr& attr) {
-	bw.writeu2(attr.maxStack);
-	bw.writeu2(attr.maxLocals);
-	bw.writeu4(attr.codeLen);
+	void writeCode(CodeAttr& attr) {
+		bw.writeu2(attr.maxStack);
+		bw.writeu2(attr.maxLocals);
+		bw.writeu4(attr.codeLen);
 
-	u4 offset = bw.getOffset();
-	writeInstList(bw, attr.instList);
+		u4 offset = bw.getOffset();
+		writeInstList(attr.instList);
 
 //	u4 len = bw.getOffset() - offset;
 //	ASSERT(attr.codeLen == len, "writeCode:: Expected %d, actual %d in %d",
 //			attr.codeLen, len, attr.kind);
 
-	attr.codeLen = bw.getOffset() - offset;
+		attr.codeLen = bw.getOffset() - offset;
 
-	u2 esize = attr.exceptions.size();
-	bw.writeu2(esize);
-	for (u4 i = 0; i < esize; i++) {
-		CodeExceptionEntry& e = attr.exceptions[i];
-		bw.writeu2(e.startpc);
-		bw.writeu2(e.endpc);
-		bw.writeu2(e.handlerpc);
-		bw.writeu2(e.catchtype);
+		u2 esize = attr.exceptions.size();
+		bw.writeu2(esize);
+		for (u4 i = 0; i < esize; i++) {
+			CodeExceptionEntry& e = attr.exceptions[i];
+			bw.writeu2(e.startpc);
+			bw.writeu2(e.endpc);
+			bw.writeu2(e.handlerpc);
+			bw.writeu2(e.catchtype);
+		}
+
+		writeAttrs(attr.attrs);
 	}
 
-	writeAttrs(bw, attr.attrs);
-}
+	void writeAttrs(Attrs& attrs) {
+		bw.writeu2(attrs.size());
 
-static void writeAttrs(BaseWriter& bw, Attrs& attrs) {
-	bw.writeu2(attrs.size());
+		for (u4 i = 0; i < attrs.size(); i++) {
+			Attr& attr = *attrs.attrs[i];
 
-	for (u4 i = 0; i < attrs.size(); i++) {
-		Attr& attr = *attrs.attrs[i];
+			bw.writeu2(attr.nameIndex);
+			bw.writeu4(attr.len);
 
-		bw.writeu2(attr.nameIndex);
-		bw.writeu4(attr.len);
+			//u1* pos = bw.pos();
 
-		//u1* pos = bw.pos();
+			u4 offset = bw.getOffset();
 
-		u4 offset = bw.getOffset();
+			if (attr.kind == ATTR_UNKNOWN) {
+				writeUnknown((UnknownAttr&) attr);
+			} else {
+				//BufferWriter bw(pos, attr.len);
 
-		if (attr.kind == ATTR_UNKNOWN) {
-			writeUnknown(bw, (UnknownAttr&) attr);
-		} else {
-			//BufferWriter bw(pos, attr.len);
+				switch (attr.kind) {
+					case ATTR_UNKNOWN:
 
-			switch (attr.kind) {
-				case ATTR_UNKNOWN:
-
-				case ATTR_SOURCEFILE:
-					writeSourceFile(bw, (SourceFileAttr&) attr);
-					break;
-				case ATTR_CODE:
-					writeCode(bw, (CodeAttr&) attr);
-					break;
-				case ATTR_EXCEPTIONS:
-					writeExceptions(bw, (ExceptionsAttr&) attr);
-					break;
-				case ATTR_LVT:
-					writeLvt(bw, (LvtAttr&) attr);
-					break;
-				case ATTR_LNT:
-					writeLnt(bw, (LntAttr&) attr);
-					break;
-				case ATTR_SMT:
-					writeSmt(bw, (SmtAttr&) attr);
-					break;
+					case ATTR_SOURCEFILE:
+						writeSourceFile((SourceFileAttr&) attr);
+						break;
+					case ATTR_CODE:
+						writeCode((CodeAttr&) attr);
+						break;
+					case ATTR_EXCEPTIONS:
+						writeExceptions((ExceptionsAttr&) attr);
+						break;
+					case ATTR_LVT:
+						writeLvt((LvtAttr&) attr);
+						break;
+					case ATTR_LNT:
+						writeLnt((LntAttr&) attr);
+						break;
+					case ATTR_SMT:
+						writeSmt((SmtAttr&) attr);
+						break;
+				}
 			}
-		}
 
 //		u4 len = bw.getOffset() - offset;
 //		ASSERT(attr.len == len, "Expected %d, actual %d in %d", attr.len, len,
 //				attr.kind);
 
-		attr.len = bw.getOffset() - offset;
-	}
-}
-
-void writeClassFile(ClassFile& cf, BaseWriter& bw) {
-
-	auto writeMembers = [](BaseWriter& bw, Members& members) {
-		bw.writeu2(members.size());
-
-		for (u4 i = 0; i < members.size(); i++) {
-
-			Member& mi = members[i];
-
-			bw.writeu2(mi.accessFlags);
-			bw.writeu2(mi.nameIndex);
-			bw.writeu2(mi.descIndex);
-
-			writeAttrs(bw, mi);
+			attr.len = bw.getOffset() - offset;
 		}
-	};
-
-	bw.writeu4(cf.magic);
-	bw.writeu2(cf.minor);
-	bw.writeu2(cf.major);
-
-	writeConstPool(bw, cf.cp);
-
-	bw.writeu2(cf.accessFlags);
-	bw.writeu2(cf.thisClassIndex);
-	bw.writeu2(cf.superClassIndex);
-
-	u2 interCount = cf.interfaces.size();
-	bw.writeu2(interCount);
-
-	for (u4 i = 0; i < cf.interfaces.size(); i++) {
-		u2 interIndex = cf.interfaces[i];
-		bw.writeu2(interIndex);
 	}
 
-	writeMembers(bw, cf.fields);
-	writeMembers(bw, cf.methods);
-	writeAttrs(bw, cf);
-}
+private:
+
+	TWriter& bw;
+};
 
 u4 getClassFileSize(ClassFile & cf) {
 	SizeWriter bw;
-	writeClassFile(cf, bw);
+	ClassWriter<SizeWriter>(bw).writeClassFile(cf);
 
 	return bw.getOffset();
 }
 
 void writeClassFile(ClassFile& cf, u1* fileImage, const int fileImageLen) {
 	BufferWriter bw(fileImage, fileImageLen);
-	writeClassFile(cf, bw);
+	ClassWriter<BufferWriter>(bw).writeClassFile(cf);
 }
 
 }

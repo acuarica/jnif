@@ -3,13 +3,17 @@
 
 # Introduction
 
-
 Why instrument?
 *  Better control
 *  Aspect programming
 *  and?
 
 # Related work
+
+Jnif uses a clean object model to represent the java class files. Modyfing the
+class files is just matter of modifying the object models and then serializer
+and deserializer to convert to a memory buffer and send to the jvm ready to 
+execution.
 
 Ability to **instrument** the JVM by only adding a small agent.
 

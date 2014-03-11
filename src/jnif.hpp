@@ -4,50 +4,28 @@
 /**
  *
  */
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
 #include <vector>
-#include <deque>
-
-#define _STREXPAND(token) #token
-#define _STR(token) _STREXPAND(token)
-
-#define _LOG(levelmsg, format, ...) \
-	fprintf(stderr, levelmsg " | %4d %8ld | " format "\n", 0, 0l, ##__VA_ARGS__)
-
-#define FATAL(format, ...)	_LOG("FATAL", format, ##__VA_ARGS__)
-#define ERROR(format, ...)	_LOG("ERROR", format, ##__VA_ARGS__)
-#define WARN(format, ...)	_LOG("WARN ", format, ##__VA_ARGS__)
-#define NOTICE(format, ...)	_LOG("NOTI ", format, ##__VA_ARGS__)
-#define INFO(format, ...)	_LOG("INFO ", format, ##__VA_ARGS__)
-#define DEBUG(format, ...)	_LOG("DEBUG", format, ##__VA_ARGS__)
-#define TRACE(format, ...)	_LOG("TRACE", format, ##__VA_ARGS__)
-#define STEP(format, ...)	_LOG("STEP ", format, ##__VA_ARGS__)
-
-static inline int _exception(int unused) __attribute__((noreturn));
-
-static inline int _exception(int unused) {
-	exit(1);
-}
-
-#define EXCEPTION(format, ...) exit( ( FATAL(format, ##__VA_ARGS__), 1 ) )
-
-#define ASSERT(cond, format, ...) \
-	((cond) ? 0 : _exception( ERROR("Assert Error found. '" #cond "' failed. " format " @ Line:" _STR(__LINE__), ##__VA_ARGS__) ))
-
-#define CHECK(cond, format, ...) \
-	((cond) ? 0 : _exception( ERROR("Check Error found. '" #cond "' failed. " format, ##__VA_ARGS__) ))
+#include <list>
 
 /**
  * The jnif namespace contains all type definitions, constants, enumerations
- * and classes of the jnif framework.
+ * and structs of the jnif framework.
+ *
+ * These implementations is based on the Java Virtual Machine Specification
+ * chapter 4, class file format.
+ *
+ * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html
  *
  * The most relevant types and classes of the framework are ClassParser
  * (using ClassBaseParser) and
  * ClassWriterVisitor which it allows to parser Java Class File and write back
  * them with the ability to inject transformers (class visitors in jnif
  * parlance) to modify these classes.
+ *
+ * @see ClassFile
+ *
+ * NOTE: The library uses structs instead of classes.
  */
 namespace jnif {
 
@@ -396,7 +374,8 @@ enum OpKind {
 	KIND_NEWARRAY,
 	KIND_MULTIARRAY,
 	KIND_PARSE4TODO,
-	KIND_RESERVED
+	KIND_RESERVED,
+	KIND_LABEL,
 };
 
 /**
@@ -455,6 +434,10 @@ struct Inst {
 	Inst() {
 	}
 
+	Inst(OpKind kind) :
+			kind(kind) {
+	}
+
 	Inst(Opcode opcode) :
 			opcode(opcode), kind(KIND_ZERO) {
 	}
@@ -473,6 +456,15 @@ struct Inst {
 	 */
 	OpKind kind;
 
+	friend Inst InvokeInst(Opcode opcode, u2 index) {
+		Inst inst;
+		inst.kind = KIND_INVOKE;
+		inst.opcode = opcode;
+		inst.invoke.methodRefIndex = index;
+
+		return inst;
+	}
+
 	union {
 		struct {
 			int value;
@@ -489,6 +481,7 @@ struct Inst {
 		} iinc;
 		struct {
 			Label label;
+			Inst* label2;
 		} jump;
 		struct {
 			u2 fieldRefIndex;
@@ -527,10 +520,18 @@ struct Inst {
 	} ls;
 };
 
+static Inst* ZeroInst(Opcode opcode) {
+	Inst* inst = new Inst();
+	inst->kind = KIND_ZERO;
+	inst->opcode = opcode;
+
+	return inst;
+}
+
 /**
  * Represents the bytecode of a method.
  */
-typedef deque<Inst> InstList;
+typedef std::list<Inst*> InstList;
 
 /**
  *
@@ -586,15 +587,16 @@ struct ConstPoolEntry {
 /**
  * The constant pool
  */
-struct ConstPool {
+class ConstPool {
+public:
 
 	vector<ConstPoolEntry> entries;
 
 	ConstPool();
 	u2 addSingle(const ConstPoolEntry& entry);
 	void addDouble(const ConstPoolEntry& entry);
-	const string& getUtf8(int utf8Index) const;
-	const string& getClazzName(int classIndex) const;
+	const char* getUtf8(int utf8Index) const;
+	const char* getClazzName(int classIndex) const;
 	void getNameAndType(int index, string* name, string* desc) const;
 	void getMemberRef(int index, string* clazzName, string* name, string* desc,
 			u1 tag) const;
@@ -807,26 +809,9 @@ struct Member: Attrs {
 		return false;
 	}
 
-	InstList& instList() {
-		for (Attr* attr : attrs) {
-			if (attr->kind == ATTR_CODE) {
-				return ((CodeAttr*) attr)->instList;
-			}
-		}
+	InstList& instList();
 
-		EXCEPTION("ERROR! get inst list");
-	}
-
-	void instList(const InstList& newcode) {
-		for (Attr* attr : attrs) {
-			if (attr->kind == ATTR_CODE) {
-				((CodeAttr*) attr)->instList = newcode;
-				return;
-			}
-		}
-
-		EXCEPTION("ERROR! setting inst list");
-	}
+	void instList(const InstList& newcode);
 
 private:
 
@@ -844,13 +829,13 @@ typedef Member Method;
  */
 struct Members {
 
-	friend struct ClassFile;
+	friend class ClassFile;
 	Members(const Members&) = delete;
 
 	inline Member& add(AccessFlags accessFlags, u2 nameIndex, u2 descIndex) {
 		Member* member = new Member(accessFlags, nameIndex, descIndex);
 		members.push_back(member);
-
+		//members.emplace(member);
 		return *members.back();
 	}
 
@@ -879,49 +864,98 @@ private:
 };
 
 /**
- * Represents a Java Class File following version 7.
  *
- * Definitions taken from Chapter 4. The class File Format from the
- * Java Virtual Machine Specification
- * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html
  */
-struct ClassFile: Attrs {
-	u4 magic;
-	u2 minor;
-	u2 major;
-	ConstPool cp;
+class Version {
+public:
+
+	/**
+	 *
+	 */
+	Version(u2 major = 51, u2 minor = 0) :
+			_major(major), _minor(minor) {
+	}
+
+	/**
+	 *
+	 */
+	u2 getMajor() const;
+
+	/**
+	 *
+	 */
+	u2 getMinor() const;
+
+private:
+
+	u2 _major;
+
+	u2 _minor;
+};
+
+/**
+ * Models a Java Class File following the specification from version 7.
+ */
+class ClassFile: public ConstPool, public Attrs {
+public:
+
+	/**
+	 * Constructs a default class file given the class name, the super class
+	 * name and the access flags.
+	 */
+	ClassFile(const char* className, const char* superClassName,
+			u2 accessFlags = ACC_PUBLIC, Version version = Version());
+
+	/**
+	 * Constructs a class file from an in-memory representation of the java
+	 * class file.
+	 */
+	ClassFile(const u1* classFileData, int classFileLen);
+
+	/**
+	 *
+	 */
+	Version getVersion() const;
+
+	/**
+	 *
+	 */
+	void setVersion(Version version);
+
+	/**
+	 *
+	 */
+	const char* getClassName() const;
+
+	/**
+	 * Gets the size in bytes of this class file of the in-memory
+	 * representation.
+	 */
+	u4 getSize();
+
+	/**
+	 * Writes this class file in the specified buffer according to the
+	 * specification.
+	 */
+	void write(u1* classFileData, int classFileLen);
+
+	/**
+	 * Shows the class file in a textual format, useful for debugging purposes.
+	 */
+	friend ostream& operator<<(std::ostream& os, ClassFile& cf);
+
 	u2 accessFlags;
 	u2 thisClassIndex;
 	u2 superClassIndex;
 	vector<u2> interfaces;
 	Members fields;
 	Members methods;
+
+private:
+
+	Version _version;
+
 };
-
-/**
- * Parses a java class file.
- *
- * Instantiation of the parser implementation.
- *
- * The template instantiation is the only one accepted, since it receives
- * the members and class attributes parsers as templates lists.
- */
-void parseClassFile(const u1* fileImage, const int fileImageLen, ClassFile& cf);
-
-/**
- *
- */
-u4 getClassFileSize(ClassFile& cf);
-
-/**
- *
- */
-void writeClassFile(ClassFile& cf, u1* fileImage, const int fileImageLen);
-
-/**
- *
- */
-void printClassFile(ClassFile& cf, ostream& os, int tabs = 0);
 
 }
 

@@ -9,8 +9,8 @@
 
 #include <jvmti.h>
 
-//#include "frlog.h"
-//#include "frexception.h"
+#include "frlog.h"
+#include "frexception.h"
 
 #include <iostream>
 #include <string>
@@ -65,13 +65,12 @@ void FrInstrClassFile1(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 	ofstream os(outFileName(className, "disasm").c_str());
 
-	ClassFile cf;
-	parseClassFile(data, len, cf);
-	printClassFile(cf, os);
+	ClassFile cf(data, len);
+	os << cf;
 
-	*newlen = getClassFileSize(cf);
+	*newlen = cf.getSize();
 	*newdata = Allocate(jvmti, *newlen);
-	writeClassFile(cf, *newdata, *newlen);
+	cf.write(*newdata, *newlen);
 }
 
 void FrInstrClassFile2(jvmtiEnv* jvmti, unsigned char* data, int len,
@@ -79,11 +78,10 @@ void FrInstrClassFile2(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 	ofstream os(outFileName(className, "disasm").c_str());
 
-	ClassFile cf;
-	parseClassFile(data, len, cf);
-	printClassFile(cf, os);
+	ClassFile cf(data, len);
+	os << cf;
 
-	int newlen = getClassFileSize(cf);
+	int newlen = cf.getSize();
 
 	ASSERT(len == newlen,
 			"Expected class file len %d, actual was %d, on class %s", len,
@@ -91,7 +89,7 @@ void FrInstrClassFile2(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 	u1* newdata = Allocate(jvmti, newlen);
 
-	writeClassFile(cf, newdata, newlen);
+	cf.write(newdata, newlen);
 
 	for (int i = 0; i < newlen; i++) {
 		ASSERT(data[i] == newdata[i],
@@ -115,18 +113,17 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 	ofstream os(outFileName(className, "disasm").c_str());
 
-	ClassFile cf;
-	parseClassFile(data, len, cf);
-	printClassFile(cf, os);
+	ClassFile cf(data, len);
+	os << cf;
 
-	u2 classIndex = cf.cp.addClass("frproxy/FrInstrProxy");
+	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
 
 //	u2 methodRefIndex = cf.cp.addMethodRef(classIndex, "alloc",
 //			"(Ljava/lang/Object;)V");
 //
 //	u2 methodRefIndex2 = cf.cp.addMethodRef(classIndex, "newArrayEvent",
 //			"(ILjava/lang/Object;I)V");
-	u2 mindex = cf.cp.addMethodRef(classIndex, "enterMainMethod", "()V");
+	u2 mindex = cf.addMethodRef(classIndex, "enterMainMethod", "()V");
 
 	auto newarray = [&](u1 atype) {
 		Inst inst;
@@ -147,17 +144,17 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
 	};
 
 	auto invoke = [&] (Opcode opcode, u2 index) {
-		Inst inst;
-		inst.kind = KIND_INVOKE;
-		inst.opcode = opcode;
-		inst.invoke.methodRefIndex = index;
+		Inst* inst = new Inst();
+		inst->kind = KIND_INVOKE;
+		inst->opcode = opcode;
+		inst->invoke.methodRefIndex = index;
 
 		return inst;
 	};
 
 	for (Method* m : cf.methods) {
 
-		string name = cf.cp.getUtf8(m->nameIndex);
+		string name = cf.getUtf8(m->nameIndex);
 
 		if (m->hasCode() && m->nameIndex && name == "<init>") {
 			InstList& instList = m->instList();
@@ -202,10 +199,10 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
 		}
 	}
 
-	*newlen = getClassFileSize(cf);
+	*newlen = cf.getSize();
 	*newdata = Allocate(jvmti, *newlen);
 
-	writeClassFile(cf, *newdata, *newlen);
+	cf.write(*newdata, *newlen);
 
 }
 

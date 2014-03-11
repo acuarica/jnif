@@ -1,21 +1,27 @@
 #include "jnif.hpp"
+#include "jniferr.hpp"
 
 namespace jnif {
 
 /**
  * Implements a memory buffer reader in big-endian encoding.
  */
-struct BufferReader {
+class BufferReader {
+public:
 
-	inline BufferReader(const u1* buffer, int len) :
+	BufferReader(const u1* buffer, int len) :
 			buffer(buffer), len(len), off(0) {
 	}
 
-	inline ~BufferReader() {
+	~BufferReader() {
 		end();
 	}
 
-	inline u1 readu1() {
+	int size() const {
+		return len;
+	}
+
+	u1 readu1() {
 		ASSERT(off + 1 <= len, "Invalid read");
 
 		u1 result = buffer[off];
@@ -25,7 +31,7 @@ struct BufferReader {
 		return result;
 	}
 
-	inline u2 readu2() {
+	u2 readu2() {
 		ASSERT(off + 2 <= len, "Invalid read 2");
 
 		u1 r0 = buffer[off + 0];
@@ -38,7 +44,7 @@ struct BufferReader {
 		return result;
 	}
 
-	inline u4 readu4() {
+	u4 readu4() {
 		ASSERT(off + 4 <= len, "Invalid read 4");
 
 		u1 r0 = buffer[off + 0];
@@ -53,28 +59,28 @@ struct BufferReader {
 		return result;
 	}
 
-	inline void skip(int count) {
+	void skip(int count) {
 		ASSERT(off + count <= len, "Invalid read count: %d (offset: %d)", count,
 				off);
 
 		off += count;
 	}
 
-	inline int offset() const {
+	int offset() const {
 		return off;
 	}
 
-	inline const u1* pos() const {
+	const u1* pos() const {
 		return buffer + off;
 	}
 
-	inline bool eor() const {
+	bool eor() const {
 		return off == len;
 	}
 
 private:
 
-	inline void end() {
+	void end() {
 		ASSERT(off == len,
 				"End of buffer not reached while expecting end of buffer");
 	}
@@ -207,8 +213,7 @@ static void parseConstPool(BufferReader& br, ConstPool& cp) {
 	}
 }
 
-static Attr* parseSourceFile(BufferReader& br, Attrs& as, ConstPool& cp,
-		u2 nameIndex) {
+static Attr* parseSourceFile(BufferReader& br, Attrs& as, u2 nameIndex) {
 	u2 sourceFileIndex = br.readu2();
 
 	Attr* attr = new SourceFileAttr(nameIndex, 2, sourceFileIndex);
@@ -217,8 +222,7 @@ static Attr* parseSourceFile(BufferReader& br, Attrs& as, ConstPool& cp,
 	return attr;
 }
 
-static Attr* parseExceptions(BufferReader& br, Attrs& as, ConstPool& cp,
-		u2 nameIndex) {
+static Attr* parseExceptions(BufferReader& br, Attrs& as, u2 nameIndex) {
 	u2 len = br.readu2();
 
 	std::vector<u2> es;
@@ -234,11 +238,124 @@ static Attr* parseExceptions(BufferReader& br, Attrs& as, ConstPool& cp,
 	return attr;
 }
 
-static void parseInstList(BufferReader& br, InstList& instList, ConstPool& cp) {
+static Inst** parseLabels(BufferReader& br) {
+
+	Inst** labels = new Inst*[br.size()];
+	for (int i = 0; i < br.size(); i++) {
+		labels[i] = nullptr;
+	}
+
 	while (!br.eor()) {
 		int offset = br.offset();
 
-		Inst inst;
+		Opcode opcode = (Opcode) br.readu1();
+		OpKind kind = OPKIND[opcode];
+
+		switch (kind) {
+			case KIND_ZERO:
+				break;
+			case KIND_BIPUSH:
+			case KIND_VAR:
+			case KIND_NEWARRAY:
+				br.skip(1);
+				break;
+			case KIND_SIPUSH:
+			case KIND_IINC:
+			case KIND_FIELD:
+			case KIND_INVOKE:
+			case KIND_TYPE:
+				br.skip(2);
+				break;
+			case KIND_MULTIARRAY:
+				br.skip(3);
+				break;
+			case KIND_INVOKEINTERFACE:
+				br.skip(4);
+				break;
+			case KIND_LDC:
+				if (opcode == OPCODE_ldc) {
+					br.readu1();
+				} else {
+					br.readu2();
+				}
+				break;
+			case KIND_JUMP: {
+				u2 targetOffset = br.readu2();
+
+				u2 labelpos = offset + targetOffset;
+				ASSERT(labelpos < br.size(), "invalid target for jump");
+
+				Inst*& lab = labels[labelpos];
+				if (lab == nullptr) {
+					lab = new Inst(KIND_LABEL);
+				}
+
+				break;
+			}
+			case KIND_TABLESWITCH: {
+				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
+					u1 pad = br.readu1();
+					ASSERT(pad == 0, "Padding must be zero");
+				}
+
+				{
+					bool check = br.offset() % 4 == 0;
+					ASSERT(check, "%d", br.offset());
+				}
+
+				br.readu4(); // def
+				int low = br.readu4();
+				int high = br.readu4();
+
+				ASSERT(low <= high,
+						"low (%d) must be less or equal than high (%d)", low,
+						high);
+
+				for (int i = 0; i < high - low + 1; i++) {
+					br.readu4();
+				}
+				break;
+			}
+			case KIND_LOOKUPSWITCH: {
+				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
+					u1 pad = br.readu1();
+					ASSERT(pad == 0, "Padding must be zero");
+				}
+
+				u4 defbyte = br.readu4();
+				u4 npairs = br.readu4();
+
+				for (u4 i = 0; i < npairs; i++) {
+					br.readu4();
+					br.readu4();
+				}
+				break;
+			}
+		}
+	}
+
+	return labels;
+}
+
+static void parseInstList(BufferReader& br, InstList& instList) {
+
+	const u1* code = br.pos();
+	int codeLen = br.size();
+	Inst** labels;
+	{
+		BufferReader br(code, codeLen);
+		labels = parseLabels(br);
+	}
+
+	while (!br.eor()) {
+		int offset = br.offset();
+
+		if (labels[offset] != nullptr) {
+			instList.push_back(labels[offset]);
+		}
+
+		Inst* instp = new Inst();
+		Inst& inst = *instp;
 
 		inst.opcode = (Opcode) br.readu1();
 		inst.kind = OPKIND[inst.opcode];
@@ -270,13 +387,13 @@ static void parseInstList(BufferReader& br, InstList& instList, ConstPool& cp) {
 				inst.iinc.value = br.readu1();
 				break;
 			case KIND_JUMP: {
+				//
 				u2 targetOffset = br.readu2();
 				inst.jump.label = targetOffset;
+				inst.jump.label2 = labels[offset + targetOffset];
 				break;
 			}
 			case KIND_TABLESWITCH:
-//				fprintf(stderr, "parser ts: offset: %d\n", br.offset());
-
 				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 					u1 pad = br.readu1();
 					ASSERT(pad == 0, "Padding must be zero");
@@ -300,7 +417,7 @@ static void parseInstList(BufferReader& br, InstList& instList, ConstPool& cp) {
 					inst.ts.targets.push_back(targetOffset);
 				}
 
-		//		fprintf(stderr, "parser ts: offset: %d\n", br.offset());
+				//		fprintf(stderr, "parser ts: offset: %d\n", br.offset());
 
 				break;
 			case KIND_LOOKUPSWITCH:
@@ -358,7 +475,7 @@ static void parseInstList(BufferReader& br, InstList& instList, ConstPool& cp) {
 
 		}
 
-		instList.push_back(inst);
+		instList.push_back(instp);
 	}
 }
 
@@ -371,14 +488,12 @@ static Attr* parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 	ca->maxLocals = br.readu2();
 	ca->codeLen = br.readu4();
 
-	//fprintf(stderr, "code len in parser: %d\n", ca->codeLen );
-
 	const u1* codeBuf = br.pos();
 	br.skip(ca->codeLen);
 
 	{
 		BufferReader br(codeBuf, ca->codeLen);
-		parseInstList(br, ca->instList, cp);
+		parseInstList(br, ca->instList);
 	}
 
 	u2 exceptionTableCount = br.readu2();
@@ -399,7 +514,7 @@ static Attr* parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 	return ca;
 }
 
-static Attr* parseLnt(BufferReader& br, Attrs& as, ConstPool& cp, u2 nameIndex) {
+static Attr* parseLnt(BufferReader& br, Attrs& as, u2 nameIndex) {
 	u2 lntlen = br.readu2();
 
 	LntAttr* lnt = new LntAttr(nameIndex);
@@ -417,8 +532,7 @@ static Attr* parseLnt(BufferReader& br, Attrs& as, ConstPool& cp, u2 nameIndex) 
 	return lnt;
 }
 
-static Attr* parseLvt(BufferReader& br, Attrs& as, ConstPool& cp,
-		u2 nameIndex) {
+static Attr* parseLvt(BufferReader& br, Attrs& as, u2 nameIndex) {
 	u2 count = br.readu2();
 
 	LvtAttr* lvt = new LvtAttr(nameIndex);
@@ -439,74 +553,74 @@ static Attr* parseLvt(BufferReader& br, Attrs& as, ConstPool& cp,
 
 	return lvt;
 }
-
-static void parseSmt(BufferReader& br, Attrs& as, ConstPool& cp, u2 nameIndex) {
-
-	auto parseTs = [&](int count) {
-		for (u1 i = 0; i < count; i++) {
-			u1 tag = br.readu1();
-			switch (tag) {
-				case ITEM_Top:
-				break;
-				case ITEM_Integer:
-				break;
-				case ITEM_Float :
-
-				break;
-				case ITEM_Long :
-
-				break;
-				case ITEM_Double:
-				break;
-				case ITEM_Null :
-				break;
-				case ITEM_UninitializedThis :break;
-				case ITEM_Object: {
-					u2 cpIndex = br.readu2();
-					break;
-				}
-				case ITEM_Uninitialized: {
-					u2 offset= br.readu2();
-					break;
-				}
-			}
-		}
-	};
-
-	u2 numberOfEntries = br.readu2();
-
-	for (u2 i = 0; i < numberOfEntries; i++) {
-		u1 frameType = br.readu1();
-
-		if (0 <= frameType && frameType <= 63) {
-			//	v.visitFrameSame(frameType);
-		} else if (64 <= frameType && frameType <= 127) {
-			parseTs(1);
-			//v.visitFrameSameLocals1StackItem(frameType);
-		} else if (frameType == 247) {
-			u2 offsetDelta = br.readu2();
-			parseTs(1);
-		} else if (248 <= frameType && frameType <= 250) {
-			u2 offsetDelta = br.readu2();
-
-		} else if (frameType == 251) {
-			u2 offsetDelta = br.readu2();
-
-		} else if (252 <= frameType && frameType <= 254) {
-			u2 offsetDelta = br.readu2();
-			parseTs(frameType - 251);
-
-		} else if (frameType == 255) {
-			u2 offsetDelta = br.readu2();
-			u2 numberOfLocals = br.readu2();
-			parseTs(numberOfLocals);
-			u2 numberOfStackItems = br.readu2();
-			parseTs(numberOfStackItems);
-		}
-	}
-
-	//as.add(new SourceFileAttr(nameIndex, 2, sourceFileIndex));
-}
+//
+//static void parseSmt(BufferReader& br, Attrs& as, ConstPool& cp, u2 nameIndex) {
+//
+//	auto parseTs = [&](int count) {
+//		for (u1 i = 0; i < count; i++) {
+//			u1 tag = br.readu1();
+//			switch (tag) {
+//				case ITEM_Top:
+//				break;
+//				case ITEM_Integer:
+//				break;
+//				case ITEM_Float :
+//
+//				break;
+//				case ITEM_Long :
+//
+//				break;
+//				case ITEM_Double:
+//				break;
+//				case ITEM_Null :
+//				break;
+//				case ITEM_UninitializedThis :break;
+//				case ITEM_Object: {
+//					u2 cpIndex = br.readu2();
+//					break;
+//				}
+//				case ITEM_Uninitialized: {
+//					u2 offset= br.readu2();
+//					break;
+//				}
+//			}
+//		}
+//	};
+//
+//	u2 numberOfEntries = br.readu2();
+//
+//	for (u2 i = 0; i < numberOfEntries; i++) {
+//		u1 frameType = br.readu1();
+//
+//		if (0 <= frameType && frameType <= 63) {
+//			//	v.visitFrameSame(frameType);
+//		} else if (64 <= frameType && frameType <= 127) {
+//			parseTs(1);
+//			//v.visitFrameSameLocals1StackItem(frameType);
+//		} else if (frameType == 247) {
+//			u2 offsetDelta = br.readu2();
+//			parseTs(1);
+//		} else if (248 <= frameType && frameType <= 250) {
+//			u2 offsetDelta = br.readu2();
+//
+//		} else if (frameType == 251) {
+//			u2 offsetDelta = br.readu2();
+//
+//		} else if (252 <= frameType && frameType <= 254) {
+//			u2 offsetDelta = br.readu2();
+//			parseTs(frameType - 251);
+//
+//		} else if (frameType == 255) {
+//			u2 offsetDelta = br.readu2();
+//			u2 numberOfLocals = br.readu2();
+//			parseTs(numberOfLocals);
+//			u2 numberOfStackItems = br.readu2();
+//			parseTs(numberOfStackItems);
+//		}
+//	}
+//
+//	//as.add(new SourceFileAttr(nameIndex, 2, sourceFileIndex));
+//}
 
 static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as) {
 	u2 attrCount = br.readu2();
@@ -516,24 +630,24 @@ static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as) {
 		u4 len = br.readu4();
 		const u1* data = br.pos();
 
-		std::string attrName = cp.getUtf8(nameIndex);
+		string attrName = cp.getUtf8(nameIndex);
 
 		Attr* a;
 		if (attrName == "SourceFile") {
 			BufferReader br(data, len);
-			a = parseSourceFile(br, as, cp, nameIndex);
+			a = parseSourceFile(br, as, nameIndex);
 		} else if (attrName == "Exceptions") {
 			BufferReader br(data, len);
-			a = parseExceptions(br, as, cp, nameIndex);
+			a = parseExceptions(br, as, nameIndex);
 		} else if (attrName == "Code") {
 			BufferReader br(data, len);
 			a = parseCode(br, as, cp, nameIndex);
 		} else if (attrName == "LineNumberTable") {
 			BufferReader br(data, len);
-			a = parseLnt(br, as, cp, nameIndex);
+			a = parseLnt(br, as, nameIndex);
 		} else if (attrName == "LocalVariableTable") {
 			BufferReader br(data, len);
-			a = parseLvt(br, as, cp, nameIndex);
+			a = parseLvt(br, as, nameIndex);
 //		} else if (attrName == "StackMapTable") {
 //			BufferReader br(data, len);
 //			parseSmt(br, as, cp, nameIndex);
@@ -552,15 +666,17 @@ void parseClassFile(const u1* fileImage, const int fileImageLen,
 		ClassFile& cf) {
 	BufferReader br(fileImage, fileImageLen);
 
-	cf.magic = br.readu4();
+	u4 magic = br.readu4();
 
-	CHECK(cf.magic == CLASSFILE_MAGIC,
-			"Invalid magic number. Expected 0xcafebabe, found: %x", cf.magic);
+	CHECK(magic == CLASSFILE_MAGIC,
+			"Invalid magic number. Expected 0xcafebabe, found: %x", magic);
 
-	cf.minor = br.readu2();
-	cf.major = br.readu2();
+	u2 minor = br.readu2();
+	u2 major = br.readu2();
 
-	parseConstPool(br, cf.cp);
+	cf.setVersion(Version(major, minor));
+
+	parseConstPool(br, cf);
 
 	cf.accessFlags = br.readu2();
 	cf.thisClassIndex = br.readu2();
@@ -581,13 +697,13 @@ void parseClassFile(const u1* fileImage, const int fileImageLen,
 
 			Member& m = ms.add(accessFlags, nameIndex, descIndex);
 
-			parseAttrs(br, cf.cp, m);
+			parseAttrs(br, cf, m);
 		}};
 
 	mm(cf.fields);
 	mm(cf.methods);
 
-	parseAttrs(br, cf.cp, cf);
+	parseAttrs(br, cf, cf);
 }
 
 }

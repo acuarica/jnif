@@ -3,7 +3,12 @@ BUILD=build
 
 .PHONY: all agent unit docs clean
 
-all: agent unit
+all:
+	$(MAKE) -C src
+	$(MAKE) -C src-test-unit
+	$(MAKE) -C src-test-agent
+	$(MAKE) -C src-test-unit run
+	$(MAKE) -C src-test-agent run
 
 agent: | $(BUILD)
 	$(MAKE) -C src

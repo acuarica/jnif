@@ -1,4 +1,5 @@
 #include "jnif.hpp"
+#include "jniferr.hpp"
 
 #include <ostream>
 #include <iomanip>
@@ -45,6 +46,10 @@ private:
 	const char* const sep;
 };
 
+ostream& operator<<(ostream& os, Version version) {
+	return os << version.getMajor() << "." << version.getMinor();
+}
+
 struct ClassPrinter {
 
 	static const char* OPCODES[];
@@ -56,31 +61,32 @@ struct ClassPrinter {
 	}
 
 	void print() {
-		line() << "Version = minor: " << cf.minor << ", major: " << cf.major
-				<< endl;
+//		Version version = cf.getVersion();
 
-		printConstPool(cf.cp);
+		line() << "Version: " << cf.getVersion() << endl;
+
+		printConstPool(cf);
 
 		line() << "accessFlags: " << cf.accessFlags << endl;
-		line() << "thisClassIndex: " << cf.cp.getClazzName(cf.thisClassIndex)
-				<< "#" << cf.thisClassIndex << endl;
+		line() << "thisClassIndex: " << cf.getClassName() << "#"
+				<< cf.thisClassIndex << endl;
 
 		if (cf.superClassIndex != 0) {
 			line() << "superClassIndex: "
-					<< cf.cp.getClazzName(cf.superClassIndex) << "#"
+					<< cf.getClazzName(cf.superClassIndex) << "#"
 					<< cf.superClassIndex << endl;
 		}
 
 		for (u2 interIndex : cf.interfaces) {
-			line() << "Interface '" << cf.cp.getClazzName(interIndex) << "'#"
+			line() << "Interface '" << cf.getClazzName(interIndex) << "'#"
 					<< interIndex << endl;
 		}
 
 		for (Field* fp : cf.fields) {
 			Field& f = *fp;
-			line() << "Field " << cf.cp.getUtf8(f.nameIndex) << ": "
+			line() << "Field " << cf.getUtf8(f.nameIndex) << ": "
 					<< AccessFlagsPrinter(f.accessFlags) << " #" << f.nameIndex
-					<< ": " << cf.cp.getUtf8(f.descIndex) << "#" << f.descIndex
+					<< ": " << cf.getUtf8(f.descIndex) << "#" << f.descIndex
 					<< endl;
 
 			printAttrs(f);
@@ -90,8 +96,8 @@ struct ClassPrinter {
 			Method& m = *mp;
 
 			line() << "+Method " << AccessFlagsPrinter(m.accessFlags) << " "
-					<< cf.cp.getUtf8(m.nameIndex) << ": " << " #" << m.nameIndex
-					<< ": " << cf.cp.getUtf8(m.descIndex) << "#" << m.descIndex
+					<< cf.getUtf8(m.nameIndex) << ": " << " #" << m.nameIndex
+					<< ": " << cf.getUtf8(m.descIndex) << "#" << m.descIndex
 					<< endl;
 
 			printAttrs(m);
@@ -195,13 +201,13 @@ struct ClassPrinter {
 	}
 
 	void printSourceFile(SourceFileAttr& attr) {
-		const string& sourceFileName = cf.cp.getUtf8(attr.sourceFileIndex);
+		const string& sourceFileName = cf.getUtf8(attr.sourceFileIndex);
 		line() << "Source file: " << sourceFileName << "#"
 				<< attr.sourceFileIndex << endl;
 	}
 
 	void printUnknown(UnknownAttr& attr) {
-		const string& attrName = cf.cp.getUtf8(attr.nameIndex);
+		const string& attrName = cf.getUtf8(attr.nameIndex);
 
 		line() << "  Attribute unknown '" << attrName << "' # "
 				<< attr.nameIndex << "[" << attr.len << "]" << endl;
@@ -216,8 +222,8 @@ struct ClassPrinter {
 
 		inc();
 
-		for (Inst& inst : c.instList) {
-			printInst(inst);
+		for (Inst* inst : c.instList) {
+			printInst(*inst);
 		}
 
 		for (CodeExceptionEntry& e : c.exceptions) {
@@ -283,7 +289,7 @@ struct ClassPrinter {
 				break;
 			case KIND_FIELD: {
 				string className, name, desc;
-				cf.cp.getMemberRef(inst.field.fieldRefIndex, &className, &name,
+				cf.getMemberRef(inst.field.fieldRefIndex, &className, &name,
 						&desc, CONSTANT_Fieldref);
 
 				instos << className << name << desc << endl;
@@ -292,7 +298,7 @@ struct ClassPrinter {
 			}
 			case KIND_INVOKE: {
 				string className, name, desc;
-				cf.cp.getMemberRef(inst.invoke.methodRefIndex, &className,
+				cf.getMemberRef(inst.invoke.methodRefIndex, &className,
 						&name, &desc, CONSTANT_Methodref);
 
 				instos << className << "." << name << ": " << desc << endl;
@@ -301,7 +307,7 @@ struct ClassPrinter {
 			}
 			case KIND_INVOKEINTERFACE: {
 				string className, name, desc;
-				cf.cp.getMemberRef(inst.invokeinterface.interMethodRefIndex,
+				cf.getMemberRef(inst.invokeinterface.interMethodRefIndex,
 						&className, &name, &desc, CONSTANT_InterfaceMethodref);
 
 				instos << className << "." << name << ": " << desc << "("
@@ -312,7 +318,7 @@ struct ClassPrinter {
 				EXCEPTION("FrParseInvokeDynamicInstr not implemented");
 				break;
 			case KIND_TYPE: {
-				string className = cf.cp.getClazzName(inst.type.classIndex);
+				string className = cf.getClazzName(inst.type.classIndex);
 
 				instos << className << endl;
 
@@ -323,7 +329,7 @@ struct ClassPrinter {
 
 				break;
 			case KIND_MULTIARRAY: {
-				string className = cf.cp.getClazzName(
+				string className = cf.getClazzName(
 						inst.multiarray.classIndex);
 
 				instos << className << " " << inst.multiarray.dims << endl;
@@ -343,7 +349,7 @@ struct ClassPrinter {
 		for (u4 i = 0; i < attr.es.size(); i++) {
 			u2 exceptionIndex = attr.es[i];
 
-			const string& exceptionName = cf.cp.getClazzName(exceptionIndex);
+			const string& exceptionName = cf.getClazzName(exceptionIndex);
 
 			line() << "  Exceptions entry: '" << exceptionName << "'#"
 					<< exceptionIndex << endl;
@@ -366,7 +372,7 @@ struct ClassPrinter {
 		}
 	}
 
-	void printSmt(SmtAttr& attr) {
+	void printSmt(SmtAttr&) {
 
 	}
 

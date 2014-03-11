@@ -1,4 +1,5 @@
 #include "jnif.hpp"
+#include "jniferr.hpp"
 
 namespace jnif {
 
@@ -22,13 +23,13 @@ void ConstPool::addDouble(const ConstPoolEntry& entry) {
 	entries.push_back(nullEntry);
 }
 
-const string& ConstPool::getUtf8(int utf8Index) const {
+const char* ConstPool::getUtf8(int utf8Index) const {
 	const ConstPoolEntry* entry = getEntry(utf8Index, CONSTANT_Utf8, "Utf8");
 
-	return entry->utf8.str;
+	return entry->utf8.str.c_str();
 }
 
-const string& ConstPool::getClazzName(int classIndex) const {
+const char* ConstPool::getClazzName(int classIndex) const {
 	u2 classNameIndex = getClazzNameIndex(classIndex);
 
 	return getUtf8(classNameIndex);
@@ -142,5 +143,76 @@ u2 ConstPool::getClazzNameIndex(int classIndex) const {
 	return classNameIndex;
 }
 
+InstList& Member::instList() {
+	for (Attr* attr : attrs) {
+		if (attr->kind == ATTR_CODE) {
+			return ((CodeAttr*) attr)->instList;
+		}
+	}
+
+	EXCEPTION("ERROR! get inst list");
 }
 
+void Member::instList(const InstList& newcode) {
+	for (Attr* attr : attrs) {
+		if (attr->kind == ATTR_CODE) {
+			((CodeAttr*) attr)->instList = newcode;
+			return;
+		}
+	}
+
+	EXCEPTION("ERROR! setting inst list");
+}
+
+u2 Version::getMajor() const {
+	return _major;
+}
+
+u2 Version::getMinor() const {
+	return _minor;
+}
+
+void parseClassFile(const u1* fileImage, const int fileImageLen, ClassFile& cf);
+u4 getClassFileSize(ClassFile& cf);
+void writeClassFile(ClassFile& cf, u1* fileImage, const int fileImageLen);
+void printClassFile(ClassFile& cf, ostream& os, int tabs = 0);
+
+ClassFile::ClassFile(const char* className, const char* superClassName,
+		u2 accessFlags, Version version) :
+		accessFlags(accessFlags), _version(version) {
+
+	thisClassIndex = addClass(className);
+	superClassIndex = addClass(superClassName);
+}
+
+ClassFile::ClassFile(const u1* classFileData, const int classFileLen) {
+	parseClassFile(classFileData, classFileLen, *this);
+}
+
+Version ClassFile::getVersion() const {
+	return _version;
+}
+
+void ClassFile::setVersion(Version version) {
+	_version = version;
+}
+
+const char* ClassFile::getClassName() const {
+	return getClazzName(thisClassIndex);
+}
+
+u4 ClassFile::getSize() {
+	return getClassFileSize(*this);
+}
+
+void ClassFile::write(u1* fileImage, int fileImageLen) {
+	writeClassFile(*this, fileImage, fileImageLen);
+}
+
+ostream& operator<<(ostream& os, ClassFile& cf) {
+	printClassFile(cf, os);
+
+	return os;
+}
+
+}
