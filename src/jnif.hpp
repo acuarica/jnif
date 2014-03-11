@@ -394,8 +394,6 @@ enum AType {
 
 typedef u2 ClassIndex;
 
-typedef u2 Label;
-
 /**
  * Items used for the StackMapTable
  */
@@ -427,106 +425,224 @@ enum AttrKind {
 using namespace std;
 
 /**
- * Represent a bytecode instruction.
+ * Defines the base class for the bytecode instruction hierarchy.
  */
-struct Inst {
+class Inst {
+public:
 
-	Inst() {
-	}
+	/**
+	 * Returns the kind of this instruction.
+	 */
+	OpKind kind() const;
 
+protected:
+
+	/**
+	 *
+	 */
 	Inst(OpKind kind) :
-			kind(kind) {
+			_kind(kind) {
 	}
 
-	Inst(Opcode opcode) :
-			opcode(opcode), kind(KIND_ZERO) {
-	}
+private:
 
-	Inst(Opcode opcode, OpKind kind) :
-			opcode(opcode), kind(kind) {
-	}
+	OpKind _kind;
 
-	/**
-	 * The opcode of this instruction.
-	 */
-	Opcode opcode;
-
-	/**
-	 * The kind of this instruction.
-	 */
-	OpKind kind;
-
-	friend Inst InvokeInst(Opcode opcode, u2 index) {
-		Inst inst;
-		inst.kind = KIND_INVOKE;
-		inst.opcode = opcode;
-		inst.invoke.methodRefIndex = index;
-
-		return inst;
-	}
-
-	union {
-		struct {
-			int value;
-		} push;
-		struct {
-			u2 valueIndex;
-		} ldc;
-		struct {
-			u1 lvindex;
-		} var;
-		struct {
-			u1 index;
-			u1 value;
-		} iinc;
-		struct {
-			Label label;
-			Inst* label2;
-		} jump;
-		struct {
-			u2 fieldRefIndex;
-		} field;
-		struct {
-			u2 methodRefIndex;
-		} invoke;
-		struct {
-			u2 interMethodRefIndex;
-			u1 count;
-		} invokeinterface;
-		struct {
-			ClassIndex classIndex;
-		} type;
-		struct {
-			u1 atype;
-		} newarray;
-		struct {
-			ClassIndex classIndex;
-			u1 dims;
-		} multiarray;
-	};
-
-	struct {
-		int def;
-		int low;
-		int high;
-		vector<u4> targets;
-	} ts;
-
-	struct {
-		u4 defbyte;
-		u4 npairs;
-		vector<u4> keys;
-		vector<u4> targets;
-	} ls;
 };
 
-static Inst* ZeroInst(Opcode opcode) {
-	Inst* inst = new Inst();
-	inst->kind = KIND_ZERO;
-	inst->opcode = opcode;
+/**
+ *
+ */
+class LabelInst: public Inst {
+public:
 
-	return inst;
-}
+	LabelInst() :
+			Inst(KIND_LABEL), offset(-1) {
+	}
+
+	int offset;
+};
+
+/**
+ * Represents instructions with opcode. The base class for most instruction
+ * kinds.
+ */
+class OpcodeInst: public Inst {
+public:
+	/**
+	 * Returns the opcode of this instruction.
+	 */
+	Opcode opcode() const;
+
+protected:
+
+	OpcodeInst(OpKind kind, Opcode opcode) :
+			Inst(kind), _opcode(opcode) {
+	}
+
+private:
+
+	Opcode _opcode;
+
+};
+
+/**
+ * Represents an instruction with zero operands.
+ */
+class ZeroInst: public OpcodeInst {
+public:
+	ZeroInst(Opcode opcode) :
+			OpcodeInst(KIND_ZERO, opcode) {
+	}
+};
+
+/**
+ *
+ */
+class BiPushInst: public OpcodeInst {
+public:
+	BiPushInst(u1 value) :
+			OpcodeInst(KIND_BIPUSH, OPCODE_bipush), value(value) {
+	}
+
+	u1 value;
+};
+
+/**
+ *
+ */
+class SiPushInst: public OpcodeInst {
+public:
+	SiPushInst(u2 value) :
+			OpcodeInst(KIND_SIPUSH, OPCODE_sipush), value(value) {
+	}
+
+	u2 value;
+};
+
+class LdcInst: public OpcodeInst {
+public:
+	LdcInst(Opcode opcode, u2 valueIndex) :
+			OpcodeInst(KIND_LDC, opcode), valueIndex(valueIndex) {
+	}
+
+	u2 valueIndex;
+};
+
+class VarInst: public OpcodeInst {
+public:
+	VarInst(Opcode opcode, u1 lvindex) :
+			OpcodeInst(KIND_VAR, opcode), lvindex(lvindex) {
+	}
+
+	u1 lvindex;
+};
+
+class IincInst: public OpcodeInst {
+public:
+	IincInst(u1 index, u1 value) :
+			OpcodeInst(KIND_IINC, OPCODE_iinc), index(index), value(value) {
+	}
+
+	u1 index;
+	u1 value;
+};
+
+class JumpInst: public OpcodeInst {
+public:
+	JumpInst(Opcode opcode, LabelInst* label) :
+			OpcodeInst(KIND_JUMP, opcode), label(label) {
+	}
+
+	LabelInst* label;
+
+};
+
+class FieldInst: public OpcodeInst {
+public:
+	FieldInst(Opcode opcode, u2 fieldRefIndex) :
+			OpcodeInst(KIND_FIELD, opcode), fieldRefIndex(fieldRefIndex) {
+	}
+
+	u2 fieldRefIndex;
+};
+
+class InvokeInst: public OpcodeInst {
+public:
+
+	InvokeInst(Opcode opcode, u2 methodRefIndex) :
+			OpcodeInst(KIND_INVOKE, opcode), methodRefIndex(methodRefIndex) {
+	}
+
+	u2 methodRefIndex;
+};
+
+class InvokeInterfaceInst: public OpcodeInst {
+public:
+	InvokeInterfaceInst(u2 interMethodRefIndex, u1 count) :
+			OpcodeInst(KIND_INVOKEINTERFACE, OPCODE_invokeinterface), interMethodRefIndex(
+					interMethodRefIndex), count(count) {
+	}
+
+	u2 interMethodRefIndex;
+	u1 count;
+};
+
+class TypeInst: public OpcodeInst {
+public:
+	TypeInst(Opcode opcode, ClassIndex classIndex) :
+			OpcodeInst(KIND_TYPE, opcode), classIndex(classIndex) {
+	}
+
+	ClassIndex classIndex;
+};
+
+class NewArrayInst: public OpcodeInst {
+public:
+	NewArrayInst(u1 atype) :
+			OpcodeInst(KIND_NEWARRAY, OPCODE_newarray), atype(atype) {
+	}
+
+	u1 atype;
+};
+
+class MultiArrayInst: public OpcodeInst {
+public:
+	MultiArrayInst(ClassIndex classIndex, u1 dims) :
+			OpcodeInst(KIND_MULTIARRAY, OPCODE_multianewarray), classIndex(
+					classIndex), dims(dims) {
+	}
+
+	ClassIndex classIndex;
+	u1 dims;
+};
+
+class TableSwitchInst: public OpcodeInst {
+public:
+	TableSwitchInst(int def, int low, int high) :
+			OpcodeInst(KIND_TABLESWITCH, OPCODE_tableswitch), def(def), low(
+					low), high(high) {
+	}
+
+	int def;
+	int low;
+	int high;
+	vector<u4> targets;
+};
+
+class LookupSwitchInst: public OpcodeInst {
+public:
+
+	LookupSwitchInst(u4 defbyte, u4 npairs) :
+			OpcodeInst(KIND_LOOKUPSWITCH, OPCODE_lookupswitch), defbyte(
+					defbyte), npairs(npairs) {
+	}
+
+	u4 defbyte;
+	u4 npairs;
+	vector<u4> keys;
+	vector<u4> targets;
+};
 
 /**
  * Represents the bytecode of a method.

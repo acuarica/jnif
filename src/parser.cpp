@@ -238,9 +238,9 @@ static Attr* parseExceptions(BufferReader& br, Attrs& as, u2 nameIndex) {
 	return attr;
 }
 
-static Inst** parseLabels(BufferReader& br) {
+static LabelInst** parseLabels(BufferReader& br) {
 
-	Inst** labels = new Inst*[br.size()];
+	LabelInst** labels = new LabelInst*[br.size()];
 	for (int i = 0; i < br.size(); i++) {
 		labels[i] = nullptr;
 	}
@@ -285,9 +285,9 @@ static Inst** parseLabels(BufferReader& br) {
 				u2 labelpos = offset + targetOffset;
 				ASSERT(labelpos < br.size(), "invalid target for jump");
 
-				Inst*& lab = labels[labelpos];
+				LabelInst*& lab = labels[labelpos];
 				if (lab == nullptr) {
-					lab = new Inst(KIND_LABEL);
+					lab = new LabelInst();
 				}
 
 				break;
@@ -337,11 +337,148 @@ static Inst** parseLabels(BufferReader& br) {
 	return labels;
 }
 
+static Inst* parseInst(BufferReader& br, LabelInst** labels) {
+	int offset = br.offset();
+
+	Opcode opcode = (Opcode) br.readu1();
+	OpKind kind = OPKIND[opcode];
+
+	switch (kind) {
+		case KIND_ZERO:
+			if (opcode == OPCODE_wide) {
+				ASSERT(false, "wide not supported yet");
+			}
+
+			return new ZeroInst(opcode);
+
+		case KIND_BIPUSH: {
+			u1 value = br.readu1();
+			return new BiPushInst(value);
+		}
+		case KIND_SIPUSH: {
+			u2 value = br.readu2();
+			return new SiPushInst(value);
+		}
+		case KIND_LDC:
+			if (opcode == OPCODE_ldc) {
+				u2 valueIndex = br.readu1();
+				return new LdcInst(opcode, valueIndex);
+			} else {
+				u2 valueIndex = br.readu2();
+				return new LdcInst(opcode, valueIndex);
+			}
+		case KIND_VAR: {
+			u1 lvindex = br.readu1();
+			return new VarInst(opcode, lvindex);
+		}
+		case KIND_IINC: {
+			u1 index = br.readu1();
+			u1 value = br.readu1();
+			return new IincInst(index, value);
+		}
+		case KIND_JUMP: {
+			u2 targetOffset = br.readu2();
+			LabelInst* label = labels[offset + targetOffset];
+			return new JumpInst(opcode, label);
+		}
+		case KIND_TABLESWITCH: {
+			for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
+				u1 pad = br.readu1();
+				ASSERT(pad == 0, "Padding must be zero");
+			}
+
+			{
+				bool check = br.offset() % 4 == 0;
+				ASSERT(check, "%d", br.offset());
+			}
+
+			int def = br.readu4();
+			int low = br.readu4();
+			int high = br.readu4();
+
+			ASSERT(low <= high, "low (%d) must be less or equal than high (%d)",
+					low, high);
+
+			TableSwitchInst* ts = new TableSwitchInst(def, low, high);
+			for (int i = 0; i < high - low + 1; i++) {
+				u4 targetOffset = br.readu4();
+				ts->targets.push_back(targetOffset);
+			}
+
+			return ts;
+		}
+		case KIND_LOOKUPSWITCH: {
+			for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
+				u1 pad = br.readu1();
+				ASSERT(pad == 0, "Padding must be zero");
+			}
+
+			u4 defbyte = br.readu4();
+			u4 npairs = br.readu4();
+
+			LookupSwitchInst* ls = new LookupSwitchInst(defbyte, npairs);
+
+			for (u4 i = 0; i < npairs; i++) {
+				u4 key = br.readu4();
+				u4 offsetTarget = br.readu4();
+
+				ls->keys.push_back(key);
+				ls->targets.push_back(offsetTarget);
+			}
+			return ls;
+		}
+		case KIND_FIELD: {
+			u2 fieldRefIndex = br.readu2();
+			return new FieldInst(opcode, fieldRefIndex);
+		}
+		case KIND_INVOKE: {
+			u2 methodRefIndex = br.readu2();
+			return new InvokeInst(opcode, methodRefIndex);
+		}
+		case KIND_INVOKEINTERFACE: {
+			u2 interMethodRefIndex = br.readu2();
+			u2 count = br.readu1();
+
+			ASSERT(count != 0, "Count is zero!");
+			{
+				u1 zero = br.readu1();
+				ASSERT(zero == 0, "Fourth operand must be zero");
+			}
+
+			return new InvokeInterfaceInst(interMethodRefIndex, count);
+		}
+		case KIND_INVOKEDYNAMIC:
+			EXCEPTION("FrParseInvokeDynamicInstr not implemented");
+			break;
+		case KIND_TYPE: {
+			u2 classIndex = br.readu2();
+			return new TypeInst(opcode, classIndex);
+		}
+		case KIND_NEWARRAY: {
+			u1 atype = br.readu1();
+
+			return new NewArrayInst(atype);
+		}
+		case KIND_MULTIARRAY: {
+			u2 classIndex = br.readu2();
+			u1 dims = br.readu1();
+
+			return new MultiArrayInst(classIndex, dims);
+		}
+		case KIND_PARSE4TODO:
+			EXCEPTION("FrParse4__TODO__Instr not implemented");
+			break;
+		case KIND_RESERVED:
+			EXCEPTION("FrParseReservedInstr not implemented");
+			break;
+	}
+}
+
 static void parseInstList(BufferReader& br, InstList& instList) {
 
 	const u1* code = br.pos();
 	int codeLen = br.size();
-	Inst** labels;
+	LabelInst** labels;
 	{
 		BufferReader br(code, codeLen);
 		labels = parseLabels(br);
@@ -354,126 +491,7 @@ static void parseInstList(BufferReader& br, InstList& instList) {
 			instList.push_back(labels[offset]);
 		}
 
-		Inst* instp = new Inst();
-		Inst& inst = *instp;
-
-		inst.opcode = (Opcode) br.readu1();
-		inst.kind = OPKIND[inst.opcode];
-
-		switch (inst.kind) {
-			case KIND_ZERO:
-				if (inst.opcode == OPCODE_wide) {
-					ASSERT(false, "wide not supported yet");
-				}
-				break;
-			case KIND_BIPUSH:
-				inst.push.value = br.readu1();
-				break;
-			case KIND_SIPUSH:
-				inst.push.value = br.readu2();
-				break;
-			case KIND_LDC:
-				if (inst.opcode == OPCODE_ldc) {
-					inst.ldc.valueIndex = br.readu1();
-				} else {
-					inst.ldc.valueIndex = br.readu2();
-				}
-				break;
-			case KIND_VAR:
-				inst.var.lvindex = br.readu1();
-				break;
-			case KIND_IINC:
-				inst.iinc.index = br.readu1();
-				inst.iinc.value = br.readu1();
-				break;
-			case KIND_JUMP: {
-				//
-				u2 targetOffset = br.readu2();
-				inst.jump.label = targetOffset;
-				inst.jump.label2 = labels[offset + targetOffset];
-				break;
-			}
-			case KIND_TABLESWITCH:
-				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
-					u1 pad = br.readu1();
-					ASSERT(pad == 0, "Padding must be zero");
-				}
-
-				{
-					bool check = br.offset() % 4 == 0;
-					ASSERT(check, "%d", br.offset());
-				}
-
-				inst.ts.def = br.readu4();
-				inst.ts.low = br.readu4();
-				inst.ts.high = br.readu4();
-
-				ASSERT(inst.ts.low <= inst.ts.high,
-						"low (%d) must be less or equal than high (%d)",
-						inst.ts.low, inst.ts.high);
-
-				for (int i = 0; i < inst.ts.high - inst.ts.low + 1; i++) {
-					u4 targetOffset = br.readu4();
-					inst.ts.targets.push_back(targetOffset);
-				}
-
-				//		fprintf(stderr, "parser ts: offset: %d\n", br.offset());
-
-				break;
-			case KIND_LOOKUPSWITCH:
-				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
-					u1 pad = br.readu1();
-					ASSERT(pad == 0, "Padding must be zero");
-				}
-
-				inst.ls.defbyte = br.readu4();
-				inst.ls.npairs = br.readu4();
-
-				for (u4 i = 0; i < inst.ls.npairs; i++) {
-					u4 key = br.readu4();
-					u4 offsetTarget = br.readu4();
-
-					inst.ls.keys.push_back(key);
-					inst.ls.targets.push_back(offsetTarget);
-				}
-				break;
-			case KIND_FIELD:
-				inst.field.fieldRefIndex = br.readu2();
-				break;
-			case KIND_INVOKE:
-				inst.invoke.methodRefIndex = br.readu2();
-				break;
-			case KIND_INVOKEINTERFACE:
-				inst.invokeinterface.interMethodRefIndex = br.readu2();
-				inst.invokeinterface.count = br.readu1();
-
-				ASSERT(inst.invokeinterface.count != 0, "Count is zero!");
-				{
-					u1 zero = br.readu1();
-					ASSERT(zero == 0, "Fourth operand must be zero");
-				}
-				break;
-			case KIND_INVOKEDYNAMIC:
-				EXCEPTION("FrParseInvokeDynamicInstr not implemented");
-				break;
-			case KIND_TYPE:
-				inst.type.classIndex = br.readu2();
-				break;
-			case KIND_NEWARRAY:
-				inst.newarray.atype = br.readu1();
-				break;
-			case KIND_MULTIARRAY:
-				inst.multiarray.classIndex = br.readu2();
-				inst.multiarray.dims = br.readu1();
-				break;
-			case KIND_PARSE4TODO:
-				EXCEPTION("FrParse4__TODO__Instr not implemented");
-				break;
-			case KIND_RESERVED:
-				EXCEPTION("FrParseReservedInstr not implemented");
-				break;
-
-		}
+		Inst* instp = parseInst(br, labels);
 
 		instList.push_back(instp);
 	}
