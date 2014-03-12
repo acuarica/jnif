@@ -19,23 +19,6 @@ typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 InstrFunc* instrFunc;
 
-//void FrInstrClassFileEmpty4(jvmtiEnv* jvmti, unsigned char* data, int len,
-//		const char* className, int* newlen, unsigned char** newdata);
-
-//extern InstrFunc FrInstrClassFileEmpty;
-//extern InstrFunc FrInstrClassFilePrint;
-//extern InstrFunc FrInstrClassFileIdentity;
-//extern InstrFunc FrInstrClassFileObjectInit;
-//
-//InstrFunc instrFuncTable[] = { &FrInstrClassFileEmpty4, FrInstrClassFilePrint,
-//		FrInstrClassFileIdentity, FrInstrClassFileObjectInit };
-
-//void FrInstrClassFileEmpty(jvmtiEnv* jvmti, unsigned char* data, int len,
-//		const char* className, int* newlen, unsigned char** newdata);
-//
-//void FrInstrClassFilePrint(jvmtiEnv* jvmti, unsigned char* data, int len,
-//		const char* className, int* newlen, unsigned char** newdata);
-
 static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jclass class_being_redefined, jobject loader, const char* name,
 		jobject protection_domain, jint class_data_len,
@@ -84,8 +67,8 @@ static void JNICALL ClassPrepareEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 	StampClass(jvmti, jni, klass);
 }
 
-extern unsigned char frproxy_FrInstrProxy_class[];
-extern unsigned int frproxy_FrInstrProxy_class_len;
+extern signed char frproxy_FrInstrProxy_class[];
+extern int frproxy_FrInstrProxy_class_len;
 
 /**
  * Changes from JVMTI_PHASE_PRIMORDIAL to JVMTI_PHASE_START phase.
@@ -101,12 +84,12 @@ static void JNICALL VMStartEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 
 	_TLOG("VMSTART");
 
-//	jclass proxyClass = (*jni)->DefineClass(jni, FR_PROXY_CLASS, NULL, frproxy_FrInstrProxy_class,
-//			frproxy_FrInstrProxy_class_len);
-//
-//	if (proxyClass == NULL){
-//		ERROR("Error on define class");
-//	}
+	jclass proxyClass = (*jni)->DefineClass(jni, FR_PROXY_CLASS, NULL,
+			frproxy_FrInstrProxy_class, frproxy_FrInstrProxy_class_len);
+
+	if (proxyClass == NULL ) {
+		ERROR("Error on define class");
+	}
 }
 
 static void JNICALL VMInitEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread) {
@@ -169,6 +152,8 @@ static void ParseOptions(const char* options) {
 	extern InstrFunc FrInstrClassFileIdentity;
 	extern InstrFunc FrInstrClassFileObjectInit;
 	extern InstrFunc FrInstrClassFileNewArray;
+	extern InstrFunc FrInstrClassFileMain;
+	extern InstrFunc FrInstrClassFileClientServer;
 
 	typedef struct {
 		InstrFunc* instrFunc;
@@ -188,6 +173,8 @@ static void ParseOptions(const char* options) {
 	{ &FrInstrClassFileObjectInit, "ObjectInit" },
 
 	{ &FrInstrClassFileNewArray, "NewArray" },
+
+	{ &FrInstrClassFileMain, "Main" },
 
 	};
 

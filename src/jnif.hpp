@@ -803,6 +803,11 @@ struct Member: Attrs {
 	u2 nameIndex;
 	u2 descIndex;
 
+//	const char* getName() const {
+//		string name = cf.getUtf8(m->nameIndex);
+//
+//	}
+
 	bool hasCode() {
 		for (Attr* attr : attrs) {
 			if (attr->kind == ATTR_CODE) {

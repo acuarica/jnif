@@ -106,26 +106,16 @@ void FrInstrClassFileIdentity(jvmtiEnv* jvmti, unsigned char* data, int len,
 void FrInstrClassFileObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
-//	if (string(className) != "frheapagent/HeapTest") {
-//		return;
-//	}
 	if (string(className) != "java/lang/Object") {
 		return;
 	}
 
-	ofstream os(outFileName(className, "disasm").c_str());
-
 	ClassFile cf(data, len);
-	os << cf;
 
 	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
 
-//	u2 methodRefIndex = cf.cp.addMethodRef(classIndex, "alloc",
-//			"(Ljava/lang/Object;)V");
-//
-//	u2 methodRefIndex2 = cf.cp.addMethodRef(classIndex, "newArrayEvent",
-//			"(ILjava/lang/Object;I)V");
-	u2 mindex = cf.addMethodRef(classIndex, "enterMainMethod", "()V");
+	u2 allocMethodRef = cf.addMethodRef(classIndex, "alloc",
+			"(Ljava/lang/Object;)V");
 
 	auto invoke = [&] (Opcode opcode, u2 index) {
 		Inst* inst = new Inst();
@@ -140,24 +130,24 @@ void FrInstrClassFileObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 		string name = cf.getUtf8(m->nameIndex);
 
-		if (m->hasCode() && m->nameIndex && name == "<init>") {
+		if (m->hasCode() && name == "<init>") {
 			InstList& instList = m->instList();
 
-			instList.push_front(invoke(OPCODE_invokestatic, mindex));
+			instList.push_front(invoke(OPCODE_invokestatic, allocMethodRef));
+			instList.push_front(new Inst(OPCODE_aload_0));
 		}
 	}
 
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
-
 }
 
 void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
-	ofstream os(outFileName(className, "disasm").c_str());
+	//ofstream os(outFileName(className, "disasm").c_str());
 
 	ClassFile cf(data, len);
-	os << cf;
+//	os << cf;
 
 	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
 
@@ -225,6 +215,46 @@ void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 			}
 
 			m->instList(code);
+		}
+	}
+
+	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+}
+
+void FrInstrClassFileMain(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata) {
+
+	ClassFile cf(data, len);
+
+	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
+	u2 enterMainMethodRef = cf.addMethodRef(classIndex, "enterMainMethod",
+			"()V");
+
+	auto invoke = [&] (Opcode opcode, u2 index) {
+		Inst* inst = new Inst();
+		inst->kind = KIND_INVOKE;
+		inst->opcode = opcode;
+		inst->invoke.methodRefIndex = index;
+
+		return inst;
+	};
+
+	for (Method* m : cf.methods) {
+
+		string name = cf.getUtf8(m->nameIndex);
+		string desc = cf.getUtf8(m->descIndex);
+
+		if (m->hasCode() && name == "main" && (m->accessFlags & ACC_STATIC)
+				&& (m->accessFlags & ACC_PUBLIC)
+				&& desc == "([Ljava/lang/String;)V") {
+			InstList& instList = m->instList();
+
+			instList.push_front(invoke(OPCODE_invokestatic, enterMainMethodRef));
+
+//			if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) || opcode == Opcodes.ATHROW) {
+//				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass, "exitMainMethod", "()V");
+//			}
+
 		}
 	}
 
