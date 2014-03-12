@@ -7,7 +7,7 @@ HPPS=$(wildcard $(INCLUDE)/*.hpp)
 SRCS=$(wildcard *.cpp) $(wildcard jnif/*.java) $(wildcard classes/*.class)
 OBJS=$(SRCS:%=$(BUILD)/%.o)
 
-CFLAGS += -fPIC -W -O3 -Wall -Wextra -I$(INCLUDE)
+CFLAGS += -fPIC -W -O0 -Wall -Wextra -I$(INCLUDE)
 
 .PHONY: all run
 

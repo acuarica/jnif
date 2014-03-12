@@ -524,13 +524,13 @@ struct Inst {
 	} ls;
 };
 
-static Inst* ZeroInst(Opcode opcode) {
-	Inst* inst = new Inst();
-	inst->kind = KIND_ZERO;
-	inst->opcode = opcode;
-
-	return inst;
-}
+//Inst* ZeroInst(Opcode opcode) {
+//	Inst* inst = new Inst();
+//	inst->kind = KIND_ZERO;
+//	inst->opcode = opcode;
+//
+//	return inst;
+//}
 
 /**
  * Represents the bytecode of a method.

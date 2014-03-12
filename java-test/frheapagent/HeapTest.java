@@ -29,7 +29,7 @@ public class HeapTest {
 		System.out.println("HeapTest: " + as.length);
 
 		for (int i = 0; i < as.length; i++) {
-			//int[] arr = new int[i];
+			int[] arr = new int[i];
 			//System.out.println("HeapTest: " + arr.length);
 		}
 

@@ -12,7 +12,7 @@ all:
 
 agent: | $(BUILD)
 	$(MAKE) -C src
-	$(MAKE) -C src-test-agent
+	$(MAKE) -C src-test-agent run
 
 unit: | $(BUILD)
 	$(MAKE) -C src

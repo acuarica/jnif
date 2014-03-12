@@ -29,7 +29,7 @@ runall:
 	cd $(BUILD) ; java $(JVMARGS) -agentpath:$(LIB)=ObjectInit -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest > $(BUILD)/$(LIB).out
 	
 run: $(BUILD)/java-test/frheapagent/HeapTest.class $(BUILD)/$(LIB)
-	cd $(BUILD) ; java $(JVMARGS) -agentpath:$(LIB)=NewArray -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest > $(BUILD)/$(LIB).out
+	cd $(BUILD) ; time java $(JVMARGS) -agentpath:$(LIB)=NewArray -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest > $(BUILD)/$(LIB).out
 
 #$(BUILD)/frproxy/FrInstrProxy.class: resources/frproxy/FrInstrProxy.java
 #	javac -d build/ resources/frproxy/FrInstrProxy.java

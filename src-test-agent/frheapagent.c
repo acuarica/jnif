@@ -187,7 +187,7 @@ static void ParseOptions(const char* options) {
 
 	{ &FrInstrClassFileObjectInit, "ObjectInit" },
 
-	{ &FrInstrClassFileObjectInit, "NewArray" },
+	{ &FrInstrClassFileNewArray, "NewArray" },
 
 	};
 

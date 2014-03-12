@@ -190,8 +190,22 @@ static void testNopAdderInstr() {
 #define RUN(test) ( fprintf(stderr, "Running test " #test "... "), \
 	test(), fprintf(stderr, "[OK]\n") )
 
+void use(u1* p, int size) {
+	for (int i = 0; i < size; i++) {
+		p[i] = 'A';
+	}
+}
+
 int main(int, const char*[]) {
+
+//	u1* ps[] = { 0, 0, 0, 0, 0 };
+//	for (int i = 0; i < 5; i++) {
+//		ps[i] = (u1*)malloc(i*100);
+//		use(ps[i], i*100);
+//	}
+//
 	RUN(testPrinter);
+	return 0;
 	RUN(testEmptyClassFilePrinter);
 	RUN(testIdentityComputeSize);
 	RUN(testIdentityParserWriter);

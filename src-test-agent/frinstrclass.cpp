@@ -72,7 +72,8 @@ void FrInstrClassFileDump(jvmtiEnv* jvmti, unsigned char* data, int len,
 void FrInstrClassFilePrint(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
-	ofstream os(outFileName(className, "disasm").c_str());
+	const char* fileName = outFileName(className, "disasm").c_str();
+	ofstream os(fileName);
 
 	ClassFile cf(data, len);
 	os << cf;
@@ -126,24 +127,6 @@ void FrInstrClassFileObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 //			"(ILjava/lang/Object;I)V");
 	u2 mindex = cf.addMethodRef(classIndex, "enterMainMethod", "()V");
 
-	auto newarray = [&](u1 atype) {
-		Inst inst;
-		inst.kind = KIND_NEWARRAY;
-		inst.opcode = OPCODE_newarray;
-		inst.newarray.atype = atype;
-
-		return inst;
-	};
-
-	auto bipush = [&](u1 value) {
-		Inst inst;
-		inst.kind = KIND_BIPUSH;
-		inst.opcode = OPCODE_bipush;
-		inst.push.value = value;
-
-		return inst;
-	};
-
 	auto invoke = [&] (Opcode opcode, u2 index) {
 		Inst* inst = new Inst();
 		inst->kind = KIND_INVOKE;
@@ -161,48 +144,8 @@ void FrInstrClassFileObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 			InstList& instList = m->instList();
 
 			instList.push_front(invoke(OPCODE_invokestatic, mindex));
-
-//			InstList code;
-//
-//			for (Inst inst : instList) {
-//				if (inst.opcode == OPCODE_newarray) {
-//					// FORMAT: newarray atype
-//					// OPERAND STACK: ... | count: int -> ... | arrayref
-//
-//					// STACK: ... | count
-//
-//					code.push_back(Inst(OPCODE_dup));
-//					// STACK: ... | count | count
-//
-//					code.push_back(inst);
-//					//code.push_back(newarray(inst.newarray.atype)); // newarray
-//					// STACK: ... | count | arrayref
-//
-//					code.push_back(Inst(OPCODE_dup_x1));
-//					// STACK: ... | arrayref | count | arrayref
-//
-//					code.push_back(bipush(inst.newarray.atype));
-//					//u2 typeindex = instr.cp->addInteger(atype);
-//
-//					//bv.visitLdc(offset, OPCODE_ldc_w, typeindex);
-//					// STACK: ... | arrayref | count | arrayref | atype
-//
-//					code.push_back(
-//							invoke(OPCODE_invokestatic, methodRefIndex2));
-//					// STACK: ... | arrayref
-//
-//				} else {
-//					code.push_back(inst);
-//				}
-//			}
-//
-//			m->instList(code);
 		}
 	}
-
-//	*newlen = cf.computeSize();
-//	*newdata = Allocate(jvmti, *newlen);
-//	cf.write(*newdata, *newlen);
 
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 
@@ -218,27 +161,14 @@ void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
 
-//	u2 methodRefIndex = cf.cp.addMethodRef(classIndex, "alloc",
-//			"(Ljava/lang/Object;)V");
-//
-//	u2 methodRefIndex2 = cf.cp.addMethodRef(classIndex, "newArrayEvent",
-//			"(ILjava/lang/Object;I)V");
-	u2 mindex = cf.addMethodRef(classIndex, "enterMainMethod", "()V");
-
-	auto newarray = [&](u1 atype) {
-		Inst inst;
-		inst.kind = KIND_NEWARRAY;
-		inst.opcode = OPCODE_newarray;
-		inst.newarray.atype = atype;
-
-		return inst;
-	};
+	u2 newArrayEventRef = cf.addMethodRef(classIndex, "newArrayEvent",
+			"(ILjava/lang/Object;I)V");
 
 	auto bipush = [&](u1 value) {
-		Inst inst;
-		inst.kind = KIND_BIPUSH;
-		inst.opcode = OPCODE_bipush;
-		inst.push.value = value;
+		Inst* inst = new Inst();
+		inst->kind = KIND_BIPUSH;
+		inst->opcode = OPCODE_bipush;
+		inst->push.value = value;
 
 		return inst;
 	};
@@ -256,55 +186,49 @@ void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 		string name = cf.getUtf8(m->nameIndex);
 
-		if (m->hasCode() && m->nameIndex && name == "<init>") {
+		if (m->hasCode()) {
 			InstList& instList = m->instList();
 
-			instList.push_front(invoke(OPCODE_invokestatic, mindex));
+			InstList code;
 
-//			InstList code;
-//
-//			for (Inst inst : instList) {
-//				if (inst.opcode == OPCODE_newarray) {
-//					// FORMAT: newarray atype
-//					// OPERAND STACK: ... | count: int -> ... | arrayref
-//
-//					// STACK: ... | count
-//
-//					code.push_back(Inst(OPCODE_dup));
-//					// STACK: ... | count | count
-//
-//					code.push_back(inst);
-//					//code.push_back(newarray(inst.newarray.atype)); // newarray
-//					// STACK: ... | count | arrayref
-//
-//					code.push_back(Inst(OPCODE_dup_x1));
-//					// STACK: ... | arrayref | count | arrayref
-//
-//					code.push_back(bipush(inst.newarray.atype));
-//					//u2 typeindex = instr.cp->addInteger(atype);
-//
-//					//bv.visitLdc(offset, OPCODE_ldc_w, typeindex);
-//					// STACK: ... | arrayref | count | arrayref | atype
-//
-//					code.push_back(
-//							invoke(OPCODE_invokestatic, methodRefIndex2));
-//					// STACK: ... | arrayref
-//
-//				} else {
-//					code.push_back(inst);
-//				}
-//			}
-//
-//			m->instList(code);
+			for (Inst* instp : instList) {
+				Inst& inst = *instp;
+
+				if (inst.opcode == OPCODE_newarray) {
+					// FORMAT: newarray atype
+					// OPERAND STACK: ... | count: int -> ... | arrayref
+
+					// STACK: ... | count
+
+					code.push_back(new Inst(OPCODE_dup));
+					// STACK: ... | count | count
+
+					code.push_back(&inst); // newarray
+					// STACK: ... | count | arrayref
+
+					code.push_back(new Inst(OPCODE_dup_x1));
+					// STACK: ... | arrayref | count | arrayref
+
+					code.push_back(bipush(inst.newarray.atype));
+					//u2 typeindex = instr.cp->addInteger(atype);
+
+					//bv.visitLdc(offset, OPCODE_ldc_w, typeindex);
+					// STACK: ... | arrayref | count | arrayref | atype
+
+					code.push_back(
+							invoke(OPCODE_invokestatic, newArrayEventRef));
+					// STACK: ... | arrayref
+
+				} else {
+					code.push_back(&inst);
+				}
+			}
+
+			m->instList(code);
 		}
 	}
 
-//	*newlen = cf.computeSize();
-//	*newdata = Allocate(jvmti, *newlen);
-//	cf.write(*newdata, *newlen);
-
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
-
 }
 
 }
