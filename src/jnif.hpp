@@ -468,6 +468,7 @@ struct Inst {
 	union {
 		struct {
 			u4 offset;
+			int id;
 		} label;
 		struct {
 			int value;

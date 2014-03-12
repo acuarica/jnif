@@ -6,7 +6,7 @@ endif
 INCLUDE=../src
 BUILD=../build
 
-INCS=$(wildcard $(INCLUDE)/*.h)
+INCS=$(wildcard *.h)
 HPPS=$(wildcard $(INCLUDE)/*.hpp)
 
 LIB=libfrheapagent.jnilib
@@ -20,8 +20,16 @@ CFLAGS += -fPIC -W -Wall -Wextra -O3 -Wno-unused-parameter -lpthread -shared -I$
 
 all: $(BUILD)/java-test/frheapagent/HeapTest.class $(BUILD)/$(LIB)
 
+runall:
+	cd $(BUILD) ; java $(JVMARGS) -agentpath:$(LIB)=Empty -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest > $(BUILD)/$(LIB).out
+	cd $(BUILD) ; java $(JVMARGS) -agentpath:$(LIB)=Dump -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest > $(BUILD)/$(LIB).out
+	cd $(BUILD) ; java $(JVMARGS) -agentpath:$(LIB)=Print -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest > $(BUILD)/$(LIB).out
+	cd $(BUILD) ; java $(JVMARGS) -agentpath:$(LIB)=Print -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest > $(BUILD)/$(LIB).out
+	cd $(BUILD) ; java $(JVMARGS) -agentpath:$(LIB)=Identity -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest > $(BUILD)/$(LIB).out
+	cd $(BUILD) ; java $(JVMARGS) -agentpath:$(LIB)=ObjectInit -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest > $(BUILD)/$(LIB).out
+	
 run: $(BUILD)/java-test/frheapagent/HeapTest.class $(BUILD)/$(LIB)
-	java $(JVMARGS) -agentpath:$(BUILD)/$(LIB)=$(BUILD) -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest > $(BUILD)/$(LIB).out
+	cd $(BUILD) ; java $(JVMARGS) -agentpath:$(LIB)=NewArray -Xbootclasspath/a:$(BUILD) -cp $(BUILD)/java-test frheapagent.HeapTest > $(BUILD)/$(LIB).out
 
 #$(BUILD)/frproxy/FrInstrProxy.class: resources/frproxy/FrInstrProxy.java
 #	javac -d build/ resources/frproxy/FrInstrProxy.java

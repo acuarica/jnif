@@ -134,7 +134,7 @@ static jint JNICALL HeapReferenceCallback(jvmtiHeapReferenceKind refkind,
 		_nextsampleid++;
 
 		char filename[512];
-		sprintf(filename, "%s/fr.%08d.log", dbdir, sample);
+		sprintf(filename, "fr.%08d.log", sample);
 		args->out = fopen(filename, "w");
 		args->javaLangClassTag = 0;
 		args->sample = sample;

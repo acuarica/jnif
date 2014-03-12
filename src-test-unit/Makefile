@@ -4,7 +4,7 @@ BUILD=../build
 
 EXE=test-unit
 HPPS=$(wildcard $(INCLUDE)/*.hpp)
-SRCS=$(wildcard *.cpp) $(wildcard jnif/*.java)
+SRCS=$(wildcard *.cpp) $(wildcard jnif/*.java) $(wildcard classes/*.class)
 OBJS=$(SRCS:%=$(BUILD)/%.o)
 
 CFLAGS += -fPIC -W -O3 -Wall -Wextra -I$(INCLUDE)
@@ -18,6 +18,11 @@ run: $(BUILD)/$(EXE)
 
 $(BUILD)/$(EXE): $(OBJS) $(BUILD)/libjnif.a
 	clang++ $(CFLAGS) -stdlib=libc++ -o $@ $^
+
+$(BUILD)/%.class.o: %.class
+	mkdir -p $(@D) ; cp $< $(@D)
+	cd $(BUILD) ; xxd -i $*.class $*.c
+	$(LINK.c) -c -o $@ $(BUILD)/$*.c
 
 $(BUILD)/%.java.o: %.java
 	javac -d $(BUILD)/ $<

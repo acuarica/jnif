@@ -14,6 +14,28 @@
 #include "frinstr.h"
 #include "frheapdump.h"
 
+typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata);
+
+InstrFunc* instrFunc;
+
+//void FrInstrClassFileEmpty4(jvmtiEnv* jvmti, unsigned char* data, int len,
+//		const char* className, int* newlen, unsigned char** newdata);
+
+//extern InstrFunc FrInstrClassFileEmpty;
+//extern InstrFunc FrInstrClassFilePrint;
+//extern InstrFunc FrInstrClassFileIdentity;
+//extern InstrFunc FrInstrClassFileObjectInit;
+//
+//InstrFunc instrFuncTable[] = { &FrInstrClassFileEmpty4, FrInstrClassFilePrint,
+//		FrInstrClassFileIdentity, FrInstrClassFileObjectInit };
+
+//void FrInstrClassFileEmpty(jvmtiEnv* jvmti, unsigned char* data, int len,
+//		const char* className, int* newlen, unsigned char** newdata);
+//
+//void FrInstrClassFilePrint(jvmtiEnv* jvmti, unsigned char* data, int len,
+//		const char* className, int* newlen, unsigned char** newdata);
+
 static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jclass class_being_redefined, jobject loader, const char* name,
 		jobject protection_domain, jint class_data_len,
@@ -22,8 +44,11 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 	_TLOG("CLASSFILELOAD:%s", name);
 
 	if (!FrIsProxyClassName(name)) {
-		FrInstrClassFile(jvmti, class_data, class_data_len, name,
+
+		(*instrFunc)(jvmti, (unsigned char*) class_data, class_data_len, name,
 				new_class_data_len, new_class_data);
+//		FrInstrClassFile(jvmti, class_data, class_data_len, name,
+//				new_class_data_len, new_class_data);
 	}
 }
 
@@ -138,16 +163,49 @@ static void JNICALL VMDeathEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 }
 
 static void ParseOptions(const char* options) {
-	if (options != NULL ) {
-//		eventspersample = atoi(options);
-//
-//		CHECK(eventspersample != 0,
-//				"Invalid options for eventspersample: %s. Got zero.", options);
+	extern InstrFunc FrInstrClassFileEmpty;
+	extern InstrFunc FrInstrClassFileDump;
+	extern InstrFunc FrInstrClassFilePrint;
+	extern InstrFunc FrInstrClassFileIdentity;
+	extern InstrFunc FrInstrClassFileObjectInit;
+	extern InstrFunc FrInstrClassFileNewArray;
 
-		dbdir = options;
-	} else {
-		dbdir = ".";
+	typedef struct {
+		InstrFunc* instrFunc;
+		const char* name;
+	} InstrFuncEntry;
+
+	InstrFuncEntry instrFuncTable[] = {
+
+	{ &FrInstrClassFileEmpty, "Empty" },
+
+	{ &FrInstrClassFileDump, "Dump" },
+
+	{ &FrInstrClassFilePrint, "Print" },
+
+	{ &FrInstrClassFileIdentity, "Identity" },
+
+	{ &FrInstrClassFileObjectInit, "ObjectInit" },
+
+	{ &FrInstrClassFileObjectInit, "NewArray" },
+
+	};
+
+	const char* instrFuncName = options != NULL ? options : "Empty";
+
+	NOTICE("func index: %s", instrFuncName);
+
+	const int instrFuncTableSize = sizeof(instrFuncTable)
+			/ sizeof(instrFuncTable[0]);
+
+	for (int i = 0; i < instrFuncTableSize; i++) {
+		if (strcmp(instrFuncName, instrFuncTable[i].name) == 0) {
+			instrFunc = instrFuncTable[i].instrFunc;
+			return;
+		}
 	}
+
+	EXCEPTION("Invalid name options for instfuncindex: %s.", options);
 }
 
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options, void* reserved) {

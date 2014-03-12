@@ -49,37 +49,38 @@ static string outFileName(const char* className, const char* ext) {
 	}
 
 	stringstream path;
-	path << "../build/instr/" << fileName << "." << ext;
+	path << fileName << "." << ext;
 
 	return path.str();
 }
 
 extern "C" {
 
-void FrInstrClassFile1(jvmtiEnv* jvmti, unsigned char* data, int len,
+void FrInstrClassFileEmpty(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
-
-	if (string(className) != "frheapagent/HeapTest") {
-		return;
-	}
-
-	ofstream os(outFileName(className, "disasm").c_str());
-
-	ClassFile cf(data, len);
-	os << cf;
-
-	*newlen = cf.computeSize();
-	*newdata = Allocate(jvmti, *newlen);
-	cf.write(*newdata, *newlen);
 }
 
-void FrInstrClassFile2(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlenp, unsigned char** newdatap) {
+void FrInstrClassFileDump(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata) {
+
+	const char* fileName = outFileName(className, "class").c_str();
+	ofstream os(fileName, ios::out | ios::binary);
+
+	os.write((char*) data, len);
+}
+
+void FrInstrClassFilePrint(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata) {
 
 	ofstream os(outFileName(className, "disasm").c_str());
 
 	ClassFile cf(data, len);
 	os << cf;
+}
+
+void FrInstrClassFileIdentity(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlenp, unsigned char** newdatap) {
+	ClassFile cf(data, len);
 
 	int newlen = cf.computeSize();
 
@@ -101,7 +102,7 @@ void FrInstrClassFile2(jvmtiEnv* jvmti, unsigned char* data, int len,
 	*newdatap = newdata;
 }
 
-void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
+void FrInstrClassFileObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
 //	if (string(className) != "frheapagent/HeapTest") {
@@ -110,6 +111,105 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
 	if (string(className) != "java/lang/Object") {
 		return;
 	}
+
+	ofstream os(outFileName(className, "disasm").c_str());
+
+	ClassFile cf(data, len);
+	os << cf;
+
+	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
+
+//	u2 methodRefIndex = cf.cp.addMethodRef(classIndex, "alloc",
+//			"(Ljava/lang/Object;)V");
+//
+//	u2 methodRefIndex2 = cf.cp.addMethodRef(classIndex, "newArrayEvent",
+//			"(ILjava/lang/Object;I)V");
+	u2 mindex = cf.addMethodRef(classIndex, "enterMainMethod", "()V");
+
+	auto newarray = [&](u1 atype) {
+		Inst inst;
+		inst.kind = KIND_NEWARRAY;
+		inst.opcode = OPCODE_newarray;
+		inst.newarray.atype = atype;
+
+		return inst;
+	};
+
+	auto bipush = [&](u1 value) {
+		Inst inst;
+		inst.kind = KIND_BIPUSH;
+		inst.opcode = OPCODE_bipush;
+		inst.push.value = value;
+
+		return inst;
+	};
+
+	auto invoke = [&] (Opcode opcode, u2 index) {
+		Inst* inst = new Inst();
+		inst->kind = KIND_INVOKE;
+		inst->opcode = opcode;
+		inst->invoke.methodRefIndex = index;
+
+		return inst;
+	};
+
+	for (Method* m : cf.methods) {
+
+		string name = cf.getUtf8(m->nameIndex);
+
+		if (m->hasCode() && m->nameIndex && name == "<init>") {
+			InstList& instList = m->instList();
+
+			instList.push_front(invoke(OPCODE_invokestatic, mindex));
+
+//			InstList code;
+//
+//			for (Inst inst : instList) {
+//				if (inst.opcode == OPCODE_newarray) {
+//					// FORMAT: newarray atype
+//					// OPERAND STACK: ... | count: int -> ... | arrayref
+//
+//					// STACK: ... | count
+//
+//					code.push_back(Inst(OPCODE_dup));
+//					// STACK: ... | count | count
+//
+//					code.push_back(inst);
+//					//code.push_back(newarray(inst.newarray.atype)); // newarray
+//					// STACK: ... | count | arrayref
+//
+//					code.push_back(Inst(OPCODE_dup_x1));
+//					// STACK: ... | arrayref | count | arrayref
+//
+//					code.push_back(bipush(inst.newarray.atype));
+//					//u2 typeindex = instr.cp->addInteger(atype);
+//
+//					//bv.visitLdc(offset, OPCODE_ldc_w, typeindex);
+//					// STACK: ... | arrayref | count | arrayref | atype
+//
+//					code.push_back(
+//							invoke(OPCODE_invokestatic, methodRefIndex2));
+//					// STACK: ... | arrayref
+//
+//				} else {
+//					code.push_back(inst);
+//				}
+//			}
+//
+//			m->instList(code);
+		}
+	}
+
+//	*newlen = cf.computeSize();
+//	*newdata = Allocate(jvmti, *newlen);
+//	cf.write(*newdata, *newlen);
+
+	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+
+}
+
+void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata) {
 
 	ofstream os(outFileName(className, "disasm").c_str());
 

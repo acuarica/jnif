@@ -396,7 +396,7 @@ static void parseInstList(BufferReader& br, InstList& instList) {
 				ASSERT(labelpos >= 0, "invalid target for jump: must be >= 0");
 				ASSERT(labelpos < br.size(), "invalid target for jump");
 
-				fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
+			//	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
 
 				inst.jump.label2 = labels[offset + targetOffset];
 

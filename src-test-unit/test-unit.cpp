@@ -33,6 +33,9 @@ extern int jnif_ExceptionClass_class_len;
 extern u1 jnif_TestProxy_class[];
 extern int jnif_TestProxy_class_len;
 
+extern u1 classes_java_io_OutputStreamWriter_class[];
+extern int classes_java_io_OutputStreamWriter_class_len;
+
 JavaFile tests[] = {
 
 { jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass" },
@@ -41,6 +44,10 @@ JavaFile tests[] = {
 		"jnif/ExceptionClass" },
 
 { jnif_TestProxy_class, jnif_TestProxy_class_len, "jnif/TestProxy" },
+
+{ classes_java_io_OutputStreamWriter_class,
+		classes_java_io_OutputStreamWriter_class_len,
+		"java/io/OutputStreamWriter" },
 
 };
 

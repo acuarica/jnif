@@ -284,7 +284,7 @@ private:
 			if (inst.kind == KIND_LABEL) {
 				inst.label.offset = pos();
 
-				fprintf(stderr, "label pos @ write: %d\n", inst.label.offset);
+				//fprintf(stderr, "label pos @ write: %d\n", inst.label.offset);
 				continue;
 			}
 
@@ -315,8 +315,7 @@ private:
 					break;
 				case KIND_JUMP: {
 					//bw.writeu2(inst.jump.label);
-					fprintf(stderr, "target offset @ write: %d\n",
-							inst.jump.label2->label.offset);
+					//fprintf(stderr, "target offset @ write: %d\n",	inst.jump.label2->label.offset);
 
 					int jumppos = pos() - 1;
 

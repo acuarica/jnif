@@ -72,9 +72,8 @@ struct ClassPrinter {
 				<< cf.thisClassIndex << endl;
 
 		if (cf.superClassIndex != 0) {
-			line() << "superClassIndex: "
-					<< cf.getClazzName(cf.superClassIndex) << "#"
-					<< cf.superClassIndex << endl;
+			line() << "superClassIndex: " << cf.getClazzName(cf.superClassIndex)
+					<< "#" << cf.superClassIndex << endl;
 		}
 
 		for (u2 interIndex : cf.interfaces) {
@@ -222,6 +221,14 @@ struct ClassPrinter {
 
 		inc();
 
+		int id = 1;
+		for (Inst* inst : c.instList) {
+			if (inst->kind == KIND_LABEL) {
+				inst->label.id = id;
+				id++;
+			}
+		}
+
 		for (Inst* inst : c.instList) {
 			printInst(*inst);
 		}
@@ -237,6 +244,11 @@ struct ClassPrinter {
 
 	void printInst(Inst& inst) {
 		int offset = 0;
+
+		if (inst.kind == KIND_LABEL) {
+			os << "   label: " << inst.label.id << endl;
+			return;
+		}
 
 		line() << setw(4) << offset << ": (" << setw(3) << (int) inst.opcode
 				<< ") " << OPCODES[inst.opcode] << " ";
@@ -264,7 +276,7 @@ struct ClassPrinter {
 						<< endl;
 				break;
 			case KIND_JUMP:
-				//instos << offset + short(inst.jump.label) << endl;
+				instos << "label: " << inst.jump.label2->label.id << endl;
 				break;
 			case KIND_TABLESWITCH:
 				instos << inst.ts.def << " " << " " << inst.ts.low << " "
@@ -298,8 +310,8 @@ struct ClassPrinter {
 			}
 			case KIND_INVOKE: {
 				string className, name, desc;
-				cf.getMemberRef(inst.invoke.methodRefIndex, &className,
-						&name, &desc, CONSTANT_Methodref);
+				cf.getMemberRef(inst.invoke.methodRefIndex, &className, &name,
+						&desc, CONSTANT_Methodref);
 
 				instos << className << "." << name << ": " << desc << endl;
 
@@ -329,8 +341,7 @@ struct ClassPrinter {
 
 				break;
 			case KIND_MULTIARRAY: {
-				string className = cf.getClazzName(
-						inst.multiarray.classIndex);
+				string className = cf.getClazzName(inst.multiarray.classIndex);
 
 				instos << className << " " << inst.multiarray.dims << endl;
 
