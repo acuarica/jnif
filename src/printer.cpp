@@ -264,7 +264,7 @@ struct ClassPrinter {
 						<< endl;
 				break;
 			case KIND_JUMP:
-				instos << offset + short(inst.jump.label) << endl;
+				//instos << offset + short(inst.jump.label) << endl;
 				break;
 			case KIND_TABLESWITCH:
 				instos << inst.ts.def << " " << " " << inst.ts.low << " "

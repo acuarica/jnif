@@ -68,7 +68,7 @@ void FrInstrClassFile1(jvmtiEnv* jvmti, unsigned char* data, int len,
 	ClassFile cf(data, len);
 	os << cf;
 
-	*newlen = cf.getSize();
+	*newlen = cf.computeSize();
 	*newdata = Allocate(jvmti, *newlen);
 	cf.write(*newdata, *newlen);
 }
@@ -81,7 +81,7 @@ void FrInstrClassFile2(jvmtiEnv* jvmti, unsigned char* data, int len,
 	ClassFile cf(data, len);
 	os << cf;
 
-	int newlen = cf.getSize();
+	int newlen = cf.computeSize();
 
 	ASSERT(len == newlen,
 			"Expected class file len %d, actual was %d, on class %s", len,
@@ -199,10 +199,11 @@ void FrInstrClassFile(jvmtiEnv* jvmti, unsigned char* data, int len,
 		}
 	}
 
-	*newlen = cf.getSize();
-	*newdata = Allocate(jvmti, *newlen);
+//	*newlen = cf.computeSize();
+//	*newdata = Allocate(jvmti, *newlen);
+//	cf.write(*newdata, *newlen);
 
-	cf.write(*newdata, *newlen);
+	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 
 }
 

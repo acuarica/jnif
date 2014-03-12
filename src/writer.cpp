@@ -282,8 +282,10 @@ private:
 			Inst& inst = *instp;
 
 			if (inst.kind == KIND_LABEL) {
-				continue;
+				inst.label.offset = pos();
 
+				fprintf(stderr, "label pos @ write: %d\n", inst.label.offset);
+				continue;
 			}
 
 			bw.writeu1(inst.opcode);
@@ -311,9 +313,16 @@ private:
 					bw.writeu1(inst.iinc.index);
 					bw.writeu1(inst.iinc.value);
 					break;
-				case KIND_JUMP:
-					bw.writeu2(inst.jump.label);
+				case KIND_JUMP: {
+					//bw.writeu2(inst.jump.label);
+					fprintf(stderr, "target offset @ write: %d\n",
+							inst.jump.label2->label.offset);
+
+					int jumppos = pos() - 1;
+
+					bw.writeu2(inst.jump.label2->label.offset - jumppos);
 					break;
+				}
 				case KIND_TABLESWITCH: {
 					//	fprintf(stderr, "writer ts: offset: %d\n", pos());
 

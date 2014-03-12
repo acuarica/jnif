@@ -67,7 +67,7 @@ static void testIdentityComputeSize() {
 	apply([](const JavaFile& jf) {
 		ClassFile cf(jf.data, jf.len);
 
-		int newlen = cf.getSize();
+		int newlen = cf.computeSize();
 
 		ASSERT(newlen == jf.len,
 				"Expected class file len %d, actual was %d, on class %s",
@@ -79,7 +79,7 @@ static void testIdentityParserWriter() {
 	apply([](const JavaFile& jf) {
 		ClassFile cf(jf.data, jf.len);
 
-		int newlen = cf.getSize();
+		int newlen = cf.computeSize();
 
 		ASSERT(jf.len == newlen, "Expected class file len %d, "
 				"actual was %d, on class %s",
@@ -119,7 +119,7 @@ static void testNopAdderInstrSize() {
 
 		int diff = methodsWithCode * 2;
 
-		int newlen = cf.getSize();
+		int newlen = cf.computeSize();
 
 		ASSERT(jf.len + diff == newlen,
 				"Expected class file len %d, actual was %d, on class %s",
@@ -147,7 +147,7 @@ static void testNopAdderInstr() {
 
 		int diff = methodsWithCode * 2;
 
-		int newlen = cf.getSize();
+		int newlen = cf.computeSize();
 
 		ASSERT(jf.len + diff == newlen,
 				"Expected class file len %d, actual was %d, on class %s",
@@ -158,7 +158,7 @@ static void testNopAdderInstr() {
 
 		ClassFile newcf(newdata, newlen);
 
-		int newlen2 = cf.getSize();
+		int newlen2 = cf.computeSize();
 
 		ASSERT(newlen2 == newlen,
 				"Expected class file len %d, actual was %d, on class %s",

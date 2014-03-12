@@ -201,7 +201,7 @@ const char* ClassFile::getClassName() const {
 	return getClazzName(thisClassIndex);
 }
 
-u4 ClassFile::getSize() {
+u4 ClassFile::computeSize() {
 	return getClassFileSize(*this);
 }
 

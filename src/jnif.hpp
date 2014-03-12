@@ -467,6 +467,9 @@ struct Inst {
 
 	union {
 		struct {
+			u4 offset;
+		} label;
+		struct {
 			int value;
 		} push;
 		struct {
@@ -480,7 +483,7 @@ struct Inst {
 			u1 value;
 		} iinc;
 		struct {
-			Label label;
+			//Label label;
 			Inst* label2;
 		} jump;
 		struct {
@@ -928,16 +931,26 @@ public:
 	const char* getClassName() const;
 
 	/**
-	 * Gets the size in bytes of this class file of the in-memory
+	 * Computes the size in bytes of this class file of the in-memory
 	 * representation.
 	 */
-	u4 getSize();
+	u4 computeSize();
 
 	/**
 	 * Writes this class file in the specified buffer according to the
 	 * specification.
 	 */
 	void write(u1* classFileData, int classFileLen);
+
+	/**
+	 *
+	 */
+	template<typename TAllocFunc>
+	void write(u1** classFileData, int* classFileSize, TAllocFunc allocFunc) {
+		*classFileSize = computeSize();
+		*classFileData = allocFunc(*classFileSize);
+		write(*classFileData, *classFileSize);
+	}
 
 	/**
 	 * Shows the class file in a textual format, useful for debugging purposes.

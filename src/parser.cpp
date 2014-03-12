@@ -280,9 +280,10 @@ static Inst** parseLabels(BufferReader& br) {
 				}
 				break;
 			case KIND_JUMP: {
-				u2 targetOffset = br.readu2();
+				short targetOffset = br.readu2();
 
-				u2 labelpos = offset + targetOffset;
+				short labelpos = offset + targetOffset;
+				ASSERT(labelpos >= 0, "invalid target for jump: must be >= 0");
 				ASSERT(labelpos < br.size(), "invalid target for jump");
 
 				Inst*& lab = labels[labelpos];
@@ -388,9 +389,18 @@ static void parseInstList(BufferReader& br, InstList& instList) {
 				break;
 			case KIND_JUMP: {
 				//
-				u2 targetOffset = br.readu2();
-				inst.jump.label = targetOffset;
+				short targetOffset = br.readu2();
+				//inst.jump.label = targetOffset;
+
+				short labelpos = offset + targetOffset;
+				ASSERT(labelpos >= 0, "invalid target for jump: must be >= 0");
+				ASSERT(labelpos < br.size(), "invalid target for jump");
+
+				fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
+
 				inst.jump.label2 = labels[offset + targetOffset];
+
+				ASSERT(inst.jump.label2 != nullptr, "invalid label");
 				break;
 			}
 			case KIND_TABLESWITCH:
