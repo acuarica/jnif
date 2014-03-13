@@ -484,6 +484,18 @@ struct Inst {
 			u1 value;
 		} iinc;
 		struct {
+			Opcode opcode;
+			union {
+				struct {
+					u2 lvindex;
+				} var;
+				struct {
+					u2 index;
+					u2 value;
+				} iinc;
+			};
+		} wide;
+		struct {
 			//Label label;
 			Inst* label2;
 		} jump;
@@ -524,13 +536,13 @@ struct Inst {
 	} ls;
 };
 
-//Inst* ZeroInst(Opcode opcode) {
-//	Inst* inst = new Inst();
-//	inst->kind = KIND_ZERO;
-//	inst->opcode = opcode;
-//
-//	return inst;
-//}
+static Inst* ZeroInst(Opcode opcode) {
+	Inst* inst = new Inst();
+	inst->kind = KIND_ZERO;
+	inst->opcode = opcode;
+
+	return inst;
+}
 
 /**
  * Represents the bytecode of a method.

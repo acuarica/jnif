@@ -197,7 +197,7 @@ void use(u1* p, int size) {
 }
 
 int main(int, const char*[]) {
-
+	malloc(1000);
 //	u1* ps[] = { 0, 0, 0, 0, 0 };
 //	for (int i = 0; i < 5; i++) {
 //		ps[i] = (u1*)malloc(i*100);
@@ -205,7 +205,6 @@ int main(int, const char*[]) {
 //	}
 //
 	RUN(testPrinter);
-	return 0;
 	RUN(testEmptyClassFilePrinter);
 	RUN(testIdentityComputeSize);
 	RUN(testIdentityParserWriter);

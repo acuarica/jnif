@@ -292,6 +292,15 @@ private:
 
 			switch (inst.kind) {
 				case KIND_ZERO:
+					if (inst.opcode == OPCODE_wide) {
+						bw.writeu1(inst.wide.opcode);
+						if (inst.wide.opcode == OPCODE_iinc) {
+							bw.writeu2(inst.wide.iinc.index);
+							bw.writeu2(inst.wide.iinc.value);
+						} else {
+							bw.writeu2(inst.wide.var.lvindex);
+						}
+					}
 					break;
 				case KIND_BIPUSH:
 					bw.writeu1(inst.push.value);

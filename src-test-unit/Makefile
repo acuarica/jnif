@@ -17,7 +17,7 @@ run: $(BUILD)/$(EXE)
 	$(BUILD)/$(EXE) > $(BUILD)/$(EXE).out
 
 $(BUILD)/$(EXE): $(OBJS) $(BUILD)/libjnif.a
-	clang++ $(CFLAGS) -stdlib=libc++ -o $@ $^
+	clang++ $(CFLAGS) -fsanitize=leak -stdlib=libc++ -o $@ $^
 
 $(BUILD)/%.class.o: %.class
 	mkdir -p $(@D) ; cp $< $(@D)

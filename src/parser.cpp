@@ -9,6 +9,15 @@ namespace jnif {
 class BufferReader {
 public:
 
+	/**
+	 * Constructs a BufferReader from a memory buffer and its size.
+	 * The @ref buffer must be an accessible and readable memory location
+	 * at least of size @ref len.
+	 *
+	 * @param buffer The memory buffer to read from.
+	 * @param len The size of the buffer in bytes.
+	 *
+	 */
 	BufferReader(const u1* buffer, int len) :
 			buffer(buffer), len(len), off(0) {
 	}
@@ -364,7 +373,14 @@ static void parseInstList(BufferReader& br, InstList& instList) {
 		switch (inst.kind) {
 			case KIND_ZERO:
 				if (inst.opcode == OPCODE_wide) {
-					ASSERT(false, "wide not supported yet");
+					inst.wide.opcode = (Opcode) br.readu1();
+					if (inst.wide.opcode == OPCODE_iinc) {
+						inst.wide.iinc.index = br.readu2();
+						inst.wide.iinc.value = br.readu2();
+					} else {
+						inst.wide.var.lvindex = br.readu2();
+					}
+					//ASSERT(false, "wide not supported yet");
 				}
 				break;
 			case KIND_BIPUSH:
@@ -396,7 +412,7 @@ static void parseInstList(BufferReader& br, InstList& instList) {
 				ASSERT(labelpos >= 0, "invalid target for jump: must be >= 0");
 				ASSERT(labelpos < br.size(), "invalid target for jump");
 
-			//	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
+				//	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
 
 				inst.jump.label2 = labels[offset + targetOffset];
 
