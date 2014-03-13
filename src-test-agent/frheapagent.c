@@ -12,7 +12,6 @@
 #include "frtlog.h"
 #include "frstamp.h"
 #include "frinstr.h"
-#include "frheapdump.h"
 
 typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata);
@@ -98,8 +97,6 @@ static void JNICALL VMInitEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread) {
 	_TLOG("VMINIT");
 
 	StampThread(jvmti, thread);
-
-	NextHeapRequest(jvmti);
 }
 
 static void JNICALL ExceptionEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
@@ -152,6 +149,7 @@ static void ParseOptions(const char* options) {
 	extern InstrFunc FrInstrClassFileIdentity;
 	extern InstrFunc FrInstrClassFileObjectInit;
 	extern InstrFunc FrInstrClassFileNewArray;
+	extern InstrFunc FrInstrClassFileANewArray;
 	extern InstrFunc FrInstrClassFileMain;
 	extern InstrFunc FrInstrClassFileClientServer;
 
@@ -173,6 +171,8 @@ static void ParseOptions(const char* options) {
 	{ &FrInstrClassFileObjectInit, "ObjectInit" },
 
 	{ &FrInstrClassFileNewArray, "NewArray" },
+
+	{ &FrInstrClassFileANewArray, "ANewArray" },
 
 	{ &FrInstrClassFileMain, "Main" },
 

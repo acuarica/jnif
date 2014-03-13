@@ -33,6 +33,11 @@ public class HeapTest {
 			//System.out.println("HeapTest: " + arr.length);
 		}
 
+		for (int i = 0; i < 27; i++) {
+			HeapTest[] arr = new HeapTest[i];
+			System.out.println("HeapTest array len: " + arr.length);
+		}
+
 		System.out.println("HeapTest: " + as.length);
 		// System.out.println("HeapTest: " + as[as.length - 1]);
 	}

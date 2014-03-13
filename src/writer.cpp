@@ -301,6 +301,10 @@ private:
 					break;
 				case KIND_LDC:
 					if (inst.opcode == OPCODE_ldc) {
+						ASSERT(inst.ldc.valueIndex == (u1 )inst.ldc.valueIndex,
+								"invalid value for ldc: %d",
+								inst.ldc.valueIndex);
+
 						bw.writeu1(inst.ldc.valueIndex);
 					} else {
 						bw.writeu2(inst.ldc.valueIndex);

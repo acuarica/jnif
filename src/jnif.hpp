@@ -611,11 +611,26 @@ public:
 	u2 addNameAndType(u2 nameIndex, u2 descIndex);
 	u2 addMethodRef(u2 classIndex, u2 nameAndTypeIndex);
 	u2 addMethodRef(u2 classIndex, const char* name, const char* desc);
+	u2 getClazzNameIndex(int classIndex) const;
+
+	u2 addString(u2 utf8Index) {
+		ConstPoolEntry e;
+		e.tag = CONSTANT_String;
+		e.s.string_index = utf8Index;
+		u2 strIndex = addSingle(e);
+
+		return strIndex;
+	}
+
+	u2 addStringFromClass(u2 classIndex) {
+		u2 classNameIndex = getClazzNameIndex(classIndex);
+		u2 classNameStringIndex = addString(classNameIndex);
+
+		return classNameStringIndex;
+	}
 
 private:
 	const ConstPoolEntry* getEntry(u4 index, u1 tag, const char* message) const;
-	u2 getClazzNameIndex(int classIndex) const;
-
 };
 
 /**

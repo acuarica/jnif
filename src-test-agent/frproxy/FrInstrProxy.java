@@ -20,6 +20,8 @@ public class FrInstrProxy {
 
 	public static native void aastoreEvent(int index, Object newValue, Object thisArray);
 
+	public static native void enterMethod(String className, String methodName);
+
 	public static native void enterMainMethod();
 
 	public static native void exitMainMethod();

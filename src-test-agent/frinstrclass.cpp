@@ -41,7 +41,7 @@ static unsigned char* Allocate(jvmtiEnv* jvmti, jlong size) {
 	return memptr;
 }
 
-static string outFileName(const char* className, const char* ext) {
+static string outFileName(const char* className, const char* ext, const char* prefix = "$") {
 	string fileName = className;
 
 	for (u4 i = 0; i < fileName.length(); i++) {
@@ -49,7 +49,7 @@ static string outFileName(const char* className, const char* ext) {
 	}
 
 	stringstream path;
-	path << fileName << "." << ext;
+	path << prefix << fileName << "." << ext;
 
 	return path.str();
 }
@@ -63,19 +63,15 @@ void FrInstrClassFileEmpty(jvmtiEnv* jvmti, unsigned char* data, int len,
 void FrInstrClassFileDump(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
-	const char* fileName = outFileName(className, "class").c_str();
-	ofstream os(fileName, ios::out | ios::binary);
-
+	ofstream os(outFileName(className, "class").c_str(), ios::binary);
 	os.write((char*) data, len);
 }
 
 void FrInstrClassFilePrint(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
-
-	const char* fileName = outFileName(className, "disasm").c_str();
-	ofstream os(fileName);
-
 	ClassFile cf(data, len);
+
+	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
 }
 
@@ -143,11 +139,7 @@ void FrInstrClassFileObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
-
-	//ofstream os(outFileName(className, "disasm").c_str());
-
 	ClassFile cf(data, len);
-//	os << cf;
 
 	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
 
@@ -173,9 +165,6 @@ void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 	};
 
 	for (Method* m : cf.methods) {
-
-		string name = cf.getUtf8(m->nameIndex);
-
 		if (m->hasCode()) {
 			InstList& instList = m->instList();
 
@@ -221,6 +210,116 @@ void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
 
+void FrInstrClassFileANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata) {
+
+	if (string(className) != "frheapagent/HeapTest") {
+		//	return;
+	}
+
+	ClassFile cf(data, len);
+
+//	ofstream os(outFileName(className, "disasm").c_str());
+//	os << cf;
+
+	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
+
+	u2 enterMethodRef = cf.addMethodRef(classIndex, "enterMethod",
+			"(Ljava/lang/String;Ljava/lang/String;)V");
+
+	u2 aNewArrayEventRef = cf.addMethodRef(classIndex, "aNewArrayEvent",
+			"(ILjava/lang/Object;Ljava/lang/String;)V");
+
+	u2 thisClassStringIndex = cf.addStringFromClass(cf.thisClassIndex);
+
+	auto bipush = [&](u1 value) {
+		Inst* inst = new Inst();
+		inst->kind = KIND_BIPUSH;
+		inst->opcode = OPCODE_bipush;
+		inst->push.value = value;
+
+		return inst;
+	};
+
+	auto invoke = [&] (Opcode opcode, u2 index) {
+		Inst* inst = new Inst();
+		inst->kind = KIND_INVOKE;
+		inst->opcode = opcode;
+		inst->invoke.methodRefIndex = index;
+
+		return inst;
+	};
+
+	auto ldc = [&] (Opcode opcode, u2 valueIndex) {
+		Inst* inst = new Inst();
+		inst->kind = KIND_LDC;
+		inst->opcode = opcode;
+		inst->ldc.valueIndex = valueIndex;
+
+		return inst;
+	};
+
+	for (Method* m : cf.methods) {
+		if (m->hasCode()) {
+			InstList& instList = m->instList();
+
+			InstList code;
+
+//			u2 methodNameStringIndex = cf.addString(m->nameIndex);
+//			code.push_back(ldc(OPCODE_ldc, thisClassStringIndex));
+//			code.push_back(ldc(OPCODE_ldc, methodNameStringIndex));
+//			code.push_back(invoke(OPCODE_invokestatic, enterMethodRef));
+
+			for (Inst* instp : instList) {
+				Inst& inst = *instp;
+
+				if (inst.opcode == OPCODE_anewarray) {
+					//fprintf(stderr, "%s\n", className);
+
+					// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
+					// OPERAND STACK: ... | count: int -> ... | arrayref
+
+					// STACK: ... | count
+
+					code.push_back(new Inst(OPCODE_dup));
+					// STACK: ... | count | count
+
+					code.push_back(&inst); // anewarray
+					// STACK: ... | count | arrayref
+
+					code.push_back(new Inst(OPCODE_dup_x1));
+					// STACK: ... | arrayref | count | arrayref
+
+					u2 classNameIndex = cf.getClazzNameIndex(
+							inst.type.classIndex);
+
+					ConstPoolEntry e;
+					e.tag = CONSTANT_String;
+					e.s.string_index = classNameIndex;
+					u2 strIndex = cf.addSingle(e);
+
+					code.push_back(ldc(OPCODE_ldc_w, strIndex));
+					// STACK: ... | arrayref | count | arrayref | classname
+
+					code.push_back(
+							invoke(OPCODE_invokestatic, aNewArrayEventRef));
+					// STACK: ... | arrayref
+
+				} else {
+					code.push_back(&inst);
+				}
+			}
+
+			m->instList(code);
+		}
+	}
+
+	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+
+//	ofstream os2(outFileName(className, "instr.disasm").c_str());
+//	os2 << cf;
+}
+
 void FrInstrClassFileMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
@@ -249,7 +348,8 @@ void FrInstrClassFileMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 				&& desc == "([Ljava/lang/String;)V") {
 			InstList& instList = m->instList();
 
-			instList.push_front(invoke(OPCODE_invokestatic, enterMainMethodRef));
+			instList.push_front(
+					invoke(OPCODE_invokestatic, enterMainMethodRef));
 
 //			if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) || opcode == Opcodes.ATHROW) {
 //				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass, "exitMainMethod", "()V");

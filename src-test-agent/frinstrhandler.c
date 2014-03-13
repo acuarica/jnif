@@ -5,11 +5,9 @@
 #include <jni.h>
 
 #include "frlog.h"
-#include "frheapdump.h"
 #include "frjvmti.h"
 #include "frstamp.h"
 #include "frinstr.h"
-#include "frheapdump.h"
 #include "frtlog.h"
 
 /**
@@ -77,24 +75,6 @@ DEFHANDLER(multiANewArrayNEvent) (JNIEnv* jni, jclass proxyClass,
 	_TLOG("MULTIN:%ld:%d", stamp, dims);
 }
 
-int eventspersample = 2000;
-
-static int eventcount = 0;
-
-static bool inmain = false;
-
-static void newevent() {
-	if (eventcount > eventspersample) {
-		eventcount = 0;
-
-		if (inmain) {
-			NextHeapRequest(_jvmti);
-		}
-	}
-
-	eventcount++;
-}
-
 DEFHANDLER(putFieldEvent) (JNIEnv* jni, jclass proxyClass, jobject thisObject,
 		jobject newValue, jstring fieldName) {
 	WITH(jni, fieldName,
@@ -107,8 +87,6 @@ DEFHANDLER(putFieldEvent) (JNIEnv* jni, jclass proxyClass, jobject thisObject,
 			_TLOG("PUTFIELD:%.*s:%ld:%ld", fieldNamelen, fieldNameutf8, thisObjectStamp, newValueStamp);
 
 			});
-
-	newevent();
 }
 
 DEFHANDLER(putStaticEvent) (JNIEnv* jni, jclass proxyClass, jobject newValue,
@@ -121,8 +99,6 @@ DEFHANDLER(putStaticEvent) (JNIEnv* jni, jclass proxyClass, jobject newValue,
 			_TLOG("PUTSTATIC:%.*s:%.*s:%ld", fieldNamelen, fieldNameutf8, thisClassNamelen,thisClassNameutf8, newValueStamp);
 
 			}); });
-
-	newevent();
 }
 
 DEFHANDLER(aastoreEvent) (JNIEnv* jni, jclass proxyClass, jint index,
@@ -132,24 +108,31 @@ DEFHANDLER(aastoreEvent) (JNIEnv* jni, jclass proxyClass, jint index,
 	jlong newValueStamp = newValue != NULL ? FrLiveStamp(jni, newValue) : -1;
 
 	_TLOG("AASTORE:%d:%ld:%ld", index, thisArrayStamp, newValueStamp);
+}
 
-	newevent();
+DEFHANDLER(enterMethod) (JNIEnv* jni, jclass proxyClass, jstring className,
+		jstring methodName) {
+	_TLOG("ENTERMETHOD");
+
+//	fprintf(stderr, "we just enter a method!!!\n");
+
+	WITH(jni, className,
+			{ WITH(jni, methodName, {
+
+			_TLOG("ENTERMETHOD:%.*s:%.*s", classNamelen, classNameutf8, methodNamelen,methodNameutf8);
+
+			}); });
+
 }
 
 DEFHANDLER(enterMainMethod) (JNIEnv* jni, jclass proxyClass) {
 	_TLOG("ENTERMAIN");
 
-	fprintf(stdout, "we are in object init!\n");
-
-	//NextHeapRequest(_jvmti);
-
-	inmain = true;
+	fprintf(stderr, "we just enter main!!!\n");
 }
 
 DEFHANDLER(exitMainMethod) (JNIEnv* jni, jclass proxyClass) {
-	inmain = false;
-
-	//NextHeapRequest(_jvmti);
+	fprintf(stderr, "we just exit main!!!\n");
 
 	_TLOG("EXITMAIN");
 }
@@ -184,6 +167,9 @@ void FrSetInstrHandlerNatives(jvmtiEnv* jvmti, JNIEnv* jni, jclass proxyClass) {
 
 	{ "aastoreEvent", "(ILjava/lang/Object;Ljava/lang/Object;)V",
 			(void*) &HANDLER(aastoreEvent) },
+
+	{ "enterMethod", "(Ljava/lang/String;Ljava/lang/String;)V",
+			(void*) &HANDLER(enterMethod) },
 
 	{ "enterMainMethod", "()V", (void*) &HANDLER(enterMainMethod) },
 

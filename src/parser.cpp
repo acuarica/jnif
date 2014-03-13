@@ -674,6 +674,10 @@ static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as) {
 
 void parseClassFile(const u1* fileImage, const int fileImageLen,
 		ClassFile& cf) {
+
+	//printf("%d\n",OPKIND[OPCODE_anewarray]);
+	//exit(4);
+
 	BufferReader br(fileImage, fileImageLen);
 
 	u4 magic = br.readu4();
