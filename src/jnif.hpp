@@ -467,7 +467,7 @@ struct Inst {
 
 	union {
 		struct {
-			u4 offset;
+			u2 offset;
 			int id;
 		} label;
 		struct {
@@ -572,12 +572,10 @@ struct ConstPoolEntry {
 			u4 value;
 		} f;
 		struct {
-			u4 high_bytes;
-			u4 low_bytes;
+			long value;
 		} l;
 		struct {
-			u4 high_bytes;
-			u4 low_bytes;
+			double value;
 		} d;
 		struct {
 			u2 name_index;
@@ -601,31 +599,44 @@ struct ConstPoolEntry {
 };
 
 /**
- * The constant pool
+ * Represents the Java class file's constant pool. The constant pool is a
+ * table which holds different kinds of items depending on their use. It can
+ * hold references for classes, fields, methods, interface methods, strings,
+ * integers, floats, longs, doubles, name and type, utf8 arrays,
+ * method handles, method types and invoke dynamic bootstrap methods.
  */
 class ConstPool {
 public:
 
-	vector<ConstPoolEntry> entries;
+	/**
+	 * The Index type represents how each item within the constant pool can
+	 * be addressed.
+	 */
+	typedef u2 Index;
 
+	/**
+	 * Represents the invalid (null) item, which must not be asked for.
+	 */
+	static const Index NULLENTRY = 0;
+
+	/**
+	 *
+	 */
 	ConstPool();
-	u2 addSingle(const ConstPoolEntry& entry);
-	void addDouble(const ConstPoolEntry& entry);
-	const char* getUtf8(int utf8Index) const;
-	const char* getClazzName(int classIndex) const;
-	void getNameAndType(int index, string* name, string* desc) const;
-	void getMemberRef(int index, string* clazzName, string* name, string* desc,
-			u1 tag) const;
-	u2 addInteger(u4 value);
-	u2 addUtf8(const char* str);
-	u2 addClass(u2 classNameIndex);
-	u2 addClass(const char* className);
-	u2 addNameAndType(u2 nameIndex, u2 descIndex);
-	u2 addMethodRef(u2 classIndex, u2 nameAndTypeIndex);
-	u2 addMethodRef(u2 classIndex, const char* name, const char* desc);
-	u2 getClazzNameIndex(int classIndex) const;
 
-	u2 addString(u2 utf8Index) {
+	u2 addSingle(const ConstPoolEntry& entry);
+
+	/**
+	 *
+	 */
+	Index addClass(Index classNameIndex);
+
+	/**
+	 *
+	 */
+	Index addClass(const char* className);
+
+	Index addString(Index utf8Index) {
 		ConstPoolEntry e;
 		e.tag = CONSTANT_String;
 		e.s.string_index = utf8Index;
@@ -634,15 +645,59 @@ public:
 		return strIndex;
 	}
 
-	u2 addStringFromClass(u2 classIndex) {
+	Index addStringFromClass(Index classIndex) {
 		u2 classNameIndex = getClazzNameIndex(classIndex);
 		u2 classNameStringIndex = addString(classNameIndex);
 
 		return classNameStringIndex;
 	}
 
+	Index addInteger(u4 value);
+
+	/**
+	 *
+	 */
+	Index addLong(long value);
+
+	/**
+	 *
+	 */
+	Index addDouble(double value);
+
+	Index addUtf8(const char* str);
+
+	Index addNameAndType(u2 nameIndex, u2 descIndex);
+	Index addMethodRef(u2 classIndex, u2 nameAndTypeIndex);
+	Index addMethodRef(u2 classIndex, const char* name, const char* desc);
+
+	u2 getClazzNameIndex(int classIndex) const;
+
+	bool isClass(Index index);
+
+	long getLong(Index index) const {
+		return _getEntry(index, CONSTANT_Long, "CONSTANT_Long")->l.value;
+	}
+
+	double getDouble(Index index) const {
+		return _getEntry(index, CONSTANT_Double, "CONSTANT_Double")->d.value;
+	}
+
+	const char* getUtf8(int utf8Index) const;
+	const char* getClazzName(int classIndex) const;
+	void getNameAndType(int index, string* name, string* desc) const;
+	void getMemberRef(int index, string* clazzName, string* name, string* desc,
+			u1 tag) const;
+
+	// TODO: To be private!
+	vector<ConstPoolEntry> entries;
+
 private:
-	const ConstPoolEntry* getEntry(u4 index, u1 tag, const char* message) const;
+	Index _addDoubleEntry(const ConstPoolEntry& entry);
+
+	const ConstPoolEntry* _getEntry(Index index) const;
+	const ConstPoolEntry* _getEntry(Index index, u1 tag,
+			const char* message) const;
+
 };
 
 /**
@@ -777,10 +832,10 @@ struct ExceptionsAttr: Attr {
  *
  */
 struct CodeExceptionEntry {
-	u2 startpc;
-	u2 endpc;
-	u2 handlerpc;
-	u2 catchtype;
+	Inst* startpc;
+	Inst* endpc;
+	Inst* handlerpc;
+	ConstPool::Index catchtype;
 };
 
 /**

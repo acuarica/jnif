@@ -198,6 +198,7 @@ void use(u1* p, int size) {
 
 int main(int, const char*[]) {
 	malloc(1000);
+
 //	u1* ps[] = { 0, 0, 0, 0, 0 };
 //	for (int i = 0; i < 5; i++) {
 //		ps[i] = (u1*)malloc(i*100);
@@ -210,6 +211,39 @@ int main(int, const char*[]) {
 	RUN(testIdentityParserWriter);
 	RUN(testNopAdderInstrSize);
 	RUN(testNopAdderInstr);
+
+#define PSIZEOF(typeExpr) fprintf(stderr, "sizeof(" #typeExpr "): %ld\n", sizeof(typeExpr))
+
+	PSIZEOF(int);
+	PSIZEOF(float);
+	PSIZEOF(long);
+	PSIZEOF(double);
+
+	PSIZEOF(int*);
+	PSIZEOF(float*);
+	PSIZEOF(long*);
+	PSIZEOF(double*);
+
+	PSIZEOF(Opcode);
+	PSIZEOF(OpKind);
+
+	PSIZEOF(vector<Inst>);
+	PSIZEOF(Inst);
+	PSIZEOF(InstList);
+
+	Inst inst;
+
+	PSIZEOF(inst.ts.def);
+	PSIZEOF(inst.ts.low);
+	PSIZEOF(inst.ts.high);
+	PSIZEOF(inst.ts.targets);
+	PSIZEOF(inst.ts);
+	PSIZEOF(inst.ls);
+	PSIZEOF(inst.label);
+	PSIZEOF(inst.wide);
+	PSIZEOF(inst.jump);
+	PSIZEOF(inst.invoke);
+	PSIZEOF(inst.invokeinterface);
 
 	return 0;
 }

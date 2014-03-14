@@ -16,7 +16,7 @@ agent: | $(BUILD)
 
 unit: | $(BUILD)
 	$(MAKE) -C src
-	$(MAKE) -C src-test-unit
+	$(MAKE) -C src-test-unit run
 
 docs:
 	doxygen

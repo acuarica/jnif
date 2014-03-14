@@ -186,16 +186,21 @@ private:
 				case CONSTANT_Float:
 					bw.writeu4(entry->f.value);
 					break;
-				case CONSTANT_Long:
-					bw.writeu4(entry->l.high_bytes);
-					bw.writeu4(entry->l.low_bytes);
+				case CONSTANT_Long: {
+					long value = cp.getLong(i);
+					bw.writeu4(value >> 32);
+					bw.writeu4(value & 0xffffffff);
 					i++;
 					break;
-				case CONSTANT_Double:
-					bw.writeu4(entry->d.high_bytes);
-					bw.writeu4(entry->d.low_bytes);
+				}
+				case CONSTANT_Double: {
+					double dvalue = cp.getDouble(i);
+					long value = *(long*) &dvalue;
+					bw.writeu4(value >> 32);
+					bw.writeu4(value & 0xffffffff);
 					i++;
 					break;
+				}
 				case CONSTANT_NameAndType:
 					bw.writeu2(entry->nameandtype.name_index);
 					bw.writeu2(entry->nameandtype.descriptor_index);
@@ -431,9 +436,9 @@ private:
 		bw.writeu2(esize);
 		for (u4 i = 0; i < esize; i++) {
 			CodeExceptionEntry& e = attr.exceptions[i];
-			bw.writeu2(e.startpc);
-			bw.writeu2(e.endpc);
-			bw.writeu2(e.handlerpc);
+			bw.writeu2(e.startpc->label.offset);
+			bw.writeu2(e.endpc->label.offset);
+			bw.writeu2(e.handlerpc->label.offset);
 			bw.writeu2(e.catchtype);
 		}
 

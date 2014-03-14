@@ -28,14 +28,23 @@ public class HeapTest {
 
 		System.out.println("HeapTest: " + as.length);
 
-		for (int i = 0; i < as.length; i++) {
-			int[] arr = new int[i];
-			//System.out.println("HeapTest: " + arr.length);
-		}
+		try {
+			for (int i = 0; i < as.length; i++) {
+				int[] arr = new int[i];
 
-		for (int i = 0; i < 27; i++) {
-			HeapTest[] arr = new HeapTest[i];
-			System.out.println("HeapTest array len: " + arr.length);
+				// System.out.println("HeapTest: " + arr.length);
+			}
+
+			for (int i = 0; i < 27; i++) {
+				HeapTest[] arr = new HeapTest[i];
+				
+				System.out.println("elem: " + arr[i]);
+
+				System.out.println("HeapTest array len: " + arr.length);
+			}
+
+		} catch (Exception e) {
+			System.out.println(e);
 		}
 
 		System.out.println("HeapTest: " + as.length);

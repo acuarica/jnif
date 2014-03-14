@@ -137,11 +137,11 @@ struct ClassPrinter {
 					os << entry->f.value;
 					break;
 				case CONSTANT_Long:
-					os << entry->l.high_bytes << " " << entry->l.low_bytes;
+					os << cp.getLong(i);
 					i++;
 					break;
 				case CONSTANT_Double:
-					os << entry->d.high_bytes << " " << entry->d.low_bytes;
+					os << cp.getDouble(i);
 					i++;
 					break;
 				case CONSTANT_NameAndType:
@@ -234,9 +234,10 @@ struct ClassPrinter {
 		}
 
 		for (CodeExceptionEntry& e : c.exceptions) {
-			line(1) << "exception entry: startpc: " << e.startpc << ", endpc: "
-					<< e.endpc << ", handlerpc: " << e.handlerpc
-					<< ", catchtype: " << e.catchtype << endl;
+			line(1) << "exception entry: startpc: " << e.startpc->label.id
+					<< ", endpc: " << e.endpc->label.offset << ", handlerpc: "
+					<< e.handlerpc->label.offset << ", catchtype: "
+					<< e.catchtype << endl;
 		}
 
 		dec();

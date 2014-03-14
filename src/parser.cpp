@@ -162,62 +162,72 @@ static void parseConstPool(BufferReader& br, ConstPool& cp) {
 		switch (entry->tag) {
 			case CONSTANT_Class:
 				entry->clazz.name_index = br.readu2();
+				cp.addSingle(e);
 				break;
 			case CONSTANT_Fieldref:
 			case CONSTANT_Methodref:
 			case CONSTANT_InterfaceMethodref:
 				entry->memberref.class_index = br.readu2();
 				entry->memberref.name_and_type_index = br.readu2();
+				cp.addSingle(e);
 				break;
 			case CONSTANT_String:
 				entry->s.string_index = br.readu2();
+				cp.addSingle(e);
 				break;
 			case CONSTANT_Integer:
 				entry->i.value = br.readu4();
+				cp.addSingle(e);
 				break;
 			case CONSTANT_Float:
 				entry->f.value = br.readu4();
+				cp.addSingle(e);
 				break;
-			case CONSTANT_Long:
-				entry->l.high_bytes = br.readu4();
-				entry->l.low_bytes = br.readu4();
+			case CONSTANT_Long: {
+				u4 high = br.readu4();
+				u4 low = br.readu4();
+				cp.addLong(((long) high << 32) + low);
 				i++;
 				break;
-			case CONSTANT_Double:
-				entry->d.high_bytes = br.readu4();
-				entry->d.low_bytes = br.readu4();
+			}
+			case CONSTANT_Double: {
+				u4 high = br.readu4();
+				u4 low = br.readu4();
+				long lvalue = ((long) high << 32) + low;
+				double dvalue = *(double*) &lvalue;
+				cp.addDouble(dvalue);
 				i++;
 				break;
+			}
 			case CONSTANT_NameAndType:
 				entry->nameandtype.name_index = br.readu2();
 				entry->nameandtype.descriptor_index = br.readu2();
+				cp.addSingle(e);
 				break;
 			case CONSTANT_Utf8: {
 				u2 len = br.readu2();
 				std::string str((const char*) br.pos(), len);
 				entry->utf8.str = str;
 				br.skip(len);
+				cp.addSingle(e);
 				break;
 			}
 			case CONSTANT_MethodHandle:
 				entry->methodhandle.reference_kind = br.readu1();
 				entry->methodhandle.reference_index = br.readu2();
+				cp.addSingle(e);
 				break;
 			case CONSTANT_MethodType:
 				entry->methodtype.descriptor_index = br.readu2();
+				cp.addSingle(e);
 				break;
 			case CONSTANT_InvokeDynamic:
 				entry->invokedynamic.bootstrap_method_attr_index = br.readu2();
 				entry->invokedynamic.name_and_type_index = br.readu2();
+				cp.addSingle(e);
 				break;
 			default:
 				EXCEPTION("Error while reading tag: %i", entry->tag);
-		}
-
-		if (entry->tag == CONSTANT_Long || entry->tag == CONSTANT_Double) {
-			cp.addDouble(e);
-		} else {
-			cp.addSingle(e);
 		}
 	}
 }
@@ -247,13 +257,7 @@ static Attr* parseExceptions(BufferReader& br, Attrs& as, u2 nameIndex) {
 	return attr;
 }
 
-static Inst** parseLabels(BufferReader& br) {
-
-	Inst** labels = new Inst*[br.size()];
-	for (int i = 0; i < br.size(); i++) {
-		labels[i] = nullptr;
-	}
-
+static void parseInstTargets(BufferReader& br, Inst** labels) {
 	while (!br.eor()) {
 		int offset = br.offset();
 
@@ -343,20 +347,9 @@ static Inst** parseLabels(BufferReader& br) {
 			}
 		}
 	}
-
-	return labels;
 }
 
-static void parseInstList(BufferReader& br, InstList& instList) {
-
-	const u1* code = br.pos();
-	int codeLen = br.size();
-	Inst** labels;
-	{
-		BufferReader br(code, codeLen);
-		labels = parseLabels(br);
-	}
-
+static void parseInstList(BufferReader& br, InstList& instList, Inst** labels) {
 	while (!br.eor()) {
 		int offset = br.offset();
 
@@ -512,25 +505,60 @@ static Attr* parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 
 	ca->maxStack = br.readu2();
 	ca->maxLocals = br.readu2();
-	ca->codeLen = br.readu4();
+
+	u4 codeLen = br.readu4();
+
+	CHECK(codeLen > 0, "");
+	CHECK(codeLen < (2 << 16), "");
+
+	ca->codeLen = codeLen;
 
 	const u1* codeBuf = br.pos();
 	br.skip(ca->codeLen);
 
-	{
-		BufferReader br(codeBuf, ca->codeLen);
-		parseInstList(br, ca->instList);
+	Inst** labels = new Inst*[codeLen];
+	for (int i = 0; i < codeLen; i++) {
+		labels[i] = nullptr;
 	}
+
+	{
+		BufferReader br(codeBuf, codeLen);
+		parseInstTargets(br, labels);
+	}
+
+	auto getLabel = [&](u2 labelpos) {
+		Inst*& lab = labels[labelpos];
+		if (lab == nullptr) {
+			lab = new Inst(KIND_LABEL);
+		}
+
+		return lab;
+	};
 
 	u2 exceptionTableCount = br.readu2();
 	for (int i = 0; i < exceptionTableCount; i++) {
+		u2 startPc = br.readu2();
+		u2 endPc = br.readu2();
+		u2 handlerPc = br.readu2();
+		ConstPool::Index catchType = br.readu2();
+
+		CHECK(startPc < endPc, "");
+		CHECK(endPc <= ca->codeLen, "");
+		CHECK(handlerPc < ca->codeLen, "");
+		CHECK(catchType == ConstPool::NULLENTRY || cp.isClass(catchType), "");
+
 		CodeExceptionEntry e;
-		e.startpc = br.readu2();
-		e.endpc = br.readu2();
-		e.handlerpc = br.readu2();
-		e.catchtype = br.readu2();
+		e.startpc = getLabel(startPc);
+		e.endpc = getLabel(endPc);
+		e.handlerpc = getLabel(handlerPc);
+		e.catchtype = catchType;
 
 		ca->exceptions.push_back(e);
+	}
+
+	{
+		BufferReader br(codeBuf, codeLen);
+		parseInstList(br, ca->instList, labels);
 	}
 
 	parseAttrs(br, cp, ca->attrs);
