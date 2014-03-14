@@ -244,7 +244,7 @@ struct ClassPrinter {
 	}
 
 	void printInst(Inst& inst) {
-		int offset = 0;
+		int offset = inst._offset;
 
 		if (inst.kind == KIND_LABEL) {
 			os << "   label: " << inst.label.id << endl;
@@ -280,22 +280,23 @@ struct ClassPrinter {
 				instos << "label: " << inst.jump.label2->label.id << endl;
 				break;
 			case KIND_TABLESWITCH:
-				instos << inst.ts.def << " " << " " << inst.ts.low << " "
-						<< inst.ts.high << ":";
+				instos << "default: " << inst.ts.def->label.id << ", from: "
+						<< inst.ts.low << " " << inst.ts.high << ":";
 
 				for (int i = 0; i < inst.ts.high - inst.ts.low + 1; i++) {
-					os << " " << inst.ts.targets[i];
+					os << " " << inst.ts.targets[i]->label.id;
 				}
 
 				instos << endl;
 
 				break;
 			case KIND_LOOKUPSWITCH:
-				instos << inst.ls.defbyte << " " << inst.ls.npairs << ":";
+				instos << inst.ls.defbyte->label.id << " " << inst.ls.npairs
+						<< ":";
 
 				for (u4 i = 0; i < inst.ls.npairs; i++) {
 					instos << " " << inst.ls.keys[i] << " -> "
-							<< inst.ls.targets[i];
+							<< inst.ls.targets[i]->label.id;
 				}
 
 				instos << endl;

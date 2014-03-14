@@ -156,8 +156,6 @@ public:
 		writeAttrs(cf);
 	}
 
-private:
-
 	void writeConstPool(const ConstPool& cp) {
 		u2 count = cp.entries.size();
 		bw.writeu2(count);
@@ -341,6 +339,8 @@ private:
 					break;
 				}
 				case KIND_TABLESWITCH: {
+					int tspos = pos() - 1;
+
 					//	fprintf(stderr, "writer ts: offset: %d\n", pos());
 
 					int pad = (4 - (pos() % 4)) % 4;
@@ -351,13 +351,13 @@ private:
 					bool check = pos() % 4 == 0;
 					ASSERT(check, "Padding offset must be mod 4: %d", pos());
 
-					bw.writeu4(inst.ts.def);
+					bw.writeu4(inst.ts.def->label.offset - tspos);
 					bw.writeu4(inst.ts.low);
 					bw.writeu4(inst.ts.high);
 
 					for (int i = 0; i < inst.ts.high - inst.ts.low + 1; i++) {
-						u4 t = inst.ts.targets[i];
-						bw.writeu4(t);
+						Inst* t = inst.ts.targets[i];
+						bw.writeu4(t->label.offset - tspos);
 					}
 
 					//	fprintf(stderr, "writer ts: offset: %d\n", pos());
@@ -365,6 +365,8 @@ private:
 					break;
 				}
 				case KIND_LOOKUPSWITCH: {
+					int lspos = pos() - 1;
+
 					int pad = (4 - (pos() % 4)) % 4;
 					for (int i = 0; i < pad; i++) {
 						bw.writeu1(0);
@@ -373,15 +375,15 @@ private:
 					bool check = pos() % 4 == 0;
 					ASSERT(check, "Padding offset must be mod 4: %d", pos());
 
-					bw.writeu4(inst.ls.defbyte);
+					bw.writeu4(inst.ls.defbyte->label.offset - lspos);
 					bw.writeu4(inst.ls.npairs);
 
 					for (u4 i = 0; i < inst.ls.npairs; i++) {
 						u4 k = inst.ls.keys[i];
 						bw.writeu4(k);
 
-						u4 t = inst.ls.targets[i];
-						bw.writeu4(t);
+						Inst* t = inst.ls.targets[i];
+						bw.writeu4(t->label.offset - lspos);
 					}
 					break;
 				}
@@ -425,10 +427,6 @@ private:
 
 		u4 offset = bw.getOffset();
 		writeInstList(attr.instList);
-
-//	u4 len = bw.getOffset() - offset;
-//	ASSERT(attr.codeLen == len, "writeCode:: Expected %d, actual %d in %d",
-//			attr.codeLen, len, attr.kind);
 
 		attr.codeLen = bw.getOffset() - offset;
 

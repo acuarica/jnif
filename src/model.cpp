@@ -76,8 +76,6 @@ ConstPool::Index ConstPool::addDouble(double value) {
 	ConstPoolEntry entry;
 	entry.tag = CONSTANT_Double;
 	entry.d.value = value;
-//	entry.d.high_bytes = high;
-//	entry.d.low_bytes = low;
 
 	return _addDoubleEntry(entry);
 }

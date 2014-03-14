@@ -117,14 +117,21 @@ static void testNopAdderInstrSize() {
 			if (m->hasCode()) {
 				InstList& instList = m->instList();
 
-				instList.push_front(ZeroInst(OPCODE_nop));
-				instList.push_front(ZeroInst(OPCODE_nop));
+				Inst* nop = new Inst(OPCODE_nop);
+
+				// If there is a tableswitch or a lookupswitch instruction
+				// bytes added to the instruction flow must be a multiple
+				// of four to keep the padding in this instructions.
+				instList.push_front(nop);
+				instList.push_front(nop);
+				instList.push_front(nop);
+				instList.push_front(nop);
 
 				methodsWithCode++;
 			}
 		}
 
-		int diff = methodsWithCode * 2;
+		int diff = methodsWithCode * 4;
 
 		int newlen = cf.computeSize();
 
@@ -147,12 +154,14 @@ static void testNopAdderInstr() {
 				Inst* nop = new Inst(OPCODE_nop);
 				instList.push_front(nop);
 				instList.push_front(nop);
+				instList.push_front(nop);
+				instList.push_front(nop);
 
 				methodsWithCode++;
 			}
 		}
 
-		int diff = methodsWithCode * 2;
+		int diff = methodsWithCode * 4;
 
 		int newlen = cf.computeSize();
 
@@ -190,29 +199,15 @@ static void testNopAdderInstr() {
 #define RUN(test) ( fprintf(stderr, "Running test " #test "... "), \
 	test(), fprintf(stderr, "[OK]\n") )
 
-void use(u1* p, int size) {
-	for (int i = 0; i < size; i++) {
-		p[i] = 'A';
-	}
-}
+#define PSIZEOF(typeExpr) fprintf(stderr, "sizeof(" #typeExpr "): %ld\n", sizeof(typeExpr))
 
 int main(int, const char*[]) {
-	malloc(1000);
-
-//	u1* ps[] = { 0, 0, 0, 0, 0 };
-//	for (int i = 0; i < 5; i++) {
-//		ps[i] = (u1*)malloc(i*100);
-//		use(ps[i], i*100);
-//	}
-//
 	RUN(testPrinter);
 	RUN(testEmptyClassFilePrinter);
 	RUN(testIdentityComputeSize);
 	RUN(testIdentityParserWriter);
 	RUN(testNopAdderInstrSize);
 	RUN(testNopAdderInstr);
-
-#define PSIZEOF(typeExpr) fprintf(stderr, "sizeof(" #typeExpr "): %ld\n", sizeof(typeExpr))
 
 	PSIZEOF(int);
 	PSIZEOF(float);
@@ -223,6 +218,11 @@ int main(int, const char*[]) {
 	PSIZEOF(float*);
 	PSIZEOF(long*);
 	PSIZEOF(double*);
+
+	PSIZEOF(std::string);
+
+	PSIZEOF(ConstPool);
+	PSIZEOF(ConstPoolEntry);
 
 	PSIZEOF(Opcode);
 	PSIZEOF(OpKind);

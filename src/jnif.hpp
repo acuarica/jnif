@@ -456,6 +456,8 @@ struct Inst {
 	 */
 	OpKind kind;
 
+	int _offset;
+
 	friend Inst InvokeInst(Opcode opcode, u2 index) {
 		Inst inst;
 		inst.kind = KIND_INVOKE;
@@ -522,27 +524,19 @@ struct Inst {
 	};
 
 	struct {
-		int def;
+		Inst* def;
 		int low;
 		int high;
-		vector<u4> targets;
+		vector<Inst*> targets;
 	} ts;
 
 	struct {
-		u4 defbyte;
+		Inst* defbyte;
 		u4 npairs;
 		vector<u4> keys;
-		vector<u4> targets;
+		vector<Inst*> targets;
 	} ls;
 };
-
-static Inst* ZeroInst(Opcode opcode) {
-	Inst* inst = new Inst();
-	inst->kind = KIND_ZERO;
-	inst->opcode = opcode;
-
-	return inst;
-}
 
 /**
  * Represents the bytecode of a method.

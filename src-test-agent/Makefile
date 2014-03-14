@@ -31,7 +31,7 @@ runall:
 	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Main $(MAINCLASS)
 
 run: $(BUILD)/$(MAINCLASSFILE) $(BUILD)/$(LIB)
-	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Identity $(MAINCLASS)
+	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=ANewArray $(MAINCLASS)
 
 $(BUILD)/$(MAINCLASSFILE): $(MAINJAVAFILE)
 	javac $^ -d $(BUILD)

@@ -257,6 +257,15 @@ static Attr* parseExceptions(BufferReader& br, Attrs& as, u2 nameIndex) {
 	return attr;
 }
 
+static Inst* createLabel(Inst** labels, int labelpos) {
+	Inst*& lab = labels[labelpos];
+	if (lab == nullptr) {
+		lab = new Inst(KIND_LABEL);
+	}
+
+	return lab;
+}
+
 static void parseInstTargets(BufferReader& br, Inst** labels) {
 	while (!br.eor()) {
 		int offset = br.offset();
@@ -299,10 +308,11 @@ static void parseInstTargets(BufferReader& br, Inst** labels) {
 				ASSERT(labelpos >= 0, "invalid target for jump: must be >= 0");
 				ASSERT(labelpos < br.size(), "invalid target for jump");
 
-				Inst*& lab = labels[labelpos];
-				if (lab == nullptr) {
-					lab = new Inst(KIND_LABEL);
-				}
+				createLabel(labels, labelpos);
+//				Inst*& lab = labels[labelpos];
+//				if (lab == nullptr) {
+//					lab = new Inst(KIND_LABEL);
+//				}
 
 				break;
 			}
@@ -317,7 +327,9 @@ static void parseInstTargets(BufferReader& br, Inst** labels) {
 					ASSERT(check, "%d", br.offset());
 				}
 
-				br.readu4(); // def
+				int defOffset = br.readu4();
+				createLabel(labels, offset + defOffset);
+
 				int low = br.readu4();
 				int high = br.readu4();
 
@@ -326,7 +338,8 @@ static void parseInstTargets(BufferReader& br, Inst** labels) {
 						high);
 
 				for (int i = 0; i < high - low + 1; i++) {
-					br.readu4();
+					int targetOffset = br.readu4();
+					createLabel(labels, offset + targetOffset);
 				}
 				break;
 			}
@@ -336,12 +349,16 @@ static void parseInstTargets(BufferReader& br, Inst** labels) {
 					ASSERT(pad == 0, "Padding must be zero");
 				}
 
-				u4 defbyte = br.readu4();
+				int defOffset = br.readu4();
+				createLabel(labels, offset + defOffset);
+
 				u4 npairs = br.readu4();
 
 				for (u4 i = 0; i < npairs; i++) {
-					br.readu4();
-					br.readu4();
+					br.readu4(); // Key
+
+					int targetOffset = br.readu4();
+					createLabel(labels, offset + targetOffset);
 				}
 				break;
 			}
@@ -354,10 +371,13 @@ static void parseInstList(BufferReader& br, InstList& instList, Inst** labels) {
 		int offset = br.offset();
 
 		if (labels[offset] != nullptr) {
+			labels[offset]->_offset = offset;
 			instList.push_back(labels[offset]);
 		}
 
 		Inst* instp = new Inst();
+		instp->_offset = offset;
+
 		Inst& inst = *instp;
 
 		inst.opcode = (Opcode) br.readu1();
@@ -412,7 +432,7 @@ static void parseInstList(BufferReader& br, InstList& instList, Inst** labels) {
 				ASSERT(inst.jump.label2 != nullptr, "invalid label");
 				break;
 			}
-			case KIND_TABLESWITCH:
+			case KIND_TABLESWITCH: {
 				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 					u1 pad = br.readu1();
 					ASSERT(pad == 0, "Padding must be zero");
@@ -423,7 +443,8 @@ static void parseInstList(BufferReader& br, InstList& instList, Inst** labels) {
 					ASSERT(check, "%d", br.offset());
 				}
 
-				inst.ts.def = br.readu4();
+				int defOffset = br.readu4();
+				inst.ts.def = labels[offset + defOffset];
 				inst.ts.low = br.readu4();
 				inst.ts.high = br.readu4();
 
@@ -433,19 +454,21 @@ static void parseInstList(BufferReader& br, InstList& instList, Inst** labels) {
 
 				for (int i = 0; i < inst.ts.high - inst.ts.low + 1; i++) {
 					u4 targetOffset = br.readu4();
-					inst.ts.targets.push_back(targetOffset);
+					inst.ts.targets.push_back(labels[offset + targetOffset]);
 				}
 
 				//		fprintf(stderr, "parser ts: offset: %d\n", br.offset());
 
 				break;
-			case KIND_LOOKUPSWITCH:
+			}
+			case KIND_LOOKUPSWITCH: {
 				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 					u1 pad = br.readu1();
 					ASSERT(pad == 0, "Padding must be zero");
 				}
 
-				inst.ls.defbyte = br.readu4();
+				int defOffset = br.readu4();
+				inst.ls.defbyte = labels[offset + defOffset];
 				inst.ls.npairs = br.readu4();
 
 				for (u4 i = 0; i < inst.ls.npairs; i++) {
@@ -453,9 +476,10 @@ static void parseInstList(BufferReader& br, InstList& instList, Inst** labels) {
 					u4 offsetTarget = br.readu4();
 
 					inst.ls.keys.push_back(key);
-					inst.ls.targets.push_back(offsetTarget);
+					inst.ls.targets.push_back(labels[offset + offsetTarget]);
 				}
 				break;
+			}
 			case KIND_FIELD:
 				inst.field.fieldRefIndex = br.readu2();
 				break;
