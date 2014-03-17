@@ -41,7 +41,8 @@ static unsigned char* Allocate(jvmtiEnv* jvmti, jlong size) {
 	return memptr;
 }
 
-static string outFileName(const char* className, const char* ext, const char* prefix = "$") {
+static string outFileName(const char* className, const char* ext,
+		const char* prefix = "$") {
 	string fileName = className;
 
 	for (u4 i = 0; i < fileName.length(); i++) {
@@ -122,12 +123,12 @@ void FrInstrClassFileObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 		return inst;
 	};
 
-	for (Method* m : cf.methods) {
+	for (Method& m : cf.methods) {
 
-		string name = cf.getUtf8(m->nameIndex);
+		string name = cf.getUtf8(m.nameIndex);
 
-		if (m->hasCode() && name == "<init>") {
-			InstList& instList = m->instList();
+		if (m.hasCode() && name == "<init>") {
+			InstList& instList = m.instList();
 
 			instList.push_front(invoke(OPCODE_invokestatic, allocMethodRef));
 			instList.push_front(new Inst(OPCODE_aload_0));
@@ -164,9 +165,9 @@ void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 		return inst;
 	};
 
-	for (Method* m : cf.methods) {
-		if (m->hasCode()) {
-			InstList& instList = m->instList();
+	for (Method& m : cf.methods) {
+		if (m.hasCode()) {
+			InstList& instList = m.instList();
 
 			InstList code;
 
@@ -203,7 +204,8 @@ void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 				}
 			}
 
-			m->instList(code);
+			m.instList(code);
+			m.codeAttr()->maxStack += 3;
 		}
 	}
 
@@ -213,33 +215,17 @@ void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 void FrInstrClassFileANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
-	if (string(className) != "frheapagent/HeapTest") {
-		//	return;
-	}
+//	if (string(className) != "frheapagent/HeapTest") {
+//		return;
+//	}
 
 	ClassFile cf(data, len);
+//	Version v = cf.getVersion();
+	//fprintf(stderr, "%d.%d ", v.getMajor(), v.getMinor());
 
-//	ofstream os(outFileName(className, "disasm").c_str());
-//	os << cf;
-
-	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
-
-	u2 enterMethodRef = cf.addMethodRef(classIndex, "enterMethod",
-			"(Ljava/lang/String;Ljava/lang/String;)V");
-
-	u2 aNewArrayEventRef = cf.addMethodRef(classIndex, "aNewArrayEvent",
-			"(ILjava/lang/Object;Ljava/lang/String;)V");
-
-	u2 thisClassStringIndex = cf.addStringFromClass(cf.thisClassIndex);
-
-	auto bipush = [&](u1 value) {
-		Inst* inst = new Inst();
-		inst->kind = KIND_BIPUSH;
-		inst->opcode = OPCODE_bipush;
-		inst->push.value = value;
-
-		return inst;
-	};
+	ConstPool::Index classIndex = cf.addClass("frproxy/FrInstrProxy");
+	ConstPool::Index aNewArrayEventRef = cf.addMethodRef(classIndex,
+			"aNewArrayEvent", "(ILjava/lang/Object;Ljava/lang/String;)V");
 
 	auto invoke = [&] (Opcode opcode, u2 index) {
 		Inst* inst = new Inst();
@@ -259,65 +245,55 @@ void FrInstrClassFileANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 		return inst;
 	};
 
-	for (Method* m : cf.methods) {
-		if (m->hasCode()) {
-			InstList& instList = m->instList();
+	for (Method& m : cf.methods) {
+		if (m.hasCode()) {
+			InstList& instList = m.instList();
 
-			InstList code;
+			InstList& code = instList;
 
-//			u2 methodNameStringIndex = cf.addString(m->nameIndex);
-//			code.push_back(ldc(OPCODE_ldc, thisClassStringIndex));
-//			code.push_back(ldc(OPCODE_ldc, methodNameStringIndex));
-//			code.push_back(invoke(OPCODE_invokestatic, enterMethodRef));
-
-			for (Inst* instp : instList) {
-				Inst& inst = *instp;
+//			for (Inst* instp : instList) {
+			for (auto instp = instList.begin(); instp != instList.end();
+					instp++) {
+				Inst& inst = **instp;
 
 				if (inst.opcode == OPCODE_anewarray) {
-					//fprintf(stderr, "%s\n", className);
-
 					// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
 					// OPERAND STACK: ... | count: int -> ... | arrayref
 
 					// STACK: ... | count
 
-					code.push_back(new Inst(OPCODE_dup));
+					code.insert(instp, new Inst(OPCODE_dup));
 					// STACK: ... | count | count
 
-					code.push_back(&inst); // anewarray
+					instp++;
+					//code.push_back(&inst); // anewarray
 					// STACK: ... | count | arrayref
 
-					code.push_back(new Inst(OPCODE_dup_x1));
+					code.insert(instp, new Inst(OPCODE_dup_x1));
 					// STACK: ... | arrayref | count | arrayref
 
-					u2 classNameIndex = cf.getClazzNameIndex(
+					ConstPool::Index strIndex = cf.addStringFromClass(
 							inst.type.classIndex);
 
-					ConstPoolEntry e;
-					e.tag = CONSTANT_String;
-					e.s.string_index = classNameIndex;
-					u2 strIndex = cf.addSingle(e);
-
-					code.push_back(ldc(OPCODE_ldc_w, strIndex));
+					code.insert(instp, ldc(OPCODE_ldc_w, strIndex));
 					// STACK: ... | arrayref | count | arrayref | classname
 
-					code.push_back(
+					instp = code.insert(instp,
 							invoke(OPCODE_invokestatic, aNewArrayEventRef));
 					// STACK: ... | arrayref
 
 				} else {
-					code.push_back(&inst);
+					//code.push_back(&inst);
 				}
 			}
 
-			m->instList(code);
+			m.codeAttr()->maxStack += 3;
+
+			//	m.instList(code);
 		}
 	}
 
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
-
-//	ofstream os2(outFileName(className, "instr.disasm").c_str());
-//	os2 << cf;
 }
 
 void FrInstrClassFileMain(jvmtiEnv* jvmti, unsigned char* data, int len,
@@ -338,15 +314,15 @@ void FrInstrClassFileMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 		return inst;
 	};
 
-	for (Method* m : cf.methods) {
+	for (Method& m : cf.methods) {
 
-		string name = cf.getUtf8(m->nameIndex);
-		string desc = cf.getUtf8(m->descIndex);
+		string name = cf.getUtf8(m.nameIndex);
+		string desc = cf.getUtf8(m.descIndex);
 
-		if (m->hasCode() && name == "main" && (m->accessFlags & ACC_STATIC)
-				&& (m->accessFlags & ACC_PUBLIC)
+		if (m.hasCode() && name == "main" && (m.accessFlags & ACC_STATIC)
+				&& (m.accessFlags & ACC_PUBLIC)
 				&& desc == "([Ljava/lang/String;)V") {
-			InstList& instList = m->instList();
+			InstList& instList = m.instList();
 
 			instList.push_front(
 					invoke(OPCODE_invokestatic, enterMainMethodRef));

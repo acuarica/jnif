@@ -15,6 +15,26 @@ public class BasicClass {
 		return c;
 	}
 
+	private static void sort() {
+		int n = 50;
+
+		int[] array = new int[n];
+
+		for (int i = 0; i < n; i++) {
+			array[i] = i * 2;
+		}
+
+		for (int c = 0; c < n - 1; c++) {
+			for (int d = 0; d < n - c - 1; d++) {
+				if (array[d] > array[d + 1]) {
+					int swap = array[d];
+					array[d] = array[d + 1];
+					array[d + 1] = swap;
+				}
+			}
+		}
+	}
+
 	public static void main(String[] args) throws IOException {
 		int[] as = new int[34];
 

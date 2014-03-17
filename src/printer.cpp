@@ -81,8 +81,7 @@ struct ClassPrinter {
 					<< interIndex << endl;
 		}
 
-		for (Field* fp : cf.fields) {
-			Field& f = *fp;
+		for (Field& f : cf.fields) {
 			line() << "Field " << cf.getUtf8(f.nameIndex) << ": "
 					<< AccessFlagsPrinter(f.accessFlags) << " #" << f.nameIndex
 					<< ": " << cf.getUtf8(f.descIndex) << "#" << f.descIndex
@@ -91,9 +90,7 @@ struct ClassPrinter {
 			printAttrs(f);
 		}
 
-		for (Method* mp : cf.methods) {
-			Method& m = *mp;
-
+		for (Method& m : cf.methods) {
 			line() << "+Method " << AccessFlagsPrinter(m.accessFlags) << " "
 					<< cf.getUtf8(m.nameIndex) << ": " << " #" << m.nameIndex
 					<< ": " << cf.getUtf8(m.descIndex) << "#" << m.descIndex
@@ -240,6 +237,8 @@ struct ClassPrinter {
 					<< e.catchtype << endl;
 		}
 
+		printAttrs(c.attrs);
+
 		dec();
 	}
 
@@ -385,8 +384,108 @@ struct ClassPrinter {
 		}
 	}
 
-	void printSmt(SmtAttr&) {
+	void printSmt(SmtAttr& smt) {
 
+		auto parseTs =
+				[&](std::vector<SmtAttr::VerType> locs) {
+					line(2) << "["<<locs.size()<<"] ";
+					for (u1 i = 0; i < locs.size(); i++) {
+						SmtAttr::VerType& vt = locs[i];
+						u1 tag = vt.tag;
+
+						switch (tag) {
+							case ITEM_Top:
+							os << "top" << " | ";
+							break;
+							case ITEM_Integer:
+							os << "integer" << " | ";
+							break;
+							case ITEM_Float :
+							os << "float" << " | ";
+							break;
+							case ITEM_Long :
+							os << "long" << " | ";
+							break;
+							case ITEM_Double:
+							os << "double" << " | ";
+							break;
+							case ITEM_Null :
+							os << "null" << " | ";
+							break;
+							case ITEM_UninitializedThis :
+							os << "UninitializedThis" << " | ";
+							break;
+							case ITEM_Object:
+							os << "Object: cpindex = " << vt.Object_variable_info.cpool_index << " | ";
+							break;
+							case ITEM_Uninitialized: {
+								os << "Uninitialized: offset = " << vt.Uninitialized_variable_info.offset << " | ";
+								break;
+							}
+						}
+
+					}
+
+					os << endl;
+				};
+
+		line() << "Stack Map Table: " << endl;
+
+		int toff = -1;
+		for (SmtAttr::Entry& e : smt.entries) {
+			line(1) << "frame type (" << e.frameType << ") ";
+
+			u1 frameType = e.frameType;
+
+			if (0 <= frameType && frameType <= 63) {
+				toff += frameType + 1;
+				os << "offset = " << toff << " ";
+
+				os << "same frame" << endl;
+			} else if (64 <= frameType && frameType <= 127) {
+				toff += frameType - 64 + 1;
+				os << "offset = " << toff << " ";
+
+				os << "sameLocals_1_stack_item_frame. ";
+				parseTs(e.sameLocals_1_stack_item_frame.stack);
+			} else if (frameType == 247) {
+				toff += e.same_locals_1_stack_item_frame_extended.offset_delta
+						+ 1;
+				os << "offset = " << toff << " ";
+
+				os << "same_locals_1_stack_item_frame_extended. ";
+				os << e.same_locals_1_stack_item_frame_extended.offset_delta
+						<< endl;
+				parseTs(e.same_locals_1_stack_item_frame_extended.stack);
+			} else if (248 <= frameType && frameType <= 250) {
+				toff += e.chop_frame.offset_delta + 1;
+				os << "offset = " << toff << " ";
+
+				os << "chop_frame, ";
+				os << "offset_delta = " << e.chop_frame.offset_delta << endl;
+			} else if (frameType == 251) {
+				toff += e.same_frame_extended.offset_delta + 1;
+				os << "offset = " << toff << " ";
+
+				os << "same_frame_extended. ";
+				os << e.same_frame_extended.offset_delta << endl;
+			} else if (252 <= frameType && frameType <= 254) {
+				toff += e.append_frame.offset_delta + 1;
+				os << "offset = " << toff << " ";
+
+				os << "append_frame, ";
+				os << "offset_delta = " << e.append_frame.offset_delta << endl;
+				parseTs(e.append_frame.locals);
+			} else if (frameType == 255) {
+				toff += e.full_frame.offset_delta + 1;
+				os << "offset = " << toff << " ";
+
+				os << "full_frame. ";
+				os << e.full_frame.offset_delta << endl;
+				parseTs(e.full_frame.locals);
+				parseTs(e.full_frame.stack);
+			}
+		}
 	}
 
 private:

@@ -541,12 +541,29 @@ struct Inst {
 /**
  * Represents the bytecode of a method.
  */
-typedef std::list<Inst*> InstList;
+//typedef std::list<Inst*> InstList;
+class InstList: public std::list<Inst*> {
+public:
+	~InstList() {
+		for (Inst* inst : *this) {
+			delete inst;
+		}
+	}
+};
 
 /**
  *
  */
 struct ConstPoolEntry {
+
+	ConstPoolEntry() {
+
+	}
+
+	ConstPoolEntry(ConstTag tag) :
+			tag(tag) {
+	}
+
 	ConstTag tag;
 	union {
 		struct {
@@ -618,35 +635,67 @@ public:
 	 */
 	ConstPool();
 
-	u2 addSingle(const ConstPoolEntry& entry);
-
 	/**
+	 * Adds a class reference to the constant pool.
 	 *
+	 * @param classNameIndex the utf8 index that represents the name of this
+	 * class item.
+	 * @returns the index of the newly created reference to a class item.
 	 */
 	Index addClass(Index classNameIndex);
 
 	/**
+	 * Adds a class reference to the constant pool by class name. This method
+	 * adds also the utf8 entry corresponding the class name itself.
 	 *
+	 * @param className name of the class to reference.
+	 * @returns the index of the newly created reference to a class item.
 	 */
 	Index addClass(const char* className);
 
-	Index addString(Index utf8Index) {
-		ConstPoolEntry e;
-		e.tag = CONSTANT_String;
-		e.s.string_index = utf8Index;
-		u2 strIndex = addSingle(e);
+	/**
+	 * Adds a field reference.
+	 */
+	Index addFieldRef(u2 classIndex, u2 nameAndTypeIndex);
 
-		return strIndex;
-	}
+	/**
+	 * Adds a non-interface method reference.
+	 */
+	Index addMethodRef(u2 classIndex, u2 nameAndTypeIndex);
 
-	Index addStringFromClass(Index classIndex) {
-		u2 classNameIndex = getClazzNameIndex(classIndex);
-		u2 classNameStringIndex = addString(classNameIndex);
+	/**
+	 * Adds a non-interface methods by method name and descriptor.
+	 */
+	Index addMethodRef(u2 classIndex, const char* name, const char* desc);
 
-		return classNameStringIndex;
-	}
+	/**
+	 * Adds an interface method reference.
+	 */
+	Index addInterMethodRef(u2 classIndex, u2 nameAndTypeIndex);
 
+	/**
+	 *
+	 */
+	Index addString(Index utf8Index);
+
+	/**
+	 *
+	 */
+	Index addStringFromClass(Index classIndex);
+
+	/**
+	 * Adds an integer.
+	 *
+	 * @param value the integer value.
+	 */
 	Index addInteger(u4 value);
+
+	/**
+	 * Adds a float.
+	 *
+	 * @param value the float value.
+	 */
+	Index addFloat(u4 value);
 
 	/**
 	 *
@@ -658,15 +707,39 @@ public:
 	 */
 	Index addDouble(double value);
 
+	/**
+	 *
+	 */
+	Index addNameAndType(u2 nameIndex, u2 descIndex);
+
+	/**
+	 *
+	 */
 	Index addUtf8(const char* str);
 
-	Index addNameAndType(u2 nameIndex, u2 descIndex);
-	Index addMethodRef(u2 classIndex, u2 nameAndTypeIndex);
-	Index addMethodRef(u2 classIndex, const char* name, const char* desc);
+	/**
+	 *
+	 */
+	Index addUtf8(const char* str, int len);
 
-	u2 getClazzNameIndex(int classIndex) const;
+	/**
+	 *
+	 */
+	Index addMethodHandle(u1 refKind, u2 refIndex);
+
+	/**
+	 *
+	 */
+	Index addMethodType(u2 descIndex);
+
+	/**
+	 *
+	 */
+	Index addInvokeDynamic(u2 bootstrapMethodAttrIndex, u2 nameAndTypeIndex);
 
 	bool isClass(Index index);
+
+	u2 getClassNameIndex(int classIndex) const;
 
 	long getLong(Index index) const {
 		return _getEntry(index, CONSTANT_Long, "CONSTANT_Long")->l.value;
@@ -686,6 +759,9 @@ public:
 	vector<ConstPoolEntry> entries;
 
 private:
+
+	Index _addSingle(const ConstPoolEntry& entry);
+
 	Index _addDoubleEntry(const ConstPoolEntry& entry);
 
 	const ConstPoolEntry* _getEntry(Index index) const;
@@ -721,6 +797,12 @@ struct Attrs {
 	Attrs(Attrs&&) = default;
 
 	inline Attrs() {
+	}
+
+	~Attrs() {
+		for (Attr* attr : attrs) {
+			delete attr;
+		}
 	}
 
 	inline Attr* add(Attr* attr) {
@@ -802,12 +884,74 @@ struct LntAttr: Attr {
 /**
  *
  */
-struct SmtAttr: Attr {
+class SmtAttr: public Attr {
+public:
 
 	SmtAttr(u2 nameIndex) :
 			Attr(ATTR_SMT, nameIndex) {
 	}
 
+	class VerType {
+	public:
+
+		int tag;
+
+		union {
+			struct {
+			} Top_variable_info;
+			struct {
+			} Integer_variable_info;
+			struct {
+			} Float_variable_info;
+			struct {
+			} Long_variable_info;
+			struct {
+			} Double_variable_info;
+			struct {
+			} Null_variable_info;
+			struct {
+			} UninitializedThis_variable_info;
+			struct {
+				short cpool_index;
+			} Object_variable_info;
+			struct {
+				short offset;
+			} Uninitialized_variable_info;
+		};
+	};
+
+	class Entry {
+	public:
+
+		int frameType;
+
+		struct {
+		} sameFrame;
+		struct {
+			std::vector<VerType> stack; // [1]
+		} sameLocals_1_stack_item_frame;
+		struct {
+			short offset_delta;
+			std::vector<VerType> stack; // [1]
+		} same_locals_1_stack_item_frame_extended;
+		struct {
+			short offset_delta;
+		} chop_frame;
+		struct {
+			short offset_delta;
+		} same_frame_extended;
+		struct {
+			short offset_delta;
+			std::vector<VerType> locals; // frameType - 251
+		} append_frame;
+		struct {
+			short offset_delta;
+			std::vector<VerType> locals;
+			std::vector<VerType> stack;
+		} full_frame;
+	};
+
+	std::vector<Entry> entries;
 };
 
 /**
@@ -869,10 +1013,12 @@ struct SourceFileAttr: Attr {
 /**
  *
  */
-struct Member: Attrs {
-	friend struct Members;
-	Member(const Member&) = delete;
+class Member: public Attrs {
+public:
 
+	friend class Field;
+	friend class Method;
+	Member(const Member&) = delete;
 	Member(Member&&) = default;
 
 	AccessFlags accessFlags;
@@ -894,6 +1040,16 @@ struct Member: Attrs {
 		return false;
 	}
 
+	CodeAttr* codeAttr() {
+		for (Attr* attr : attrs) {
+			if (attr->kind == ATTR_CODE) {
+				return (CodeAttr*) attr;
+			}
+		}
+
+		return nullptr;
+	}
+
 	InstList& instList();
 
 	void instList(const InstList& newcode);
@@ -905,47 +1061,26 @@ private:
 	}
 };
 
-typedef Member Field;
-typedef Member Method;
+/**
+ *
+ */
+class Field: public Member {
+public:
+
+	Field(AccessFlags accessFlags, u2 nameIndex, u2 descIndex) :
+			Member(accessFlags, nameIndex, descIndex) {
+	}
+
+};
 
 /**
- * Represents a collection of members within a class file, i.e.,
- * fields or methods.
+ *
  */
-struct Members {
-
-	friend class ClassFile;
-	Members(const Members&) = delete;
-
-	inline Member& add(AccessFlags accessFlags, u2 nameIndex, u2 descIndex) {
-		Member* member = new Member(accessFlags, nameIndex, descIndex);
-		members.push_back(member);
-		//members.emplace(member);
-		return *members.back();
+class Method: public Member {
+public:
+	Method(AccessFlags accessFlags, u2 nameIndex, u2 descIndex) :
+			Member(accessFlags, nameIndex, descIndex) {
 	}
-
-	inline u2 size() const {
-		return members.size();
-	}
-
-	inline Member& operator[](u2 index) {
-		return *members[index];
-	}
-
-	vector<Member*>::iterator begin() {
-		return members.begin();
-	}
-
-	vector<Member*>::iterator end() {
-		return members.end();
-	}
-
-private:
-
-	inline Members() {
-	}
-
-	vector<Member*> members;
 };
 
 /**
@@ -1008,9 +1143,12 @@ public:
 	void setVersion(Version version);
 
 	/**
-	 *
+	 * Gets the class name of this class file.
 	 */
 	const char* getClassName() const;
+
+	Field& addField(AccessFlags accessFlags, u2 nameIndex, u2 descIndex);
+	Method& addMethod(AccessFlags accessFlags, u2 nameIndex, u2 descIndex);
 
 	/**
 	 * Computes the size in bytes of this class file of the in-memory
@@ -1042,9 +1180,9 @@ public:
 	u2 accessFlags;
 	u2 thisClassIndex;
 	u2 superClassIndex;
-	vector<u2> interfaces;
-	Members fields;
-	Members methods;
+	std::vector<u2> interfaces;
+	std::vector<Field> fields;
+	std::vector<Method> methods;
 
 private:
 

@@ -11,6 +11,12 @@
 #define _STREXPAND(token) #token
 #define _STR(token) _STREXPAND(token)
 
+static inline int nothing(){
+	return 0;
+}
+
+#define NO_LOG
+
 #ifndef NO_LOG
 //#define _LOG(levelmsg, format, ...) \
 //	fprintf(stderr, levelmsg " | %4d %8ld | " format " | %s @ " __FILE__ ":" _STR(__LINE__) "\n", \
@@ -19,7 +25,7 @@
 	fprintf(stderr, levelmsg " | %4d %8ld | " format "\n", \
 			tldget()->threadId, tldget()->threadTag, ##__VA_ARGS__)
 #else
-#define _LOG(levelmsg, threadId, format, ...)
+#define _LOG(levelmsg, format, ...) nothing()
 #endif
 
 #define FATAL(format, ...)	_LOG("FATAL", format, ##__VA_ARGS__)

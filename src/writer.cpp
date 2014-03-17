@@ -116,21 +116,6 @@ public:
 	}
 
 	void writeClassFile(ClassFile& cf) {
-		auto writeMembers = [this](Members& members) {
-			bw.writeu2(members.size());
-
-			for (u4 i = 0; i < members.size(); i++) {
-
-				Member& mi = members[i];
-
-				bw.writeu2(mi.accessFlags);
-				bw.writeu2(mi.nameIndex);
-				bw.writeu2(mi.descIndex);
-
-				writeAttrs(mi);
-			}
-		};
-
 		bw.writeu4(CLASSFILE_MAGIC);
 
 		Version version = cf.getVersion();
@@ -151,8 +136,24 @@ public:
 			bw.writeu2(interIndex);
 		}
 
-		writeMembers(cf.fields);
-		writeMembers(cf.methods);
+		bw.writeu2(cf.fields.size());
+		for (Field& f : cf.fields) {
+			bw.writeu2(f.accessFlags);
+			bw.writeu2(f.nameIndex);
+			bw.writeu2(f.descIndex);
+
+			writeAttrs(f);
+		}
+
+		bw.writeu2(cf.methods.size());
+		for (Method& m : cf.methods) {
+			bw.writeu2(m.accessFlags);
+			bw.writeu2(m.nameIndex);
+			bw.writeu2(m.descIndex);
+
+			writeAttrs(m);
+		}
+
 		writeAttrs(cf);
 	}
 
@@ -451,8 +452,6 @@ public:
 
 			bw.writeu2(attr.nameIndex);
 			bw.writeu4(attr.len);
-
-			//u1* pos = bw.pos();
 
 			u4 offset = bw.getOffset();
 

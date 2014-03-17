@@ -27,27 +27,27 @@ struct JavaFile {
 extern u1 jnif_BasicClass_class[];
 extern int jnif_BasicClass_class_len;
 
-extern u1 jnif_ExceptionClass_class[];
-extern int jnif_ExceptionClass_class_len;
-
-extern u1 jnif_TestProxy_class[];
-extern int jnif_TestProxy_class_len;
-
-extern u1 classes_java_io_OutputStreamWriter_class[];
-extern int classes_java_io_OutputStreamWriter_class_len;
+//extern u1 jnif_ExceptionClass_class[];
+//extern int jnif_ExceptionClass_class_len;
+//
+//extern u1 jnif_TestProxy_class[];
+//extern int jnif_TestProxy_class_len;
+//
+//extern u1 classes_java_io_OutputStreamWriter_class[];
+//extern int classes_java_io_OutputStreamWriter_class_len;
 
 JavaFile tests[] = {
 
 { jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass" },
 
-{ jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
-		"jnif/ExceptionClass" },
+//{ jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
+//		"jnif/ExceptionClass" },
 
-{ jnif_TestProxy_class, jnif_TestProxy_class_len, "jnif/TestProxy" },
+//{ jnif_TestProxy_class, jnif_TestProxy_class_len, "jnif/TestProxy" },
 
-{ classes_java_io_OutputStreamWriter_class,
-		classes_java_io_OutputStreamWriter_class_len,
-		"java/io/OutputStreamWriter" },
+//{ classes_java_io_OutputStreamWriter_class,
+//		classes_java_io_OutputStreamWriter_class_len,
+//		"java/io/OutputStreamWriter" },
 
 };
 
@@ -113,9 +113,9 @@ static void testNopAdderInstrSize() {
 		ClassFile cf(jf.data, jf.len);
 
 		int methodsWithCode = 0;
-		for (Method* m: cf.methods) {
-			if (m->hasCode()) {
-				InstList& instList = m->instList();
+		for (Method& m: cf.methods) {
+			if (m.hasCode()) {
+				InstList& instList = m.instList();
 
 				Inst* nop = new Inst(OPCODE_nop);
 
@@ -147,9 +147,9 @@ static void testNopAdderInstr() {
 		ClassFile cf(jf.data, jf.len);
 
 		int methodsWithCode = 0;
-		for (Method* m: cf.methods) {
-			if (m->hasCode()) {
-				InstList& instList = m->instList();
+		for (Method& m: cf.methods) {
+			if (m.hasCode()) {
+				InstList& instList = m.instList();
 
 				Inst* nop = new Inst(OPCODE_nop);
 				instList.push_front(nop);
@@ -209,41 +209,41 @@ int main(int, const char*[]) {
 	RUN(testNopAdderInstrSize);
 	RUN(testNopAdderInstr);
 
-	PSIZEOF(int);
-	PSIZEOF(float);
-	PSIZEOF(long);
-	PSIZEOF(double);
-
-	PSIZEOF(int*);
-	PSIZEOF(float*);
-	PSIZEOF(long*);
-	PSIZEOF(double*);
-
-	PSIZEOF(std::string);
-
+//	PSIZEOF(int);
+//	PSIZEOF(float);
+//	PSIZEOF(long);
+//	PSIZEOF(double);
+//
+//	PSIZEOF(int*);
+//	PSIZEOF(float*);
+//	PSIZEOF(long*);
+//	PSIZEOF(double*);
+//
+//	PSIZEOF(std::string);
+//
 	PSIZEOF(ConstPool);
 	PSIZEOF(ConstPoolEntry);
-
-	PSIZEOF(Opcode);
-	PSIZEOF(OpKind);
-
-	PSIZEOF(vector<Inst>);
-	PSIZEOF(Inst);
-	PSIZEOF(InstList);
-
-	Inst inst;
-
-	PSIZEOF(inst.ts.def);
-	PSIZEOF(inst.ts.low);
-	PSIZEOF(inst.ts.high);
-	PSIZEOF(inst.ts.targets);
-	PSIZEOF(inst.ts);
-	PSIZEOF(inst.ls);
-	PSIZEOF(inst.label);
-	PSIZEOF(inst.wide);
-	PSIZEOF(inst.jump);
-	PSIZEOF(inst.invoke);
-	PSIZEOF(inst.invokeinterface);
+//
+//	PSIZEOF(Opcode);
+//	PSIZEOF(OpKind);
+//
+//	PSIZEOF(vector<Inst>);
+//	PSIZEOF(Inst);
+//	PSIZEOF(InstList);
+//
+//	Inst inst;
+//
+//	PSIZEOF(inst.ts.def);
+//	PSIZEOF(inst.ts.low);
+//	PSIZEOF(inst.ts.high);
+//	PSIZEOF(inst.ts.targets);
+//	PSIZEOF(inst.ts);
+//	PSIZEOF(inst.ls);
+//	PSIZEOF(inst.label);
+//	PSIZEOF(inst.wide);
+//	PSIZEOF(inst.jump);
+//	PSIZEOF(inst.invoke);
+//	PSIZEOF(inst.invokeinterface);
 
 	return 0;
 }

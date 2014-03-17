@@ -31,7 +31,7 @@ public:
 	}
 
 	u1 readu1() {
-		ASSERT(off + 1 <= len, "Invalid read");
+		CHECK(off + 1 <= len, "Invalid read");
 
 		u1 result = buffer[off];
 
@@ -41,7 +41,7 @@ public:
 	}
 
 	u2 readu2() {
-		ASSERT(off + 2 <= len, "Invalid read 2");
+		CHECK(off + 2 <= len, "Invalid read 2");
 
 		u1 r0 = buffer[off + 0];
 		u1 r1 = buffer[off + 1];
@@ -54,7 +54,7 @@ public:
 	}
 
 	u4 readu4() {
-		ASSERT(off + 4 <= len, "Invalid read 4");
+		CHECK(off + 4 <= len, "Invalid read 4");
 
 		u1 r0 = buffer[off + 0];
 		u1 r1 = buffer[off + 1];
@@ -69,7 +69,7 @@ public:
 	}
 
 	void skip(int count) {
-		ASSERT(off + count <= len, "Invalid read count: %d (offset: %d)", count,
+		CHECK(off + count <= len, "Invalid read count: %d (offset: %d)", count,
 				off);
 
 		off += count;
@@ -90,7 +90,7 @@ public:
 private:
 
 	void end() {
-		ASSERT(off == len,
+		CHECK(off == len,
 				"End of buffer not reached while expecting end of buffer");
 	}
 
@@ -154,35 +154,47 @@ static void parseConstPool(BufferReader& br, ConstPool& cp) {
 	u2 count = br.readu2();
 
 	for (int i = 1; i < count; i++) {
-		ConstPoolEntry e;
-		ConstPoolEntry* entry = &e;
+		u1 tag = br.readu1();
 
-		entry->tag = (ConstTag) br.readu1();
-
-		switch (entry->tag) {
-			case CONSTANT_Class:
-				entry->clazz.name_index = br.readu2();
-				cp.addSingle(e);
+		switch (tag) {
+			case CONSTANT_Class: {
+				u2 classNameIndex = br.readu2();
+				cp.addClass(classNameIndex);
 				break;
-			case CONSTANT_Fieldref:
-			case CONSTANT_Methodref:
-			case CONSTANT_InterfaceMethodref:
-				entry->memberref.class_index = br.readu2();
-				entry->memberref.name_and_type_index = br.readu2();
-				cp.addSingle(e);
+			}
+			case CONSTANT_Fieldref: {
+				u2 classIndex = br.readu2();
+				u2 nameAndTypeIndex = br.readu2();
+				cp.addFieldRef(classIndex, nameAndTypeIndex);
 				break;
-			case CONSTANT_String:
-				entry->s.string_index = br.readu2();
-				cp.addSingle(e);
+			}
+			case CONSTANT_Methodref: {
+				u2 classIndex = br.readu2();
+				u2 nameAndTypeIndex = br.readu2();
+				cp.addMethodRef(classIndex, nameAndTypeIndex);
 				break;
-			case CONSTANT_Integer:
-				entry->i.value = br.readu4();
-				cp.addSingle(e);
+			}
+			case CONSTANT_InterfaceMethodref: {
+				u2 classIndex = br.readu2();
+				u2 nameAndTypeIndex = br.readu2();
+				cp.addInterMethodRef(classIndex, nameAndTypeIndex);
 				break;
-			case CONSTANT_Float:
-				entry->f.value = br.readu4();
-				cp.addSingle(e);
+			}
+			case CONSTANT_String: {
+				u2 utf8Index = br.readu2();
+				cp.addString(utf8Index);
 				break;
+			}
+			case CONSTANT_Integer: {
+				u4 value = br.readu4();
+				cp.addInteger(value);
+				break;
+			}
+			case CONSTANT_Float: {
+				u4 value = br.readu4();
+				cp.addFloat(value);
+				break;
+			}
 			case CONSTANT_Long: {
 				u4 high = br.readu4();
 				u4 low = br.readu4();
@@ -199,35 +211,37 @@ static void parseConstPool(BufferReader& br, ConstPool& cp) {
 				i++;
 				break;
 			}
-			case CONSTANT_NameAndType:
-				entry->nameandtype.name_index = br.readu2();
-				entry->nameandtype.descriptor_index = br.readu2();
-				cp.addSingle(e);
-				break;
-			case CONSTANT_Utf8: {
-				u2 len = br.readu2();
-				std::string str((const char*) br.pos(), len);
-				entry->utf8.str = str;
-				br.skip(len);
-				cp.addSingle(e);
+			case CONSTANT_NameAndType: {
+				u2 nameIndex = br.readu2();
+				u2 descIndex = br.readu2();
+				cp.addNameAndType(nameIndex, descIndex);
 				break;
 			}
-			case CONSTANT_MethodHandle:
-				entry->methodhandle.reference_kind = br.readu1();
-				entry->methodhandle.reference_index = br.readu2();
-				cp.addSingle(e);
+			case CONSTANT_Utf8: {
+				u2 len = br.readu2();
+				cp.addUtf8((const char*) br.pos(), len);
+				br.skip(len);
 				break;
-			case CONSTANT_MethodType:
-				entry->methodtype.descriptor_index = br.readu2();
-				cp.addSingle(e);
+			}
+			case CONSTANT_MethodHandle: {
+				u1 refKind = br.readu1();
+				u2 refIndex = br.readu2();
+				cp.addMethodHandle(refKind, refIndex);
 				break;
-			case CONSTANT_InvokeDynamic:
-				entry->invokedynamic.bootstrap_method_attr_index = br.readu2();
-				entry->invokedynamic.name_and_type_index = br.readu2();
-				cp.addSingle(e);
+			}
+			case CONSTANT_MethodType: {
+				u2 descIndex = br.readu2();
+				cp.addMethodType(descIndex);
 				break;
+			}
+			case CONSTANT_InvokeDynamic: {
+				u2 bootstrapMethodAttrIndex = br.readu2();
+				u2 nameAndTypeIndex = br.readu2();
+				cp.addInvokeDynamic(bootstrapMethodAttrIndex, nameAndTypeIndex);
+				break;
+			}
 			default:
-				EXCEPTION("Error while reading tag: %i", entry->tag);
+				EXCEPTION("Error while reading tag: %i", tag);
 		}
 	}
 }
@@ -422,14 +436,14 @@ static void parseInstList(BufferReader& br, InstList& instList, Inst** labels) {
 				//inst.jump.label = targetOffset;
 
 				short labelpos = offset + targetOffset;
-				ASSERT(labelpos >= 0, "invalid target for jump: must be >= 0");
-				ASSERT(labelpos < br.size(), "invalid target for jump");
+				CHECK(labelpos >= 0, "invalid target for jump: must be >= 0");
+				CHECK(labelpos < br.size(), "invalid target for jump");
 
 				//	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
 
 				inst.jump.label2 = labels[offset + targetOffset];
 
-				ASSERT(inst.jump.label2 != nullptr, "invalid label");
+				CHECK(inst.jump.label2 != nullptr, "invalid label");
 				break;
 			}
 			case KIND_TABLESWITCH: {
@@ -541,7 +555,7 @@ static Attr* parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 	br.skip(ca->codeLen);
 
 	Inst** labels = new Inst*[codeLen];
-	for (int i = 0; i < codeLen; i++) {
+	for (u4 i = 0; i < codeLen; i++) {
 		labels[i] = nullptr;
 	}
 
@@ -589,6 +603,8 @@ static Attr* parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 
 	as.add(ca);
 
+	delete [] labels;
+
 	return ca;
 }
 
@@ -631,74 +647,96 @@ static Attr* parseLvt(BufferReader& br, Attrs& as, u2 nameIndex) {
 
 	return lvt;
 }
-//
-//static void parseSmt(BufferReader& br, Attrs& as, ConstPool& cp, u2 nameIndex) {
-//
-//	auto parseTs = [&](int count) {
-//		for (u1 i = 0; i < count; i++) {
-//			u1 tag = br.readu1();
-//			switch (tag) {
-//				case ITEM_Top:
-//				break;
-//				case ITEM_Integer:
-//				break;
-//				case ITEM_Float :
-//
-//				break;
-//				case ITEM_Long :
-//
-//				break;
-//				case ITEM_Double:
-//				break;
-//				case ITEM_Null :
-//				break;
-//				case ITEM_UninitializedThis :break;
-//				case ITEM_Object: {
-//					u2 cpIndex = br.readu2();
-//					break;
-//				}
-//				case ITEM_Uninitialized: {
-//					u2 offset= br.readu2();
-//					break;
-//				}
-//			}
-//		}
-//	};
-//
-//	u2 numberOfEntries = br.readu2();
-//
-//	for (u2 i = 0; i < numberOfEntries; i++) {
-//		u1 frameType = br.readu1();
-//
-//		if (0 <= frameType && frameType <= 63) {
-//			//	v.visitFrameSame(frameType);
-//		} else if (64 <= frameType && frameType <= 127) {
-//			parseTs(1);
-//			//v.visitFrameSameLocals1StackItem(frameType);
-//		} else if (frameType == 247) {
-//			u2 offsetDelta = br.readu2();
-//			parseTs(1);
-//		} else if (248 <= frameType && frameType <= 250) {
-//			u2 offsetDelta = br.readu2();
-//
-//		} else if (frameType == 251) {
-//			u2 offsetDelta = br.readu2();
-//
-//		} else if (252 <= frameType && frameType <= 254) {
-//			u2 offsetDelta = br.readu2();
-//			parseTs(frameType - 251);
-//
-//		} else if (frameType == 255) {
-//			u2 offsetDelta = br.readu2();
-//			u2 numberOfLocals = br.readu2();
-//			parseTs(numberOfLocals);
-//			u2 numberOfStackItems = br.readu2();
-//			parseTs(numberOfStackItems);
-//		}
-//	}
-//
-//	//as.add(new SourceFileAttr(nameIndex, 2, sourceFileIndex));
-//}
+
+static Attr* parseSmt(BufferReader& br, Attrs& as, ConstPool&, u2 nameIndex) {
+
+	SmtAttr* smt = new SmtAttr(nameIndex);
+
+	auto parseTs = [&](int count, std::vector<SmtAttr::VerType>& locs) {
+		for (u1 i = 0; i < count; i++) {
+			u1 tag = br.readu1();
+
+			SmtAttr::VerType vt;
+			vt.tag = tag;
+
+			switch (tag) {
+				case ITEM_Top:
+				break;
+				case ITEM_Integer:
+				break;
+				case ITEM_Float :
+				break;
+				case ITEM_Long :
+				break;
+				case ITEM_Double:
+				break;
+				case ITEM_Null :
+				break;
+				case ITEM_UninitializedThis :
+				break;
+				case ITEM_Object: {
+					u2 cpIndex = br.readu2();
+					vt.Object_variable_info.cpool_index = cpIndex;
+					break;
+				}
+				case ITEM_Uninitialized: {
+					u2 offset= br.readu2();
+					vt.Uninitialized_variable_info.offset = offset;
+					break;
+				}
+			}
+
+			locs.push_back(vt);
+		}
+	};
+
+	u2 numberOfEntries = br.readu2();
+
+	for (u2 i = 0; i < numberOfEntries; i++) {
+		u1 frameType = br.readu1();
+
+		SmtAttr::Entry e;
+		e.frameType = frameType;
+
+		if (0 <= frameType && frameType <= 63) {
+			//	v.visitFrameSame(frameType);
+		} else if (64 <= frameType && frameType <= 127) {
+			parseTs(1, e.sameLocals_1_stack_item_frame.stack);
+			//v.visitFrameSameLocals1StackItem(frameType);
+		} else if (frameType == 247) {
+			u2 offsetDelta = br.readu2();
+			e.same_locals_1_stack_item_frame_extended.offset_delta =
+					offsetDelta;
+			parseTs(1, e.same_locals_1_stack_item_frame_extended.stack);
+		} else if (248 <= frameType && frameType <= 250) {
+			u2 offsetDelta = br.readu2();
+			e.chop_frame.offset_delta = offsetDelta;
+		} else if (frameType == 251) {
+			u2 offsetDelta = br.readu2();
+			e.same_frame_extended.offset_delta = offsetDelta;
+		} else if (252 <= frameType && frameType <= 254) {
+			u2 offsetDelta = br.readu2();
+			e.append_frame.offset_delta = offsetDelta;
+			parseTs(frameType - 251, e.append_frame.locals);
+
+		} else if (frameType == 255) {
+			u2 offsetDelta = br.readu2();
+			e.full_frame.offset_delta = offsetDelta;
+
+			u2 numberOfLocals = br.readu2();
+			parseTs(numberOfLocals, e.full_frame.locals);
+
+			u2 numberOfStackItems = br.readu2();
+			parseTs(numberOfStackItems, e.full_frame.stack);
+		}
+
+		smt->entries.push_back(e);
+	}
+
+	as.add(smt);
+
+	return smt;
+}
 
 static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as) {
 	u2 attrCount = br.readu2();
@@ -710,31 +748,33 @@ static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as) {
 
 		string attrName = cp.getUtf8(nameIndex);
 
-		Attr* a;
-		if (attrName == "SourceFile") {
-			BufferReader br(data, len);
-			a = parseSourceFile(br, as, nameIndex);
-		} else if (attrName == "Exceptions") {
-			BufferReader br(data, len);
-			a = parseExceptions(br, as, nameIndex);
-		} else if (attrName == "Code") {
-			BufferReader br(data, len);
-			a = parseCode(br, as, cp, nameIndex);
-		} else if (attrName == "LineNumberTable") {
-			BufferReader br(data, len);
-			a = parseLnt(br, as, nameIndex);
-		} else if (attrName == "LocalVariableTable") {
-			BufferReader br(data, len);
-			a = parseLvt(br, as, nameIndex);
-//		} else if (attrName == "StackMapTable") {
-//			BufferReader br(data, len);
-//			parseSmt(br, as, cp, nameIndex);
-		} else {
-			a = new UnknownAttr(nameIndex, len, data);
-			as.add(a);
-		}
+		if (attrName != "StackMapTable") {
+			Attr* a;
+			if (attrName == "SourceFile") {
+				BufferReader br(data, len);
+				a = parseSourceFile(br, as, nameIndex);
+			} else if (attrName == "Exceptions") {
+				BufferReader br(data, len);
+				a = parseExceptions(br, as, nameIndex);
+			} else if (attrName == "Code") {
+				BufferReader br(data, len);
+				a = parseCode(br, as, cp, nameIndex);
+			} else if (attrName == "LineNumberTable") {
+				BufferReader br(data, len);
+				a = parseLnt(br, as, nameIndex);
+			} else if (attrName == "LocalVariableTable") {
+				BufferReader br(data, len);
+				a = parseLvt(br, as, nameIndex);
+				//} else if (attrName == "StackMapTable") {
+				//BufferReader br(data, len);
+				//a = parseSmt(br, as, cp, nameIndex);
+			} else {
+				a = new UnknownAttr(nameIndex, len, data);
+				as.add(a);
+			}
 
-		a->len = len;
+			a->len = len;
+		}
 
 		br.skip(len);
 	}
@@ -742,10 +782,6 @@ static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as) {
 
 void parseClassFile(const u1* fileImage, const int fileImageLen,
 		ClassFile& cf) {
-
-	//printf("%d\n",OPKIND[OPCODE_anewarray]);
-	//exit(4);
-
 	BufferReader br(fileImage, fileImageLen);
 
 	u4 magic = br.readu4();
@@ -770,20 +806,27 @@ void parseClassFile(const u1* fileImage, const int fileImageLen,
 		cf.interfaces.push_back(interIndex);
 	}
 
-	auto mm = [&](Members& ms) {
-		u2 memberCount = br.readu2();
-		for (int i = 0; i < memberCount; i++) {
-			AccessFlags accessFlags = (AccessFlags)br.readu2();
-			u2 nameIndex = br.readu2();
-			u2 descIndex = br.readu2();
+	u2 fieldCount = br.readu2();
+	for (int i = 0; i < fieldCount; i++) {
+		AccessFlags accessFlags = (AccessFlags) br.readu2();
+		u2 nameIndex = br.readu2();
+		u2 descIndex = br.readu2();
 
-			Member& m = ms.add(accessFlags, nameIndex, descIndex);
+		Field& f = cf.addField(accessFlags, nameIndex, descIndex);
 
-			parseAttrs(br, cf, m);
-		}};
+		parseAttrs(br, cf, f);
+	}
 
-	mm(cf.fields);
-	mm(cf.methods);
+	u2 methodCount = br.readu2();
+	for (int i = 0; i < methodCount; i++) {
+		AccessFlags accessFlags = (AccessFlags) br.readu2();
+		u2 nameIndex = br.readu2();
+		u2 descIndex = br.readu2();
+
+		Method& m = cf.addMethod(accessFlags, nameIndex, descIndex);
+
+		parseAttrs(br, cf, m);
+	}
 
 	parseAttrs(br, cf, cf);
 }
