@@ -8,10 +8,10 @@
 
 #include "frlog.h"
 
-static inline int _exception(int unused) __attribute__((noreturn));
+static inline int _exception(int code) __attribute__((noreturn));
 
-static inline int _exception(int unused) {
-	exit(1);
+static inline int _exception(int code) {
+	exit(code);
 }
 
 /**

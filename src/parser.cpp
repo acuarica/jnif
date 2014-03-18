@@ -15,23 +15,32 @@ public:
 	 * at least of size @ref len.
 	 *
 	 * @param buffer The memory buffer to read from.
-	 * @param len The size of the buffer in bytes.
+	 * @param size The size of the buffer in bytes.
 	 *
 	 */
-	BufferReader(const u1* buffer, int len) :
-			buffer(buffer), len(len), off(0) {
+	BufferReader(const u1* buffer, u4 size) :
+			buffer(buffer), _size(size), off(0) {
 	}
 
+	/**
+	 * When this buffer reader finishes, it will check whether the end has
+	 * been reached, i.e., all bytes from buffer were read or skipped.
+	 * In other words, when the buffer reader br is destroyed, the condition
+	 *
+	 * @f[ br.offset() = br.size() @f]
+	 *
+	 * must hold.
+	 */
 	~BufferReader() {
 		end();
 	}
 
 	int size() const {
-		return len;
+		return _size;
 	}
 
 	u1 readu1() {
-		CHECK(off + 1 <= len, "Invalid read");
+		CHECK(off + 1 <= _size, "Invalid read");
 
 		u1 result = buffer[off];
 
@@ -41,7 +50,7 @@ public:
 	}
 
 	u2 readu2() {
-		CHECK(off + 2 <= len, "Invalid read 2");
+		CHECK(off + 2 <= _size, "Invalid read 2");
 
 		u1 r0 = buffer[off + 0];
 		u1 r1 = buffer[off + 1];
@@ -54,7 +63,7 @@ public:
 	}
 
 	u4 readu4() {
-		CHECK(off + 4 <= len, "Invalid read 4");
+		CHECK(off + 4 <= _size, "Invalid read 4");
 
 		u1 r0 = buffer[off + 0];
 		u1 r1 = buffer[off + 1];
@@ -69,8 +78,8 @@ public:
 	}
 
 	void skip(int count) {
-		CHECK(off + count <= len, "Invalid read count: %d (offset: %d)", count,
-				off);
+		CHECK(off + count <= _size, "Invalid read count: %d (offset: %d)",
+				count, off);
 
 		off += count;
 	}
@@ -84,18 +93,18 @@ public:
 	}
 
 	bool eor() const {
-		return off == len;
+		return off == _size;
 	}
 
 private:
 
 	void end() {
-		CHECK(off == len,
+		CHECK(off == _size,
 				"End of buffer not reached while expecting end of buffer");
 	}
 
 	const u1 * const buffer;
-	const int len;
+	const int _size;
 	int off;
 };
 
@@ -603,7 +612,7 @@ static Attr* parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 
 	as.add(ca);
 
-	delete [] labels;
+	delete[] labels;
 
 	return ca;
 }

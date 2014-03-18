@@ -631,7 +631,8 @@ public:
 	static const Index NULLENTRY = 0;
 
 	/**
-	 *
+	 * Initializes an empty constant pool. The valid indices start from 1
+	 * inclusive, because the null entry (index 0) is added by default.
 	 */
 	ConstPool();
 
@@ -737,37 +738,70 @@ public:
 	 */
 	Index addInvokeDynamic(u2 bootstrapMethodAttrIndex, u2 nameAndTypeIndex);
 
+	/**
+	 * Checks whether the requested index holds a class reference.
+	 */
 	bool isClass(Index index);
 
+	/**
+	 *
+	 */
 	u2 getClassNameIndex(int classIndex) const;
 
-	long getLong(Index index) const {
-		return _getEntry(index, CONSTANT_Long, "CONSTANT_Long")->l.value;
-	}
+	/**
+	 *
+	 */
+	void getFieldRef(u2 index, string* clazzName, string* name,
+			string* desc) const;
 
-	double getDouble(Index index) const {
-		return _getEntry(index, CONSTANT_Double, "CONSTANT_Double")->d.value;
-	}
+	/**
+	 *
+	 */
+	void getMethodRef(u2 index, string* clazzName, string* name,
+			string* desc) const;
 
-	const char* getUtf8(int utf8Index) const;
-	const char* getClazzName(int classIndex) const;
+	/**
+	 *
+	 */
+	void getInterMethodRef(u2 index, string* clazzName, string* name,
+			string* desc) const;
+
+	/**
+	 *
+	 */
+	long getLong(Index index) const;
+
+	/**
+	 *
+	 */
+	double getDouble(Index index) const;
+
+	/**
+	 *
+	 */
+	const char* getUtf8(Index utf8Index) const;
+
+	/**
+	 *
+	 */
+	const char* getClassName(Index classIndex) const;
+
+	/**
+	 *
+	 */
 	void getNameAndType(int index, string* name, string* desc) const;
-	void getMemberRef(int index, string* clazzName, string* name, string* desc,
-			u1 tag) const;
 
 	// TODO: To be private!
 	vector<ConstPoolEntry> entries;
 
 private:
-
 	Index _addSingle(const ConstPoolEntry& entry);
-
 	Index _addDoubleEntry(const ConstPoolEntry& entry);
-
 	const ConstPoolEntry* _getEntry(Index index) const;
 	const ConstPoolEntry* _getEntry(Index index, u1 tag,
 			const char* message) const;
-
+	void _getMemberRef(int index, string* clazzName, string* name, string* desc,
+			u1 tag) const;
 };
 
 /**
@@ -1145,9 +1179,16 @@ public:
 	/**
 	 * Gets the class name of this class file.
 	 */
-	const char* getClassName() const;
+	const char* getThisClassName() const;
 
+	/**
+	 *
+	 */
 	Field& addField(AccessFlags accessFlags, u2 nameIndex, u2 descIndex);
+
+	/**
+	 *
+	 */
 	Method& addMethod(AccessFlags accessFlags, u2 nameIndex, u2 descIndex);
 
 	/**

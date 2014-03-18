@@ -161,13 +161,50 @@ bool ConstPool::isClass(Index index) {
 	return entry->tag == CONSTANT_Class;
 }
 
-const char* ConstPool::getUtf8(int utf8Index) const {
+u2 ConstPool::getClassNameIndex(int classIndex) const {
+	const u2 NULLENTRY = 0;
+
+	const ConstPoolEntry* entry = _getEntry(classIndex, CONSTANT_Class,
+			"CONSTANT_Class");
+
+	u2 classNameIndex = entry->clazz.name_index;
+
+	ASSERT(classNameIndex != NULLENTRY, "invalid class name index: %d",
+			classNameIndex);
+
+	return classNameIndex;
+}
+
+void ConstPool::getFieldRef(u2 index, string* clazzName, string* name,
+		string* desc) const {
+	_getMemberRef(index, clazzName, name, desc, CONSTANT_Fieldref);
+}
+
+void ConstPool::getMethodRef(u2 index, string* clazzName, string* name,
+		string* desc) const {
+	_getMemberRef(index, clazzName, name, desc, CONSTANT_Methodref);
+}
+
+void ConstPool::getInterMethodRef(u2 index, string* clazzName, string* name,
+		string* desc) const {
+	_getMemberRef(index, clazzName, name, desc, CONSTANT_InterfaceMethodref);
+}
+
+long ConstPool::getLong(Index index) const {
+	return _getEntry(index, CONSTANT_Long, "CONSTANT_Long")->l.value;
+}
+
+double ConstPool::getDouble(Index index) const {
+	return _getEntry(index, CONSTANT_Double, "CONSTANT_Double")->d.value;
+}
+
+const char* ConstPool::getUtf8(u2 utf8Index) const {
 	const ConstPoolEntry* entry = _getEntry(utf8Index, CONSTANT_Utf8, "Utf8");
 
 	return entry->utf8.str.c_str();
 }
 
-const char* ConstPool::getClazzName(int classIndex) const {
+const char* ConstPool::getClassName(u2 classIndex) const {
 	u2 classNameIndex = getClassNameIndex(classIndex);
 
 	return getUtf8(classNameIndex);
@@ -182,17 +219,6 @@ void ConstPool::getNameAndType(int index, string* name, string* desc) const {
 
 	*name = getUtf8(nameIndex);
 	*desc = getUtf8(descIndex);
-}
-
-void ConstPool::getMemberRef(int index, std::string* clazzName,
-		std::string* name, std::string* desc, u1 tag) const {
-	const ConstPoolEntry* entry = _getEntry(index, tag, "memberref");
-
-	u2 classIndex = entry->memberref.class_index;
-	u2 nameAndTypeIndex = entry->memberref.name_and_type_index;
-
-	*clazzName = getClazzName(classIndex);
-	getNameAndType(nameAndTypeIndex, name, desc);
 }
 
 ConstPool::Index ConstPool::_addSingle(const ConstPoolEntry& entry) {
@@ -231,18 +257,15 @@ const ConstPoolEntry* ConstPool::_getEntry(Index index, u1 tag,
 	return entry;
 }
 
-u2 ConstPool::getClassNameIndex(int classIndex) const {
-	const u2 NULLENTRY = 0;
+void ConstPool::_getMemberRef(int index, std::string* clazzName,
+		std::string* name, std::string* desc, u1 tag) const {
+	const ConstPoolEntry* entry = _getEntry(index, tag, "memberref");
 
-	const ConstPoolEntry* entry = _getEntry(classIndex, CONSTANT_Class,
-			"CONSTANT_Class");
+	u2 classIndex = entry->memberref.class_index;
+	u2 nameAndTypeIndex = entry->memberref.name_and_type_index;
 
-	u2 classNameIndex = entry->clazz.name_index;
-
-	ASSERT(classNameIndex != NULLENTRY, "invalid class name index: %d",
-			classNameIndex);
-
-	return classNameIndex;
+	*clazzName = getClassName(classIndex);
+	getNameAndType(nameAndTypeIndex, name, desc);
 }
 
 InstList& Member::instList() {
@@ -299,8 +322,8 @@ void ClassFile::setVersion(Version version) {
 	_version = version;
 }
 
-const char* ClassFile::getClassName() const {
-	return getClazzName(thisClassIndex);
+const char* ClassFile::getThisClassName() const {
+	return getClassName(thisClassIndex);
 }
 
 Field& ClassFile::addField(AccessFlags accessFlags, u2 nameIndex,

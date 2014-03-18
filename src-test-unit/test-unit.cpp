@@ -49,7 +49,7 @@ JavaFile tests[] = {
 //		classes_java_io_OutputStreamWriter_class_len,
 //		"java/io/OutputStreamWriter" },
 
-};
+		};
 
 template<typename T>
 void apply(T instr) {
@@ -122,24 +122,24 @@ static void testNopAdderInstrSize() {
 				// If there is a tableswitch or a lookupswitch instruction
 				// bytes added to the instruction flow must be a multiple
 				// of four to keep the padding in this instructions.
-				instList.push_front(nop);
-				instList.push_front(nop);
-				instList.push_front(nop);
-				instList.push_front(nop);
+			instList.push_front(nop);
+			instList.push_front(nop);
+			instList.push_front(nop);
+			instList.push_front(nop);
 
-				methodsWithCode++;
-			}
+			methodsWithCode++;
 		}
+	}
 
-		int diff = methodsWithCode * 4;
+	int diff = methodsWithCode * 4;
 
-		int newlen = cf.computeSize();
+	int newlen = cf.computeSize();
 
-		ASSERT(jf.len + diff == newlen,
-				"Expected class file len %d, actual was %d, on class %s",
-				jf.len, newlen, jf.name);
+	ASSERT(jf.len + diff == newlen,
+			"Expected class file len %d, actual was %d, on class %s",
+			jf.len, newlen, jf.name);
 
-	});
+});
 }
 
 static void testNopAdderInstr() {
@@ -201,7 +201,20 @@ static void testNopAdderInstr() {
 
 #define PSIZEOF(typeExpr) fprintf(stderr, "sizeof(" #typeExpr "): %ld\n", sizeof(typeExpr))
 
+template<typename T>
+void hola(T t) {
+	t.m();
+}
+
 int main(int, const char*[]) {
+
+	struct Lala {
+		void m() {
+		}
+	} q;
+
+	hola(q);
+
 	RUN(testPrinter);
 	RUN(testEmptyClassFilePrinter);
 	RUN(testIdentityComputeSize);

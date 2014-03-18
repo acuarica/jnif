@@ -11,7 +11,7 @@
 #define _STREXPAND(token) #token
 #define _STR(token) _STREXPAND(token)
 
-static inline int nothing(){
+static inline int nothing() {
 	return 0;
 }
 

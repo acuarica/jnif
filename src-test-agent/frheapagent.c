@@ -143,15 +143,15 @@ static void JNICALL VMDeathEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 }
 
 static void ParseOptions(const char* options) {
-	extern InstrFunc FrInstrClassFileEmpty;
-	extern InstrFunc FrInstrClassFileDump;
-	extern InstrFunc FrInstrClassFilePrint;
-	extern InstrFunc FrInstrClassFileIdentity;
-	extern InstrFunc FrInstrClassFileObjectInit;
-	extern InstrFunc FrInstrClassFileNewArray;
-	extern InstrFunc FrInstrClassFileANewArray;
-	extern InstrFunc FrInstrClassFileMain;
-	extern InstrFunc FrInstrClassFileClientServer;
+	extern InstrFunc InstrClassEmpty;
+	extern InstrFunc InstrClassDump;
+	extern InstrFunc InstrClassPrint;
+	extern InstrFunc InstrClassIdentity;
+	extern InstrFunc InstrClassObjectInit;
+	extern InstrFunc InstrClassNewArray;
+	extern InstrFunc InstrClassANewArray;
+	extern InstrFunc InstrClassMain;
+	extern InstrFunc InstrClassClientServer;
 
 	typedef struct {
 		InstrFunc* instrFunc;
@@ -160,21 +160,21 @@ static void ParseOptions(const char* options) {
 
 	InstrFuncEntry instrFuncTable[] = {
 
-	{ &FrInstrClassFileEmpty, "Empty" },
+	{ &InstrClassEmpty, "Empty" },
 
-	{ &FrInstrClassFileDump, "Dump" },
+	{ &InstrClassDump, "Dump" },
 
-	{ &FrInstrClassFilePrint, "Print" },
+	{ &InstrClassPrint, "Print" },
 
-	{ &FrInstrClassFileIdentity, "Identity" },
+	{ &InstrClassIdentity, "Identity" },
 
-	{ &FrInstrClassFileObjectInit, "ObjectInit" },
+	{ &InstrClassObjectInit, "ObjectInit" },
 
-	{ &FrInstrClassFileNewArray, "NewArray" },
+	{ &InstrClassNewArray, "NewArray" },
 
-	{ &FrInstrClassFileANewArray, "ANewArray" },
+	{ &InstrClassANewArray, "ANewArray" },
 
-	{ &FrInstrClassFileMain, "Main" },
+	{ &InstrClassMain, "Main" },
 
 	};
 

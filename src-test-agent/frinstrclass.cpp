@@ -57,27 +57,26 @@ static string outFileName(const char* className, const char* ext,
 
 extern "C" {
 
-void FrInstrClassFileEmpty(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata) {
+void InstrClassEmpty(jvmtiEnv*, u1*, int, const char*, int*, u1**) {
 }
 
-void FrInstrClassFileDump(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata) {
+void InstrClassDump(jvmtiEnv*, u1* data, int len, const char* className, int*,
+		u1**) {
 
 	ofstream os(outFileName(className, "class").c_str(), ios::binary);
 	os.write((char*) data, len);
 }
 
-void FrInstrClassFilePrint(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata) {
+void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
+		u1**) {
 	ClassFile cf(data, len);
 
 	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
 }
 
-void FrInstrClassFileIdentity(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlenp, unsigned char** newdatap) {
+void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
+		const char* className, int* newlenp, u1** newdatap) {
 	ClassFile cf(data, len);
 
 	int newlen = cf.computeSize();
@@ -100,7 +99,7 @@ void FrInstrClassFileIdentity(jvmtiEnv* jvmti, unsigned char* data, int len,
 	*newdatap = newdata;
 }
 
-void FrInstrClassFileObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
+void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
 	if (string(className) != "java/lang/Object") {
@@ -138,7 +137,7 @@ void FrInstrClassFileObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
 
-void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
+void InstrClassNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 	ClassFile cf(data, len);
 
@@ -212,7 +211,7 @@ void FrInstrClassFileNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
 
-void FrInstrClassFileANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
+void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
 //	if (string(className) != "frheapagent/HeapTest") {
@@ -296,7 +295,7 @@ void FrInstrClassFileANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
 
-void FrInstrClassFileMain(jvmtiEnv* jvmti, unsigned char* data, int len,
+void InstrClassMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata) {
 
 	ClassFile cf(data, len);

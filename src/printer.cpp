@@ -68,16 +68,16 @@ struct ClassPrinter {
 		printConstPool(cf);
 
 		line() << "accessFlags: " << cf.accessFlags << endl;
-		line() << "thisClassIndex: " << cf.getClassName() << "#"
+		line() << "thisClassIndex: " << cf.getThisClassName() << "#"
 				<< cf.thisClassIndex << endl;
 
 		if (cf.superClassIndex != 0) {
-			line() << "superClassIndex: " << cf.getClazzName(cf.superClassIndex)
+			line() << "superClassIndex: " << cf.getClassName(cf.superClassIndex)
 					<< "#" << cf.superClassIndex << endl;
 		}
 
 		for (u2 interIndex : cf.interfaces) {
-			line() << "Interface '" << cf.getClazzName(interIndex) << "'#"
+			line() << "Interface '" << cf.getClassName(interIndex) << "'#"
 					<< interIndex << endl;
 		}
 
@@ -110,13 +110,31 @@ struct ClassPrinter {
 
 			switch (entry->tag) {
 				case CONSTANT_Class:
-					os << cp.getClazzName(i) << "#" << entry->clazz.name_index;
+					os << cp.getClassName(i) << "#" << entry->clazz.name_index;
 					break;
-				case CONSTANT_Fieldref:
-				case CONSTANT_Methodref:
+				case CONSTANT_Fieldref: {
+					string clazzName, name, desc;
+					cp.getFieldRef(i, &clazzName, &name, &desc);
+
+					os << clazzName << "#" << entry->memberref.class_index
+							<< "." << name << ":" << desc << "#"
+							<< entry->memberref.name_and_type_index;
+					break;
+				}
+
+				case CONSTANT_Methodref: {
+					string clazzName, name, desc;
+					cp.getMethodRef(i, &clazzName, &name, &desc);
+
+					os << clazzName << "#" << entry->memberref.class_index
+							<< "." << name << ":" << desc << "#"
+							<< entry->memberref.name_and_type_index;
+					break;
+				}
+
 				case CONSTANT_InterfaceMethodref: {
 					string clazzName, name, desc;
-					cp.getMemberRef(i, &clazzName, &name, &desc, entry->tag);
+					cp.getInterMethodRef(i, &clazzName, &name, &desc);
 
 					os << clazzName << "#" << entry->memberref.class_index
 							<< "." << name << ":" << desc << "#"
@@ -302,8 +320,8 @@ struct ClassPrinter {
 				break;
 			case KIND_FIELD: {
 				string className, name, desc;
-				cf.getMemberRef(inst.field.fieldRefIndex, &className, &name,
-						&desc, CONSTANT_Fieldref);
+				cf.getFieldRef(inst.field.fieldRefIndex, &className, &name,
+						&desc);
 
 				instos << className << name << desc << endl;
 
@@ -311,8 +329,8 @@ struct ClassPrinter {
 			}
 			case KIND_INVOKE: {
 				string className, name, desc;
-				cf.getMemberRef(inst.invoke.methodRefIndex, &className, &name,
-						&desc, CONSTANT_Methodref);
+				cf.getMethodRef(inst.invoke.methodRefIndex, &className, &name,
+						&desc);
 
 				instos << className << "." << name << ": " << desc << endl;
 
@@ -320,8 +338,8 @@ struct ClassPrinter {
 			}
 			case KIND_INVOKEINTERFACE: {
 				string className, name, desc;
-				cf.getMemberRef(inst.invokeinterface.interMethodRefIndex,
-						&className, &name, &desc, CONSTANT_InterfaceMethodref);
+				cf.getInterMethodRef(inst.invokeinterface.interMethodRefIndex,
+						&className, &name, &desc);
 
 				instos << className << "." << name << ": " << desc << "("
 						<< inst.invokeinterface.count << ")" << endl;
@@ -331,7 +349,7 @@ struct ClassPrinter {
 				EXCEPTION("FrParseInvokeDynamicInstr not implemented");
 				break;
 			case KIND_TYPE: {
-				string className = cf.getClazzName(inst.type.classIndex);
+				string className = cf.getClassName(inst.type.classIndex);
 
 				instos << className << endl;
 
@@ -342,7 +360,7 @@ struct ClassPrinter {
 
 				break;
 			case KIND_MULTIARRAY: {
-				string className = cf.getClazzName(inst.multiarray.classIndex);
+				string className = cf.getClassName(inst.multiarray.classIndex);
 
 				instos << className << " " << inst.multiarray.dims << endl;
 
@@ -361,7 +379,7 @@ struct ClassPrinter {
 		for (u4 i = 0; i < attr.es.size(); i++) {
 			u2 exceptionIndex = attr.es[i];
 
-			const string& exceptionName = cf.getClazzName(exceptionIndex);
+			const string& exceptionName = cf.getClassName(exceptionIndex);
 
 			line() << "  Exceptions entry: '" << exceptionName << "'#"
 					<< exceptionIndex << endl;
