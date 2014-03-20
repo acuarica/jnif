@@ -77,4 +77,22 @@ public class BasicClass {
 
 		System.out.println("HeapTest: " + as[as.length - 1]);
 	}
+
+	private static void m1(int a) {
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+
+		if (a == 0) {
+			System.out.print("Z");
+		}
+	}
 }

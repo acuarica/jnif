@@ -157,9 +157,166 @@ OpKind OPKIND[256] = { KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO,
 		KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, KIND_RESERVED,
 		KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, };
 
+class ConstPoolParser {
+public:
+
+	template<typename TReader, typename TConstPoolVisitor>
+	void parse(TReader& br, TConstPoolVisitor& cpv) {
+		u2 count = br.readu2();
+
+		for (int i = 1; i < count; i++) {
+			u1 tag = br.readu1();
+
+			switch (tag) {
+				case CONSTANT_Class: {
+					u2 classNameIndex = br.readu2();
+					cpv.visitClass(classNameIndex);
+					break;
+				}
+				case CONSTANT_Fieldref: {
+					u2 classIndex = br.readu2();
+					u2 nameAndTypeIndex = br.readu2();
+					cpv.visitFieldRef(classIndex, nameAndTypeIndex);
+					break;
+				}
+				case CONSTANT_Methodref: {
+					u2 classIndex = br.readu2();
+					u2 nameAndTypeIndex = br.readu2();
+					cpv.visitMethodRef(classIndex, nameAndTypeIndex);
+					break;
+				}
+				case CONSTANT_InterfaceMethodref: {
+					u2 classIndex = br.readu2();
+					u2 nameAndTypeIndex = br.readu2();
+					cpv.visitInterMethodRef(classIndex, nameAndTypeIndex);
+					break;
+				}
+				case CONSTANT_String: {
+					u2 utf8Index = br.readu2();
+					cpv.visitString(utf8Index);
+					break;
+				}
+				case CONSTANT_Integer: {
+					u4 value = br.readu4();
+					cpv.visitInteger(value);
+					break;
+				}
+				case CONSTANT_Float: {
+					u4 value = br.readu4();
+					cpv.visitFloat(value);
+					break;
+				}
+				case CONSTANT_Long: {
+					u4 high = br.readu4();
+					u4 low = br.readu4();
+					cpv.visitLong(((long) high << 32) + low);
+					i++;
+					break;
+				}
+				case CONSTANT_Double: {
+					u4 high = br.readu4();
+					u4 low = br.readu4();
+					long lvalue = ((long) high << 32) + low;
+					double dvalue = *(double*) &lvalue;
+					cpv.visitDouble(dvalue);
+					i++;
+					break;
+				}
+				case CONSTANT_NameAndType: {
+					u2 nameIndex = br.readu2();
+					u2 descIndex = br.readu2();
+					cpv.visitNameAndType(nameIndex, descIndex);
+					break;
+				}
+				case CONSTANT_Utf8: {
+					u2 len = br.readu2();
+					cpv.visitUtf8((const char*) br.pos(), len);
+					br.skip(len);
+					break;
+				}
+				case CONSTANT_MethodHandle: {
+					u1 refKind = br.readu1();
+					u2 refIndex = br.readu2();
+					cpv.visitMethodHandle(refKind, refIndex);
+					break;
+				}
+				case CONSTANT_MethodType: {
+					u2 descIndex = br.readu2();
+					cpv.visitMethodType(descIndex);
+					break;
+				}
+				case CONSTANT_InvokeDynamic: {
+					u2 bootstrapMethodAttrIndex = br.readu2();
+					u2 nameAndTypeIndex = br.readu2();
+					cpv.visitInvokeDynamic(bootstrapMethodAttrIndex,
+							nameAndTypeIndex);
+					break;
+				}
+				default:
+					EXCEPTION("Error while reading tag: %i", tag);
+			}
+		}
+	}
+
+};
+
 static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as);
 
 static void parseConstPool(BufferReader& br, ConstPool& cp) {
+
+	struct ConstPoolVisitor {
+		ConstPool& cp;
+		ConstPoolVisitor(ConstPool& cp) :
+				cp(cp) {
+		}
+		void visitClass(u2 classNameIndex) {
+			cp.addClass(classNameIndex);
+		}
+		void visitFieldRef(u2 classIndex, u2 nameAndTypeIndex) {
+			cp.addFieldRef(classIndex, nameAndTypeIndex);
+		}
+		void visitMethodRef(u2 classIndex, u2 nameAndTypeIndex) {
+			cp.addMethodRef(classIndex, nameAndTypeIndex);
+		}
+		void visitInterMethodRef(u2 classIndex, u2 nameAndTypeIndex) {
+			cp.addInterMethodRef(classIndex, nameAndTypeIndex);
+		}
+		void visitString(u2 utf8Index) {
+			cp.addString(utf8Index);
+		}
+		void visitInteger(u4 value) {
+			cp.addInteger(value);
+		}
+		void visitFloat(u4 value) {
+			cp.addFloat(value);
+		}
+		void visitLong(long value) {
+			cp.addLong(value);
+		}
+		void visitDouble(double value) {
+			cp.addDouble(value);
+		}
+		void visitNameAndType(u2 nameIndex, u2 descIndex) {
+			cp.addNameAndType(nameIndex, descIndex);
+		}
+		void visitUtf8(const char* str, u2 len) {
+			cp.addUtf8(str, len);
+		}
+		void visitMethodHandle(u1 refKind, u2 refIndex) {
+			cp.addMethodHandle(refKind, refIndex);
+		}
+		void visitMethodType(u2 descIndex) {
+			cp.addMethodType(descIndex);
+		}
+		void visitInvokeDynamic(u2 bootstrapAttrIndex, u2 nameAndTypeIndex) {
+			cp.addInvokeDynamic(bootstrapAttrIndex, nameAndTypeIndex);
+		}
+	} cpv(cp);
+
+	ConstPoolParser().parse(br, cpv);
+
+	return;
+
 	u2 count = br.readu2();
 
 	for (int i = 1; i < count; i++) {
@@ -701,6 +858,8 @@ static Attr* parseSmt(BufferReader& br, Attrs& as, ConstPool&, u2 nameIndex) {
 
 	u2 numberOfEntries = br.readu2();
 
+	int toff = -1;
+
 	for (u2 i = 0; i < numberOfEntries; i++) {
 		u1 frameType = br.readu1();
 
@@ -709,25 +868,35 @@ static Attr* parseSmt(BufferReader& br, Attrs& as, ConstPool&, u2 nameIndex) {
 
 		if (0 <= frameType && frameType <= 63) {
 			//	v.visitFrameSame(frameType);
+			toff += frameType;
 		} else if (64 <= frameType && frameType <= 127) {
 			parseTs(1, e.sameLocals_1_stack_item_frame.stack);
 			//v.visitFrameSameLocals1StackItem(frameType);
+
+			toff += frameType - 64;
 		} else if (frameType == 247) {
 			u2 offsetDelta = br.readu2();
 			e.same_locals_1_stack_item_frame_extended.offset_delta =
 					offsetDelta;
+
+			toff += e.same_locals_1_stack_item_frame_extended.offset_delta;
 			parseTs(1, e.same_locals_1_stack_item_frame_extended.stack);
 		} else if (248 <= frameType && frameType <= 250) {
 			u2 offsetDelta = br.readu2();
 			e.chop_frame.offset_delta = offsetDelta;
+
+			toff += e.chop_frame.offset_delta;
 		} else if (frameType == 251) {
 			u2 offsetDelta = br.readu2();
 			e.same_frame_extended.offset_delta = offsetDelta;
+
+			toff += e.same_frame_extended.offset_delta;
 		} else if (252 <= frameType && frameType <= 254) {
 			u2 offsetDelta = br.readu2();
 			e.append_frame.offset_delta = offsetDelta;
 			parseTs(frameType - 251, e.append_frame.locals);
 
+			toff += e.append_frame.offset_delta;
 		} else if (frameType == 255) {
 			u2 offsetDelta = br.readu2();
 			e.full_frame.offset_delta = offsetDelta;
@@ -737,7 +906,12 @@ static Attr* parseSmt(BufferReader& br, Attrs& as, ConstPool&, u2 nameIndex) {
 
 			u2 numberOfStackItems = br.readu2();
 			parseTs(numberOfStackItems, e.full_frame.stack);
+
+			toff += e.full_frame.offset_delta;
 		}
+
+		toff += 1;
+
 
 		smt->entries.push_back(e);
 	}
@@ -757,33 +931,33 @@ static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as) {
 
 		string attrName = cp.getUtf8(nameIndex);
 
-		if (attrName != "StackMapTable") {
-			Attr* a;
-			if (attrName == "SourceFile") {
-				BufferReader br(data, len);
-				a = parseSourceFile(br, as, nameIndex);
-			} else if (attrName == "Exceptions") {
-				BufferReader br(data, len);
-				a = parseExceptions(br, as, nameIndex);
-			} else if (attrName == "Code") {
-				BufferReader br(data, len);
-				a = parseCode(br, as, cp, nameIndex);
-			} else if (attrName == "LineNumberTable") {
-				BufferReader br(data, len);
-				a = parseLnt(br, as, nameIndex);
-			} else if (attrName == "LocalVariableTable") {
-				BufferReader br(data, len);
-				a = parseLvt(br, as, nameIndex);
-				//} else if (attrName == "StackMapTable") {
-				//BufferReader br(data, len);
-				//a = parseSmt(br, as, cp, nameIndex);
-			} else {
-				a = new UnknownAttr(nameIndex, len, data);
-				as.add(a);
-			}
-
-			a->len = len;
+		//if (attrName != "StackMapTable") {
+		Attr* a;
+		if (attrName == "SourceFile") {
+			BufferReader br(data, len);
+			a = parseSourceFile(br, as, nameIndex);
+		} else if (attrName == "Exceptions") {
+			BufferReader br(data, len);
+			a = parseExceptions(br, as, nameIndex);
+		} else if (attrName == "Code") {
+			BufferReader br(data, len);
+			a = parseCode(br, as, cp, nameIndex);
+		} else if (attrName == "LineNumberTable") {
+			BufferReader br(data, len);
+			a = parseLnt(br, as, nameIndex);
+		} else if (attrName == "LocalVariableTable") {
+			BufferReader br(data, len);
+			a = parseLvt(br, as, nameIndex);
+		} else if (attrName == "StackMapTable") {
+			BufferReader br(data, len);
+			a = parseSmt(br, as, cp, nameIndex);
+		} else {
+			a = new UnknownAttr(nameIndex, len, data);
+			as.add(a);
 		}
+
+		a->len = len;
+		//}
 
 		br.skip(len);
 	}

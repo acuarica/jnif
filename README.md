@@ -65,6 +65,9 @@ i.e., all allocations (by bytecode, reflection and native).
 - Control flow graph dynamically.
 - Object tagging/identification.
 
+
+- Compare also with an javagent(premain) made with ASM.
+
 ## 
 # Conclusions
 

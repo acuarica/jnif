@@ -470,6 +470,7 @@ struct Inst {
 	union {
 		struct {
 			u2 offset;
+			u2 deltaOffset;
 			int id;
 		} label;
 		struct {
@@ -958,6 +959,7 @@ public:
 	public:
 
 		int frameType;
+		Inst* label;
 
 		struct {
 		} sameFrame;

@@ -51,12 +51,21 @@ JavaFile tests[] = {
 
 		};
 
-template<typename T>
-void apply(T instr) {
+template<typename TFunc>
+static void apply(TFunc instr) {
 	for (const JavaFile& jf : tests) {
 		instr(jf);
 	}
 }
+
+template<typename TTestFunc>
+static void _run(TTestFunc test, const char* testName) {
+	fprintf(stderr, "Running test %s... ", testName);
+	test();
+	fprintf(stderr, "[OK]\n");
+}
+
+#define run(test) _run(test, #test);
 
 static void testEmptyClassFilePrinter() {
 	ClassFile cf("HolaQueTal", "ComoEstas");
@@ -196,53 +205,24 @@ static void testNopAdderInstr() {
 	});
 }
 
-#define RUN(test) ( fprintf(stderr, "Running test " #test "... "), \
-	test(), fprintf(stderr, "[OK]\n") )
-
 #define PSIZEOF(typeExpr) fprintf(stderr, "sizeof(" #typeExpr "): %ld\n", sizeof(typeExpr))
 
-template<typename T>
-void hola(T t) {
-	t.m();
-}
-
 int main(int, const char*[]) {
+	run(testPrinter);
+	run(testEmptyClassFilePrinter);
+	//run(testIdentityComputeSize);
+	//run(testIdentityParserWriter);
+	//run(testNopAdderInstrSize);
+	//run(testNopAdderInstr);
 
-	struct Lala {
-		void m() {
-		}
-	} q;
-
-	hola(q);
-
-	RUN(testPrinter);
-	RUN(testEmptyClassFilePrinter);
-	RUN(testIdentityComputeSize);
-	RUN(testIdentityParserWriter);
-	RUN(testNopAdderInstrSize);
-	RUN(testNopAdderInstr);
-
-//	PSIZEOF(int);
-//	PSIZEOF(float);
-//	PSIZEOF(long);
-//	PSIZEOF(double);
-//
-//	PSIZEOF(int*);
-//	PSIZEOF(float*);
-//	PSIZEOF(long*);
-//	PSIZEOF(double*);
-//
-//	PSIZEOF(std::string);
-//
+	PSIZEOF(vector<int>);
+	PSIZEOF(std::string);
 	PSIZEOF(ConstPool);
 	PSIZEOF(ConstPoolEntry);
-//
-//	PSIZEOF(Opcode);
-//	PSIZEOF(OpKind);
-//
-//	PSIZEOF(vector<Inst>);
-//	PSIZEOF(Inst);
-//	PSIZEOF(InstList);
+	PSIZEOF(Opcode);
+	PSIZEOF(OpKind);
+	PSIZEOF(Inst);
+	PSIZEOF(InstList);
 //
 //	Inst inst;
 //
