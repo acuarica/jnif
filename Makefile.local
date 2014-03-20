@@ -2,7 +2,7 @@
 # Mac OS X
 JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home
 JAVA=java
-JVMARGS=-Xverify:none
+JVMARGS=-Xverify:all
 JAVAC=javac
 
 #JOPT="-Xint -Xms$XMS -Xmx$XMX"

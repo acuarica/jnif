@@ -210,10 +210,10 @@ static void testNopAdderInstr() {
 int main(int, const char*[]) {
 	run(testPrinter);
 	run(testEmptyClassFilePrinter);
-	//run(testIdentityComputeSize);
-	//run(testIdentityParserWriter);
-	//run(testNopAdderInstrSize);
-	//run(testNopAdderInstr);
+	run(testIdentityComputeSize);
+	run(testIdentityParserWriter);
+	run(testNopAdderInstrSize);
+	run(testNopAdderInstr);
 
 	PSIZEOF(vector<int>);
 	PSIZEOF(std::string);
@@ -223,20 +223,20 @@ int main(int, const char*[]) {
 	PSIZEOF(OpKind);
 	PSIZEOF(Inst);
 	PSIZEOF(InstList);
-//
-//	Inst inst;
-//
-//	PSIZEOF(inst.ts.def);
-//	PSIZEOF(inst.ts.low);
-//	PSIZEOF(inst.ts.high);
-//	PSIZEOF(inst.ts.targets);
-//	PSIZEOF(inst.ts);
-//	PSIZEOF(inst.ls);
-//	PSIZEOF(inst.label);
-//	PSIZEOF(inst.wide);
-//	PSIZEOF(inst.jump);
-//	PSIZEOF(inst.invoke);
-//	PSIZEOF(inst.invokeinterface);
+
+	Inst inst;
+
+	PSIZEOF(inst.ts.def);
+	PSIZEOF(inst.ts.low);
+	PSIZEOF(inst.ts.high);
+	PSIZEOF(inst.ts.targets);
+	PSIZEOF(inst.ts);
+	PSIZEOF(inst.ls);
+	PSIZEOF(inst.label);
+	PSIZEOF(inst.wide);
+	PSIZEOF(inst.jump);
+	PSIZEOF(inst.invoke);
+	PSIZEOF(inst.invokeinterface);
 
 	return 0;
 }

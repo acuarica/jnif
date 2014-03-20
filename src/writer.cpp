@@ -274,7 +274,108 @@ public:
 		bw.writeu2(attr.sourceFileIndex);
 	}
 
-	void writeSmt(SmtAttr& /*attr*/) {
+	void writeSmt(SmtAttr& attr, void* args) {
+		//InstList& instList = *(InstList*) args;
+
+		auto parseTs = [&](std::vector<SmtAttr::VerType>& locs) {
+			for (u1 i = 0; i < locs.size(); i++) {
+				SmtAttr::VerType& vt = locs[i];
+
+				u1 tag = vt.tag;
+				bw.writeu1(tag);
+
+				switch (tag) {
+					case ITEM_Top:
+					break;
+					case ITEM_Integer:
+					break;
+					case ITEM_Float :
+					break;
+					case ITEM_Long :
+					break;
+					case ITEM_Double:
+					break;
+					case ITEM_Null :
+					break;
+					case ITEM_UninitializedThis :
+					break;
+					case ITEM_Object: {
+						u2 cpIndex = vt.Object_variable_info.cpool_index;
+						bw.writeu2( cpIndex);
+						break;
+					}
+					case ITEM_Uninitialized: {
+						u2 offset= vt.Uninitialized_variable_info.offset;
+						bw.writeu2( offset);
+						break;
+					}
+				}
+			}
+		};
+
+		bw.writeu2(attr.entries.size());
+
+		int toff = -1;
+
+		for (u2 i = 0; i < attr.entries.size(); i++) {
+			SmtAttr::Entry& e = attr.entries[i];
+
+			u2 offset = e.label->label.offset;
+
+			toff += 1;
+
+			u2 deltaOffset = offset - toff;
+
+			toff = offset;
+
+			u1 frameType = e.frameType;
+
+			if (0 <= frameType && frameType <= 63) {
+				if (deltaOffset <= 63) {
+					frameType = deltaOffset;
+				} else {
+					frameType = 251;
+					//EXCEPTION("not implemented 1");
+				}
+			} else if (64 <= frameType && frameType <= 127) {
+				if (deltaOffset <= 63) {
+					frameType = 64 + deltaOffset;
+				} else {
+
+					EXCEPTION("not implemented 2");
+				}
+			}
+
+			bw.writeu1(frameType);
+
+			if (0 <= frameType && frameType <= 63) {
+			} else if (64 <= frameType && frameType <= 127) {
+				parseTs(e.sameLocals_1_stack_item_frame.stack);
+			} else if (frameType == 247) {
+				u2 offsetDelta = deltaOffset;
+				bw.writeu2(offsetDelta);
+				parseTs(e.same_locals_1_stack_item_frame_extended.stack);
+			} else if (248 <= frameType && frameType <= 250) {
+				u2 offsetDelta = deltaOffset;
+				bw.writeu2(offsetDelta);
+			} else if (frameType == 251) {
+				u2 offsetDelta = deltaOffset;
+				bw.writeu2(offsetDelta);
+			} else if (252 <= frameType && frameType <= 254) {
+				u2 offsetDelta = deltaOffset;
+				bw.writeu2(offsetDelta);
+				parseTs(e.append_frame.locals);
+			} else if (frameType == 255) {
+				u2 offsetDelta = deltaOffset;
+				bw.writeu2(offsetDelta);
+				u2 numberOfLocals = e.full_frame.locals.size();
+				bw.writeu2(numberOfLocals);
+				parseTs(e.full_frame.locals);
+				u2 numberOfStackItems = e.full_frame.stack.size();
+				bw.writeu2(numberOfStackItems);
+				parseTs(e.full_frame.stack);
+			}
+		}
 	}
 
 	void writeInstList(InstList& instList) {
@@ -441,10 +542,10 @@ public:
 			bw.writeu2(e.catchtype);
 		}
 
-		writeAttrs(attr.attrs);
+		writeAttrs(attr.attrs, &attr.instList);
 	}
 
-	void writeAttrs(Attrs& attrs) {
+	void writeAttrs(Attrs& attrs, void* args = nullptr) {
 		bw.writeu2(attrs.size());
 
 		for (u4 i = 0; i < attrs.size(); i++) {
@@ -479,7 +580,7 @@ public:
 						writeLnt((LntAttr&) attr);
 						break;
 					case ATTR_SMT:
-						writeSmt((SmtAttr&) attr);
+						writeSmt((SmtAttr&) attr, args);
 						break;
 				}
 			}
