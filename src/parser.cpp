@@ -672,12 +672,12 @@ static Attr* parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 		ca->exceptions.push_back(e);
 	}
 
+	parseAttrs(br, cp, ca->attrs, labels);
+
 	{
 		BufferReader br(codeBuf, codeLen);
 		parseInstList(br, ca->instList, labels);
 	}
-
-	parseAttrs(br, cp, ca->attrs, labels);
 
 	as.add(ca);
 
@@ -761,7 +761,14 @@ static Attr* parseSmt(BufferReader& br, Attrs& as, ConstPool&, u2 nameIndex,
 					break;
 				}
 				case ITEM_Uninitialized: {
-					u2 offset= br.readu2();
+					u2 offset = br.readu2();
+
+					Inst*& label = labels[offset];
+					if (label == nullptr) {
+						label = new Inst(KIND_LABEL);
+					}
+
+					vt.Uninitialized_variable_info.label = label;
 					vt.Uninitialized_variable_info.offset = offset;
 					break;
 				}
@@ -827,8 +834,13 @@ static Attr* parseSmt(BufferReader& br, Attrs& as, ConstPool&, u2 nameIndex,
 
 		toff += 1;
 
-		Inst* label = labels[toff];
-		ASSERT(label != nullptr, "Label is null in smt");
+		Inst*& label = labels[toff];
+
+		if (label == nullptr) {
+			//fprintf(stderr, "WARNING: Label is null in smt at offset %d", toff);
+
+			label = new Inst(KIND_LABEL);
+		}
 
 		e.label = label;
 
@@ -850,33 +862,33 @@ static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as, void* args) {
 
 		string attrName = cp.getUtf8(nameIndex);
 
-		//if (attrName != "StackMapTable") {
-		Attr* a;
-		if (attrName == "SourceFile") {
-			BufferReader br(data, len);
-			a = parseSourceFile(br, as, nameIndex);
-		} else if (attrName == "Exceptions") {
-			BufferReader br(data, len);
-			a = parseExceptions(br, as, nameIndex);
-		} else if (attrName == "Code") {
-			BufferReader br(data, len);
-			a = parseCode(br, as, cp, nameIndex);
-		} else if (attrName == "LineNumberTable") {
-			BufferReader br(data, len);
-			a = parseLnt(br, as, nameIndex);
-		} else if (attrName == "LocalVariableTable") {
-			BufferReader br(data, len);
-			a = parseLvt(br, as, nameIndex);
-		} else if (attrName == "StackMapTable") {
-			BufferReader br(data, len);
-			a = parseSmt(br, as, cp, nameIndex, args);
-		} else {
-			a = new UnknownAttr(nameIndex, len, data);
-			as.add(a);
-		}
+		if (attrName != "LocalVariableTable") {
+			Attr* a;
+			if (attrName == "SourceFile") {
+				BufferReader br(data, len);
+				a = parseSourceFile(br, as, nameIndex);
+			} else if (attrName == "Exceptions") {
+				BufferReader br(data, len);
+				a = parseExceptions(br, as, nameIndex);
+			} else if (attrName == "Code") {
+				BufferReader br(data, len);
+				a = parseCode(br, as, cp, nameIndex);
+			} else if (attrName == "LineNumberTable") {
+				BufferReader br(data, len);
+				a = parseLnt(br, as, nameIndex);
+			} else if (attrName == "LocalVariableTable") {
+				BufferReader br(data, len);
+				a = parseLvt(br, as, nameIndex);
+			} else if (attrName == "StackMapTable") {
+				BufferReader br(data, len);
+				a = parseSmt(br, as, cp, nameIndex, args);
+			} else {
+				a = new UnknownAttr(nameIndex, len, data);
+				as.add(a);
+			}
 
-		a->len = len;
-		//}
+			a->len = len;
+		}
 
 		br.skip(len);
 	}
@@ -927,6 +939,7 @@ void parseClassFile(const u1* fileImage, const int fileImageLen,
 
 		Method& m = cf.addMethod(accessFlags, nameIndex, descIndex);
 
+		//fprintf(stderr, "method: %s\n", cf.getUtf8(nameIndex));
 		parseAttrs(br, cf, m);
 	}
 

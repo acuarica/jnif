@@ -951,6 +951,7 @@ public:
 			} Object_variable_info;
 			struct {
 				short offset;
+				Inst* label;
 			} Uninitialized_variable_info;
 		};
 	};

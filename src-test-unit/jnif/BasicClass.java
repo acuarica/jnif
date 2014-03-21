@@ -3,6 +3,7 @@ package jnif;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.regex.*;
 
 public class BasicClass {
 
@@ -11,6 +12,13 @@ public class BasicClass {
 	}
 
 	int hola(int a, int b) {
+		int c = a + b;
+		return c;
+	}
+
+	int hola2(int a, int b) {
+		Pattern p = Pattern.compile("a*b");
+
 		int c = a + b;
 		return c;
 	}
@@ -74,6 +82,8 @@ public class BasicClass {
 					break;
 			}
 		}
+
+		hola2(1, 2);
 
 		System.out.println("HeapTest: " + as[as.length - 1]);
 	}

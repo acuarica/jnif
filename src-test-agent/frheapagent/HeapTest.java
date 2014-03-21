@@ -3,6 +3,7 @@ package frheapagent;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.regex.*;
 
 public class HeapTest {
 
@@ -11,6 +12,13 @@ public class HeapTest {
 	}
 
 	int hola(int a, int b) {
+		int c = a + b;
+		return c;
+	}
+
+	public static int hola2(int a, int b) {
+		Pattern p = Pattern.compile("a*b");
+
 		int c = a + b;
 		return c;
 	}
@@ -71,7 +79,7 @@ public class HeapTest {
 				break;
 		}
 	}
-	
+
 	public static void main(String[] args) throws IOException {
 		int[] as = new int[34];
 		int[] as1 = new int[34];
@@ -104,6 +112,8 @@ public class HeapTest {
 
 		ts(args);
 		ls(args);
+
+		hola2(1, 2);
 		// System.out.println("HeapTest: " + as[as.length - 1]);
 	}
 }

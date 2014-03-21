@@ -277,41 +277,44 @@ public:
 	void writeSmt(SmtAttr& attr, void* args) {
 		//InstList& instList = *(InstList*) args;
 
-		auto parseTs = [&](std::vector<SmtAttr::VerType>& locs) {
-			for (u1 i = 0; i < locs.size(); i++) {
-				SmtAttr::VerType& vt = locs[i];
+		auto parseTs =
+				[&](std::vector<SmtAttr::VerType>& locs) {
+					for (u1 i = 0; i < locs.size(); i++) {
+						SmtAttr::VerType& vt = locs[i];
 
-				u1 tag = vt.tag;
-				bw.writeu1(tag);
+						u1 tag = vt.tag;
+						bw.writeu1(tag);
 
-				switch (tag) {
-					case ITEM_Top:
-					break;
-					case ITEM_Integer:
-					break;
-					case ITEM_Float :
-					break;
-					case ITEM_Long :
-					break;
-					case ITEM_Double:
-					break;
-					case ITEM_Null :
-					break;
-					case ITEM_UninitializedThis :
-					break;
-					case ITEM_Object: {
-						u2 cpIndex = vt.Object_variable_info.cpool_index;
-						bw.writeu2( cpIndex);
-						break;
+						switch (tag) {
+							case ITEM_Top:
+							break;
+							case ITEM_Integer:
+							break;
+							case ITEM_Float :
+							break;
+							case ITEM_Long :
+							break;
+							case ITEM_Double:
+							break;
+							case ITEM_Null :
+							break;
+							case ITEM_UninitializedThis :
+							break;
+							case ITEM_Object: {
+								u2 cpIndex = vt.Object_variable_info.cpool_index;
+								bw.writeu2( cpIndex);
+								break;
+							}
+							case ITEM_Uninitialized: {
+								u2 offset = vt.Uninitialized_variable_info.offset;
+
+								offset = vt.Uninitialized_variable_info.label->label.offset;
+								bw.writeu2(offset);
+								break;
+							}
+						}
 					}
-					case ITEM_Uninitialized: {
-						u2 offset= vt.Uninitialized_variable_info.offset;
-						bw.writeu2( offset);
-						break;
-					}
-				}
-			}
-		};
+				};
 
 		bw.writeu2(attr.entries.size());
 
