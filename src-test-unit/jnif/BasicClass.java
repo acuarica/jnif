@@ -16,7 +16,7 @@ public class BasicClass {
 		return c;
 	}
 
-	int hola2(int a, int b) {
+	public static int hola2(int a, int b) {
 		Pattern p = Pattern.compile("a*b");
 
 		int c = a + b;

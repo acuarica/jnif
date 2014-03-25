@@ -4,55 +4,59 @@
 namespace jnif {
 
 ConstPool::ConstPool() {
-	ConstPoolEntry nullEntry;
+	// TODO: This is plain wrong!!!
+	ConstPoolEntry nullEntry(CONSTANT_InvokeDynamic);
+
 	entries.push_back(nullEntry);
 }
 
+u4 ConstPool::size() const {
+	return entries.size();
+}
+
 ConstPool::Index ConstPool::addClass(ConstPool::Index classNameIndex) {
-	ConstPoolEntry e;
-	e.tag = CONSTANT_Class;
+	ConstPoolEntry e(CONSTANT_Class);
 	e.clazz.name_index = classNameIndex;
 
 	return _addSingle(e);
 }
 
 ConstPool::Index ConstPool::addClass(const char* className) {
-	u2 classNameIndex = addUtf8(className);
+	Index classNameIndex = addUtf8(className);
 	return addClass(classNameIndex);
 }
 
-ConstPool::Index ConstPool::addFieldRef(u2 classIndex, u2 nameAndTypeIndex) {
-	ConstPoolEntry e;
-	e.tag = CONSTANT_Fieldref;
+ConstPool::Index ConstPool::addFieldRef(Index classIndex,
+		Index nameAndTypeIndex) {
+	ConstPoolEntry e(CONSTANT_Fieldref);
 	e.memberref.class_index = classIndex;
 	e.memberref.name_and_type_index = nameAndTypeIndex;
 
 	return _addSingle(e);
 }
 
-ConstPool::Index ConstPool::addMethodRef(u2 classIndex, u2 nameAndTypeIndex) {
-	ConstPoolEntry e;
-	e.tag = CONSTANT_Methodref;
+ConstPool::Index ConstPool::addMethodRef(Index classIndex,
+		Index nameAndTypeIndex) {
+	ConstPoolEntry e(CONSTANT_Methodref);
 	e.memberref.class_index = classIndex;
 	e.memberref.name_and_type_index = nameAndTypeIndex;
 
 	return _addSingle(e);
 }
 
-ConstPool::Index ConstPool::addMethodRef(u2 classIndex, const char* name,
+ConstPool::Index ConstPool::addMethodRef(Index classIndex, const char* name,
 		const char* desc) {
-	u2 methodNameIndex = addUtf8(name);
-	u2 methodDescIndex = addUtf8(desc);
-	u2 nameAndTypeIndex = addNameAndType(methodNameIndex, methodDescIndex);
-	u2 methodRefIndex = addMethodRef(classIndex, nameAndTypeIndex);
+	Index methodNameIndex = addUtf8(name);
+	Index methodDescIndex = addUtf8(desc);
+	Index nameAndTypeIndex = addNameAndType(methodNameIndex, methodDescIndex);
+	Index methodRefIndex = addMethodRef(classIndex, nameAndTypeIndex);
 
 	return methodRefIndex;
 }
 
-ConstPool::Index ConstPool::addInterMethodRef(u2 classIndex,
-		u2 nameAndTypeIndex) {
-	ConstPoolEntry e;
-	e.tag = CONSTANT_InterfaceMethodref;
+ConstPool::Index ConstPool::addInterMethodRef(Index classIndex,
+		Index nameAndTypeIndex) {
+	ConstPoolEntry e(CONSTANT_InterfaceMethodref);
 	e.memberref.class_index = classIndex;
 	e.memberref.name_and_type_index = nameAndTypeIndex;
 
@@ -60,56 +64,49 @@ ConstPool::Index ConstPool::addInterMethodRef(u2 classIndex,
 }
 
 ConstPool::Index ConstPool::addString(Index utf8Index) {
-	ConstPoolEntry e;
-	e.tag = CONSTANT_String;
+	ConstPoolEntry e(CONSTANT_String);
 	e.s.string_index = utf8Index;
-	u2 strIndex = _addSingle(e);
 
-	return strIndex;
+	return _addSingle(e);
 }
 
 ConstPool::Index ConstPool::addStringFromClass(Index classIndex) {
-	u2 classNameIndex = getClassNameIndex(classIndex);
-	u2 classNameStringIndex = addString(classNameIndex);
+	Index classNameIndex = getClassNameIndex(classIndex);
+	Index classNameStringIndex = addString(classNameIndex);
 
 	return classNameStringIndex;
 }
 
 ConstPool::Index ConstPool::addInteger(u4 value) {
-	ConstPoolEntry e;
-	e.tag = CONSTANT_Integer;
+	ConstPoolEntry e(CONSTANT_Integer);
 	e.i.value = value;
 
 	return _addSingle(e);
 }
 
 ConstPool::Index ConstPool::addFloat(u4 value) {
-	ConstPoolEntry e;
-	e.tag = CONSTANT_Float;
+	ConstPoolEntry e(CONSTANT_Float);
 	e.f.value = value;
 
 	return _addSingle(e);
 }
 
 ConstPool::Index ConstPool::addLong(long value) {
-	ConstPoolEntry entry;
-	entry.tag = CONSTANT_Long;
+	ConstPoolEntry entry(CONSTANT_Long);
 	entry.l.value = value;
 
 	return _addDoubleEntry(entry);
 }
 
 ConstPool::Index ConstPool::addDouble(double value) {
-	ConstPoolEntry entry;
-	entry.tag = CONSTANT_Double;
+	ConstPoolEntry entry(CONSTANT_Double);
 	entry.d.value = value;
 
 	return _addDoubleEntry(entry);
 }
 
-ConstPool::Index ConstPool::addNameAndType(u2 nameIndex, u2 descIndex) {
-	ConstPoolEntry e;
-	e.tag = CONSTANT_NameAndType;
+ConstPool::Index ConstPool::addNameAndType(Index nameIndex, Index descIndex) {
+	ConstPoolEntry e(CONSTANT_NameAndType);
 	e.nameandtype.name_index = nameIndex;
 	e.nameandtype.descriptor_index = descIndex;
 
@@ -117,8 +114,7 @@ ConstPool::Index ConstPool::addNameAndType(u2 nameIndex, u2 descIndex) {
 }
 
 ConstPool::Index ConstPool::addUtf8(const char* utf8, int len) {
-	ConstPoolEntry e;
-	e.tag = CONSTANT_Utf8;
+	ConstPoolEntry e(CONSTANT_Utf8);
 	std::string str(utf8, len);
 	e.utf8.str = str;
 
@@ -126,8 +122,7 @@ ConstPool::Index ConstPool::addUtf8(const char* utf8, int len) {
 }
 
 ConstPool::Index ConstPool::addUtf8(const char* str) {
-	ConstPoolEntry e;
-	e.tag = CONSTANT_Utf8;
+	ConstPoolEntry e(CONSTANT_Utf8);
 	e.utf8.str = str;
 
 	return _addSingle(e);
@@ -155,13 +150,13 @@ ConstPool::Index ConstPool::addInvokeDynamic(u2 bootstrapMethodAttrIndex,
 	return _addSingle(e);
 }
 
-bool ConstPool::isClass(Index index) {
+bool ConstPool::isClass(Index index) const {
 	const ConstPoolEntry* entry = _getEntry(index);
 
 	return entry->tag == CONSTANT_Class;
 }
 
-u2 ConstPool::getClassNameIndex(int classIndex) const {
+ConstPool::Index ConstPool::getClassNameIndex(Index classIndex) const {
 	const u2 NULLENTRY = 0;
 
 	const ConstPoolEntry* entry = _getEntry(classIndex, CONSTANT_Class,
@@ -172,20 +167,20 @@ u2 ConstPool::getClassNameIndex(int classIndex) const {
 	ASSERT(classNameIndex != NULLENTRY, "invalid class name index: %d",
 			classNameIndex);
 
-	return classNameIndex;
+	return Index(classNameIndex);
 }
 
-void ConstPool::getFieldRef(u2 index, string* clazzName, string* name,
+void ConstPool::getFieldRef(Index index, string* clazzName, string* name,
 		string* desc) const {
 	_getMemberRef(index, clazzName, name, desc, CONSTANT_Fieldref);
 }
 
-void ConstPool::getMethodRef(u2 index, string* clazzName, string* name,
+void ConstPool::getMethodRef(Index index, string* clazzName, string* name,
 		string* desc) const {
 	_getMemberRef(index, clazzName, name, desc, CONSTANT_Methodref);
 }
 
-void ConstPool::getInterMethodRef(u2 index, string* clazzName, string* name,
+void ConstPool::getInterMethodRef(Index index, string* clazzName, string* name,
 		string* desc) const {
 	_getMemberRef(index, clazzName, name, desc, CONSTANT_InterfaceMethodref);
 }
@@ -198,42 +193,43 @@ double ConstPool::getDouble(Index index) const {
 	return _getEntry(index, CONSTANT_Double, "CONSTANT_Double")->d.value;
 }
 
-const char* ConstPool::getUtf8(u2 utf8Index) const {
+const char* ConstPool::getUtf8(Index utf8Index) const {
 	const ConstPoolEntry* entry = _getEntry(utf8Index, CONSTANT_Utf8, "Utf8");
 
 	return entry->utf8.str.c_str();
 }
 
-const char* ConstPool::getClassName(u2 classIndex) const {
-	u2 classNameIndex = getClassNameIndex(classIndex);
+const char* ConstPool::getClassName(Index classIndex) const {
+	Index classNameIndex = getClassNameIndex(classIndex);
 
 	return getUtf8(classNameIndex);
 }
 
-void ConstPool::getNameAndType(int index, string* name, string* desc) const {
+void ConstPool::getNameAndType(Index index, string* name, string* desc) const {
 	const ConstPoolEntry* entry = _getEntry(index, CONSTANT_NameAndType,
 			"NameAndType");
 
 	u2 nameIndex = entry->nameandtype.name_index;
 	u2 descIndex = entry->nameandtype.descriptor_index;
 
-	*name = getUtf8(nameIndex);
-	*desc = getUtf8(descIndex);
+	*name = getUtf8(Index(nameIndex));
+	*desc = getUtf8(Index(descIndex));
 }
 
 ConstPool::Index ConstPool::_addSingle(const ConstPoolEntry& entry) {
-	Index index = entries.size();
+	Index index = Index(entries.size());
 	entries.push_back(entry);
 
 	return index;
 }
 
 ConstPool::Index ConstPool::_addDoubleEntry(const ConstPoolEntry& entry) {
-	Index index = entries.size();
+	Index index = Index(entries.size());
 
 	entries.push_back(entry);
 
-	ConstPoolEntry nullEntry;
+	// TODO: This is plain wrong!!!
+	ConstPoolEntry nullEntry(CONSTANT_InvokeDynamic);
 	entries.push_back(nullEntry);
 
 	return index;
@@ -257,12 +253,12 @@ const ConstPoolEntry* ConstPool::_getEntry(Index index, u1 tag,
 	return entry;
 }
 
-void ConstPool::_getMemberRef(int index, std::string* clazzName,
+void ConstPool::_getMemberRef(Index index, std::string* clazzName,
 		std::string* name, std::string* desc, u1 tag) const {
 	const ConstPoolEntry* entry = _getEntry(index, tag, "memberref");
 
-	u2 classIndex = entry->memberref.class_index;
-	u2 nameAndTypeIndex = entry->memberref.name_and_type_index;
+	Index classIndex = Index(entry->memberref.class_index);
+	Index nameAndTypeIndex = Index(entry->memberref.name_and_type_index);
 
 	*clazzName = getClassName(classIndex);
 	getNameAndType(nameAndTypeIndex, name, desc);
@@ -304,13 +300,12 @@ void printClassFile(ClassFile& cf, ostream& os, int tabs = 0);
 
 ClassFile::ClassFile(const char* className, const char* superClassName,
 		u2 accessFlags, Version version) :
-		accessFlags(accessFlags), _version(version) {
-
-	thisClassIndex = addClass(className);
-	superClassIndex = addClass(superClassName);
+		accessFlags(accessFlags), _version(version), thisClassIndex(
+				addClass(className)), superClassIndex(addClass(superClassName)) {
 }
 
-ClassFile::ClassFile(const u1* classFileData, const int classFileLen) {
+ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
+		thisClassIndex(0), superClassIndex(0) {
 	parseClassFile(classFileData, classFileLen, *this);
 }
 
@@ -326,18 +321,32 @@ const char* ClassFile::getThisClassName() const {
 	return getClassName(thisClassIndex);
 }
 
-Field& ClassFile::addField(AccessFlags accessFlags, u2 nameIndex,
-		u2 descIndex) {
-	//Member* member = new Member(accessFlags, nameIndex, descIndex);
-	//fields.push_back(member);
+Field& ClassFile::addField(ConstPool::Index nameIndex,
+		ConstPool::Index descIndex, AccessFlags accessFlags) {
 	fields.emplace_back(accessFlags, nameIndex, descIndex);
 	return fields.back();
 }
 
-Method& ClassFile::addMethod(AccessFlags accessFlags, u2 nameIndex,
-		u2 descIndex) {
+Field& ClassFile::addField(const char* fieldName, const char* fieldDesc,
+		AccessFlags accessFlags) {
+	ConstPool::Index nameIndex = addUtf8(fieldName);
+	ConstPool::Index descIndex = addUtf8(fieldDesc);
+
+	return addField(nameIndex, descIndex, accessFlags);
+}
+
+Method& ClassFile::addMethod(ConstPool::Index nameIndex,
+		ConstPool::Index descIndex, AccessFlags accessFlags) {
 	methods.emplace_back(accessFlags, nameIndex, descIndex);
 	return methods.back();
+}
+
+Method& ClassFile::addMethod(const char* methodName, const char* methodDesc,
+		AccessFlags accessFlags) {
+	ConstPool::Index nameIndex = addUtf8(methodName);
+	ConstPool::Index descIndex = addUtf8(methodDesc);
+
+	return addMethod(nameIndex, descIndex, accessFlags);
 }
 
 u4 ClassFile::computeSize() {

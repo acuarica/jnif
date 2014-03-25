@@ -67,12 +67,16 @@ static void _run(TTestFunc test, const char* testName) {
 
 #define run(test) _run(test, #test);
 
-static void testEmptyClassFilePrinter() {
-	ClassFile cf("HolaQueTal", "ComoEstas");
-	cout << cf;
-}
-
 static void testPrinter() {
+	ClassFile cf1("jnif/test/generated/Class1");
+	cout << cf1;
+
+	ClassFile cf2("jnif/test/generated/Class2", "jnif/test/generated/Class");
+	Method& m = cf2.addMethod("main", "([Ljava/lang/String;)V");
+	//m.
+
+	cout << cf2;
+
 	apply([](const JavaFile& jf) {
 		ClassFile cf(jf.data, jf.len);
 		cout << cf;
@@ -209,7 +213,6 @@ static void testNopAdderInstr() {
 
 int main(int, const char*[]) {
 	run(testPrinter);
-	run(testEmptyClassFilePrinter);
 	run(testIdentityComputeSize);
 	run(testIdentityParserWriter);
 	run(testNopAdderInstrSize);
@@ -223,20 +226,6 @@ int main(int, const char*[]) {
 	PSIZEOF(OpKind);
 	PSIZEOF(Inst);
 	PSIZEOF(InstList);
-
-	Inst inst;
-
-	PSIZEOF(inst.ts.def);
-	PSIZEOF(inst.ts.low);
-	PSIZEOF(inst.ts.high);
-	PSIZEOF(inst.ts.targets);
-	PSIZEOF(inst.ts);
-	PSIZEOF(inst.ls);
-	PSIZEOF(inst.label);
-	PSIZEOF(inst.wide);
-	PSIZEOF(inst.jump);
-	PSIZEOF(inst.invoke);
-	PSIZEOF(inst.invokeinterface);
 
 	return 0;
 }

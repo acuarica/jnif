@@ -114,13 +114,13 @@ void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 			"(Ljava/lang/Object;)V");
 
 	auto invoke = [&] (Opcode opcode, u2 index) {
-		Inst* inst = new Inst();
-		inst->kind = KIND_INVOKE;
-		inst->opcode = opcode;
-		inst->invoke.methodRefIndex = index;
+		Inst* inst = new Inst(opcode, KIND_INVOKE);
+		//inst->kind = KIND_INVOKE;
+		//inst->opcode = opcode;
+			inst->invoke.methodRefIndex = index;
 
-		return inst;
-	};
+			return inst;
+		};
 
 	for (Method& m : cf.methods) {
 
@@ -147,22 +147,23 @@ void InstrClassNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 			"(ILjava/lang/Object;I)V");
 
 	auto bipush = [&](u1 value) {
-		Inst* inst = new Inst();
-		inst->kind = KIND_BIPUSH;
-		inst->opcode = OPCODE_bipush;
-		inst->push.value = value;
+		Inst* inst = new Inst(OPCODE_bipush, KIND_BIPUSH);
 
-		return inst;
-	};
+		//inst->kind = KIND_BIPUSH;
+		//inst->opcode = OPCODE_bipush;
+			inst->push.value = value;
+
+			return inst;
+		};
 
 	auto invoke = [&] (Opcode opcode, u2 index) {
-		Inst* inst = new Inst();
-		inst->kind = KIND_INVOKE;
-		inst->opcode = opcode;
-		inst->invoke.methodRefIndex = index;
+		Inst* inst = new Inst(opcode, KIND_INVOKE);
+		//inst->kind = KIND_INVOKE;
+		//inst->opcode = opcode;
+			inst->invoke.methodRefIndex = index;
 
-		return inst;
-	};
+			return inst;
+		};
 
 	for (Method& m : cf.methods) {
 		if (m.hasCode()) {
@@ -227,18 +228,18 @@ void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 			"aNewArrayEvent", "(ILjava/lang/Object;Ljava/lang/String;)V");
 
 	auto invoke = [&] (Opcode opcode, u2 index) {
-		Inst* inst = new Inst();
-		inst->kind = KIND_INVOKE;
-		inst->opcode = opcode;
-		inst->invoke.methodRefIndex = index;
+		Inst* inst = new Inst(opcode, KIND_INVOKE);
+		//inst->kind = KIND_INVOKE;
+		//inst->opcode = opcode;
+			inst->invoke.methodRefIndex = index;
 
-		return inst;
-	};
+			return inst;
+		};
 
 	auto ldc = [&] (Opcode opcode, u2 valueIndex) {
-		Inst* inst = new Inst();
-		inst->kind = KIND_LDC;
-		inst->opcode = opcode;
+		Inst* inst = new Inst(opcode, KIND_LDC);
+		//inst->kind = KIND_LDC;
+		//inst->opcode = opcode;
 		inst->ldc.valueIndex = valueIndex;
 
 		return inst;
@@ -305,9 +306,9 @@ void InstrClassMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 			"()V");
 
 	auto invoke = [&] (Opcode opcode, u2 index) {
-		Inst* inst = new Inst();
-		inst->kind = KIND_INVOKE;
-		inst->opcode = opcode;
+		Inst* inst = new Inst(opcode, KIND_INVOKE);
+		//inst->kind = KIND_INVOKE;
+		//inst->opcode = opcode;
 		inst->invoke.methodRefIndex = index;
 
 		return inst;

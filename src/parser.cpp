@@ -157,170 +157,104 @@ OpKind OPKIND[256] = { KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO,
 		KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, KIND_RESERVED,
 		KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, };
 
-class ConstPoolParser {
-public:
-
-	template<typename TReader, typename TConstPoolVisitor>
-	static void parse(TReader& br, TConstPoolVisitor& v) {
-		u2 count = br.readu2();
-
-		for (int i = 1; i < count; i++) {
-			u1 tag = br.readu1();
-
-			switch (tag) {
-				case CONSTANT_Class: {
-					u2 classNameIndex = br.readu2();
-					v.visitClass(classNameIndex);
-					break;
-				}
-				case CONSTANT_Fieldref: {
-					u2 classIndex = br.readu2();
-					u2 nameAndTypeIndex = br.readu2();
-					v.visitFieldRef(classIndex, nameAndTypeIndex);
-					break;
-				}
-				case CONSTANT_Methodref: {
-					u2 classIndex = br.readu2();
-					u2 nameAndTypeIndex = br.readu2();
-					v.visitMethodRef(classIndex, nameAndTypeIndex);
-					break;
-				}
-				case CONSTANT_InterfaceMethodref: {
-					u2 classIndex = br.readu2();
-					u2 nameAndTypeIndex = br.readu2();
-					v.visitInterMethodRef(classIndex, nameAndTypeIndex);
-					break;
-				}
-				case CONSTANT_String: {
-					u2 utf8Index = br.readu2();
-					v.visitString(utf8Index);
-					break;
-				}
-				case CONSTANT_Integer: {
-					u4 value = br.readu4();
-					v.visitInteger(value);
-					break;
-				}
-				case CONSTANT_Float: {
-					u4 value = br.readu4();
-					v.visitFloat(value);
-					break;
-				}
-				case CONSTANT_Long: {
-					u4 high = br.readu4();
-					u4 low = br.readu4();
-					v.visitLong(((long) high << 32) + low);
-					i++;
-					break;
-				}
-				case CONSTANT_Double: {
-					u4 high = br.readu4();
-					u4 low = br.readu4();
-					long lvalue = ((long) high << 32) + low;
-					double dvalue = *(double*) &lvalue;
-					v.visitDouble(dvalue);
-					i++;
-					break;
-				}
-				case CONSTANT_NameAndType: {
-					u2 nameIndex = br.readu2();
-					u2 descIndex = br.readu2();
-					v.visitNameAndType(nameIndex, descIndex);
-					break;
-				}
-				case CONSTANT_Utf8: {
-					u2 len = br.readu2();
-					v.visitUtf8((const char*) br.pos(), len);
-					br.skip(len);
-					break;
-				}
-				case CONSTANT_MethodHandle: {
-					u1 refKind = br.readu1();
-					u2 refIndex = br.readu2();
-					v.visitMethodHandle(refKind, refIndex);
-					break;
-				}
-				case CONSTANT_MethodType: {
-					u2 descIndex = br.readu2();
-					v.visitMethodType(descIndex);
-					break;
-				}
-				case CONSTANT_InvokeDynamic: {
-					u2 bootstrapMethodAttrIndex = br.readu2();
-					u2 nameAndTypeIndex = br.readu2();
-					v.visitInvokeDynamic(bootstrapMethodAttrIndex,
-							nameAndTypeIndex);
-					break;
-				}
-				default:
-					EXCEPTION("Error while reading tag: %i", tag);
-			}
-		}
-	}
-};
-
-class SourceFileAttrParser {
-	template<typename TReader, typename TSourceFileVisitor>
-	static void parse(TReader& br, TSourceFileVisitor& v) {
-		u2 sourceFileIndex = br.readu2();
-		v.visitSourceFile(sourceFileIndex);
-	}
-};
-
 static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as, void* args =
 		nullptr);
 
 static void parseConstPool(BufferReader& br, ConstPool& cp) {
-	struct ConstPoolVisitor {
-		ConstPool& cp;
-		ConstPoolVisitor(ConstPool& cp) :
-				cp(cp) {
-		}
-		void visitClass(u2 classNameIndex) {
-			cp.addClass(classNameIndex);
-		}
-		void visitFieldRef(u2 classIndex, u2 nameAndTypeIndex) {
-			cp.addFieldRef(classIndex, nameAndTypeIndex);
-		}
-		void visitMethodRef(u2 classIndex, u2 nameAndTypeIndex) {
-			cp.addMethodRef(classIndex, nameAndTypeIndex);
-		}
-		void visitInterMethodRef(u2 classIndex, u2 nameAndTypeIndex) {
-			cp.addInterMethodRef(classIndex, nameAndTypeIndex);
-		}
-		void visitString(u2 utf8Index) {
-			cp.addString(utf8Index);
-		}
-		void visitInteger(u4 value) {
-			cp.addInteger(value);
-		}
-		void visitFloat(u4 value) {
-			cp.addFloat(value);
-		}
-		void visitLong(long value) {
-			cp.addLong(value);
-		}
-		void visitDouble(double value) {
-			cp.addDouble(value);
-		}
-		void visitNameAndType(u2 nameIndex, u2 descIndex) {
-			cp.addNameAndType(nameIndex, descIndex);
-		}
-		void visitUtf8(const char* str, u2 len) {
-			cp.addUtf8(str, len);
-		}
-		void visitMethodHandle(u1 refKind, u2 refIndex) {
-			cp.addMethodHandle(refKind, refIndex);
-		}
-		void visitMethodType(u2 descIndex) {
-			cp.addMethodType(descIndex);
-		}
-		void visitInvokeDynamic(u2 bootstrapAttrIndex, u2 nameAndTypeIndex) {
-			cp.addInvokeDynamic(bootstrapAttrIndex, nameAndTypeIndex);
-		}
-	} cpv(cp);
+	u2 count = br.readu2();
 
-	ConstPoolParser::parse(br, cpv);
+	for (int i = 1; i < count; i++) {
+		u1 tag = br.readu1();
+
+		switch (tag) {
+			case CONSTANT_Class: {
+				u2 classNameIndex = br.readu2();
+				cp.addClass(classNameIndex);
+				break;
+			}
+			case CONSTANT_Fieldref: {
+				u2 classIndex = br.readu2();
+				u2 nameAndTypeIndex = br.readu2();
+				cp.addFieldRef(classIndex, nameAndTypeIndex);
+				break;
+			}
+			case CONSTANT_Methodref: {
+				u2 classIndex = br.readu2();
+				u2 nameAndTypeIndex = br.readu2();
+				cp.addMethodRef(classIndex, nameAndTypeIndex);
+				break;
+			}
+			case CONSTANT_InterfaceMethodref: {
+				u2 classIndex = br.readu2();
+				u2 nameAndTypeIndex = br.readu2();
+				cp.addInterMethodRef(classIndex, nameAndTypeIndex);
+				break;
+			}
+			case CONSTANT_String: {
+				u2 utf8Index = br.readu2();
+				cp.addString(utf8Index);
+				break;
+			}
+			case CONSTANT_Integer: {
+				u4 value = br.readu4();
+				cp.addInteger(value);
+				break;
+			}
+			case CONSTANT_Float: {
+				u4 value = br.readu4();
+				cp.addFloat(value);
+				break;
+			}
+			case CONSTANT_Long: {
+				u4 high = br.readu4();
+				u4 low = br.readu4();
+				long value = ((long) high << 32) + low;
+				cp.addLong(value);
+				i++;
+				break;
+			}
+			case CONSTANT_Double: {
+				u4 high = br.readu4();
+				u4 low = br.readu4();
+				long lvalue = ((long) high << 32) + low;
+				double dvalue = *(double*) &lvalue;
+				cp.addDouble(dvalue);
+				i++;
+				break;
+			}
+			case CONSTANT_NameAndType: {
+				u2 nameIndex = br.readu2();
+				u2 descIndex = br.readu2();
+				cp.addNameAndType(nameIndex, descIndex);
+				break;
+			}
+			case CONSTANT_Utf8: {
+				u2 len = br.readu2();
+				cp.addUtf8((const char*) br.pos(), len);
+				br.skip(len);
+				break;
+			}
+			case CONSTANT_MethodHandle: {
+				u1 refKind = br.readu1();
+				u2 refIndex = br.readu2();
+				cp.addMethodHandle(refKind, refIndex);
+				break;
+			}
+			case CONSTANT_MethodType: {
+				u2 descIndex = br.readu2();
+				cp.addMethodType(descIndex);
+				break;
+			}
+			case CONSTANT_InvokeDynamic: {
+				u2 bootstrapMethodAttrIndex = br.readu2();
+				u2 nameAndTypeIndex = br.readu2();
+				cp.addInvokeDynamic(bootstrapMethodAttrIndex, nameAndTypeIndex);
+				break;
+			}
+			default:
+				EXCEPTION("Error while reading tag: %i", tag);
+		}
+	}
 }
 
 static Attr* parseSourceFile(BufferReader& br, Attrs& as, u2 nameIndex) {
@@ -367,6 +301,14 @@ static void parseInstTargets(BufferReader& br, Inst** labels) {
 
 		switch (kind) {
 			case KIND_ZERO:
+				if (opcode == OPCODE_wide) {
+					u1 opcodew = (Opcode) br.readu1();
+					if (opcodew == OPCODE_iinc) {
+						br.skip(4);
+					} else {
+						br.skip(2);
+					}
+				}
 				break;
 			case KIND_BIPUSH:
 			case KIND_VAR:
@@ -454,6 +396,12 @@ static void parseInstTargets(BufferReader& br, Inst** labels) {
 				}
 				break;
 			}
+//			case KIND_RESERVED:
+				//			break;
+			default:
+				EXCEPTION(
+						"default kind in parseInstTargets: opcode: %d, kind: %d",
+						opcode, kind);
 		}
 	}
 }
@@ -467,13 +415,14 @@ static void parseInstList(BufferReader& br, InstList& instList, Inst** labels) {
 			instList.push_back(labels[offset]);
 		}
 
-		Inst* instp = new Inst();
-		instp->_offset = offset;
+		Opcode opcode = (Opcode) br.readu1();
 
+		Inst* instp = new Inst(opcode, OPKIND[opcode]);
+		instp->_offset = offset;
 		Inst& inst = *instp;
 
-		inst.opcode = (Opcode) br.readu1();
-		inst.kind = OPKIND[inst.opcode];
+		//inst.opcode = (Opcode) br.readu1();
+		//inst.kind = OPKIND[inst.opcode];
 
 		switch (inst.kind) {
 			case KIND_ZERO:
@@ -607,6 +556,8 @@ static void parseInstList(BufferReader& br, InstList& instList, Inst** labels) {
 			case KIND_RESERVED:
 				EXCEPTION("FrParseReservedInstr not implemented");
 				break;
+			default:
+				EXCEPTION("default kind in parseInstList");
 
 		}
 
@@ -686,14 +637,20 @@ static Attr* parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
 	return ca;
 }
 
-static Attr* parseLnt(BufferReader& br, Attrs& as, u2 nameIndex) {
+static Attr* parseLnt(BufferReader& br, Attrs& as, u2 nameIndex, void* args) {
+	Inst** labels = (Inst**) args;
+
 	u2 lntlen = br.readu2();
 
 	LntAttr* lnt = new LntAttr(nameIndex);
 
 	for (int i = 0; i < lntlen; i++) {
 		LntAttr::LnEntry e;
-		e.startpc = br.readu2();
+		u2 startpc = br.readu2();
+
+		e.startPcLabel = createLabel(labels, startpc);
+
+		e.startpc = startpc;
 		e.lineno = br.readu2();
 
 		lnt->lnt.push_back(e);
@@ -704,15 +661,21 @@ static Attr* parseLnt(BufferReader& br, Attrs& as, u2 nameIndex) {
 	return lnt;
 }
 
-static Attr* parseLvt(BufferReader& br, Attrs& as, u2 nameIndex) {
+static Attr* parseLvt(BufferReader& br, Attrs& as, u2 nameIndex, void* args) {
+	Inst** labels = (Inst**) args;
+
 	u2 count = br.readu2();
 
-	LvtAttr* lvt = new LvtAttr(nameIndex);
+	LvtAttr* lvt = new LvtAttr(ATTR_LVT, nameIndex);
 
 	for (u2 i = 0; i < count; i++) {
 		LvtAttr::LvEntry e;
 
-		e.startPc = br.readu2();
+		u2 startPc = br.readu2();
+
+		e.startPcLabel = createLabel(labels, startPc);
+
+		e.startPc = startPc;
 		e.len = br.readu2();
 		e.varNameIndex = br.readu2();
 		e.varDescIndex = br.readu2();
@@ -726,6 +689,35 @@ static Attr* parseLvt(BufferReader& br, Attrs& as, u2 nameIndex) {
 	return lvt;
 }
 
+static Attr* parseLvtt(BufferReader& br, Attrs& as, u2 nameIndex, void* args) {
+	Inst** labels = (Inst**) args;
+
+	u2 count = br.readu2();
+
+	LvtAttr* lvt = new LvtAttr(ATTR_LVTT, nameIndex);
+
+	for (u2 i = 0; i < count; i++) {
+		LvtAttr::LvEntry e;
+
+		u2 startPc = br.readu2();
+
+		e.startPcLabel = createLabel(labels, startPc);
+
+		e.startPc = startPc;
+		e.len = br.readu2();
+		e.varNameIndex = br.readu2();
+
+		// Signature instead of descriptor.
+		e.varDescIndex = br.readu2();
+		e.index = br.readu2();
+
+		lvt->lvt.push_back(e);
+	}
+
+	as.add(lvt);
+
+	return lvt;
+}
 static Attr* parseSmt(BufferReader& br, Attrs& as, ConstPool&, u2 nameIndex,
 		void* args) {
 
@@ -862,33 +854,34 @@ static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as, void* args) {
 
 		string attrName = cp.getUtf8(nameIndex);
 
-		if (attrName != "LocalVariableTable") {
-			Attr* a;
-			if (attrName == "SourceFile") {
-				BufferReader br(data, len);
-				a = parseSourceFile(br, as, nameIndex);
-			} else if (attrName == "Exceptions") {
-				BufferReader br(data, len);
-				a = parseExceptions(br, as, nameIndex);
-			} else if (attrName == "Code") {
-				BufferReader br(data, len);
-				a = parseCode(br, as, cp, nameIndex);
-			} else if (attrName == "LineNumberTable") {
-				BufferReader br(data, len);
-				a = parseLnt(br, as, nameIndex);
-			} else if (attrName == "LocalVariableTable") {
-				BufferReader br(data, len);
-				a = parseLvt(br, as, nameIndex);
-			} else if (attrName == "StackMapTable") {
-				BufferReader br(data, len);
-				a = parseSmt(br, as, cp, nameIndex, args);
-			} else {
-				a = new UnknownAttr(nameIndex, len, data);
-				as.add(a);
-			}
-
-			a->len = len;
+		Attr* a;
+		if (attrName == "SourceFile") {
+			BufferReader br(data, len);
+			a = parseSourceFile(br, as, nameIndex);
+		} else if (attrName == "Exceptions") {
+			BufferReader br(data, len);
+			a = parseExceptions(br, as, nameIndex);
+		} else if (attrName == "Code") {
+			BufferReader br(data, len);
+			a = parseCode(br, as, cp, nameIndex);
+		} else if (attrName == "LineNumberTable") {
+			BufferReader br(data, len);
+			a = parseLnt(br, as, nameIndex, args);
+		} else if (attrName == "LocalVariableTable") {
+			BufferReader br(data, len);
+			a = parseLvt(br, as, nameIndex, args);
+		} else if (attrName == "StackMapTable") {
+			BufferReader br(data, len);
+			a = parseSmt(br, as, cp, nameIndex, args);
+		} else if (attrName == "LocalVariableTypeTable") {
+			BufferReader br(data, len);
+			a = parseLvtt(br, as, nameIndex, args);
+		} else {
+			a = new UnknownAttr(nameIndex, len, data);
+			as.add(a);
 		}
+
+		a->len = len;
 
 		br.skip(len);
 	}
@@ -926,7 +919,7 @@ void parseClassFile(const u1* fileImage, const int fileImageLen,
 		u2 nameIndex = br.readu2();
 		u2 descIndex = br.readu2();
 
-		Field& f = cf.addField(accessFlags, nameIndex, descIndex);
+		Field& f = cf.addField(nameIndex, descIndex, accessFlags);
 
 		parseAttrs(br, cf, f);
 	}
@@ -937,9 +930,8 @@ void parseClassFile(const u1* fileImage, const int fileImageLen,
 		u2 nameIndex = br.readu2();
 		u2 descIndex = br.readu2();
 
-		Method& m = cf.addMethod(accessFlags, nameIndex, descIndex);
+		Method& m = cf.addMethod(nameIndex, descIndex, accessFlags);
 
-		//fprintf(stderr, "method: %s\n", cf.getUtf8(nameIndex));
 		parseAttrs(br, cf, m);
 	}
 

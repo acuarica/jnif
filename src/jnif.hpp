@@ -25,7 +25,6 @@
  *
  * @see ClassFile
  *
- * NOTE: The library uses structs instead of classes.
  */
 namespace jnif {
 
@@ -420,6 +419,7 @@ enum AttrKind {
 	ATTR_CODE,
 	ATTR_EXCEPTIONS,
 	ATTR_LVT,
+	ATTR_LVTT,
 	ATTR_LNT,
 	ATTR_SMT
 };
@@ -431,19 +431,19 @@ using namespace std;
  */
 struct Inst {
 
-	Inst() {
-	}
+//	Inst() {
+//	}
 
 	Inst(OpKind kind) :
-			kind(kind) {
+			opcode(OPCODE_nop), kind(kind), _offset(0) {
 	}
 
 	Inst(Opcode opcode) :
-			opcode(opcode), kind(KIND_ZERO) {
+			opcode(opcode), kind(KIND_ZERO), _offset(0) {
 	}
 
 	Inst(Opcode opcode, OpKind kind) :
-			opcode(opcode), kind(kind) {
+			opcode(opcode), kind(kind), _offset(0) {
 	}
 
 	/**
@@ -458,14 +458,14 @@ struct Inst {
 
 	int _offset;
 
-	friend Inst InvokeInst(Opcode opcode, u2 index) {
-		Inst inst;
-		inst.kind = KIND_INVOKE;
-		inst.opcode = opcode;
-		inst.invoke.methodRefIndex = index;
-
-		return inst;
-	}
+//	friend Inst InvokeInst(Opcode opcode, u2 index) {
+//		Inst inst();
+//		inst.kind = KIND_INVOKE;
+//		inst.opcode = opcode;
+//		inst.invoke.methodRefIndex = index;
+//
+//		return inst;
+//	}
 
 	union {
 		struct {
@@ -557,9 +557,8 @@ public:
  */
 struct ConstPoolEntry {
 
-	ConstPoolEntry() {
-
-	}
+//	ConstPoolEntry() {
+//	}
 
 	ConstPoolEntry(ConstTag tag) :
 			tag(tag) {
@@ -629,13 +628,22 @@ public:
 	/**
 	 * Represents the invalid (null) item, which must not be asked for.
 	 */
-	static const Index NULLENTRY = 0;
+	static const u2 NULLENTRY = 0;
 
 	/**
 	 * Initializes an empty constant pool. The valid indices start from 1
 	 * inclusive, because the null entry (index 0) is added by default.
 	 */
 	ConstPool();
+
+	/**
+	 *
+	 */
+	u4 size() const;
+
+	Index begin() const {
+		return 1;
+	}
 
 	/**
 	 * Adds a class reference to the constant pool.
@@ -658,22 +666,22 @@ public:
 	/**
 	 * Adds a field reference.
 	 */
-	Index addFieldRef(u2 classIndex, u2 nameAndTypeIndex);
+	Index addFieldRef(Index classIndex, Index nameAndTypeIndex);
 
 	/**
 	 * Adds a non-interface method reference.
 	 */
-	Index addMethodRef(u2 classIndex, u2 nameAndTypeIndex);
+	Index addMethodRef(Index classIndex, Index nameAndTypeIndex);
 
 	/**
 	 * Adds a non-interface methods by method name and descriptor.
 	 */
-	Index addMethodRef(u2 classIndex, const char* name, const char* desc);
+	Index addMethodRef(Index classIndex, const char* name, const char* desc);
 
 	/**
 	 * Adds an interface method reference.
 	 */
-	Index addInterMethodRef(u2 classIndex, u2 nameAndTypeIndex);
+	Index addInterMethodRef(Index classIndex, Index nameAndTypeIndex);
 
 	/**
 	 *
@@ -712,7 +720,7 @@ public:
 	/**
 	 *
 	 */
-	Index addNameAndType(u2 nameIndex, u2 descIndex);
+	Index addNameAndType(Index nameIndex, Index descIndex);
 
 	/**
 	 *
@@ -742,29 +750,29 @@ public:
 	/**
 	 * Checks whether the requested index holds a class reference.
 	 */
-	bool isClass(Index index);
+	bool isClass(Index index) const;
 
 	/**
 	 *
 	 */
-	u2 getClassNameIndex(int classIndex) const;
+	Index getClassNameIndex(Index classIndex) const;
 
 	/**
 	 *
 	 */
-	void getFieldRef(u2 index, string* clazzName, string* name,
+	void getFieldRef(Index index, string* clazzName, string* name,
 			string* desc) const;
 
 	/**
 	 *
 	 */
-	void getMethodRef(u2 index, string* clazzName, string* name,
+	void getMethodRef(Index index, string* clazzName, string* name,
 			string* desc) const;
 
 	/**
 	 *
 	 */
-	void getInterMethodRef(u2 index, string* clazzName, string* name,
+	void getInterMethodRef(Index index, string* clazzName, string* name,
 			string* desc) const;
 
 	/**
@@ -790,9 +798,65 @@ public:
 	/**
 	 *
 	 */
-	void getNameAndType(int index, string* name, string* desc) const;
+	void getNameAndType(Index index, string* name, string* desc) const;
 
-	// TODO: To be private!
+	template<typename TConstPoolEntryVisitor>
+	void accept(Index index, TConstPoolEntryVisitor& v) {
+		const ConstPoolEntry* e = &entries[index];
+
+		switch (e->tag) {
+			case CONSTANT_Class:
+				v.visitClass(e->clazz.name_index);
+				break;
+			case CONSTANT_Fieldref:
+				v.visitFieldRef(e->memberref.class_index,
+						e->memberref.name_and_type_index);
+				break;
+			case CONSTANT_Methodref:
+				v.visitMethodRef(e->memberref.class_index,
+						e->memberref.name_and_type_index);
+				break;
+			case CONSTANT_InterfaceMethodref:
+				v.visitInterfaceMethodRef(e->memberref.class_index,
+						e->memberref.name_and_type_index);
+				break;
+			case CONSTANT_String:
+				v.visitString(e->s.string_index);
+				break;
+			case CONSTANT_Integer:
+				v.visitInteger(e->i.value);
+				break;
+			case CONSTANT_Float:
+				v.visitFloat(e->f.value);
+				break;
+			case CONSTANT_Long:
+				v.visitLong(e->l.value);
+				break;
+			case CONSTANT_Double:
+				v.visitLong(e->d.value);
+				break;
+			case CONSTANT_NameAndType:
+				v.visitNameAndType(e->nameandtype.name_index,
+						e->nameandtype.descriptor_index);
+				break;
+			case CONSTANT_Utf8:
+				v.visitUtf8(e->utf8.str);
+				break;
+			case CONSTANT_MethodHandle:
+				v.visitMethodHandle(e->methodhandle.reference_kind,
+						e->methodhandle.reference_index);
+				break;
+			case CONSTANT_MethodType:
+				v.visitMethodType(e->methodtype.descriptor_index);
+				break;
+			case CONSTANT_InvokeDynamic:
+				v.visitInvokeDynamic(
+						e->invokedynamic.bootstrap_method_attr_index,
+						e->invokedynamic.name_and_type_index);
+				break;
+		}
+	}
+
 	vector<ConstPoolEntry> entries;
 
 private:
@@ -801,8 +865,8 @@ private:
 	const ConstPoolEntry* _getEntry(Index index) const;
 	const ConstPoolEntry* _getEntry(Index index, u1 tag,
 			const char* message) const;
-	void _getMemberRef(int index, string* clazzName, string* name, string* desc,
-			u1 tag) const;
+	void _getMemberRef(Index index, string* clazzName, string* name,
+			string* desc, u1 tag) const;
 };
 
 /**
@@ -885,6 +949,8 @@ struct LvtAttr: Attr {
 
 	struct LvEntry {
 		u2 startPc;
+		Inst* startPcLabel;
+
 		u2 len;
 		u2 varNameIndex;
 		u2 varDescIndex;
@@ -893,8 +959,8 @@ struct LvtAttr: Attr {
 
 	std::vector<LvEntry> lvt;
 
-	LvtAttr(u2 nameIndex) :
-			Attr(ATTR_LVT, nameIndex) {
+	LvtAttr(AttrKind kind, u2 nameIndex) :
+			Attr(kind, nameIndex) {
 	}
 };
 
@@ -909,6 +975,8 @@ struct LntAttr: Attr {
 
 	struct LnEntry {
 		u2 startpc;
+		Inst* startPcLabel;
+
 		u2 lineno;
 	};
 
@@ -1059,8 +1127,8 @@ public:
 	Member(Member&&) = default;
 
 	AccessFlags accessFlags;
-	u2 nameIndex;
-	u2 descIndex;
+	ConstPool::Index nameIndex;
+	ConstPool::Index descIndex;
 
 //	const char* getName() const {
 //		string name = cf.getUtf8(m->nameIndex);
@@ -1093,7 +1161,8 @@ public:
 
 private:
 
-	Member(AccessFlags accessFlags, u2 nameIndex, u2 descIndex) :
+	Member(AccessFlags accessFlags, ConstPool::Index nameIndex,
+			ConstPool::Index descIndex) :
 			accessFlags(accessFlags), nameIndex(nameIndex), descIndex(descIndex) {
 	}
 };
@@ -1104,7 +1173,8 @@ private:
 class Field: public Member {
 public:
 
-	Field(AccessFlags accessFlags, u2 nameIndex, u2 descIndex) :
+	Field(AccessFlags accessFlags, ConstPool::Index nameIndex,
+			ConstPool::Index descIndex) :
 			Member(accessFlags, nameIndex, descIndex) {
 	}
 
@@ -1115,7 +1185,9 @@ public:
  */
 class Method: public Member {
 public:
-	Method(AccessFlags accessFlags, u2 nameIndex, u2 descIndex) :
+
+	Method(AccessFlags accessFlags, ConstPool::Index nameIndex,
+			ConstPool::Index descIndex) :
 			Member(accessFlags, nameIndex, descIndex) {
 	}
 };
@@ -1160,8 +1232,9 @@ public:
 	 * Constructs a default class file given the class name, the super class
 	 * name and the access flags.
 	 */
-	ClassFile(const char* className, const char* superClassName,
-			u2 accessFlags = ACC_PUBLIC, Version version = Version());
+	ClassFile(const char* className, const char* superClassName =
+			"java/lang/Object", u2 accessFlags = ACC_PUBLIC, Version version =
+			Version());
 
 	/**
 	 * Constructs a class file from an in-memory representation of the java
@@ -1187,12 +1260,25 @@ public:
 	/**
 	 *
 	 */
-	Field& addField(AccessFlags accessFlags, u2 nameIndex, u2 descIndex);
+	Field& addField(ConstPool::Index nameIndex, ConstPool::Index descIndex,
+			AccessFlags accessFlags = ACC_PUBLIC);
+	/**
+	 *
+	 */
+	Field& addField(const char* fieldName, const char* fieldDesc,
+			AccessFlags accessFlags = ACC_PUBLIC);
 
 	/**
 	 *
 	 */
-	Method& addMethod(AccessFlags accessFlags, u2 nameIndex, u2 descIndex);
+	Method& addMethod(ConstPool::Index nameIndex, ConstPool::Index descIndex,
+			AccessFlags accessFlags = ACC_PUBLIC);
+
+	/**
+	 *
+	 */
+	Method& addMethod(const char* methodName, const char* methodDesc,
+			AccessFlags accessFlags = ACC_PUBLIC);
 
 	/**
 	 * Computes the size in bytes of this class file of the in-memory
@@ -1222,15 +1308,14 @@ public:
 	friend ostream& operator<<(std::ostream& os, ClassFile& cf);
 
 	u2 accessFlags;
-	u2 thisClassIndex;
-	u2 superClassIndex;
+	Version _version;
+	ConstPool::Index thisClassIndex;
+	ConstPool::Index superClassIndex;
 	std::vector<u2> interfaces;
 	std::vector<Field> fields;
 	std::vector<Method> methods;
 
 private:
-
-	Version _version;
 
 };
 

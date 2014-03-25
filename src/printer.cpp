@@ -61,11 +61,15 @@ struct ClassPrinter {
 	}
 
 	void print() {
-//		Version version = cf.getVersion();
-
 		line() << "Version: " << cf.getVersion() << endl;
 
+		inc();
+
+		line() << "Constant Pool Items [" << ((ConstPool) cf).size() << "]"
+				<< endl;
+		inc();
 		printConstPool(cf);
+		dec();
 
 		line() << "accessFlags: " << cf.accessFlags << endl;
 		line() << "thisClassIndex: " << cf.getThisClassName() << "#"
@@ -100,13 +104,31 @@ struct ClassPrinter {
 		}
 
 		printAttrs(cf);
+
+		dec();
 	}
 
 	void printConstPool(ConstPool& cp) {
-		for (u4 i = 1; i < cp.entries.size(); i++) {
+		line() << "#0 [null entry]: -" << endl;
+
+		for (ConstPool::Index i = cp.begin(); i < cp.size(); i++) {
 			const ConstPoolEntry* entry = &cp.entries[i];
 
 			line() << "#" << i << " [" << ConstNames[entry->tag] << "]: ";
+
+			struct V {
+				ConstPool& cp;
+				ostream& os;
+				ConstPool::Index& i;
+				V(ConstPool& cp, ostream& os, ConstPool::Index& i) :
+						cp(cp), os(os), i(i) {
+				}
+				void visitClass(u2 classNameIndex) {
+					os << cp.getClassName(i) << "#" << classNameIndex;
+				}
+			} v(cp, os, i);
+
+		//	cp.accept(i, v);
 
 			switch (entry->tag) {
 				case CONSTANT_Class:
@@ -202,6 +224,9 @@ struct ClassPrinter {
 					printExceptions((ExceptionsAttr&) attr);
 					break;
 				case ATTR_LVT:
+					printLvt((LvtAttr&) attr);
+					break;
+				case ATTR_LVTT:
 					printLvt((LvtAttr&) attr);
 					break;
 				case ATTR_LNT:
@@ -301,7 +326,8 @@ struct ClassPrinter {
 						<< inst.ts.low << " " << inst.ts.high << ":";
 
 				for (int i = 0; i < inst.ts.high - inst.ts.low + 1; i++) {
-					os << " " << inst.ts.targets[i]->label.id;
+					Inst* l = inst.ts.targets[i];
+					os << " " << l->label.id;
 				}
 
 				instos << endl;
@@ -312,8 +338,9 @@ struct ClassPrinter {
 						<< ":";
 
 				for (u4 i = 0; i < inst.ls.npairs; i++) {
-					instos << " " << inst.ls.keys[i] << " -> "
-							<< inst.ls.targets[i]->label.id;
+					u4 k = inst.ls.keys[i];
+					Inst* l = inst.ls.targets[i];
+					instos << " " << k << " -> " << l->label.id;
 				}
 
 				instos << endl;
@@ -372,6 +399,8 @@ struct ClassPrinter {
 			case KIND_RESERVED:
 				EXCEPTION("FrParseReservedInstr not implemented");
 				break;
+			default:
+				EXCEPTION("should not arrive here!");
 		}
 	}
 
@@ -395,8 +424,8 @@ struct ClassPrinter {
 
 	void printLvt(LvtAttr& attr) {
 		for (LvtAttr::LvEntry e : attr.lvt) {
-			line() << "  LocalVariableTable entry: start: " << e.startPc
-					<< ", len: " << e.len << ", varNameIndex: "
+			line() << "  LocalVariable(or Type)Table  entry: start: "
+					<< e.startPc << ", len: " << e.len << ", varNameIndex: "
 					<< e.varNameIndex << ", varDescIndex: " << e.varDescIndex
 					<< ", index: " << endl;
 		}

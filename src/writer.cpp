@@ -158,10 +158,10 @@ public:
 	}
 
 	void writeConstPool(const ConstPool& cp) {
-		u2 count = cp.entries.size();
+		u2 count = cp.size();
 		bw.writeu2(count);
 
-		for (u4 i = 1; i < cp.entries.size(); i++) {
+		for (ConstPool::Index i = cp.begin(); i < cp.size(); i++) {
 			const ConstPoolEntry* entry = &cp.entries[i];
 
 			bw.writeu1(entry->tag);
@@ -249,7 +249,8 @@ public:
 		for (u4 i = 0; i < count; i++) {
 			LntAttr::LnEntry& lne = attr.lnt[i];
 
-			bw.writeu2(lne.startpc);
+			//bw.writeu2(lne.startpc);
+			bw.writeu2(lne.startPcLabel->label.offset);
 			bw.writeu2(lne.lineno);
 		}
 	}
@@ -262,7 +263,9 @@ public:
 		for (u4 i = 0; i < count; i++) {
 			LvtAttr::LvEntry& lve = attr.lvt[i];
 
-			bw.writeu2(lve.startPc);
+			//bw.writeu2(lve.startPc);
+			bw.writeu2(lve.startPcLabel->label.offset);
+
 			bw.writeu2(lve.len);
 			bw.writeu2(lve.varNameIndex);
 			bw.writeu2(lve.varDescIndex);
@@ -274,9 +277,7 @@ public:
 		bw.writeu2(attr.sourceFileIndex);
 	}
 
-	void writeSmt(SmtAttr& attr, void* args) {
-		//InstList& instList = *(InstList*) args;
-
+	void writeSmt(SmtAttr& attr) {
 		auto parseTs =
 				[&](std::vector<SmtAttr::VerType>& locs) {
 					for (u1 i = 0; i < locs.size(); i++) {
@@ -344,8 +345,8 @@ public:
 				if (deltaOffset <= 63) {
 					frameType = 64 + deltaOffset;
 				} else {
-
-					EXCEPTION("not implemented 2");
+					frameType = 247;
+					//EXCEPTION("not implemented 2");
 				}
 			}
 
@@ -371,9 +372,11 @@ public:
 			} else if (frameType == 255) {
 				u2 offsetDelta = deltaOffset;
 				bw.writeu2(offsetDelta);
+
 				u2 numberOfLocals = e.full_frame.locals.size();
 				bw.writeu2(numberOfLocals);
 				parseTs(e.full_frame.locals);
+
 				u2 numberOfStackItems = e.full_frame.stack.size();
 				bw.writeu2(numberOfStackItems);
 				parseTs(e.full_frame.stack);
@@ -521,6 +524,8 @@ public:
 				case KIND_RESERVED:
 					EXCEPTION("not implemetd");
 					break;
+				default:
+					EXCEPTION("default kind in instlist!!");
 			}
 		}
 	}
@@ -545,10 +550,10 @@ public:
 			bw.writeu2(e.catchtype);
 		}
 
-		writeAttrs(attr.attrs, &attr.instList);
+		writeAttrs(attr.attrs);
 	}
 
-	void writeAttrs(Attrs& attrs, void* args = nullptr) {
+	void writeAttrs(Attrs& attrs) {
 		bw.writeu2(attrs.size());
 
 		for (u4 i = 0; i < attrs.size(); i++) {
@@ -579,11 +584,14 @@ public:
 					case ATTR_LVT:
 						writeLvt((LvtAttr&) attr);
 						break;
+					case ATTR_LVTT:
+						writeLvt((LvtAttr&) attr);
+						break;
 					case ATTR_LNT:
 						writeLnt((LntAttr&) attr);
 						break;
 					case ATTR_SMT:
-						writeSmt((SmtAttr&) attr, args);
+						writeSmt((SmtAttr&) attr);
 						break;
 				}
 			}
