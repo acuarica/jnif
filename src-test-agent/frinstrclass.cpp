@@ -240,10 +240,10 @@ void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 		Inst* inst = new Inst(opcode, KIND_LDC);
 		//inst->kind = KIND_LDC;
 		//inst->opcode = opcode;
-		inst->ldc.valueIndex = valueIndex;
+			inst->ldc.valueIndex = valueIndex;
 
-		return inst;
-	};
+			return inst;
+		};
 
 	for (Method& m : cf.methods) {
 		if (m.hasCode()) {
@@ -309,10 +309,10 @@ void InstrClassMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 		Inst* inst = new Inst(opcode, KIND_INVOKE);
 		//inst->kind = KIND_INVOKE;
 		//inst->opcode = opcode;
-		inst->invoke.methodRefIndex = index;
+			inst->invoke.methodRefIndex = index;
 
-		return inst;
-	};
+			return inst;
+		};
 
 	for (Method& m : cf.methods) {
 
@@ -335,6 +335,119 @@ void InstrClassMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 	}
 
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+}
+
+void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata) {
+
+	ClassFile cf(data, len);
+
+	ConstPool::Index classIndex = cf.addClass("frproxy/FrInstrProxy");
+	ConstPool::Index aNewArrayEventRef = cf.addMethodRef(classIndex,
+			"aNewArrayEvent", "(ILjava/lang/Object;Ljava/lang/String;)V");
+	ConstPool::Index enterMainMethodRef = cf.addMethodRef(classIndex,
+			"enterMainMethod", "()V");
+	ConstPool::Index exitMainMethodRef = cf.addMethodRef(classIndex,
+			"exitMainMethod", "()V");
+
+	auto invoke = [&] (Opcode opcode, u2 index) {
+		Inst* inst = new Inst(opcode, KIND_INVOKE);
+		inst->invoke.methodRefIndex = index;
+
+		return inst;
+	};
+
+	auto ldc = [&] (Opcode opcode, u2 valueIndex) {
+		Inst* inst = new Inst(opcode, KIND_LDC);
+		inst->ldc.valueIndex = valueIndex;
+
+		return inst;
+	};
+
+	if (string(className) == "java/lang/Object") {
+		u2 allocMethodRef = cf.addMethodRef(classIndex, "alloc",
+				"(Ljava/lang/Object;)V");
+
+		for (Method& m : cf.methods) {
+			const string& name = cf.getUtf8(m.nameIndex);
+
+			if (m.hasCode() && name == "<init>") {
+				InstList& instList = m.instList();
+
+				instList.push_front(
+						invoke(OPCODE_invokestatic, allocMethodRef));
+				instList.push_front(new Inst(OPCODE_aload_0));
+			}
+		}
+	}
+
+	for (Method& m : cf.methods) {
+		if (m.hasCode()) {
+			const string& methodName = cf.getUtf8(m.nameIndex);
+			const string& methodDesc = cf.getUtf8(m.descIndex);
+
+			InstList& instList = m.instList();
+			InstList& code = instList;
+
+			for (auto instp = instList.begin(); instp != instList.end();
+					instp++) {
+				Inst& inst = **instp;
+
+				if (inst.opcode == OPCODE_anewarray) {
+					// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
+					// OPERAND STACK: ... | count: int -> ... | arrayref
+
+					// STACK: ... | count
+
+					code.insert(instp, new Inst(OPCODE_dup));
+					// STACK: ... | count | count
+
+					instp++;
+					//code.push_back(&inst); // anewarray
+					// STACK: ... | count | arrayref
+
+					code.insert(instp, new Inst(OPCODE_dup_x1));
+					// STACK: ... | arrayref | count | arrayref
+
+					ConstPool::Index strIndex = cf.addStringFromClass(
+							inst.type.classIndex);
+
+					code.insert(instp, ldc(OPCODE_ldc_w, strIndex));
+					// STACK: ... | arrayref | count | arrayref | classname
+
+					instp = code.insert(instp,
+							invoke(OPCODE_invokestatic, aNewArrayEventRef));
+					// STACK: ... | arrayref
+
+				} else {
+					//code.push_back(&inst);
+				}
+			}
+
+			m.codeAttr()->maxStack += 3;
+
+			if (methodName == "main" && (m.accessFlags & ACC_STATIC)
+					&& (m.accessFlags & ACC_PUBLIC)
+					&& methodDesc == "([Ljava/lang/String;)V") {
+				instList.push_front(
+						invoke(OPCODE_invokestatic, enterMainMethodRef));
+
+				for (auto instp = instList.begin(); instp != instList.end();
+						instp++) {
+					Inst& inst = **instp;
+
+					if ((inst.opcode >= OPCODE_ireturn
+							&& inst.opcode <= OPCODE_return)
+							|| inst.opcode == OPCODE_athrow) {
+						instList.insert(instp,
+								invoke(OPCODE_invokestatic, exitMainMethodRef));
+					}
+				}
+			}
+		}
+
+		cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+	}
 }
 
 }

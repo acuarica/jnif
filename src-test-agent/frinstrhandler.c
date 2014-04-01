@@ -127,13 +127,9 @@ DEFHANDLER(enterMethod) (JNIEnv* jni, jclass proxyClass, jstring className,
 
 DEFHANDLER(enterMainMethod) (JNIEnv* jni, jclass proxyClass) {
 	_TLOG("ENTERMAIN");
-
-	fprintf(stderr, "we just enter main!!!\n");
 }
 
 DEFHANDLER(exitMainMethod) (JNIEnv* jni, jclass proxyClass) {
-	fprintf(stderr, "we just exit main!!!\n");
-
 	_TLOG("EXITMAIN");
 }
 

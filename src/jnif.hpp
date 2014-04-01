@@ -553,65 +553,9 @@ public:
 };
 
 /**
- *
- */
-struct ConstPoolEntry {
-
-//	ConstPoolEntry() {
-//	}
-
-	ConstPoolEntry(ConstTag tag) :
-			tag(tag) {
-	}
-
-	ConstTag tag;
-	union {
-		struct {
-			u2 name_index;
-		} clazz;
-		struct {
-			u2 class_index;
-			u2 name_and_type_index;
-		} memberref;
-		struct {
-			u2 string_index;
-		} s;
-		struct {
-			u4 value;
-		} i;
-		struct {
-			u4 value;
-		} f;
-		struct {
-			long value;
-		} l;
-		struct {
-			double value;
-		} d;
-		struct {
-			u2 name_index;
-			u2 descriptor_index;
-		} nameandtype;
-		struct {
-			u1 reference_kind;
-			u2 reference_index;
-		} methodhandle;
-		struct {
-			u2 descriptor_index;
-		} methodtype;
-		struct {
-			u2 bootstrap_method_attr_index;
-			u2 name_and_type_index;
-		} invokedynamic;
-	};
-	struct {
-		string str;
-	} utf8;
-};
-
-/**
- * Represents the Java class file's constant pool. The constant pool is a
- * table which holds different kinds of items depending on their use. It can
+ * Represents the Java class file's constant pool. Provides the base services
+ * to manage the constant pool. The constant pool is a table which holds
+ * different kinds of items depending on their use. It can
  * hold references for classes, fields, methods, interface methods, strings,
  * integers, floats, longs, doubles, name and type, utf8 arrays,
  * method handles, method types and invoke dynamic bootstrap methods.
@@ -624,6 +568,36 @@ public:
 	 * be addressed.
 	 */
 	typedef u2 Index;
+
+	/**
+	 * Defines how to iterate the constant pool.
+	 */
+	class Iterator {
+		friend class ConstPool;
+	public:
+
+		bool hasNext() const {
+			return index < cp.size();
+		}
+
+		Index operator*() const {
+			return index;
+		}
+
+		Iterator& operator++(int) {
+			index += cp._isDoubleEntry(index) ? 2 : 1;
+
+			return *this;
+		}
+
+	private:
+		Iterator(const ConstPool& cp, Index index) :
+				cp(cp), index(index) {
+		}
+
+		const ConstPool& cp;
+		Index index;
+	};
 
 	/**
 	 * Represents the invalid (null) item, which must not be asked for.
@@ -641,8 +615,8 @@ public:
 	 */
 	u4 size() const;
 
-	Index begin() const {
-		return 1;
+	Iterator iterator() const {
+		return Iterator(*this, 1);
 	}
 
 	/**
@@ -676,7 +650,7 @@ public:
 	/**
 	 * Adds a non-interface methods by method name and descriptor.
 	 */
-	Index addMethodRef(Index classIndex, const char* name, const char* desc);
+	Index addMethodRef(u2 classIndex, const char* name, const char* desc);
 
 	/**
 	 * Adds an interface method reference.
@@ -691,7 +665,7 @@ public:
 	/**
 	 *
 	 */
-	Index addStringFromClass(Index classIndex);
+	Index addStringFromClass(u2 classIndex);
 
 	/**
 	 * Adds an integer.
@@ -748,6 +722,11 @@ public:
 	Index addInvokeDynamic(u2 bootstrapMethodAttrIndex, u2 nameAndTypeIndex);
 
 	/**
+	 *
+	 */
+	ConstTag getTag(Index index) const;
+
+	/**
 	 * Checks whether the requested index holds a class reference.
 	 */
 	bool isClass(Index index) const;
@@ -793,78 +772,104 @@ public:
 	/**
 	 *
 	 */
+	void getNameAndType(Index index, string* name, string* desc) const;
+
+	/**
+	 *
+	 */
 	const char* getClassName(Index classIndex) const;
 
 	/**
 	 *
 	 */
-	void getNameAndType(Index index, string* name, string* desc) const;
+	class Entry {
+	public:
 
-	template<typename TConstPoolEntryVisitor>
-	void accept(Index index, TConstPoolEntryVisitor& v) {
-		const ConstPoolEntry* e = &entries[index];
-
-		switch (e->tag) {
-			case CONSTANT_Class:
-				v.visitClass(e->clazz.name_index);
-				break;
-			case CONSTANT_Fieldref:
-				v.visitFieldRef(e->memberref.class_index,
-						e->memberref.name_and_type_index);
-				break;
-			case CONSTANT_Methodref:
-				v.visitMethodRef(e->memberref.class_index,
-						e->memberref.name_and_type_index);
-				break;
-			case CONSTANT_InterfaceMethodref:
-				v.visitInterfaceMethodRef(e->memberref.class_index,
-						e->memberref.name_and_type_index);
-				break;
-			case CONSTANT_String:
-				v.visitString(e->s.string_index);
-				break;
-			case CONSTANT_Integer:
-				v.visitInteger(e->i.value);
-				break;
-			case CONSTANT_Float:
-				v.visitFloat(e->f.value);
-				break;
-			case CONSTANT_Long:
-				v.visitLong(e->l.value);
-				break;
-			case CONSTANT_Double:
-				v.visitLong(e->d.value);
-				break;
-			case CONSTANT_NameAndType:
-				v.visitNameAndType(e->nameandtype.name_index,
-						e->nameandtype.descriptor_index);
-				break;
-			case CONSTANT_Utf8:
-				v.visitUtf8(e->utf8.str);
-				break;
-			case CONSTANT_MethodHandle:
-				v.visitMethodHandle(e->methodhandle.reference_kind,
-						e->methodhandle.reference_index);
-				break;
-			case CONSTANT_MethodType:
-				v.visitMethodType(e->methodtype.descriptor_index);
-				break;
-			case CONSTANT_InvokeDynamic:
-				v.visitInvokeDynamic(
-						e->invokedynamic.bootstrap_method_attr_index,
-						e->invokedynamic.name_and_type_index);
-				break;
+		Entry(ConstTag tag) :
+				tag(tag) {
 		}
+
+		ConstTag tag;
+		union {
+			struct {
+				u2 nameIndex;
+			} clazz;
+			struct {
+				u2 classIndex;
+				u2 nameAndTypeIndex;
+			} memberref;
+			struct {
+				u2 stringIndex;
+			} s;
+			struct {
+				u4 value;
+			} i;
+			struct {
+				u4 value;
+			} f;
+			struct {
+				long value;
+			} l;
+			struct {
+				double value;
+			} d;
+			struct {
+				u2 nameIndex;
+				u2 descriptorIndex;
+			} nameandtype;
+			struct {
+				u1 referenceKind;
+				u2 referenceIndex;
+			} methodhandle;
+			struct {
+				u2 descriptorIndex;
+			} methodtype;
+			struct {
+				u2 bootstrapMethodAttrIndex;
+				u2 nameAndTypeIndex;
+			} invokedynamic;
+		};
+		struct {
+			string str;
+		} utf8;
+	};
+
+	void add(const Entry& entry) {
+		entries.push_back(entry);
 	}
 
-	vector<ConstPoolEntry> entries;
+//	class Class: public Entry {
+//	public:
+//		Class() :
+//				Entry(CONSTANT_Class), nameIndex(0) {
+//		}
+//		u2 nameIndex;
+//	};
+
+//	class FieldRef: public Entry {
+//		u2 classIndex;
+//		u2 nameAndTypeIndex;
+//	};
+
+//	template<typename TVisitor>
+//	void accept(Index index, TVisitor func) {
+//		func();
+//	}
+//
+//	template<typename ... TVisitorList>
+//	void accept(Index index, void (func)(Class c), TVisitorList...) {
+//		func(Class());
+//	}
+
+	vector<Entry> entries;
 
 private:
-	Index _addSingle(const ConstPoolEntry& entry);
-	Index _addDoubleEntry(const ConstPoolEntry& entry);
-	const ConstPoolEntry* _getEntry(Index index) const;
-	const ConstPoolEntry* _getEntry(Index index, u1 tag,
-			const char* message) const;
+
+	Index _addSingle(const Entry& entry);
+	Index _addDoubleEntry(const Entry& entry);
+	const Entry* _getEntry(Index index) const;
+	const Entry* _getEntry(Index index, u1 tag, const char* message) const;
+	bool _isDoubleEntry(Index index) const;
 	void _getMemberRef(Index index, string* clazzName, string* name,
 			string* desc, u1 tag) const;
 };

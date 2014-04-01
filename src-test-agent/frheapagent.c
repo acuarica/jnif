@@ -151,6 +151,7 @@ static void ParseOptions(const char* options) {
 	extern InstrFunc InstrClassNewArray;
 	extern InstrFunc InstrClassANewArray;
 	extern InstrFunc InstrClassMain;
+	extern InstrFunc InstrClassHeap;
 	extern InstrFunc InstrClassClientServer;
 
 	typedef struct {
@@ -175,6 +176,8 @@ static void ParseOptions(const char* options) {
 	{ &InstrClassANewArray, "ANewArray" },
 
 	{ &InstrClassMain, "Main" },
+
+	{ &InstrClassHeap, "Heap" },
 
 	};
 

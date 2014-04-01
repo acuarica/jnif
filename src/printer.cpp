@@ -4,6 +4,8 @@
 #include <ostream>
 #include <iomanip>
 
+#include <map>
+
 namespace jnif {
 
 /**
@@ -46,6 +48,750 @@ private:
 	const char* const sep;
 };
 
+template<typename THandler>
+static void parseFieldDesc(const char*& fieldDesc, THandler& h) {
+	const char* originalFieldDesc = fieldDesc;
+
+	int ds = 0;
+	while (*fieldDesc == '[') {
+		CHECK(*fieldDesc != '\0',
+				"Reach end of string while searching for array. Field descriptor: \"%s\"",
+				originalFieldDesc);
+		fieldDesc++;
+		ds++;
+	}
+
+	if (ds > 0) {
+		h.arrayType(ds);
+	}
+
+	CHECK(*fieldDesc != '\0', "");
+
+	switch (*fieldDesc) {
+		case 'Z':
+		case 'B':
+		case 'C':
+		case 'S':
+		case 'I':
+			h.intType();
+			break;
+		case 'D':
+			h.doubleType();
+			break;
+		case 'F':
+			h.floatType();
+			break;
+		case 'J':
+			h.longType();
+			break;
+		case 'L': {
+			fieldDesc++;
+
+			//const char* className = fieldDesc;
+			int len = 0;
+			while (*fieldDesc != ';') {
+				CHECK(*fieldDesc != '\0', "");
+				fieldDesc++;
+				len++;
+			}
+			h.refType();
+
+			break;
+		}
+		default:
+			EXCEPTION("Invalid field desc %s", originalFieldDesc);
+	}
+
+	fieldDesc++;
+}
+
+template<typename THandler>
+static void parseMethodDesc(const char* methodDesc, THandler& h, int lvstart) {
+	const char* originalMethodDesc = methodDesc;
+
+	CHECK(*methodDesc == '(', "Invalid beginning of method descriptor: %s",
+			originalMethodDesc);
+	methodDesc++;
+
+	int lvindex = lvstart;
+	while (*methodDesc != ')') {
+		CHECK(*methodDesc != '\0', "Reached end of string: %s",
+				originalMethodDesc);
+
+		struct ParseMethodAdapter {
+			THandler& h;
+			int lvindex;
+			int dims;
+			ParseMethodAdapter(THandler& h, int lvindex) :
+					h(h), lvindex(lvindex), dims(0) {
+			}
+			void intType() {
+				if (this->dims == 0) {
+					this->h.setIntVar(this->lvindex);
+				}
+			}
+			void longType() {
+				if (this->dims == 0) {
+					this->h.setLongVar(this->lvindex);
+				}
+			}
+			void floatType() {
+				if (this->dims == 0) {
+					this->h.setFloatVar(this->lvindex);
+				}
+			}
+			void doubleType() {
+				if (this->dims == 0) {
+					this->h.setDoubleVar(this->lvindex);
+				}
+			}
+			void refType() {
+				if (this->dims == 0) {
+					this->h.setRefVar(this->lvindex);
+				}
+			}
+			void arrayType(int ds) {
+				this->dims = ds;
+				this->h.setRefVar(this->lvindex);
+			}
+		} a(h, lvindex);
+
+		parseFieldDesc(methodDesc, a);
+		lvindex++;
+	}
+
+	CHECK(*methodDesc == ')', "Expected ')' in method descriptor: %s",
+			originalMethodDesc);
+	methodDesc++;
+
+	CHECK(*methodDesc != '\0', "Reached end of string: \"%s\"",
+			originalMethodDesc);
+
+	if (*methodDesc == 'V') {
+		methodDesc++;
+		//h.typeVoid();
+	} else {
+		struct {
+			void intType() {
+			}
+			void longType() {
+			}
+			void floatType() {
+			}
+			void doubleType() {
+			}
+			void refType() {
+			}
+			void arrayType(int) {
+			}
+		} e;
+		parseFieldDesc(methodDesc, e);
+	}
+
+	CHECK(*methodDesc == '\0', "Expected end of string: %s",
+			originalMethodDesc);
+}
+
+template<typename TFrame>
+static void computeFrame(Inst& inst, ConstPool& cp, TFrame& h) {
+
+	auto xaload = [&]() {
+		h.pop();
+		h.pop();
+	};
+	auto istore = [&](int lvindex) {
+		h.pop();
+		h.setIntVar(lvindex);
+	};
+	auto lstore = [&](int lvindex) {
+		h.pop();
+		h.setLongVar(lvindex);
+	};
+	auto fstore = [&](int lvindex) {
+		h.pop();
+		h.setFloatVar(lvindex);
+	};
+	auto dstore = [&](int lvindex) {
+		h.pop();
+		h.setDoubleVar(lvindex);
+	};
+	auto astore = [&](int lvindex) {
+		h.pop();
+		h.setRefVar(lvindex);
+	};
+	auto xastore = [&]() {
+		h.pop();
+		h.pop();
+		h.pop();
+	};
+
+	switch (inst.opcode) {
+		case OPCODE_nop:
+			break;
+		case OPCODE_aconst_null:
+			h.pushNull();
+			break;
+		case OPCODE_iconst_m1:
+		case OPCODE_iconst_0:
+		case OPCODE_iconst_1:
+		case OPCODE_iconst_2:
+		case OPCODE_iconst_3:
+		case OPCODE_iconst_4:
+		case OPCODE_iconst_5:
+		case OPCODE_bipush:
+		case OPCODE_sipush:
+			h.pushInt();
+			break;
+		case OPCODE_lconst_0:
+		case OPCODE_lconst_1:
+			h.pushLong();
+			break;
+		case OPCODE_fconst_0:
+		case OPCODE_fconst_1:
+		case OPCODE_fconst_2:
+			h.pushFloat();
+			break;
+		case OPCODE_dconst_0:
+		case OPCODE_dconst_1:
+			h.pushDouble();
+			break;
+		case OPCODE_ldc:
+		case OPCODE_ldc_w:
+		case OPCODE_ldc2_w: {
+
+//			cp.accept(2, [&](ConstPool::Class i) {
+//				h.pushDouble();
+//			}, [&](ConstPool::FieldRef i) {
+//				h.pushLong();
+//			});
+
+			ConstTag tag = cp.getTag(inst.ldc.valueIndex);
+			switch (tag) {
+				case CONSTANT_Integer:
+					h.pushInt();
+					break;
+				case CONSTANT_Float:
+					h.pushFloat();
+					break;
+				case CONSTANT_Long:
+					h.pushLong();
+					break;
+				case CONSTANT_Double:
+					h.pushLong();
+					break;
+				default:
+					h.pushRef();
+					break;
+			}
+			break;
+		}
+		case OPCODE_iload:
+		case OPCODE_iload_0:
+		case OPCODE_iload_1:
+		case OPCODE_iload_2:
+		case OPCODE_iload_3:
+			h.pushInt();
+			break;
+		case OPCODE_lload:
+		case OPCODE_lload_0:
+		case OPCODE_lload_1:
+		case OPCODE_lload_2:
+		case OPCODE_lload_3:
+			h.pushLong();
+			break;
+		case OPCODE_fload:
+		case OPCODE_fload_0:
+		case OPCODE_fload_1:
+		case OPCODE_fload_2:
+		case OPCODE_fload_3:
+			h.pushFloat();
+			break;
+		case OPCODE_dload:
+		case OPCODE_dload_0:
+		case OPCODE_dload_1:
+		case OPCODE_dload_2:
+		case OPCODE_dload_3:
+			h.pushDouble();
+			break;
+		case OPCODE_aload:
+		case OPCODE_aload_0:
+		case OPCODE_aload_1:
+		case OPCODE_aload_2:
+		case OPCODE_aload_3:
+			h.pushRef();
+			break;
+		case OPCODE_iaload:
+		case OPCODE_baload:
+		case OPCODE_caload:
+		case OPCODE_saload:
+			xaload();
+			h.pushInt();
+			break;
+		case OPCODE_laload:
+			xaload();
+			h.pushLong();
+			break;
+		case OPCODE_faload:
+			xaload();
+			h.pushFloat();
+			break;
+		case OPCODE_daload:
+			xaload();
+			h.pushDouble();
+			break;
+		case OPCODE_aaload:
+			xaload();
+			h.pushRef();
+			break;
+		case OPCODE_istore:
+			istore(inst.var.lvindex);
+			break;
+		case OPCODE_lstore:
+			lstore(inst.var.lvindex);
+			break;
+		case OPCODE_fstore:
+			fstore(inst.var.lvindex);
+			break;
+		case OPCODE_dstore:
+			dstore(inst.var.lvindex);
+			break;
+		case OPCODE_astore:
+			astore(inst.var.lvindex);
+			break;
+		case OPCODE_istore_0:
+			istore(0);
+			break;
+		case OPCODE_istore_1:
+			istore(1);
+			break;
+		case OPCODE_istore_2:
+			istore(2);
+			break;
+		case OPCODE_istore_3:
+			istore(3);
+			break;
+		case OPCODE_lstore_0:
+			lstore(0);
+			break;
+		case OPCODE_lstore_1:
+			lstore(1);
+			break;
+		case OPCODE_lstore_2:
+			lstore(2);
+			break;
+		case OPCODE_lstore_3:
+			lstore(3);
+			break;
+		case OPCODE_fstore_0:
+			fstore(0);
+			break;
+		case OPCODE_fstore_1:
+			fstore(1);
+			break;
+		case OPCODE_fstore_2:
+			fstore(2);
+			break;
+		case OPCODE_fstore_3:
+			fstore(3);
+			break;
+		case OPCODE_dstore_0:
+			dstore(0);
+			break;
+		case OPCODE_dstore_1:
+			dstore(1);
+			break;
+		case OPCODE_dstore_2:
+			dstore(2);
+			break;
+		case OPCODE_dstore_3:
+			dstore(3);
+			break;
+		case OPCODE_astore_0:
+			astore(0);
+			break;
+		case OPCODE_astore_1:
+			astore(1);
+			break;
+		case OPCODE_astore_2:
+			astore(2);
+			break;
+		case OPCODE_astore_3:
+			astore(3);
+			break;
+		case OPCODE_iastore:
+			xastore();
+			break;
+		case OPCODE_lastore:
+			xastore();
+			break;
+		case OPCODE_fastore:
+			xastore();
+			break;
+		case OPCODE_dastore:
+			xastore();
+			break;
+		case OPCODE_aastore:
+			xastore();
+			break;
+		case OPCODE_bastore:
+			xastore();
+			break;
+		case OPCODE_castore:
+			xastore();
+			break;
+		case OPCODE_sastore:
+			xastore();
+			break;
+		case OPCODE_pop:
+			h.pop();
+			break;
+		case OPCODE_pop2:
+			h.pop();
+			h.pop();
+			break;
+		case OPCODE_dup: {
+			auto t1 = h.pop();
+			h.push(t1);
+			h.push(t1);
+			break;
+		}
+		case OPCODE_dup_x1: {
+			auto t1 = h.pop();
+			auto t2 = h.pop();
+			h.push(t1);
+			h.push(t2);
+			h.push(t1);
+			break;
+		}
+		case OPCODE_dup_x2: {
+			auto t1 = h.pop();
+			auto t2 = h.pop();
+			auto t3 = h.pop();
+			h.push(t1);
+			h.push(t3);
+			h.push(t2);
+			h.push(t1);
+			break;
+		}
+		case OPCODE_dup2: {
+			auto t1 = h.pop();
+			auto t2 = h.pop();
+			h.push(t2);
+			h.push(t1);
+			h.push(t2);
+			h.push(t1);
+			break;
+		}
+		case OPCODE_dup2_x1: {
+			auto t1 = h.pop();
+			auto t2 = h.pop();
+			auto t3 = h.pop();
+			h.push(t2);
+			h.push(t1);
+			h.push(t3);
+			h.push(t2);
+			h.push(t1);
+			break;
+		}
+		case OPCODE_dup2_x2: {
+			auto t1 = h.pop();
+			auto t2 = h.pop();
+			auto t3 = h.pop();
+			auto t4 = h.pop();
+			h.push(t2);
+			h.push(t1);
+			h.push(t4);
+			h.push(t3);
+			h.push(t2);
+			h.push(t1);
+			break;
+		}
+		case OPCODE_swap: {
+			auto t1 = h.pop();
+			auto t2 = h.pop();
+			h.push(t1);
+			h.push(t2);
+			break;
+		}
+		case OPCODE_iadd:
+		case OPCODE_fadd:
+		case OPCODE_isub:
+		case OPCODE_fsub:
+		case OPCODE_imul:
+		case OPCODE_fmul:
+		case OPCODE_idiv:
+		case OPCODE_fdiv:
+		case OPCODE_irem:
+		case OPCODE_frem:
+		case OPCODE_ishl:
+		case OPCODE_ishr:
+		case OPCODE_iushr:
+		case OPCODE_iand:
+		case OPCODE_ior:
+		case OPCODE_ixor: {
+			auto t1 = h.pop();
+			h.pop();
+			h.push(t1);
+			break;
+		}
+		case OPCODE_ladd:
+		case OPCODE_lsub:
+		case OPCODE_lmul:
+		case OPCODE_ldiv:
+		case OPCODE_lrem:
+		case OPCODE_lshl:
+		case OPCODE_lshr:
+		case OPCODE_lushr:
+		case OPCODE_land:
+		case OPCODE_lor:
+		case OPCODE_lxor: {
+			h.pop();
+			h.pop();
+			h.pop();
+			h.pop();
+			h.pushLong();
+			break;
+		}
+		case OPCODE_dadd:
+		case OPCODE_dsub:
+		case OPCODE_dmul:
+		case OPCODE_ddiv:
+		case OPCODE_drem: {
+			h.pop();
+			h.pop();
+			h.pop();
+			h.pop();
+			h.pushDouble();
+			break;
+		}
+		case OPCODE_ineg:
+		case OPCODE_fneg: {
+			auto t1 = h.pop();
+			h.push(t1);
+			break;
+		}
+		case OPCODE_lneg: {
+			h.pop();
+			h.pop();
+			h.pushLong();
+			break;
+		}
+		case OPCODE_dneg: {
+			h.pop();
+			h.pop();
+			h.pushDouble();
+			break;
+		}
+		case OPCODE_iinc:
+			h.setIntVar(inst.iinc.index);
+			break;
+		case OPCODE_i2l:
+			h.pop();
+			h.pushLong();
+			break;
+		case OPCODE_i2f:
+			h.pop();
+			h.pushFloat();
+			break;
+		case OPCODE_i2d:
+			h.pop();
+			h.pushDouble();
+			break;
+		case OPCODE_l2i:
+			h.pop();
+			h.pop();
+			h.pushInt();
+			break;
+		case OPCODE_l2f:
+			h.pop();
+			h.pop();
+			h.pushFloat();
+			break;
+		case OPCODE_l2d:
+			h.pop();
+			h.pop();
+			h.pushDouble();
+			break;
+		case OPCODE_f2i:
+			h.pop();
+			h.pushInt();
+			break;
+		case OPCODE_f2l:
+			h.pop();
+			h.pushLong();
+			break;
+		case OPCODE_f2d:
+			h.pop();
+			h.pushDouble();
+			break;
+		case OPCODE_d2i:
+			h.pop();
+			h.pop();
+			h.pushInt();
+			break;
+		case OPCODE_d2l:
+			h.pop();
+			h.pop();
+			h.pushLong();
+			break;
+		case OPCODE_d2f:
+			h.pop();
+			h.pop();
+			h.pushFloat();
+			break;
+		case OPCODE_i2b:
+		case OPCODE_i2c:
+		case OPCODE_i2s:
+			h.pop();
+			h.pushInt();
+			break;
+		case OPCODE_lcmp:
+			h.pop();
+			h.pop();
+			h.pop();
+			h.pop();
+			h.pushInt();
+			break;
+		case OPCODE_fcmpl:
+		case OPCODE_fcmpg:
+			h.pop();
+			h.pop();
+			h.pushInt();
+			break;
+		case OPCODE_dcmpl:
+		case OPCODE_dcmpg:
+			h.pop();
+			h.pop();
+			h.pop();
+			h.pop();
+			h.pushInt();
+			break;
+		case OPCODE_ifeq:
+		case OPCODE_ifne:
+		case OPCODE_iflt:
+		case OPCODE_ifge:
+		case OPCODE_ifgt:
+		case OPCODE_ifle:
+			h.pop();
+			break;
+		case OPCODE_if_icmpeq:
+		case OPCODE_if_icmpne:
+		case OPCODE_if_icmplt:
+		case OPCODE_if_icmpge:
+		case OPCODE_if_icmpgt:
+		case OPCODE_if_icmple:
+			h.pop();
+			h.pop();
+			break;
+		case OPCODE_if_acmpeq:
+		case OPCODE_if_acmpne:
+			h.pop();
+			h.pop();
+			break;
+
+		default:
+			break;
+	}
+}
+
+struct H {
+	enum T {
+		Top, Int, Long, Float, Double, Ref
+	};
+
+	friend ostream& operator<<(ostream& os, H::T t) {
+		switch (t) {
+			case H::Top:
+				os << "Top";
+				break;
+			case H::Int:
+				os << "Int";
+				break;
+			case H::Long:
+				os << "Long";
+				break;
+			case H::Float:
+				os << "Float";
+				break;
+			case H::Double:
+				os << "Double";
+				break;
+			case H::Ref:
+				os << "Ref";
+				break;
+		}
+
+		return os;
+	}
+
+	T pop() {
+		ASSERT(stack.size() > 0, "");
+		T t = stack.front();
+		stack.pop_front();
+		return t;
+	}
+	void push(const T& t) {
+		stack.push_front(t);
+	}
+	void pushInt() {
+		push(Int);
+	}
+	void pushLong() {
+		push(Top);
+		push(Long);
+	}
+	void pushFloat() {
+		push(Float);
+	}
+	void pushDouble() {
+		push(Top);
+		push(Double);
+	}
+	void pushRef() {
+		push(Ref);
+	}
+	void pushNull() {
+		push(Ref);
+	}
+	void setVar(int lvindex, T t) {
+		lva[lvindex] = t;
+	}
+	void setIntVar(int lvindex) {
+		setVar(lvindex, Int);
+	}
+	void setLongVar(int lvindex) {
+		setVar(lvindex, Long);
+	}
+	void setFloatVar(int lvindex) {
+		setVar(lvindex, Float);
+	}
+	void setDoubleVar(int lvindex) {
+		setVar(lvindex, Double);
+	}
+	void setRefVar(int lvindex) {
+		setVar(lvindex, Ref);
+	}
+
+	ostream& print(ostream& os) {
+		os << "{ ";
+		for (u4 i = 0; i < lva.size(); i++) {
+			os << (i == 0 ? "" : ", ") << i << ": " << lva[i];
+		}
+		os << " } [ ";
+		int i = 0;
+		for (auto t : stack) {
+			os << (i == 0 ? "" : " | ") << t;
+			i++;
+		}
+		os << " ]";
+
+		return os;
+	}
+
+	std::map<int, T> lva;
+	std::list<T> stack;
+};
+
 ostream& operator<<(ostream& os, Version version) {
 	return os << version.getMajor() << "." << version.getMinor();
 }
@@ -61,6 +807,10 @@ struct ClassPrinter {
 	}
 
 	void print() {
+		line() << AccessFlagsPrinter(cf.accessFlags) << " class "
+				<< cf.getThisClassName() << "#" << cf.thisClassIndex << endl;
+
+		inc();
 		line() << "Version: " << cf.getVersion() << endl;
 
 		inc();
@@ -100,7 +850,7 @@ struct ClassPrinter {
 					<< ": " << cf.getUtf8(m.descIndex) << "#" << m.descIndex
 					<< endl;
 
-			printAttrs(m);
+			printAttrs(m, &m);
 		}
 
 		printAttrs(cf);
@@ -111,36 +861,25 @@ struct ClassPrinter {
 	void printConstPool(ConstPool& cp) {
 		line() << "#0 [null entry]: -" << endl;
 
-		for (ConstPool::Index i = cp.begin(); i < cp.size(); i++) {
-			const ConstPoolEntry* entry = &cp.entries[i];
+		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
+			ConstPool::Index i = *it;
+			ConstTag tag = cp.getTag(i);
 
-			line() << "#" << i << " [" << ConstNames[entry->tag] << "]: ";
+			line() << "#" << i << " [" << ConstNames[tag] << "]: ";
 
-			struct V {
-				ConstPool& cp;
-				ostream& os;
-				ConstPool::Index& i;
-				V(ConstPool& cp, ostream& os, ConstPool::Index& i) :
-						cp(cp), os(os), i(i) {
-				}
-				void visitClass(u2 classNameIndex) {
-					os << cp.getClassName(i) << "#" << classNameIndex;
-				}
-			} v(cp, os, i);
+			const ConstPool::Entry* entry = &cp.entries[i];
 
-		//	cp.accept(i, v);
-
-			switch (entry->tag) {
+			switch (tag) {
 				case CONSTANT_Class:
-					os << cp.getClassName(i) << "#" << entry->clazz.name_index;
+					os << cp.getClassName(i) << "#" << entry->clazz.nameIndex;
 					break;
 				case CONSTANT_Fieldref: {
 					string clazzName, name, desc;
 					cp.getFieldRef(i, &clazzName, &name, &desc);
 
-					os << clazzName << "#" << entry->memberref.class_index
-							<< "." << name << ":" << desc << "#"
-							<< entry->memberref.name_and_type_index;
+					os << clazzName << "#" << entry->memberref.classIndex << "."
+							<< name << ":" << desc << "#"
+							<< entry->memberref.nameAndTypeIndex;
 					break;
 				}
 
@@ -148,9 +887,9 @@ struct ClassPrinter {
 					string clazzName, name, desc;
 					cp.getMethodRef(i, &clazzName, &name, &desc);
 
-					os << clazzName << "#" << entry->memberref.class_index
-							<< "." << name << ":" << desc << "#"
-							<< entry->memberref.name_and_type_index;
+					os << clazzName << "#" << entry->memberref.classIndex << "."
+							<< name << ":" << desc << "#"
+							<< entry->memberref.nameAndTypeIndex;
 					break;
 				}
 
@@ -158,14 +897,14 @@ struct ClassPrinter {
 					string clazzName, name, desc;
 					cp.getInterMethodRef(i, &clazzName, &name, &desc);
 
-					os << clazzName << "#" << entry->memberref.class_index
-							<< "." << name << ":" << desc << "#"
-							<< entry->memberref.name_and_type_index;
+					os << clazzName << "#" << entry->memberref.classIndex << "."
+							<< name << ":" << desc << "#"
+							<< entry->memberref.nameAndTypeIndex;
 					break;
 				}
 				case CONSTANT_String:
-					os << cp.getUtf8(entry->s.string_index) << "#"
-							<< entry->s.string_index;
+					os << cp.getUtf8(entry->s.stringIndex) << "#"
+							<< entry->s.stringIndex;
 					break;
 				case CONSTANT_Integer:
 					os << entry->i.value;
@@ -175,30 +914,29 @@ struct ClassPrinter {
 					break;
 				case CONSTANT_Long:
 					os << cp.getLong(i);
-					i++;
+					//i++;
 					break;
 				case CONSTANT_Double:
 					os << cp.getDouble(i);
-					i++;
+					//i++;
 					break;
 				case CONSTANT_NameAndType:
-					os << "#" << entry->nameandtype.name_index << ".#"
-							<< entry->nameandtype.descriptor_index;
+					os << "#" << entry->nameandtype.nameIndex << ".#"
+							<< entry->nameandtype.descriptorIndex;
 					break;
 				case CONSTANT_Utf8:
 					os << entry->utf8.str;
 					break;
 				case CONSTANT_MethodHandle:
-					os << entry->methodhandle.reference_kind << " #"
-							<< entry->methodhandle.reference_index;
+					os << entry->methodhandle.referenceKind << " #"
+							<< entry->methodhandle.referenceIndex;
 					break;
 				case CONSTANT_MethodType:
-					os << "#" << entry->methodtype.descriptor_index;
+					os << "#" << entry->methodtype.descriptorIndex;
 					break;
 				case CONSTANT_InvokeDynamic:
-					os << "#"
-							<< entry->invokedynamic.bootstrap_method_attr_index
-							<< ".#" << entry->invokedynamic.name_and_type_index;
+					os << "#" << entry->invokedynamic.bootstrapMethodAttrIndex
+							<< ".#" << entry->invokedynamic.nameAndTypeIndex;
 					break;
 			}
 
@@ -206,7 +944,7 @@ struct ClassPrinter {
 		}
 	}
 
-	void printAttrs(Attrs& attrs) {
+	void printAttrs(Attrs& attrs, void* args = nullptr) {
 		for (Attr* attrp : attrs) {
 			Attr& attr = *attrp;
 
@@ -218,7 +956,7 @@ struct ClassPrinter {
 					printSourceFile((SourceFileAttr&) attr);
 					break;
 				case ATTR_CODE:
-					printCode((CodeAttr&) attr);
+					printCode((CodeAttr&) attr, (Method*) args);
 					break;
 				case ATTR_EXCEPTIONS:
 					printExceptions((ExceptionsAttr&) attr);
@@ -253,7 +991,7 @@ struct ClassPrinter {
 
 	}
 
-	void printCode(CodeAttr& c) {
+	void printCode(CodeAttr& c, Method* m) {
 		line(1) << "maxStack: " << c.maxStack << ", maxLocals: " << c.maxLocals
 				<< endl;
 
@@ -269,8 +1007,29 @@ struct ClassPrinter {
 			}
 		}
 
+		H h;
+
+		const char* methodDesc = cf.getUtf8(m->descIndex);
+		int lvstart = [&]() {
+			if (m->accessFlags & ACC_STATIC) {
+				return 0;
+			} else {
+				h.setRefVar(0); // this argument
+				return 1;
+			}
+		}();
+
+		parseMethodDesc(methodDesc, h, lvstart);
+
 		for (Inst* inst : c.instList) {
 			printInst(*inst);
+			//os <<
+			computeFrame(*inst, cf, h);
+
+			os << setw(10);
+			h.print(os);
+
+			os << endl;
 		}
 
 		for (CodeExceptionEntry& e : c.exceptions) {
@@ -289,7 +1048,7 @@ struct ClassPrinter {
 		int offset = inst._offset;
 
 		if (inst.kind == KIND_LABEL) {
-			os << "   label: " << inst.label.id << endl;
+			os << "   label: " << inst.label.id;
 			return;
 		}
 
@@ -300,26 +1059,25 @@ struct ClassPrinter {
 
 		switch (inst.kind) {
 			case KIND_ZERO:
-				instos << endl;
+				//instos << endl;
 				break;
 			case KIND_BIPUSH:
-				instos << int(inst.push.value) << endl;
+				instos << int(inst.push.value);
 				break;
 			case KIND_SIPUSH:
-				instos << int(inst.push.value) << endl;
+				instos << int(inst.push.value);
 				break;
 			case KIND_LDC:
-				instos << int(inst.ldc.valueIndex) << endl;
+				instos << "#" << int(inst.ldc.valueIndex);
 				break;
 			case KIND_VAR:
-				instos << int(inst.var.lvindex) << endl;
+				instos << int(inst.var.lvindex);
 				break;
 			case KIND_IINC:
-				instos << int(inst.iinc.index) << " " << int(inst.iinc.value)
-						<< endl;
+				instos << int(inst.iinc.index) << " " << int(inst.iinc.value);
 				break;
 			case KIND_JUMP:
-				instos << "label: " << inst.jump.label2->label.id << endl;
+				instos << "label: " << inst.jump.label2->label.id;
 				break;
 			case KIND_TABLESWITCH:
 				instos << "default: " << inst.ts.def->label.id << ", from: "
@@ -330,7 +1088,7 @@ struct ClassPrinter {
 					os << " " << l->label.id;
 				}
 
-				instos << endl;
+				//instos;
 
 				break;
 			case KIND_LOOKUPSWITCH:
@@ -343,14 +1101,14 @@ struct ClassPrinter {
 					instos << " " << k << " -> " << l->label.id;
 				}
 
-				instos << endl;
+				//instos << endl;
 				break;
 			case KIND_FIELD: {
 				string className, name, desc;
 				cf.getFieldRef(inst.field.fieldRefIndex, &className, &name,
 						&desc);
 
-				instos << className << name << desc << endl;
+				instos << className << name << desc;
 
 				break;
 			}
@@ -359,7 +1117,7 @@ struct ClassPrinter {
 				cf.getMethodRef(inst.invoke.methodRefIndex, &className, &name,
 						&desc);
 
-				instos << className << "." << name << ": " << desc << endl;
+				instos << className << "." << name << ": " << desc;
 
 				break;
 			}
@@ -369,7 +1127,7 @@ struct ClassPrinter {
 						&className, &name, &desc);
 
 				instos << className << "." << name << ": " << desc << "("
-						<< inst.invokeinterface.count << ")" << endl;
+						<< inst.invokeinterface.count << ")";
 				break;
 			}
 			case KIND_INVOKEDYNAMIC:
@@ -378,18 +1136,18 @@ struct ClassPrinter {
 			case KIND_TYPE: {
 				string className = cf.getClassName(inst.type.classIndex);
 
-				instos << className << endl;
+				instos << className;
 
 				break;
 			}
 			case KIND_NEWARRAY:
-				instos << int(inst.newarray.atype) << endl;
+				instos << int(inst.newarray.atype);
 
 				break;
 			case KIND_MULTIARRAY: {
 				string className = cf.getClassName(inst.multiarray.classIndex);
 
-				instos << className << " " << inst.multiarray.dims << endl;
+				instos << className << " " << inst.multiarray.dims;
 
 				break;
 			}

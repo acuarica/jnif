@@ -7,6 +7,16 @@ import java.util.regex.*;
 
 public class BasicClass {
 
+	static boolean isPositive(int value) {
+		boolean result;
+		if (value >= 1) {
+			result = true;
+		} else {
+			result = false;
+		}
+		return result;
+	}
+
 	int something(long l) {
 		return 42;
 	}
@@ -105,4 +115,25 @@ public class BasicClass {
 			System.out.print("Z");
 		}
 	}
+
+	private static void sort2() {
+		int n = 50;
+
+		int[] array = new int[n];
+
+		for (int i = 0; i < n; i++) {
+			array[i] = i * 2;
+		}
+
+		for (int c = 0; c < n - 1; c++) {
+			for (int d = 0; d < n - c - 1; d++) {
+				if (array[d] > array[d + 1]) {
+					int swap = array[d];
+					array[d] = array[d + 1];
+					array[d + 1] = swap;
+				}
+			}
+		}
+	}
+
 }

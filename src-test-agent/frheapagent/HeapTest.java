@@ -7,6 +7,8 @@ import java.util.regex.*;
 
 public class HeapTest {
 
+	private boolean isCourseText;
+	
 	int something(long l) {
 		return 42;
 	}
@@ -14,6 +16,10 @@ public class HeapTest {
 	int hola(int a, int b) {
 		int c = a + b;
 		return c;
+	}
+
+	public boolean isCourseText() {
+		return isCourseText;
 	}
 
 	public static int hola2(int a, int b) {
@@ -81,6 +87,10 @@ public class HeapTest {
 	}
 
 	public static void main(String[] args) throws IOException {
+		HeapTest ht = new HeapTest();
+		System.out.println("Is course text?: " + ht.isCourseText());
+		System.out.println("Really?: " + ht.isCourseText);
+		 
 		int[] as = new int[34];
 		int[] as1 = new int[34];
 		int[] as2 = new int[34];

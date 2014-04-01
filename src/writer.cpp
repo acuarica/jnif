@@ -161,23 +161,24 @@ public:
 		u2 count = cp.size();
 		bw.writeu2(count);
 
-		for (ConstPool::Index i = cp.begin(); i < cp.size(); i++) {
-			const ConstPoolEntry* entry = &cp.entries[i];
+		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
+			ConstPool::Index i = *it;
+			const ConstPool::Entry* entry = &cp.entries[i];
 
 			bw.writeu1(entry->tag);
 
 			switch (entry->tag) {
 				case CONSTANT_Class:
-					bw.writeu2(entry->clazz.name_index);
+					bw.writeu2(entry->clazz.nameIndex);
 					break;
 				case CONSTANT_Fieldref:
 				case CONSTANT_Methodref:
 				case CONSTANT_InterfaceMethodref:
-					bw.writeu2(entry->memberref.class_index);
-					bw.writeu2(entry->memberref.name_and_type_index);
+					bw.writeu2(entry->memberref.classIndex);
+					bw.writeu2(entry->memberref.nameAndTypeIndex);
 					break;
 				case CONSTANT_String:
-					bw.writeu2(entry->s.string_index);
+					bw.writeu2(entry->s.stringIndex);
 					break;
 				case CONSTANT_Integer:
 					bw.writeu4(entry->i.value);
@@ -189,7 +190,7 @@ public:
 					long value = cp.getLong(i);
 					bw.writeu4(value >> 32);
 					bw.writeu4(value & 0xffffffff);
-					i++;
+			//		i++;
 					break;
 				}
 				case CONSTANT_Double: {
@@ -197,12 +198,12 @@ public:
 					long value = *(long*) &dvalue;
 					bw.writeu4(value >> 32);
 					bw.writeu4(value & 0xffffffff);
-					i++;
+		//			i++;
 					break;
 				}
 				case CONSTANT_NameAndType:
-					bw.writeu2(entry->nameandtype.name_index);
-					bw.writeu2(entry->nameandtype.descriptor_index);
+					bw.writeu2(entry->nameandtype.nameIndex);
+					bw.writeu2(entry->nameandtype.descriptorIndex);
 					break;
 				case CONSTANT_Utf8: {
 					u2 len = entry->utf8.str.length();
@@ -212,16 +213,16 @@ public:
 					break;
 				}
 				case CONSTANT_MethodHandle:
-					bw.writeu1(entry->methodhandle.reference_kind);
-					bw.writeu2(entry->methodhandle.reference_index);
+					bw.writeu1(entry->methodhandle.referenceKind);
+					bw.writeu2(entry->methodhandle.referenceIndex);
 					break;
 				case CONSTANT_MethodType:
-					bw.writeu2(entry->methodtype.descriptor_index);
+					bw.writeu2(entry->methodtype.descriptorIndex);
 					break;
 				case CONSTANT_InvokeDynamic:
 					bw.writeu2(
-							entry->invokedynamic.bootstrap_method_attr_index);
-					bw.writeu2(entry->invokedynamic.name_and_type_index);
+							entry->invokedynamic.bootstrapMethodAttrIndex);
+					bw.writeu2(entry->invokedynamic.nameAndTypeIndex);
 					break;
 			}
 		}

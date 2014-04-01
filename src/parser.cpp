@@ -647,16 +647,17 @@ static Attr* parseLnt(BufferReader& br, Attrs& as, u2 nameIndex, void* args) {
 	for (int i = 0; i < lntlen; i++) {
 		LntAttr::LnEntry e;
 		u2 startpc = br.readu2();
+		u2 lineno = br.readu2();
 
-		e.startPcLabel = createLabel(labels, startpc);
+//		e.startPcLabel = createLabel(labels, startpc);
 
 		e.startpc = startpc;
-		e.lineno = br.readu2();
+		e.lineno = lineno;
 
 		lnt->lnt.push_back(e);
 	}
 
-	as.add(lnt);
+	//as.add(lnt);
 
 	return lnt;
 }

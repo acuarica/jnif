@@ -66,21 +66,50 @@ static void _run(TTestFunc test, const char* testName) {
 }
 
 #define run(test) _run(test, #test);
+//
+//template<typename TNode, typename TLabel>
+//class Graph {
+//public:
+//
+//	typedef int NodeId;
+//
+//	NodeId addNode(const TNode& node) {
+////		return
+//	}
+//
+//	void addEdge(const TNode& to, const TNode& from, const TLabel& label) {
+//	}
+//
+//private:
+//	//std::vector<TNode>
+//};
 
 static void testPrinter() {
-	ClassFile cf1("jnif/test/generated/Class1");
-	cout << cf1;
+//	ClassFile cf1("jnif/test/generated/Class1");
+	//cout << cf1;
 
-	ClassFile cf2("jnif/test/generated/Class2", "jnif/test/generated/Class");
-	Method& m = cf2.addMethod("main", "([Ljava/lang/String;)V");
+//	ClassFile cf2("jnif/test/generated/Class2", "jnif/test/generated/Class");
+	//Method& m = cf2.addMethod("main", "([Ljava/lang/String;)V");
 	//m.
-
-	cout << cf2;
+//	cout << cf2;
 
 	apply([](const JavaFile& jf) {
 		ClassFile cf(jf.data, jf.len);
 		cout << cf;
+
+		for (Method& m: cf.methods) {
+			cout << "Method: " << cf.getUtf8( m.nameIndex) << endl;
+
+			if (m.hasCode()) {
+				InstList& instList = m.instList();
+
+				for (Inst* instp : instList) {
+					Inst& inst = *instp;
+				}
+			}
+		}
 	});
+
 }
 
 static void testIdentityComputeSize() {
@@ -213,15 +242,15 @@ static void testNopAdderInstr() {
 
 int main(int, const char*[]) {
 	run(testPrinter);
-	run(testIdentityComputeSize);
-	run(testIdentityParserWriter);
-	run(testNopAdderInstrSize);
-	run(testNopAdderInstr);
+//	run(testIdentityComputeSize);
+//	run(testIdentityParserWriter);
+//	run(testNopAdderInstrSize);
+//	run(testNopAdderInstr);
 
 	PSIZEOF(vector<int>);
 	PSIZEOF(std::string);
 	PSIZEOF(ConstPool);
-	PSIZEOF(ConstPoolEntry);
+	PSIZEOF(ConstPool::Entry);
 	PSIZEOF(Opcode);
 	PSIZEOF(OpKind);
 	PSIZEOF(Inst);
