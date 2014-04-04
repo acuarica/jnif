@@ -5,6 +5,9 @@
 #include <iomanip>
 
 #include <map>
+#include <set>
+
+#include "Cfg.hpp"
 
 namespace jnif {
 
@@ -193,7 +196,7 @@ static void parseMethodDesc(const char* methodDesc, THandler& h, int lvstart) {
 }
 
 template<typename TFrame>
-static void computeFrame(Inst& inst, ConstPool& cp, TFrame& h) {
+static void computeFrame(Inst& inst, const ConstPool& cp, TFrame& h) {
 
 	auto xaload = [&]() {
 		h.pop();
@@ -724,8 +727,13 @@ struct H {
 		return os;
 	}
 
+	H() :
+			valid(false) {
+	}
+
 	T pop() {
-		ASSERT(stack.size() > 0, "");
+		CHECK(stack.size() > 0, "Trying to pop in an empty stack.");
+
 		T t = stack.front();
 		stack.pop_front();
 		return t;
@@ -783,13 +791,26 @@ struct H {
 			os << (i == 0 ? "" : " | ") << t;
 			i++;
 		}
-		os << " ]";
+		os << " ]" << endl;
 
 		return os;
 	}
 
+	bool join(H& other, ostream& os) {
+		this->print(os);
+		other.print(os);
+
+		ASSERT(lva.size() == other.lva.size(), "%ld != %ld", lva.size(),
+				other.lva.size());
+		ASSERT(stack.size() == other.stack.size(), "");
+		//lva.join();
+
+		return false;
+	}
+
 	std::map<int, T> lva;
 	std::list<T> stack;
+	bool valid;
 };
 
 ostream& operator<<(ostream& os, Version version) {
@@ -869,39 +890,64 @@ struct ClassPrinter {
 
 			const ConstPool::Entry* entry = &cp.entries[i];
 
+			cp.get(i, [&](ConstPool::Class e) {
+				os << cp.getClassName(i) << "#" << e.nameIndex;
+			}, [&](ConstPool::FieldRef e) {
+				string clazzName, name, desc;
+				cp.getFieldRef(i, &clazzName, &name, &desc);
+
+				os << clazzName << "#" << e.classIndex << "."
+				<< name << ":" << desc << "#"
+				<< e.nameAndTypeIndex;
+			}, [&](ConstPool::MethodRef e) {
+				string clazzName, name, desc;
+				cp.getMethodRef(i, &clazzName, &name, &desc);
+
+				os << clazzName << "#" << e.classIndex << "."
+				<< name << ":" << desc << "#"
+				<< e.nameAndTypeIndex;
+			}, [&](ConstPool::InterMethodRef e) {
+				string clazzName, name, desc;
+				cp.getInterMethodRef(i, &clazzName, &name, &desc);
+
+				os << clazzName << "#" << e.classIndex << "."
+				<< name << ":" << desc << "#"
+				<< e.nameAndTypeIndex;
+			});
+
 			switch (tag) {
 				case CONSTANT_Class:
-					os << cp.getClassName(i) << "#" << entry->clazz.nameIndex;
+//					os << cp.getClassName(i) << "#" << entry->clazz.nameIndex;
+//					break;
+				case CONSTANT_Fieldref: //{
+//					string clazzName, name, desc;
+//					cp.getFieldRef(i, &clazzName, &name, &desc);
+//
+//					os << clazzName << "#" << entry->memberref.classIndex << "."
+//							<< name << ":" << desc << "#"
+//							<< entry->memberref.nameAndTypeIndex;
+//					break;
+//				}
+//
+				case CONSTANT_Methodref: //{
+//					string clazzName, name, desc;
+//					cp.getMethodRef(i, &clazzName, &name, &desc);
+//
+//					os << clazzName << "#" << entry->memberref.classIndex << "."
+//							<< name << ":" << desc << "#"
+//							<< entry->memberref.nameAndTypeIndex;
+//					break;
+//				}
+//
+				case CONSTANT_InterfaceMethodref: //{
+//					string clazzName, name, desc;
+//					cp.getInterMethodRef(i, &clazzName, &name, &desc);
+//
+//					os << clazzName << "#" << entry->memberref.classIndex << "."
+//							<< name << ":" << desc << "#"
+//							<< entry->memberref.nameAndTypeIndex;
 					break;
-				case CONSTANT_Fieldref: {
-					string clazzName, name, desc;
-					cp.getFieldRef(i, &clazzName, &name, &desc);
-
-					os << clazzName << "#" << entry->memberref.classIndex << "."
-							<< name << ":" << desc << "#"
-							<< entry->memberref.nameAndTypeIndex;
-					break;
-				}
-
-				case CONSTANT_Methodref: {
-					string clazzName, name, desc;
-					cp.getMethodRef(i, &clazzName, &name, &desc);
-
-					os << clazzName << "#" << entry->memberref.classIndex << "."
-							<< name << ":" << desc << "#"
-							<< entry->memberref.nameAndTypeIndex;
-					break;
-				}
-
-				case CONSTANT_InterfaceMethodref: {
-					string clazzName, name, desc;
-					cp.getInterMethodRef(i, &clazzName, &name, &desc);
-
-					os << clazzName << "#" << entry->memberref.classIndex << "."
-							<< name << ":" << desc << "#"
-							<< entry->memberref.nameAndTypeIndex;
-					break;
-				}
+//				}
 				case CONSTANT_String:
 					os << cp.getUtf8(entry->s.stringIndex) << "#"
 							<< entry->s.stringIndex;
@@ -991,6 +1037,11 @@ struct ClassPrinter {
 
 	}
 
+	struct State {
+		H in;
+		H out;
+	};
+
 	void printCode(CodeAttr& c, Method* m) {
 		line(1) << "maxStack: " << c.maxStack << ", maxLocals: " << c.maxLocals
 				<< endl;
@@ -1009,7 +1060,6 @@ struct ClassPrinter {
 
 		H h;
 
-		const char* methodDesc = cf.getUtf8(m->descIndex);
 		int lvstart = [&]() {
 			if (m->accessFlags & ACC_STATIC) {
 				return 0;
@@ -1019,16 +1069,39 @@ struct ClassPrinter {
 			}
 		}();
 
+		const char* methodDesc = cf.getUtf8(m->descIndex);
 		parseMethodDesc(methodDesc, h, lvstart);
+
+		H initState = h;
 
 		for (Inst* inst : c.instList) {
 			printInst(*inst);
-			//os <<
 			computeFrame(*inst, cf, h);
-
 			os << setw(10);
 			h.print(os);
+			os << endl;
+		}
 
+		ControlFlowGraph cfg(c.instList);
+		printCfg(cfg);
+
+		std::vector<State> states(cfg.nodeCount());
+		initState.valid = true;
+		states[cfg.entry._index] = {initState, initState};
+
+		auto to = *cfg.outEdges(cfg.entry).begin();
+		computeState(to, initState, cfg, states, c.instList);
+
+		for (auto nkey : cfg) {
+			InstList::iterator b;
+			InstList::iterator e;
+			std::string name;
+			std::tie(b, e, name) = cfg.getNode(nkey);
+
+			os << name << ": ";
+			State& s = states[nkey._index];
+			s.in.print(os);
+			s.out.print(os);
 			os << endl;
 		}
 
@@ -1042,6 +1115,106 @@ struct ClassPrinter {
 		printAttrs(c.attrs);
 
 		dec();
+	}
+
+	void computeState(ControlFlowGraph::NodeKey to, H& how,
+			ControlFlowGraph& cfg, std::vector<State>& states, InstList& instList) {
+
+		InstList::iterator b;
+		InstList::iterator e;
+		std::string name;
+		std::tie(b, e, name) = cfg.getNode(to);
+		os << "computing " << name << endl;
+
+		if (b == instList.end()) {
+			ASSERT(name == "Exit", "");
+			ASSERT(e == instList.end(), "");
+			return;
+		}
+
+		ASSERT(how.valid, "");
+
+		State& s = states[to._index];
+
+		ASSERT(s.in.valid == s.out.valid, "");
+
+		bool change;
+		if (!s.in.valid) {
+			s.in = how;
+			s.out = s.in;
+			change = true;
+		} else {
+			change = s.in.join(how, os);
+		}
+
+		if (change) {
+			for (auto it = b; it != e; it++) {
+				Inst* inst = *it;
+				computeFrame(*inst, cf, s.out);
+			}
+
+			H h = s.out;
+
+			for (auto nid : cfg.outEdges(to)) {
+//				fprintf(stderr, "asf");
+
+				InstList::iterator b;
+				InstList::iterator e;
+				std::string name;
+				std::tie(b, e, name) = cfg.getNode(nid);
+//
+//				if (b == instList.end()) {
+//					ASSERT(name == "Entry" || name == "Exit", "");
+//					ASSERT(e == instList.end(), "");
+//					continue;
+//				}
+
+//				H h = outState;
+//				for (auto it = b; it != e; it++) {
+//					Inst* inst = *it;
+//					computeFrame(*inst, cf, h);
+//				}
+
+
+//				h.print(os);
+//				os << "  going to " << name << endl;
+
+				computeState(nid, h, cfg, states, instList);
+			}
+		}
+	}
+
+	void printCfg(ControlFlowGraph& cfg) {
+		for (auto nid : cfg) {
+			InstList::iterator b;
+			InstList::iterator e;
+			std::string name;
+			std::tie(b, e, name) = cfg.getNode(nid);
+
+			os << "* " << name;
+
+			auto printEdges =
+					[&](ControlFlowGraph::EdgeIterable edges, const char* kind, const char* arrow) {
+						os << " @" << kind << " { ";
+						for (auto eid : edges) {
+							auto bb = cfg.getNode(eid);
+							os << arrow << std::get<2>(bb) << ", ";
+						}
+						os << "} ";
+					};
+
+			printEdges(cfg.outEdges(nid), "Out", "->");
+			printEdges(cfg.inEdges(nid), "In", "<-");
+			os << endl;
+
+			for (auto it = b; it != e; it++) {
+				Inst* inst = *it;
+				printInst(*inst);
+				os << endl;
+			}
+		}
+
+		os << endl;
 	}
 
 	void printInst(Inst& inst) {

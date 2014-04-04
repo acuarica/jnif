@@ -172,10 +172,16 @@ public:
 					bw.writeu2(entry->clazz.nameIndex);
 					break;
 				case CONSTANT_Fieldref:
+					bw.writeu2(entry->fieldRef.classIndex);
+					bw.writeu2(entry->fieldRef.nameAndTypeIndex);
+					break;
 				case CONSTANT_Methodref:
+					bw.writeu2(entry->methodRef.classIndex);
+					bw.writeu2(entry->methodRef.nameAndTypeIndex);
+					break;
 				case CONSTANT_InterfaceMethodref:
-					bw.writeu2(entry->memberref.classIndex);
-					bw.writeu2(entry->memberref.nameAndTypeIndex);
+					bw.writeu2(entry->interMethodRef.classIndex);
+					bw.writeu2(entry->interMethodRef.nameAndTypeIndex);
 					break;
 				case CONSTANT_String:
 					bw.writeu2(entry->s.stringIndex);
@@ -190,7 +196,7 @@ public:
 					long value = cp.getLong(i);
 					bw.writeu4(value >> 32);
 					bw.writeu4(value & 0xffffffff);
-			//		i++;
+					//		i++;
 					break;
 				}
 				case CONSTANT_Double: {
@@ -198,7 +204,7 @@ public:
 					long value = *(long*) &dvalue;
 					bw.writeu4(value >> 32);
 					bw.writeu4(value & 0xffffffff);
-		//			i++;
+					//			i++;
 					break;
 				}
 				case CONSTANT_NameAndType:
@@ -220,8 +226,7 @@ public:
 					bw.writeu2(entry->methodtype.descriptorIndex);
 					break;
 				case CONSTANT_InvokeDynamic:
-					bw.writeu2(
-							entry->invokedynamic.bootstrapMethodAttrIndex);
+					bw.writeu2(entry->invokedynamic.bootstrapMethodAttrIndex);
 					bw.writeu2(entry->invokedynamic.nameAndTypeIndex);
 					break;
 			}

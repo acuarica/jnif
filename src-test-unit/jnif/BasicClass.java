@@ -7,6 +7,26 @@ import java.util.regex.*;
 
 public class BasicClass {
 
+	static int sum(int n) {
+		int result = 0;
+
+		for (int i = 1; i <= n; i++) {
+			result += i;
+		}
+
+		return result;
+	}
+
+	static int abs(int value) {
+		int result;
+		result = value;
+		if (result < 0) {
+			result = -result;
+		}
+
+		return result;
+	}
+
 	static boolean isPositive(int value) {
 		boolean result;
 		if (value >= 1) {

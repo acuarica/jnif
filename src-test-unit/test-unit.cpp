@@ -66,23 +66,6 @@ static void _run(TTestFunc test, const char* testName) {
 }
 
 #define run(test) _run(test, #test);
-//
-//template<typename TNode, typename TLabel>
-//class Graph {
-//public:
-//
-//	typedef int NodeId;
-//
-//	NodeId addNode(const TNode& node) {
-////		return
-//	}
-//
-//	void addEdge(const TNode& to, const TNode& from, const TLabel& label) {
-//	}
-//
-//private:
-//	//std::vector<TNode>
-//};
 
 static void testPrinter() {
 //	ClassFile cf1("jnif/test/generated/Class1");
@@ -96,6 +79,15 @@ static void testPrinter() {
 	apply([](const JavaFile& jf) {
 		ClassFile cf(jf.data, jf.len);
 		cout << cf;
+
+		cf.get(5, [&](ConstPool::Class e) -> void {
+					fprintf(stderr, "asdfasdfsadfasdfasdf");
+					cerr << "We reach class!"<<endl;
+				},
+				[&](ConstPool::FieldRef e) -> void {
+					fprintf(stderr, "we reached field");
+				}
+		);
 
 		for (Method& m: cf.methods) {
 			cout << "Method: " << cf.getUtf8( m.nameIndex) << endl;
@@ -246,15 +238,6 @@ int main(int, const char*[]) {
 //	run(testIdentityParserWriter);
 //	run(testNopAdderInstrSize);
 //	run(testNopAdderInstr);
-
-	PSIZEOF(vector<int>);
-	PSIZEOF(std::string);
-	PSIZEOF(ConstPool);
-	PSIZEOF(ConstPool::Entry);
-	PSIZEOF(Opcode);
-	PSIZEOF(OpKind);
-	PSIZEOF(Inst);
-	PSIZEOF(InstList);
 
 	return 0;
 }
