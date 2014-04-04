@@ -691,6 +691,81 @@ static void computeFrame(Inst& inst, const ConstPool& cp, TFrame& h) {
 			h.pop();
 			h.pop();
 			break;
+		case OPCODE_goto:
+			break;
+		case OPCODE_jsr:
+			ASSERT(false, "jsr not implemented");
+			break;
+		case OPCODE_ret:
+			ASSERT(false, "jsr not implemented");
+			break;
+		case OPCODE_tableswitch:
+		case OPCODE_lookupswitch:
+			h.pop();
+			break;
+		case OPCODE_ireturn:
+			h.pop();
+			break;
+		case OPCODE_lreturn:
+			h.pop();
+			h.pop();
+			break;
+		case OPCODE_freturn:
+			h.pop();
+			break;
+		case OPCODE_dreturn:
+			h.pop();
+			h.pop();
+			break;
+		case OPCODE_areturn:
+			h.pop();
+			break;
+		case OPCODE_return:
+			break;
+		case OPCODE_getstatic:
+		case OPCODE_putstatic:
+		case OPCODE_getfield:
+		case OPCODE_putfield:
+		case OPCODE_invokevirtual:
+		case OPCODE_invokespecial:
+		case OPCODE_invokestatic:
+		case OPCODE_invokeinterface:
+		case OPCODE_invokedynamic:
+			//ASSERT(false, "instances not implemented");
+			break;
+		case OPCODE_new:
+			h.pushRef();
+			break;
+		case OPCODE_newarray:
+			h.pop();
+			h.pushRef();
+			break;
+		case OPCODE_anewarray:
+			h.pop();
+			h.pushRef();
+			break;
+		case OPCODE_arraylength:
+			h.pop();
+			h.pushInt();
+			break;
+		case OPCODE_athrow:
+		case OPCODE_checkcast:
+		case OPCODE_instanceof:
+		case OPCODE_monitorenter:
+		case OPCODE_monitorexit:
+			ASSERT(false, "athrow checkcast instanceof me, me not implemented");
+			break;
+		case OPCODE_wide:
+		case OPCODE_multianewarray:
+		case OPCODE_ifnull:
+		case OPCODE_ifnonnull:
+		case OPCODE_goto_w:
+		case OPCODE_jsr_w:
+		case OPCODE_breakpoint:
+		case OPCODE_impdep1:
+		case OPCODE_impdep2:
+			ASSERT(false, "extended not implemented");
+			break;
 
 		default:
 			break;
@@ -761,9 +836,16 @@ struct H {
 	void pushNull() {
 		push(Ref);
 	}
-	void setVar(int lvindex, T t) {
+	void setVar(u4 lvindex, T t) {
+		CHECK(lvindex < 256, "");
+
+		if (lvindex >= lva.size()) {
+			lva.resize(lvindex + 1, Top);
+		}
+
 		lva[lvindex] = t;
 	}
+
 	void setIntVar(int lvindex) {
 		setVar(lvindex, Int);
 	}
@@ -796,19 +878,67 @@ struct H {
 		return os;
 	}
 
-	bool join(H& other, ostream& os) {
-		this->print(os);
-		other.print(os);
+	static bool isAssignable(T subt, T supt) {
+		if (subt == supt) {
+			return true;
+		}
 
-		ASSERT(lva.size() == other.lva.size(), "%ld != %ld", lva.size(),
-				other.lva.size());
-		ASSERT(stack.size() == other.stack.size(), "");
-		//lva.join();
+		if (supt == Top) {
+			return true;
+		}
 
 		return false;
 	}
 
-	std::map<int, T> lva;
+	static bool assign(T& t, T o) {
+		CHECK(isAssignable(t, o) || isAssignable(o, t), "");
+
+		if (isAssignable(t, o)) {
+			if (t == o) {
+				return false;
+			}
+
+			t = o;
+			return true;
+		}
+
+		ASSERT(isAssignable(o, t), "");
+
+		return false;
+	}
+
+	bool join(H& how, ostream& os) {
+		this->print(os);
+		how.print(os);
+
+		CHECK(stack.size() == how.stack.size(), "");
+
+		if (lva.size() < how.lva.size()) {
+			lva.resize(how.lva.size());
+		} else if (how.lva.size() < lva.size()) {
+			how.lva.resize(lva.size());
+		}
+
+		ASSERT(lva.size() == how.lva.size(), "%ld != %ld", lva.size(),
+				how.lva.size());
+
+		bool change = false;
+
+		for (u4 i = 0; i < lva.size(); i++) {
+			assign(lva[i], how.lva[i]);
+		}
+
+		std::list<T>::iterator i = stack.begin();
+		std::list<T>::iterator j = how.stack.begin();
+
+		for (; i != stack.end(); i++, j++) {
+			assign(*i, *j);
+		}
+
+		return change;
+	}
+
+	std::vector<T> lva;
 	std::list<T> stack;
 	bool valid;
 };
@@ -1079,7 +1209,6 @@ struct ClassPrinter {
 			computeFrame(*inst, cf, h);
 			os << setw(10);
 			h.print(os);
-			os << endl;
 		}
 
 		ControlFlowGraph cfg(c.instList);
@@ -1118,7 +1247,8 @@ struct ClassPrinter {
 	}
 
 	void computeState(ControlFlowGraph::NodeKey to, H& how,
-			ControlFlowGraph& cfg, std::vector<State>& states, InstList& instList) {
+			ControlFlowGraph& cfg, std::vector<State>& states,
+			InstList& instList) {
 
 		InstList::iterator b;
 		InstList::iterator e;
@@ -1153,6 +1283,11 @@ struct ClassPrinter {
 				computeFrame(*inst, cf, s.out);
 			}
 
+			os << "  - in: ";
+			s.in.print(os);
+			os << "  - out: ";
+			s.out.print(os);
+
 			H h = s.out;
 
 			for (auto nid : cfg.outEdges(to)) {
@@ -1174,7 +1309,6 @@ struct ClassPrinter {
 //					Inst* inst = *it;
 //					computeFrame(*inst, cf, h);
 //				}
-
 
 //				h.print(os);
 //				os << "  going to " << name << endl;

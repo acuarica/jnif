@@ -1,6 +1,11 @@
 #include "jnif.hpp"
 #include "jniferr.hpp"
 
+#include "ClassParser.hpp"
+#include "ClassWriter.hpp"
+#include "buffer/SizeWriter.hpp"
+#include "buffer/BufferWriter.hpp"
+
 namespace jnif {
 
 InstList& Member::instList() {
@@ -32,10 +37,25 @@ u2 Version::getMinor() const {
 	return _minor;
 }
 
-void parseClassFile(const u1* fileImage, const int fileImageLen, ClassFile& cf);
+//void parseClassFile(const u1* fileImage, const int fileImageLen, ClassFile& cf);
+
+typedef ClassParser<BufferReader<ExceptionManager>> ClsParser;
+
 u4 getClassFileSize(ClassFile& cf);
 void writeClassFile(ClassFile& cf, u1* fileImage, const int fileImageLen);
 void printClassFile(ClassFile& cf, ostream& os, int tabs = 0);
+
+u4 getClassFileSize(ClassFile & cf) {
+	SizeWriter bw;
+	ClassWriter<SizeWriter>(bw).writeClassFile(cf);
+
+	return bw.getOffset();
+}
+
+void writeClassFile(ClassFile& cf, u1* fileImage, const int fileImageLen) {
+	BufferWriter<ExceptionManager> bw(fileImage, fileImageLen);
+	ClassWriter<BufferWriter<ExceptionManager>>(bw).writeClassFile(cf);
+}
 
 ClassFile::ClassFile(const char* className, const char* superClassName,
 		u2 accessFlags, Version version) :
@@ -45,7 +65,7 @@ ClassFile::ClassFile(const char* className, const char* superClassName,
 
 ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
 		thisClassIndex(0), superClassIndex(0) {
-	parseClassFile(classFileData, classFileLen, *this);
+	ClsParser::parseClassFile(classFileData, classFileLen, *this);
 }
 
 Version ClassFile::getVersion() const {

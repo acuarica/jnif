@@ -7,21 +7,33 @@ import java.util.regex.*;
 
 public class BasicClass {
 
-	static int sum(int n) {
-		int result = 0;
+	static int abs0(int value) {
+		int result;
+		result = value;
+		if (result < 0) {
+			result = -result;
+		}
 
-		for (int i = 1; i <= n; i++) {
-			result += i;
+		return result;
+	}
+	
+	static int abs1(int value) {
+		int result;
+		result = value;
+		if (result < 0) {
+			int a = result;
+			a = -a;
+			result = a;
 		}
 
 		return result;
 	}
 
-	static int abs(int value) {
-		int result;
-		result = value;
-		if (result < 0) {
-			result = -result;
+	static int sum(int n) {
+		int result = 0;
+
+		for (int i = 1; i <= n; i++) {
+			result += i;
 		}
 
 		return result;
@@ -51,6 +63,20 @@ public class BasicClass {
 
 		int c = a + b;
 		return c;
+	}
+
+	private static void sort0(int[] array) {
+		int n = array.length;
+
+		for (int c = 0; c < n - 1; c++) {
+			for (int d = 0; d < n - c - 1; d++) {
+				if (array[d] > array[d + 1]) {
+					int swap = array[d];
+					array[d] = array[d + 1];
+					array[d + 1] = swap;
+				}
+			}
+		}
 	}
 
 	private static void sort() {

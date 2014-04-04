@@ -6,7 +6,7 @@ INCS=$(wildcard *.hpp)
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:%=$(BUILD)/%.o)
 
-CFLAGS += -fPIC -W -O3 -Wall -Wextra
+CFLAGS += -fPIC -W -O3 -Wall -Wextra -Wno-format-security
 
 .PHONY: all clean
 

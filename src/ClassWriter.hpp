@@ -1,111 +1,14 @@
-#include "jnif.hpp"
-#include "jniferr.hpp"
+/*
+ * ClassWriter.hpp
+ *
+ *  Created on: Apr 4, 2014
+ *      Author: luigi
+ */
+
+#ifndef JNIF_CLASSWRITER_HPP
+#define JNIF_CLASSWRITER_HPP
 
 namespace jnif {
-
-/**
- *
- */
-class SizeWriter {
-public:
-
-	SizeWriter() :
-			offset(0) {
-	}
-
-	void writeu1(u1) {
-		offset += 1;
-	}
-
-	void writeu2(u2) {
-		offset += 2;
-	}
-
-	void writeu4(u4) {
-		offset += 4;
-	}
-
-	void writecount(const void*, int count) {
-		offset += count;
-	}
-
-	int getOffset() const {
-		return offset;
-	}
-
-private:
-	int offset;
-};
-
-/**
- * Implements a memory buffer writer in big-endian encoding.
- */
-class BufferWriter {
-public:
-
-	BufferWriter(u1* buffer, int len) :
-			buffer(buffer), len(len), offset(0) {
-	}
-
-	~BufferWriter() {
-		end();
-	}
-
-	void writeu1(u1 value) {
-		ASSERT(offset + 1 <= len, "Invalid write");
-
-		buffer[offset] = value;
-
-		offset += 1;
-	}
-
-	void writeu2(u2 value) {
-		ASSERT(offset + 2 <= len, "Invalid write");
-
-		buffer[offset + 0] = ((u1*) &value)[1];
-		buffer[offset + 1] = ((u1*) &value)[0];
-
-		offset += 2;
-	}
-
-	void writeu4(u4 value) {
-		ASSERT(offset + 4 <= len, "Invalid write");
-
-		buffer[offset + 0] = ((u1*) &value)[3];
-		buffer[offset + 1] = ((u1*) &value)[2];
-		buffer[offset + 2] = ((u1*) &value)[1];
-		buffer[offset + 3] = ((u1*) &value)[0];
-
-		offset += 4;
-	}
-
-	void writecount(const void* source, int count) {
-		ASSERT(offset + count <= len, "Invalid write count");
-
-		copy((u1*) source, (u1*) source + count, buffer + offset);
-
-		offset += count;
-	}
-
-	int getOffset() const {
-		return offset;
-	}
-
-private:
-
-	void end() {
-		ASSERT(offset == len,
-				"%d != %d. End of buffer writer not reached while expecting "
-
-				"end of buffer", offset, len);
-	}
-
-private:
-
-	u1* const buffer;
-	const int len;
-	int offset;
-};
 
 template<typename TWriter>
 class ClassWriter {
@@ -427,7 +330,7 @@ public:
 					break;
 				case KIND_LDC:
 					if (inst.opcode == OPCODE_ldc) {
-						ASSERT(inst.ldc.valueIndex == (u1 )inst.ldc.valueIndex,
+						ASSERT(inst.ldc.valueIndex == (u1) inst.ldc.valueIndex,
 								"invalid value for ldc: %d",
 								inst.ldc.valueIndex);
 
@@ -615,16 +518,6 @@ private:
 	TWriter& bw;
 };
 
-u4 getClassFileSize(ClassFile & cf) {
-	SizeWriter bw;
-	ClassWriter<SizeWriter>(bw).writeClassFile(cf);
-
-	return bw.getOffset();
 }
 
-void writeClassFile(ClassFile& cf, u1* fileImage, const int fileImageLen) {
-	BufferWriter bw(fileImage, fileImageLen);
-	ClassWriter<BufferWriter>(bw).writeClassFile(cf);
-}
-
-}
+#endif

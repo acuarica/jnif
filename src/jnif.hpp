@@ -11,6 +11,8 @@
 
 #include "base.hpp"
 
+#include "ExceptionManager.hpp"
+
 /**
  * The jnif namespace contains all type definitions, constants, enumerations
  * and structs of the jnif framework.
@@ -1058,32 +1060,6 @@ private:
 		getNameAndType(nameAndTypeIndex, name, desc);
 	}
 
-};
-
-class ExceptionManager {
-protected:
-
-	template<typename ... TArgs>
-	static inline void raise(const char* format, TArgs ... args) {
-		fprintf(stderr, "Exception jnif: ");
-		fprintf(stderr, format, args ...);
-		fprintf(stderr, "\n");
-		throw "Error!!!";
-	}
-
-	template<typename ... TArgs>
-	static inline void assert(bool cond, const char* format, TArgs ... args) {
-		if (!cond) {
-			raise(format, args...);
-		}
-	}
-
-	template<typename ... TArgs>
-	static inline void check(bool cond, const char* format, TArgs ... args) {
-		if (!cond) {
-			raise(format, args...);
-		}
-	}
 };
 
 typedef ConstPoolBase<ExceptionManager> ConstPool;

@@ -8,8 +8,6 @@
 #ifndef JNIF_GRAPH_HPP
 #define JNIF_GRAPH_HPP
 
-#include <ostream>
-
 namespace jnif {
 
 template<typename TNode>

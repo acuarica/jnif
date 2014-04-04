@@ -8,14 +8,17 @@
 #ifndef JNIF_BUFFERREADER_HPP
 #define JNIF_BUFFERREADER_HPP
 
-#include "base.hpp"
+#include "../base.hpp"
 
 namespace jnif {
 
 /**
  * Implements a memory buffer reader in big-endian encoding.
  */
-class BufferReader {
+template<typename TErrorManager>
+class BufferReader: private TErrorManager {
+	using TErrorManager::check;
+	using TErrorManager::assert;
 public:
 
 	/**
@@ -41,7 +44,7 @@ public:
 	 * must hold.
 	 */
 	~BufferReader() {
-		end();
+		check(off == _size, "Expected end of buffer");
 	}
 
 	int size() const {
@@ -49,7 +52,7 @@ public:
 	}
 
 	u1 readu1() {
-		CHECK(off + 1 <= _size, "Invalid read");
+		check(off + 1 <= _size, "Invalid read");
 
 		u1 result = buffer[off];
 
@@ -59,7 +62,7 @@ public:
 	}
 
 	u2 readu2() {
-		CHECK(off + 2 <= _size, "Invalid read 2");
+		check(off + 2 <= _size, "Invalid read 2");
 
 		u1 r0 = buffer[off + 0];
 		u1 r1 = buffer[off + 1];
@@ -72,7 +75,7 @@ public:
 	}
 
 	u4 readu4() {
-		CHECK(off + 4 <= _size, "Invalid read 4");
+		check(off + 4 <= _size, "Invalid read 4");
 
 		u1 r0 = buffer[off + 0];
 		u1 r1 = buffer[off + 1];
@@ -87,8 +90,8 @@ public:
 	}
 
 	void skip(int count) {
-		CHECK(off + count <= _size, "Invalid read count: %d (offset: %d)",
-				count, off);
+		const char* const m = "Invalid read: %d (offset: %d)";
+		check(off + count <= _size, m, count, off);
 
 		off += count;
 	}
@@ -107,11 +110,6 @@ public:
 
 private:
 
-	void end() {
-		CHECK(off == _size,
-				"End of buffer not reached while expecting end of buffer");
-	}
-
 	const u1 * const buffer;
 	const int _size;
 	int off;
@@ -119,4 +117,4 @@ private:
 
 }
 
-#endif /* BUFFERREADER_HPP_ */
+#endif
