@@ -1,9 +1,106 @@
 #include "jnif.hpp"
-#include "jniferr.hpp"
-
-#include "buffer/BufferReader.hpp"
 
 namespace jnif {
+
+/**
+ * Implements a memory buffer reader in big-endian encoding.
+ */
+class BufferReader: private ErrorManager {
+public:
+
+	/**
+	 * Constructs a BufferReader from a memory buffer and its size.
+	 * The @ref buffer must be an accessible and readable memory location
+	 * at least of size @ref len.
+	 *
+	 * @param buffer The memory buffer to read from.
+	 * @param size The size of the buffer in bytes.
+	 *
+	 */
+	BufferReader(const u1* buffer, u4 size) :
+			buffer(buffer), _size(size), off(0) {
+	}
+
+	/**
+	 * When this buffer reader finishes, it will check whether the end has
+	 * been reached, i.e., all bytes from buffer were read or skipped.
+	 * In other words, when the buffer reader br is destroyed, the condition
+	 *
+	 * @f[ br.offset() = br.size() @f]
+	 *
+	 * must hold.
+	 */
+	~BufferReader() {
+		check(off == _size, "Expected end of buffer");
+	}
+
+	int size() const {
+		return _size;
+	}
+
+	u1 readu1() {
+		check(off + 1 <= _size, "Invalid read");
+
+		u1 result = buffer[off];
+
+		off += 1;
+
+		return result;
+	}
+
+	u2 readu2() {
+		check(off + 2 <= _size, "Invalid read 2");
+
+		u1 r0 = buffer[off + 0];
+		u1 r1 = buffer[off + 1];
+
+		u2 result = r0 << 8 | r1;
+
+		off += 2;
+
+		return result;
+	}
+
+	u4 readu4() {
+		check(off + 4 <= _size, "Invalid read 4");
+
+		u1 r0 = buffer[off + 0];
+		u1 r1 = buffer[off + 1];
+		u1 r2 = buffer[off + 2];
+		u1 r3 = buffer[off + 3];
+
+		u4 result = r0 << 24 | r1 << 16 | r2 << 8 | r3;
+
+		off += 4;
+
+		return result;
+	}
+
+	void skip(int count) {
+		const char* const m = "Invalid read: %d (offset: %d)";
+		check(off + count <= _size, m, count, off);
+
+		off += count;
+	}
+
+	int offset() const {
+		return off;
+	}
+
+	const u1* pos() const {
+		return buffer + off;
+	}
+
+	bool eor() const {
+		return off == _size;
+	}
+
+private:
+
+	const u1 * const buffer;
+	const int _size;
+	int off;
+};
 
 OpKind OPKIND[256] = { KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO,
 		KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO,
@@ -54,10 +151,7 @@ OpKind OPKIND[256] = { KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO,
 		KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, KIND_RESERVED,
 		KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, };
 
-template<typename BufferReader>
-class ClassParser {
-//	static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as,
-//			void* args = nullptr);
+class ClassParser: private ErrorManager {
 
 	static void parseConstPool(BufferReader& br, ConstPool& cp) {
 		u2 count = br.readu2();
@@ -66,45 +160,45 @@ class ClassParser {
 			u1 tag = br.readu1();
 
 			switch (tag) {
-				case CONSTANT_Class: {
+				case ConstPool::CLASS: {
 					u2 classNameIndex = br.readu2();
 					cp.addClass(classNameIndex);
 					break;
 				}
-				case CONSTANT_Fieldref: {
+				case ConstPool::FIELDREF: {
 					u2 classIndex = br.readu2();
 					u2 nameAndTypeIndex = br.readu2();
 					cp.addFieldRef(classIndex, nameAndTypeIndex);
 					break;
 				}
-				case CONSTANT_Methodref: {
+				case ConstPool::METHODREF: {
 					u2 classIndex = br.readu2();
 					u2 nameAndTypeIndex = br.readu2();
 					cp.addMethodRef(classIndex, nameAndTypeIndex);
 					break;
 				}
-				case CONSTANT_InterfaceMethodref: {
+				case ConstPool::INTERFACEMETHODREF: {
 					u2 classIndex = br.readu2();
 					u2 nameAndTypeIndex = br.readu2();
 					cp.addInterMethodRef(classIndex, nameAndTypeIndex);
 					break;
 				}
-				case CONSTANT_String: {
+				case ConstPool::STRING: {
 					u2 utf8Index = br.readu2();
 					cp.addString(utf8Index);
 					break;
 				}
-				case CONSTANT_Integer: {
+				case ConstPool::INTEGER: {
 					u4 value = br.readu4();
 					cp.addInteger(value);
 					break;
 				}
-				case CONSTANT_Float: {
+				case ConstPool::FLOAT: {
 					u4 value = br.readu4();
 					cp.addFloat(value);
 					break;
 				}
-				case CONSTANT_Long: {
+				case ConstPool::LONG: {
 					u4 high = br.readu4();
 					u4 low = br.readu4();
 					long value = ((long) high << 32) + low;
@@ -112,7 +206,7 @@ class ClassParser {
 					i++;
 					break;
 				}
-				case CONSTANT_Double: {
+				case ConstPool::DOUBLE: {
 					u4 high = br.readu4();
 					u4 low = br.readu4();
 					long lvalue = ((long) high << 32) + low;
@@ -121,30 +215,30 @@ class ClassParser {
 					i++;
 					break;
 				}
-				case CONSTANT_NameAndType: {
+				case ConstPool::NAMEANDTYPE: {
 					u2 nameIndex = br.readu2();
 					u2 descIndex = br.readu2();
 					cp.addNameAndType(nameIndex, descIndex);
 					break;
 				}
-				case CONSTANT_Utf8: {
+				case ConstPool::UTF8: {
 					u2 len = br.readu2();
 					cp.addUtf8((const char*) br.pos(), len);
 					br.skip(len);
 					break;
 				}
-				case CONSTANT_MethodHandle: {
+				case ConstPool::METHODHANDLE: {
 					u1 refKind = br.readu1();
 					u2 refIndex = br.readu2();
 					cp.addMethodHandle(refKind, refIndex);
 					break;
 				}
-				case CONSTANT_MethodType: {
+				case ConstPool::METHODTYPE: {
 					u2 descIndex = br.readu2();
 					cp.addMethodType(descIndex);
 					break;
 				}
-				case CONSTANT_InvokeDynamic: {
+				case ConstPool::INVOKEDYNAMIC: {
 					u2 bootstrapMethodAttrIndex = br.readu2();
 					u2 nameAndTypeIndex = br.readu2();
 					cp.addInvokeDynamic(bootstrapMethodAttrIndex,
@@ -152,7 +246,7 @@ class ClassParser {
 					break;
 				}
 				default:
-					EXCEPTION("Error while reading tag: %i", tag);
+					raise("Error while reading tag: ", tag);
 			}
 		}
 	}
@@ -239,9 +333,9 @@ class ClassParser {
 					short targetOffset = br.readu2();
 
 					short labelpos = offset + targetOffset;
-					ASSERT(labelpos >= 0,
+					assert(labelpos >= 0,
 							"invalid target for jump: must be >= 0");
-					ASSERT(labelpos < br.size(), "invalid target for jump");
+					assert(labelpos < br.size(), "invalid target for jump");
 
 					createLabel(labels, labelpos);
 //				Inst*& lab = labels[labelpos];
@@ -254,12 +348,12 @@ class ClassParser {
 				case KIND_TABLESWITCH: {
 					for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 						u1 pad = br.readu1();
-						ASSERT(pad == 0, "Padding must be zero");
+						assert(pad == 0, "Padding must be zero");
 					}
 
 					{
-						bool check = br.offset() % 4 == 0;
-						ASSERT(check, "%d", br.offset());
+						bool check2 = br.offset() % 4 == 0;
+						assert(check2, "%d", br.offset());
 					}
 
 					int defOffset = br.readu4();
@@ -268,7 +362,7 @@ class ClassParser {
 					int low = br.readu4();
 					int high = br.readu4();
 
-					ASSERT(low <= high,
+					assert(low <= high,
 							"low (%d) must be less or equal than high (%d)",
 							low, high);
 
@@ -281,7 +375,7 @@ class ClassParser {
 				case KIND_LOOKUPSWITCH: {
 					for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 						u1 pad = br.readu1();
-						ASSERT(pad == 0, "Padding must be zero");
+						assert(pad == 0, "Padding must be zero");
 					}
 
 					int defOffset = br.readu4();
@@ -300,7 +394,7 @@ class ClassParser {
 //			case KIND_RESERVED:
 					//			break;
 				default:
-					EXCEPTION(
+					raise(
 							"default kind in parseInstTargets: opcode: %d, kind: %d",
 							opcode, kind);
 			}
@@ -336,7 +430,7 @@ class ClassParser {
 						} else {
 							inst.wide.var.lvindex = br.readu2();
 						}
-						//ASSERT(false, "wide not supported yet");
+						//assert(false, "wide not supported yet");
 					}
 					break;
 				case KIND_BIPUSH:
@@ -365,26 +459,26 @@ class ClassParser {
 					//inst.jump.label = targetOffset;
 
 					short labelpos = offset + targetOffset;
-					CHECK(labelpos >= 0,
+					check(labelpos >= 0,
 							"invalid target for jump: must be >= 0");
-					CHECK(labelpos < br.size(), "invalid target for jump");
+					check(labelpos < br.size(), "invalid target for jump");
 
 					//	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
 
 					inst.jump.label2 = labels[offset + targetOffset];
 
-					CHECK(inst.jump.label2 != nullptr, "invalid label");
+					check(inst.jump.label2 != nullptr, "invalid label");
 					break;
 				}
 				case KIND_TABLESWITCH: {
 					for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 						u1 pad = br.readu1();
-						ASSERT(pad == 0, "Padding must be zero");
+						assert(pad == 0, "Padding must be zero");
 					}
 
 					{
-						bool check = br.offset() % 4 == 0;
-						ASSERT(check, "%d", br.offset());
+						bool check2 = br.offset() % 4 == 0;
+						assert(check2, "%d", br.offset());
 					}
 
 					int defOffset = br.readu4();
@@ -392,7 +486,7 @@ class ClassParser {
 					inst.ts.low = br.readu4();
 					inst.ts.high = br.readu4();
 
-					ASSERT(inst.ts.low <= inst.ts.high,
+					assert(inst.ts.low <= inst.ts.high,
 							"low (%d) must be less or equal than high (%d)",
 							inst.ts.low, inst.ts.high);
 
@@ -409,7 +503,7 @@ class ClassParser {
 				case KIND_LOOKUPSWITCH: {
 					for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 						u1 pad = br.readu1();
-						ASSERT(pad == 0, "Padding must be zero");
+						assert(pad == 0, "Padding must be zero");
 					}
 
 					int defOffset = br.readu4();
@@ -436,14 +530,14 @@ class ClassParser {
 					inst.invokeinterface.interMethodRefIndex = br.readu2();
 					inst.invokeinterface.count = br.readu1();
 
-					ASSERT(inst.invokeinterface.count != 0, "Count is zero!");
+					assert(inst.invokeinterface.count != 0, "Count is zero!");
 					{
 						u1 zero = br.readu1();
-						ASSERT(zero == 0, "Fourth operand must be zero");
+						assert(zero == 0, "Fourth operand must be zero");
 					}
 					break;
 				case KIND_INVOKEDYNAMIC:
-					EXCEPTION("FrParseInvokeDynamicInstr not implemented");
+					raise("FrParseInvokeDynamicInstr not implemented");
 					break;
 				case KIND_TYPE:
 					inst.type.classIndex = br.readu2();
@@ -456,13 +550,13 @@ class ClassParser {
 					inst.multiarray.dims = br.readu1();
 					break;
 				case KIND_PARSE4TODO:
-					EXCEPTION("FrParse4__TODO__Instr not implemented");
+					raise("FrParse4__TODO__Instr not implemented");
 					break;
 				case KIND_RESERVED:
-					EXCEPTION("FrParseReservedInstr not implemented");
+					raise("FrParseReservedInstr not implemented");
 					break;
 				default:
-					EXCEPTION("default kind in parseInstList");
+					raise("default kind in parseInstList");
 
 			}
 
@@ -480,8 +574,8 @@ class ClassParser {
 
 		u4 codeLen = br.readu4();
 
-		CHECK(codeLen > 0, "");
-		CHECK(codeLen < (2 << 16), "");
+		check(codeLen > 0, "");
+		check(codeLen < (2 << 16), "");
 
 		ca->codeLen = codeLen;
 
@@ -514,10 +608,10 @@ class ClassParser {
 			u2 handlerPc = br.readu2();
 			ConstPool::Index catchType = br.readu2();
 
-			CHECK(startPc < endPc, "");
-			CHECK(endPc <= ca->codeLen, "");
-			CHECK(handlerPc < ca->codeLen, "");
-			CHECK(catchType == ConstPool::NULLENTRY || cp.isClass(catchType),
+			check(startPc < endPc, "");
+			check(endPc <= ca->codeLen, "");
+			check(handlerPc < ca->codeLen, "");
+			check(catchType == ConstPool::NULLENTRY || cp.isClass(catchType),
 					"");
 
 			CodeExceptionEntry e;
@@ -756,7 +850,7 @@ class ClassParser {
 
 public:
 	static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as,
-			void* args= nullptr) {
+			void* args = nullptr) {
 		u2 attrCount = br.readu2();
 
 		for (int i = 0; i < attrCount; i++) {
@@ -764,7 +858,7 @@ public:
 			u4 len = br.readu4();
 			const u1* data = br.pos();
 
-			string attrName = cp.getUtf8(nameIndex);
+			std::string attrName = cp.getUtf8(nameIndex);
 
 			Attr* a;
 			if (attrName == "SourceFile") {
@@ -805,8 +899,8 @@ public:
 
 		u4 magic = br.readu4();
 
-		CHECK(magic == CLASSFILE_MAGIC,
-				"Invalid magic number. Expected 0xcafebabe, found: %x", magic);
+		check(magic == CLASSFILE_MAGIC,
+				"Invalid magic number. Expected 0xcafebabe, found: ", magic);
 
 		u2 minor = br.readu2();
 		u2 major = br.readu2();
@@ -851,6 +945,11 @@ public:
 	}
 
 };
+
+ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
+		thisClassIndex(0), superClassIndex(0) {
+	ClassParser::parseClassFile(classFileData, classFileLen, *this);
+}
 
 }
 

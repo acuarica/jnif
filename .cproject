@@ -22,37 +22,28 @@
 							<tool id="org.eclipse.cdt.build.core.settings.holder.libs.1898656037" name="holder for library settings" superClass="org.eclipse.cdt.build.core.settings.holder.libs"/>
 							<tool id="org.eclipse.cdt.build.core.settings.holder.1881445417" name="Assembly" superClass="org.eclipse.cdt.build.core.settings.holder">
 								<option id="org.eclipse.cdt.build.core.settings.holder.incpaths.1394155405" name="Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.incpaths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/usr/include/c++/4.2.1"/>
-									<listOptionValue builtIn="false" value="/usr/include/c++/4.2.1/backward"/>
-									<listOptionValue builtIn="false" value="/usr/local/include"/>
-									<listOptionValue builtIn="false" value="/usr/bin/../lib/clang/4.2/include"/>
 									<listOptionValue builtIn="false" value="/usr/include"/>
-									<listOptionValue builtIn="false" value="/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home/include"/>
 									<listOptionValue builtIn="false" value="/usr/bin/../lib/c++/v1/"/>
+									<listOptionValue builtIn="false" value="/usr/bin/../lib/clang/4.2/include"/>
+									<listOptionValue builtIn="false" value="/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home/include"/>
 								</option>
 								<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.1310336244" languageId="org.eclipse.cdt.core.assembly" languageName="Assembly" sourceContentType="org.eclipse.cdt.core.asmSource" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 							</tool>
 							<tool id="org.eclipse.cdt.build.core.settings.holder.1237046198" name="GNU C++" superClass="org.eclipse.cdt.build.core.settings.holder">
 								<option id="org.eclipse.cdt.build.core.settings.holder.incpaths.1841693437" name="Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.incpaths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/usr/include/c++/4.2.1"/>
-									<listOptionValue builtIn="false" value="/usr/include/c++/4.2.1/backward"/>
-									<listOptionValue builtIn="false" value="/usr/local/include"/>
-									<listOptionValue builtIn="false" value="/usr/bin/../lib/clang/4.2/include"/>
 									<listOptionValue builtIn="false" value="/usr/include"/>
-									<listOptionValue builtIn="false" value="/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home/include"/>
 									<listOptionValue builtIn="false" value="/usr/bin/../lib/c++/v1/"/>
+									<listOptionValue builtIn="false" value="/usr/bin/../lib/clang/4.2/include"/>
+									<listOptionValue builtIn="false" value="/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home/include"/>
 								</option>
 								<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.1722542310" languageId="org.eclipse.cdt.core.g++" languageName="GNU C++" sourceContentType="org.eclipse.cdt.core.cxxSource,org.eclipse.cdt.core.cxxHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 							</tool>
 							<tool id="org.eclipse.cdt.build.core.settings.holder.1723397353" name="GNU C" superClass="org.eclipse.cdt.build.core.settings.holder">
 								<option id="org.eclipse.cdt.build.core.settings.holder.incpaths.2086139536" name="Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.incpaths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/usr/include/c++/4.2.1"/>
-									<listOptionValue builtIn="false" value="/usr/include/c++/4.2.1/backward"/>
-									<listOptionValue builtIn="false" value="/usr/local/include"/>
-									<listOptionValue builtIn="false" value="/usr/bin/../lib/clang/4.2/include"/>
 									<listOptionValue builtIn="false" value="/usr/include"/>
-									<listOptionValue builtIn="false" value="/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home/include"/>
 									<listOptionValue builtIn="false" value="/usr/bin/../lib/c++/v1/"/>
+									<listOptionValue builtIn="false" value="/usr/bin/../lib/clang/4.2/include"/>
+									<listOptionValue builtIn="false" value="/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home/include"/>
 								</option>
 								<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.2008040057" languageId="org.eclipse.cdt.core.gcc" languageName="GNU C" sourceContentType="org.eclipse.cdt.core.cSource,org.eclipse.cdt.core.cHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 							</tool>

@@ -4,14 +4,107 @@
  *  Created on: Apr 4, 2014
  *      Author: luigi
  */
-
-#ifndef JNIF_CLASSWRITER_HPP
-#define JNIF_CLASSWRITER_HPP
+#include "jnif.hpp"
 
 namespace jnif {
 
+/**
+ *
+ */
+class SizeWriter {
+public:
+
+	inline SizeWriter() :
+			offset(0) {
+	}
+
+	inline void writeu1(u1) {
+		offset += 1;
+	}
+
+	inline void writeu2(u2) {
+		offset += 2;
+	}
+
+	inline void writeu4(u4) {
+		offset += 4;
+	}
+
+	inline void writecount(const void*, int count) {
+		offset += count;
+	}
+
+	inline int getOffset() const {
+		return offset;
+	}
+
+private:
+	int offset;
+};
+
+/**
+ * Implements a memory buffer writer in big-endian encoding.
+ */
+class BufferWriter: private ErrorManager {
+public:
+
+	BufferWriter(u1* buffer, int len) :
+			buffer(buffer), len(len), offset(0) {
+	}
+
+	~BufferWriter() {
+		check(offset == len, "%d != %d. Expected end of buffer", offset, len);
+	}
+
+	void writeu1(u1 value) {
+		check(offset + 1 <= len, "Invalid write");
+
+		buffer[offset] = value;
+
+		offset += 1;
+	}
+
+	void writeu2(u2 value) {
+		check(offset + 2 <= len, "Invalid write");
+
+		buffer[offset + 0] = ((u1*) &value)[1];
+		buffer[offset + 1] = ((u1*) &value)[0];
+
+		offset += 2;
+	}
+
+	void writeu4(u4 value) {
+		check(offset + 4 <= len, "Invalid write");
+
+		buffer[offset + 0] = ((u1*) &value)[3];
+		buffer[offset + 1] = ((u1*) &value)[2];
+		buffer[offset + 2] = ((u1*) &value)[1];
+		buffer[offset + 3] = ((u1*) &value)[0];
+
+		offset += 4;
+	}
+
+	void writecount(const void* source, int count) {
+		check(offset + count <= len, "Invalid write count");
+
+		std::copy((u1*) source, (u1*) source + count, buffer + offset);
+
+		offset += count;
+	}
+
+	int getOffset() const {
+		return offset;
+	}
+
+private:
+
+	u1* const buffer;
+	const int len;
+	int offset;
+};
+
 template<typename TWriter>
-class ClassWriter {
+class ClassWriter: private ErrorManager {
 public:
 
 	ClassWriter(TWriter& bw) :
@@ -71,38 +164,38 @@ public:
 			bw.writeu1(entry->tag);
 
 			switch (entry->tag) {
-				case CONSTANT_Class:
+				case ConstPool::CLASS:
 					bw.writeu2(entry->clazz.nameIndex);
 					break;
-				case CONSTANT_Fieldref:
+				case ConstPool::FIELDREF:
 					bw.writeu2(entry->fieldRef.classIndex);
 					bw.writeu2(entry->fieldRef.nameAndTypeIndex);
 					break;
-				case CONSTANT_Methodref:
+				case ConstPool::METHODREF:
 					bw.writeu2(entry->methodRef.classIndex);
 					bw.writeu2(entry->methodRef.nameAndTypeIndex);
 					break;
-				case CONSTANT_InterfaceMethodref:
+				case ConstPool::INTERFACEMETHODREF:
 					bw.writeu2(entry->interMethodRef.classIndex);
 					bw.writeu2(entry->interMethodRef.nameAndTypeIndex);
 					break;
-				case CONSTANT_String:
+				case ConstPool::STRING:
 					bw.writeu2(entry->s.stringIndex);
 					break;
-				case CONSTANT_Integer:
+				case ConstPool::INTEGER:
 					bw.writeu4(entry->i.value);
 					break;
-				case CONSTANT_Float:
+				case ConstPool::FLOAT:
 					bw.writeu4(entry->f.value);
 					break;
-				case CONSTANT_Long: {
+				case ConstPool::LONG: {
 					long value = cp.getLong(i);
 					bw.writeu4(value >> 32);
 					bw.writeu4(value & 0xffffffff);
 					//		i++;
 					break;
 				}
-				case CONSTANT_Double: {
+				case ConstPool::DOUBLE: {
 					double dvalue = cp.getDouble(i);
 					long value = *(long*) &dvalue;
 					bw.writeu4(value >> 32);
@@ -110,25 +203,25 @@ public:
 					//			i++;
 					break;
 				}
-				case CONSTANT_NameAndType:
+				case ConstPool::NAMEANDTYPE:
 					bw.writeu2(entry->nameandtype.nameIndex);
 					bw.writeu2(entry->nameandtype.descriptorIndex);
 					break;
-				case CONSTANT_Utf8: {
+				case ConstPool::UTF8: {
 					u2 len = entry->utf8.str.length();
 					const char* str = entry->utf8.str.c_str();
 					bw.writeu2(len);
 					bw.writecount(str, len);
 					break;
 				}
-				case CONSTANT_MethodHandle:
+				case ConstPool::METHODHANDLE:
 					bw.writeu1(entry->methodhandle.referenceKind);
 					bw.writeu2(entry->methodhandle.referenceIndex);
 					break;
-				case CONSTANT_MethodType:
+				case ConstPool::METHODTYPE:
 					bw.writeu2(entry->methodtype.descriptorIndex);
 					break;
-				case CONSTANT_InvokeDynamic:
+				case ConstPool::INVOKEDYNAMIC:
 					bw.writeu2(entry->invokedynamic.bootstrapMethodAttrIndex);
 					bw.writeu2(entry->invokedynamic.nameAndTypeIndex);
 					break;
@@ -330,7 +423,7 @@ public:
 					break;
 				case KIND_LDC:
 					if (inst.opcode == OPCODE_ldc) {
-						ASSERT(inst.ldc.valueIndex == (u1) inst.ldc.valueIndex,
+						assert(inst.ldc.valueIndex == (u1) inst.ldc.valueIndex,
 								"invalid value for ldc: %d",
 								inst.ldc.valueIndex);
 
@@ -366,7 +459,7 @@ public:
 					}
 
 					bool check = pos() % 4 == 0;
-					ASSERT(check, "Padding offset must be mod 4: %d", pos());
+					assert(check, "Padding offset must be mod 4: %d", pos());
 
 					bw.writeu4(inst.ts.def->label.offset - tspos);
 					bw.writeu4(inst.ts.low);
@@ -390,7 +483,7 @@ public:
 					}
 
 					bool check = pos() % 4 == 0;
-					ASSERT(check, "Padding offset must be mod 4: %d", pos());
+					assert(check, "Padding offset must be mod 4: %d", pos());
 
 					bw.writeu4(inst.ls.defbyte->label.offset - lspos);
 					bw.writeu4(inst.ls.npairs);
@@ -428,13 +521,13 @@ public:
 					bw.writeu1(inst.multiarray.dims);
 					break;
 				case KIND_PARSE4TODO:
-					EXCEPTION("not implemetd");
+					raise("not implemetd");
 					break;
 				case KIND_RESERVED:
-					EXCEPTION("not implemetd");
+					raise("not implemetd");
 					break;
 				default:
-					EXCEPTION("default kind in instlist!!");
+					raise("default kind in instlist!!");
 			}
 		}
 	}
@@ -518,6 +611,16 @@ private:
 	TWriter& bw;
 };
 
+u4 ClassFile::computeSize() {
+	SizeWriter bw;
+	ClassWriter<SizeWriter>(bw).writeClassFile(*this);
+
+	return bw.getOffset();
 }
 
-#endif
+void ClassFile::write(u1* fileImage, int fileImageLen) {
+	BufferWriter bw(fileImage, fileImageLen);
+	ClassWriter<BufferWriter>(bw).writeClassFile(*this);
+}
+
+}

@@ -2,11 +2,12 @@
 BUILD=../build
 
 OUTPUT=$(BUILD)/libjnif.a
-INCS=$(wildcard *.hpp)
+INCS=$(wildcard *.hpp) $(wildcard ./*/*.hpp)
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:%=$(BUILD)/%.o)
 
-CFLAGS += -fPIC -W -O3 -Wall -Wextra -Wno-format-security
+#-H
+CFLAGS += -fPIC -W -O3 -Wall -Wextra
 
 .PHONY: all clean
 

@@ -14,14 +14,13 @@
 
 #include <iostream>
 
-#include "jniferr.hpp"
-
 #include "Graph.hpp"
 
 namespace jnif {
 
 class ControlFlowGraph: public Graph<
-		std::tuple<InstList::iterator, InstList::iterator, std::string>> {
+		std::tuple<InstList::iterator, InstList::iterator, std::string>>,
+		private ErrorManager {
 public:
 
 	ControlFlowGraph(InstList& instList) :
@@ -58,7 +57,7 @@ private:
 
 		auto addBasicBlock = [&](InstList::iterator eit) {
 			if (beginBb != eit) {
-				string name = getBasicBlockName(bbid);
+				std::string name = getBasicBlockName(bbid);
 				auto bb = std::make_tuple(beginBb, eit, name);
 				addNode(bb);
 
@@ -96,8 +95,8 @@ private:
 			std::tie(b, e, name) = getNode(nid);
 
 			if (b == instList.end()) {
-				ASSERT(name == "Entry" || name == "Exit", "");
-				ASSERT(e == instList.end(), "");
+				assert(name == "Entry" || name == "Exit", "");
+				assert(e == instList.end(), "");
 				continue;
 			}
 
@@ -121,15 +120,15 @@ private:
 			std::tie(b, e, name) = getNode(nid);
 
 			if (b == instList.end()) {
-				ASSERT(name == "Entry" || name == "Exit", "");
-				ASSERT(e == instList.end(), "");
+				assert(name == "Entry" || name == "Exit", "");
+				assert(e == instList.end(), "");
 				continue;
 			}
 
-			std::cerr << name << endl;
+			std::cerr << name << std::endl;
 
 			e--;
-			ASSERT(e != instList.end(), "");
+			assert(e != instList.end(), "");
 
 			//Inst* first = *b;
 			Inst* last = *e;

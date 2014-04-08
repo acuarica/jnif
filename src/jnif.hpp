@@ -8,10 +8,7 @@
 #include <vector>
 #include <list>
 #include <functional>
-
-#include "base.hpp"
-
-#include "ExceptionManager.hpp"
+#include <iostream>
 
 /**
  * The jnif namespace contains all type definitions, constants, enumerations
@@ -22,47 +19,34 @@
  *
  * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html
  *
- * The most relevant types and classes of the framework are ClassParser
- * (using ClassBaseParser) and
- * ClassWriterVisitor which it allows to parser Java Class File and write back
- * them with the ability to inject transformers (class visitors in jnif
- * parlance) to modify these classes.
- *
  * @see ClassFile
  *
  */
 namespace jnif {
 
 /**
- * Defines the Java Class File signature. This magic value must be binary
- * serialized as a u4 value.
+ * Represents a byte inside the Java Class File.
+ * The sizeof(u1) must be equal to 1.
  */
-enum Magic {
-
-	/**
-	 * The only allowed value for the signature.
-	 */
-	CLASSFILE_MAGIC = 0xcafebabe
-};
+typedef unsigned char u1;
 
 /**
- * Constant pool enum
+ * Represents two bytes inside the Java Class File.
+ * The sizeof(u2) must be equal to 2.
  */
-enum ConstTag {
-	CONSTANT_Class = 7,
-	CONSTANT_Fieldref = 9,
-	CONSTANT_Methodref = 10,
-	CONSTANT_InterfaceMethodref = 11,
-	CONSTANT_String = 8,
-	CONSTANT_Integer = 3,
-	CONSTANT_Float = 4,
-	CONSTANT_Long = 5,
-	CONSTANT_Double = 6,
-	CONSTANT_NameAndType = 12,
-	CONSTANT_Utf8 = 1,
-	CONSTANT_MethodHandle = 15,
-	CONSTANT_MethodType = 16,
-	CONSTANT_InvokeDynamic = 18
+typedef unsigned short u2;
+
+/**
+ * Represents four bytes inside the Java Class File.
+ * The sizeof(u4) must be equal to 4.
+ */
+typedef unsigned int u4;
+
+/**
+ *
+ */
+enum Magic {
+	CLASSFILE_MAGIC = 0xcafebabe
 };
 
 /**
@@ -411,7 +395,45 @@ enum AttrKind {
 	ATTR_SMT
 };
 
-using namespace std;
+class ErrorManager {
+public:
+
+	template<typename ... TArgs>
+	static inline void raise(TArgs ... args) __attribute__((noreturn)) {
+		std::ostream& os = std::cerr;
+
+		os << "Exception jnif: ";
+		_raise(os, args...);
+		os << std::endl;
+		throw "Error!!!";
+	}
+
+	template<typename ... TArgs>
+	static inline void assert(bool cond, TArgs ... args) {
+		if (!cond) {
+			raise(args...);
+		}
+	}
+
+	template<typename ... TArgs>
+	static inline void check(bool cond, TArgs ... args) {
+		if (!cond) {
+			raise(args...);
+		}
+	}
+
+private:
+
+	static inline void _raise(std::ostream&) {
+	}
+
+	template<typename TArg, typename ... TArgs>
+	static inline void _raise(std::ostream& os, TArg arg, TArgs ... args) {
+		os << arg;
+		_raise(os, args...);
+	}
+
+};
 
 /**
  * Represent a bytecode instruction.
@@ -515,14 +537,14 @@ struct Inst {
 		Inst* def;
 		int low;
 		int high;
-		vector<Inst*> targets;
+		std::vector<Inst*> targets;
 	} ts;
 
 	struct {
 		Inst* defbyte;
 		u4 npairs;
-		vector<u4> keys;
-		vector<Inst*> targets;
+		std::vector<u4> keys;
+		std::vector<Inst*> targets;
 	} ls;
 };
 
@@ -547,11 +569,7 @@ public:
  * integers, floats, longs, doubles, name and type, utf8 arrays,
  * method handles, method types and invoke dynamic bootstrap methods.
  */
-template<typename TErrorManager>
-class ConstPoolBase: private TErrorManager {
-
-	using TErrorManager::check;
-	using TErrorManager::assert;
+class ConstPool: private ErrorManager {
 public:
 
 	/**
@@ -561,10 +579,30 @@ public:
 	typedef u2 Index;
 
 	/**
+	 * Constant pool enum
+	 */
+	enum Tag {
+		CLASS = 7,
+		FIELDREF = 9,
+		METHODREF = 10,
+		INTERFACEMETHODREF = 11,
+		STRING = 8,
+		INTEGER = 3,
+		FLOAT = 4,
+		LONG = 5,
+		DOUBLE = 6,
+		NAMEANDTYPE = 12,
+		UTF8 = 1,
+		METHODHANDLE = 15,
+		METHODTYPE = 16,
+		INVOKEDYNAMIC = 18
+	};
+
+	/**
 	 * Defines how to iterate the constant pool.
 	 */
 	class Iterator {
-		friend class ConstPoolBase;
+		friend class ConstPool;
 	public:
 
 		bool hasNext() const {
@@ -582,11 +620,11 @@ public:
 		}
 
 	private:
-		Iterator(const ConstPoolBase& cp, Index index) :
+		Iterator(const ConstPool& cp, Index index) :
 				cp(cp), index(index) {
 		}
 
-		const ConstPoolBase& cp;
+		const ConstPool& cp;
 		Index index;
 	};
 
@@ -599,9 +637,9 @@ public:
 	 * Initializes an empty constant pool. The valid indices start from 1
 	 * inclusive, because the null entry (index 0) is added by default.
 	 */
-	ConstPoolBase() {
+	ConstPool() {
 		// TODO: This is plain wrong!!!
-		Entry nullEntry(CONSTANT_InvokeDynamic);
+		Entry nullEntry(INVOKEDYNAMIC);
 
 		entries.push_back(nullEntry);
 	}
@@ -628,7 +666,7 @@ public:
 	 * @returns the index of the newly created reference to a class item.
 	 */
 	Index addClass(u2 classNameIndex) {
-		Entry e(CONSTANT_Class);
+		Entry e(CLASS);
 		e.clazz.nameIndex = classNameIndex;
 
 		return _addSingle(e);
@@ -650,7 +688,7 @@ public:
 	 * Adds a field reference.
 	 */
 	Index addFieldRef(Index classIndex, Index nameAndTypeIndex) {
-		Entry e(CONSTANT_Fieldref);
+		Entry e(FIELDREF);
 		e.fieldRef.classIndex = classIndex;
 		e.fieldRef.nameAndTypeIndex = nameAndTypeIndex;
 
@@ -661,7 +699,7 @@ public:
 	 * Adds a class method reference.
 	 */
 	Index addMethodRef(Index classIndex, Index nameAndTypeIndex) {
-		Entry e(CONSTANT_Methodref);
+		Entry e(METHODREF);
 		e.methodRef.classIndex = classIndex;
 		e.methodRef.nameAndTypeIndex = nameAndTypeIndex;
 
@@ -685,7 +723,7 @@ public:
 	 * Adds an interface method reference.
 	 */
 	Index addInterMethodRef(Index classIndex, Index nameAndTypeIndex) {
-		Entry e(CONSTANT_InterfaceMethodref);
+		Entry e(INTERFACEMETHODREF);
 		e.interMethodRef.classIndex = classIndex;
 		e.interMethodRef.nameAndTypeIndex = nameAndTypeIndex;
 
@@ -696,7 +734,7 @@ public:
 	 *
 	 */
 	Index addString(Index utf8Index) {
-		Entry e(CONSTANT_String);
+		Entry e(STRING);
 		e.s.stringIndex = utf8Index;
 
 		return _addSingle(e);
@@ -718,7 +756,7 @@ public:
 	 * @param value the integer value.
 	 */
 	Index addInteger(u4 value) {
-		Entry e(CONSTANT_Integer);
+		Entry e(INTEGER);
 		e.i.value = value;
 
 		return _addSingle(e);
@@ -730,28 +768,28 @@ public:
 	 * @param value the float value.
 	 */
 	Index addFloat(u4 value) {
-		Entry e(CONSTANT_Float);
+		Entry e(FLOAT);
 		e.f.value = value;
 
 		return _addSingle(e);
 	}
 
 	Index addLong(long value) {
-		Entry e(CONSTANT_Long);
+		Entry e(LONG);
 		e.l.value = value;
 
 		return _addDoubleEntry(e);
 	}
 
 	Index addDouble(double value) {
-		Entry entry(CONSTANT_Double);
+		Entry entry(DOUBLE);
 		entry.d.value = value;
 
 		return _addDoubleEntry(entry);
 	}
 
 	Index addNameAndType(Index nameIndex, Index descIndex) {
-		Entry e(CONSTANT_NameAndType);
+		Entry e(NAMEANDTYPE);
 		e.nameandtype.nameIndex = nameIndex;
 		e.nameandtype.descriptorIndex = descIndex;
 
@@ -759,7 +797,7 @@ public:
 	}
 
 	Index addUtf8(const char* utf8, int len) {
-		Entry e(CONSTANT_Utf8);
+		Entry e(UTF8);
 		std::string str(utf8, len);
 		e.utf8.str = str;
 
@@ -767,28 +805,28 @@ public:
 	}
 
 	Index addUtf8(const char* str) {
-		Entry e(CONSTANT_Utf8);
+		Entry e(UTF8);
 		e.utf8.str = str;
 
 		return _addSingle(e);
 	}
 
 	Index addMethodHandle(u1 refKind, u2 refIndex) {
-		Entry e(CONSTANT_MethodHandle);
+		Entry e(METHODHANDLE);
 		e.methodhandle.referenceKind = refKind;
 		e.methodhandle.referenceIndex = refIndex;
 		return _addSingle(e);
 	}
 
 	Index addMethodType(u2 descIndex) {
-		Entry e(CONSTANT_MethodType);
+		Entry e(METHODTYPE);
 		e.methodtype.descriptorIndex = descIndex;
 		return _addSingle(e);
 
 	}
 
 	Index addInvokeDynamic(u2 bootstrapMethodAttrIndex, u2 nameAndTypeIndex) {
-		Entry e(CONSTANT_InvokeDynamic);
+		Entry e(INVOKEDYNAMIC);
 		e.invokedynamic.bootstrapMethodAttrIndex = bootstrapMethodAttrIndex;
 		e.invokedynamic.nameAndTypeIndex = nameAndTypeIndex;
 		return _addSingle(e);
@@ -797,7 +835,7 @@ public:
 	/**
 	 *
 	 */
-	ConstTag getTag(Index index) const {
+	Tag getTag(Index index) const {
 		const Entry* entry = _getEntry(index);
 
 		return entry->tag;
@@ -809,51 +847,48 @@ public:
 	bool isClass(Index index) const {
 		const Entry* entry = _getEntry(index);
 
-		return entry->tag == CONSTANT_Class;
+		return entry->tag == CLASS;
 	}
 
 	Index getClassNameIndex(Index classIndex) const {
-		const Entry* e = _getEntry(classIndex, CONSTANT_Class,
-				"CONSTANT_Class");
+		const Entry* e = _getEntry(classIndex, CLASS, "CONSTANT_Class");
 
 		u2 ni = e->clazz.nameIndex;
-
-		assert(ni != NULLENTRY, "invalid class name index: %d", ni);
 
 		return Index(ni);
 	}
 
-	void getFieldRef(Index index, string* clazzName, string* name,
-			string* desc) const {
-		const Entry* e = _getEntry(index, CONSTANT_Fieldref, "FieldRef");
+	void getFieldRef(Index index, std::string* className, std::string* name,
+			std::string* desc) const {
+		const Entry* e = _getEntry(index, FIELDREF, "FieldRef");
 		const MemberRef& mr = e->fieldRef;
-		_getMemberRef(clazzName, name, desc, mr);
+		_getMemberRef(className, name, desc, mr);
 	}
 
-	void getMethodRef(Index index, string* clazzName, string* name,
-			string* desc) const {
-		const Entry* e = _getEntry(index, CONSTANT_Methodref, "MethodRef");
+	void getMethodRef(Index index, std::string* clazzName, std::string* name,
+			std::string* desc) const {
+		const Entry* e = _getEntry(index, METHODREF, "MethodRef");
 		const MemberRef& mr = e->methodRef;
 		_getMemberRef(clazzName, name, desc, mr);
 	}
 
-	void getInterMethodRef(Index index, string* clazzName, string* name,
-			string* desc) const {
-		const Entry* e = _getEntry(index, CONSTANT_InterfaceMethodref, "imr");
+	void getInterMethodRef(Index index, std::string* clazzName,
+			std::string* name, std::string* desc) const {
+		const Entry* e = _getEntry(index, INTERFACEMETHODREF, "imr");
 		const MemberRef& mr = e->interMethodRef;
 		_getMemberRef(clazzName, name, desc, mr);
 	}
 
 	long getLong(Index index) const {
-		return _getEntry(index, CONSTANT_Long, "CONSTANT_Long")->l.value;
+		return _getEntry(index, LONG, "CONSTANT_Long")->l.value;
 	}
 
 	double getDouble(Index index) const {
-		return _getEntry(index, CONSTANT_Double, "CONSTANT_Double")->d.value;
+		return _getEntry(index, DOUBLE, "CONSTANT_Double")->d.value;
 	}
 
 	const char* getUtf8(Index utf8Index) const {
-		const Entry* entry = _getEntry(utf8Index, CONSTANT_Utf8, "Utf8");
+		const Entry* entry = _getEntry(utf8Index, UTF8, "Utf8");
 
 		return entry->utf8.str.c_str();
 	}
@@ -864,8 +899,9 @@ public:
 		return getUtf8(classNameIndex);
 	}
 
-	void getNameAndType(Index index, string* name, string* desc) const {
-		const Entry* e = _getEntry(index, CONSTANT_NameAndType, "NameAndType");
+	void getNameAndType(Index index, std::string* name,
+			std::string* desc) const {
+		const Entry* e = _getEntry(index, NAMEANDTYPE, "NameAndType");
 
 		u2 nameIndex = e->nameandtype.nameIndex;
 		u2 descIndex = e->nameandtype.descriptorIndex;
@@ -935,11 +971,11 @@ public:
 	 *
 	 */
 	struct Entry {
-		Entry(ConstTag tag) :
+		Entry(Tag tag) :
 				tag(tag) {
 		}
 
-		ConstTag tag;
+		Tag tag;
 		union {
 			Class clazz;
 			FieldRef fieldRef;
@@ -956,7 +992,7 @@ public:
 			InvokeDynamic invokedynamic;
 		};
 		struct {
-			string str;
+			std::string str;
 		} utf8;
 	};
 
@@ -979,18 +1015,18 @@ public:
 		const Entry* e = _getEntry(index);
 
 		switch (e->tag) {
-			case CONSTANT_Class:
+			case CLASS:
 				call<Class>(e->clazz, funcList...);
 				break;
-			case CONSTANT_Fieldref:
+			case FIELDREF:
 				call<FieldRef>(e->fieldRef, funcList...);
 				call<MemberRef>(e->fieldRef, funcList...);
 				break;
-			case CONSTANT_Methodref:
+			case METHODREF:
 				call<MethodRef>(e->methodRef, funcList...);
 				call<MemberRef>(e->methodRef, funcList...);
 				break;
-			case CONSTANT_InterfaceMethodref:
+			case INTERFACEMETHODREF:
 				call<InterMethodRef>(e->interMethodRef, funcList...);
 				call<MemberRef>(e->interMethodRef, funcList...);
 				break;
@@ -999,7 +1035,7 @@ public:
 		}
 	}
 
-	vector<Entry> entries;
+	std::vector<Entry> entries;
 
 private:
 
@@ -1016,15 +1052,16 @@ private:
 		entries.push_back(entry);
 
 		// TODO: This is plain wrong!!!
-		Entry nullEntry(CONSTANT_InvokeDynamic);
+		Entry nullEntry(INVOKEDYNAMIC);
 		entries.push_back(nullEntry);
 
 		return index;
 	}
 
 	const Entry* _getEntry(Index i) const {
-		check(i > NULLENTRY, "Null access to constant pool: index = %d", i);
-		check(i < entries.size(), "Index out of bounds: index = %d", i);
+		ErrorManager::check(i > NULLENTRY,
+				"Null access to constant pool: index = ", i);
+		check(i < entries.size(), "Index out of bounds: index = ", i);
 
 		const Entry* entry = &entries[i];
 
@@ -1043,8 +1080,8 @@ private:
 		const Entry* e = _getEntry(index);
 
 		switch (e->tag) {
-			case CONSTANT_Long:
-			case CONSTANT_Double:
+			case LONG:
+			case DOUBLE:
 				return true;
 			default:
 				return false;
@@ -1061,8 +1098,6 @@ private:
 	}
 
 };
-
-typedef ConstPoolBase<ExceptionManager> ConstPool;
 
 /**
  * Defines the base class for all attributes in the class file.
@@ -1113,15 +1148,15 @@ struct Attrs {
 		return *attrs[index];
 	}
 
-	vector<Attr*>::iterator begin() {
+	std::vector<Attr*>::iterator begin() {
 		return attrs.begin();
 	}
 
-	vector<Attr*>::iterator end() {
+	std::vector<Attr*>::iterator end() {
 		return attrs.end();
 	}
 
-	vector<Attr*> attrs;
+	std::vector<Attr*> attrs;
 };
 
 /**
@@ -1259,7 +1294,7 @@ public:
  */
 struct ExceptionsAttr: Attr {
 
-	ExceptionsAttr(u2 nameIndex, u4 len, const vector<u2>& es) :
+	ExceptionsAttr(u2 nameIndex, u4 len, const std::vector<u2>& es) :
 			Attr(ATTR_EXCEPTIONS, nameIndex, len), es(es) {
 	}
 
@@ -1291,7 +1326,7 @@ struct CodeAttr: Attr {
 
 	InstList instList;
 
-	vector<CodeExceptionEntry> exceptions;
+	std::vector<CodeExceptionEntry> exceptions;
 
 	Attrs attrs;
 };
@@ -1313,7 +1348,7 @@ struct SourceFileAttr: Attr {
 /**
  *
  */
-class Member: public Attrs {
+class Member: public Attrs, private ErrorManager {
 public:
 
 	friend class Field;
@@ -1350,9 +1385,26 @@ public:
 		return nullptr;
 	}
 
-	InstList& instList();
+	InstList& instList() {
+		for (Attr* attr : attrs) {
+			if (attr->kind == ATTR_CODE) {
+				return ((CodeAttr*) attr)->instList;
+			}
+		}
 
-	void instList(const InstList& newcode);
+		raise("ERROR! get inst list");
+	}
+
+	void instList(const InstList& newcode) {
+		for (Attr* attr : attrs) {
+			if (attr->kind == ATTR_CODE) {
+				((CodeAttr*) attr)->instList = newcode;
+				return;
+			}
+		}
+
+		raise("ERROR! setting inst list");
+	}
 
 private:
 
@@ -1400,15 +1452,13 @@ public:
 			_major(major), _minor(minor) {
 	}
 
-	/**
-	 *
-	 */
-	u2 getMajor() const;
+	u2 getMajor() const {
+		return _major;
+	}
 
-	/**
-	 *
-	 */
-	u2 getMinor() const;
+	u2 getMinor() const {
+		return _minor;
+	}
 
 private:
 
@@ -1429,7 +1479,11 @@ public:
 	 */
 	ClassFile(const char* className, const char* superClassName =
 			"java/lang/Object", u2 accessFlags = ACC_PUBLIC, Version version =
-			Version());
+			Version()) :
+			accessFlags(accessFlags), _version(version), thisClassIndex(
+					addClass(className)), superClassIndex(
+					addClass(superClassName)) {
+	}
 
 	/**
 	 * Constructs a class file from an in-memory representation of the java
@@ -1440,40 +1494,63 @@ public:
 	/**
 	 *
 	 */
-	Version getVersion() const;
+	Version getVersion() const {
+		return _version;
+	}
 
 	/**
 	 *
 	 */
-	void setVersion(Version version);
+	void setVersion(Version version) {
+		_version = version;
+	}
 
 	/**
 	 * Gets the class name of this class file.
 	 */
-	const char* getThisClassName() const;
+	const char* getThisClassName() const {
+		return getClassName(thisClassIndex);
+	}
 
 	/**
 	 *
 	 */
 	Field& addField(ConstPool::Index nameIndex, ConstPool::Index descIndex,
-			AccessFlags accessFlags = ACC_PUBLIC);
+			AccessFlags accessFlags = ACC_PUBLIC) {
+		fields.emplace_back(accessFlags, nameIndex, descIndex);
+		return fields.back();
+	}
+
 	/**
 	 *
 	 */
 	Field& addField(const char* fieldName, const char* fieldDesc,
-			AccessFlags accessFlags = ACC_PUBLIC);
+			AccessFlags accessFlags = ACC_PUBLIC) {
+		ConstPool::Index nameIndex = addUtf8(fieldName);
+		ConstPool::Index descIndex = addUtf8(fieldDesc);
+
+		return addField(nameIndex, descIndex, accessFlags);
+	}
 
 	/**
 	 *
 	 */
 	Method& addMethod(ConstPool::Index nameIndex, ConstPool::Index descIndex,
-			AccessFlags accessFlags = ACC_PUBLIC);
+			AccessFlags accessFlags = ACC_PUBLIC) {
+		methods.emplace_back(accessFlags, nameIndex, descIndex);
+		return methods.back();
+	}
 
 	/**
 	 *
 	 */
 	Method& addMethod(const char* methodName, const char* methodDesc,
-			AccessFlags accessFlags = ACC_PUBLIC);
+			AccessFlags accessFlags = ACC_PUBLIC) {
+		ConstPool::Index nameIndex = addUtf8(methodName);
+		ConstPool::Index descIndex = addUtf8(methodDesc);
+
+		return addMethod(nameIndex, descIndex, accessFlags);
+	}
 
 	/**
 	 * Computes the size in bytes of this class file of the in-memory
@@ -1500,7 +1577,7 @@ public:
 	/**
 	 * Shows the class file in a textual format, useful for debugging purposes.
 	 */
-	friend ostream& operator<<(std::ostream& os, ClassFile& cf);
+	friend std::ostream& operator<<(std::ostream& os, ClassFile& cf);
 
 	u2 accessFlags;
 	Version _version;
@@ -1509,17 +1586,6 @@ public:
 	std::vector<u2> interfaces;
 	std::vector<Field> fields;
 	std::vector<Method> methods;
-
-private:
-
-};
-
-/**
- *
- */
-class ClassFileFactory {
-	static ClassFile* newClassFile();
-	static void freeClassFile(ClassFile* classFile);
 };
 
 }
