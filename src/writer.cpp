@@ -281,37 +281,37 @@ public:
 
 	void writeSmt(SmtAttr& attr) {
 		auto parseTs =
-				[&](std::vector<SmtAttr::VerType>& locs) {
+				[&](std::vector<Type>& locs) {
 					for (u1 i = 0; i < locs.size(); i++) {
-						SmtAttr::VerType& vt = locs[i];
+						Type& vt = locs[i];
 
 						u1 tag = vt.tag;
 						bw.writeu1(tag);
 
 						switch (tag) {
-							case ITEM_Top:
+							case Type::TYPE_TOP:
 							break;
-							case ITEM_Integer:
+							case Type::TYPE_INTEGER:
 							break;
-							case ITEM_Float :
+							case Type::TYPE_FLOAT :
 							break;
-							case ITEM_Long :
+							case Type::TYPE_LONG :
 							break;
-							case ITEM_Double:
+							case Type::TYPE_DOUBLE:
 							break;
-							case ITEM_Null :
+							case Type::TYPE_NULL :
 							break;
-							case ITEM_UninitializedThis :
+							case Type::TYPE_UNINITTHIS :
 							break;
-							case ITEM_Object: {
-								u2 cpIndex = vt.Object_variable_info.cpool_index;
+							case Type::TYPE_OBJECT: {
+								u2 cpIndex = vt.object.cindex;
 								bw.writeu2( cpIndex);
 								break;
 							}
-							case ITEM_Uninitialized: {
-								u2 offset = vt.Uninitialized_variable_info.offset;
+							case Type::TYPE_UNINIT: {
+								u2 offset = vt.uninit.offset;
 
-								offset = vt.Uninitialized_variable_info.label->label.offset;
+								offset = vt.uninit.label->label.offset;
 								bw.writeu2(offset);
 								break;
 							}

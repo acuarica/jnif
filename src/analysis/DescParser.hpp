@@ -10,120 +10,81 @@
 
 namespace jnif {
 
-class DescParser: private ErrorManager {
+class DescParser: protected ErrorManager {
 public:
 
-	template<typename THandler>
-	static void parseFieldDesc(const char*& fieldDesc, THandler& h) {
+	static Type parseFieldDesc(const char*& fieldDesc) {
 		const char* originalFieldDesc = fieldDesc;
 
-		int ds = 0;
+		int dims = 0;
 		while (*fieldDesc == '[') {
 			check(*fieldDesc != '\0',
 					"Reach end of string while searching for array. Field descriptor: ",
 					originalFieldDesc);
 			fieldDesc++;
-			ds++;
-		}
-
-		if (ds > 0) {
-			h.arrayType(ds);
+			dims++;
 		}
 
 		check(*fieldDesc != '\0', "");
 
-		switch (*fieldDesc) {
-			case 'Z':
-			case 'B':
-			case 'C':
-			case 'S':
-			case 'I':
-				h.intType();
-				break;
-			case 'D':
-				h.doubleType();
-				break;
-			case 'F':
-				h.floatType();
-				break;
-			case 'J':
-				h.longType();
-				break;
-			case 'L': {
-				fieldDesc++;
+		auto parseBaseType = [&] () {
+			switch (*fieldDesc) {
+				case 'Z':
+				case 'B':
+				case 'C':
+				case 'S':
+				case 'I':
+				return Type::intt();
+				case 'D':
+				return Type::doublet();
+				case 'F':
+				return Type::floatt();
+				case 'J':
+				return Type::longt();
+				case 'L': {
+					fieldDesc++;
 
-				//const char* className = fieldDesc;
+					//const char* className = fieldDesc;
 				int len = 0;
 				while (*fieldDesc != ';') {
 					check(*fieldDesc != '\0', "");
 					fieldDesc++;
 					len++;
 				}
-				h.refType();
-
-				break;
+				return Type::objectt(-1);
 			}
 			default:
-				raise("Invalid field desc ", originalFieldDesc);
-		}
+			raise("Invalid field desc ", originalFieldDesc);
+		}};
+
+		Type t = [&]() {
+			Type baseType = parseBaseType();
+			if (dims == 0) {
+				return baseType;
+			} else {
+				return Type::objectt(-2);
+			}
+		}();
 
 		fieldDesc++;
+
+		return t;
 	}
 
-	template<typename THandler>
-	static void parseMethodDesc(const char* methodDesc, THandler& h,
-			int lvstart) {
+	static Type parseMethodDesc(const char* methodDesc,
+			std::vector<Type>* argsType) {
 		const char* originalMethodDesc = methodDesc;
 
 		check(*methodDesc == '(', "Invalid beginning of method descriptor: ",
 				originalMethodDesc);
 		methodDesc++;
 
-		int lvindex = lvstart;
 		while (*methodDesc != ')') {
 			check(*methodDesc != '\0', "Reached end of string: ",
 					originalMethodDesc);
 
-			struct ParseMethodAdapter {
-				THandler& h;
-				int lvindex;
-				int dims;
-				ParseMethodAdapter(THandler& h, int lvindex) :
-						h(h), lvindex(lvindex), dims(0) {
-				}
-				void intType() {
-					if (this->dims == 0) {
-						this->h.setIntVar(this->lvindex);
-					}
-				}
-				void longType() {
-					if (this->dims == 0) {
-						this->h.setLongVar(this->lvindex);
-					}
-				}
-				void floatType() {
-					if (this->dims == 0) {
-						this->h.setFloatVar(this->lvindex);
-					}
-				}
-				void doubleType() {
-					if (this->dims == 0) {
-						this->h.setDoubleVar(this->lvindex);
-					}
-				}
-				void refType() {
-					if (this->dims == 0) {
-						this->h.setRefVar(this->lvindex);
-					}
-				}
-				void arrayType(int ds) {
-					this->dims = ds;
-					this->h.setRefVar(this->lvindex);
-				}
-			} a(h, lvindex);
-
-			parseFieldDesc(methodDesc, a);
-			lvindex++;
+			Type t = parseFieldDesc(methodDesc);
+			argsType->push_back(t);
 		}
 
 		check(*methodDesc == ')', "Expected ')' in method descriptor: ",
@@ -133,29 +94,19 @@ public:
 		check(*methodDesc != '\0', "Reached end of string: ",
 				originalMethodDesc);
 
-		if (*methodDesc == 'V') {
-			methodDesc++;
-			//h.typeVoid();
-		} else {
-			struct {
-				void intType() {
-				}
-				void longType() {
-				}
-				void floatType() {
-				}
-				void doubleType() {
-				}
-				void refType() {
-				}
-				void arrayType(int) {
-				}
-			} e;
-			parseFieldDesc(methodDesc, e);
-		}
+		Type returnType = [&]() {
+			if (*methodDesc == 'V') {
+				methodDesc++;
+				return Type::voidType();
+			} else {
+				return parseFieldDesc(methodDesc);
+			}
+		}();
 
 		check(*methodDesc == '\0', "Expected end of string: %s",
 				originalMethodDesc);
+
+		return returnType;
 	}
 };
 

@@ -296,7 +296,7 @@ struct ClassPrinter: private ErrorManager {
 
 		H h;
 
-		int lvstart = [&]() {
+		int lvindex = [&]() {
 			if (m->accessFlags & ACC_STATIC) {
 				return 0;
 			} else {
@@ -306,15 +306,22 @@ struct ClassPrinter: private ErrorManager {
 		}();
 
 		const char* methodDesc = cf.getUtf8(m->descIndex);
-		DescParser::parseMethodDesc(methodDesc, h, lvstart);
+		std::vector<Type> argsType;
+		DescParser::parseMethodDesc(methodDesc, &argsType);
+
+		for (Type t : argsType) {
+			h.setVar(lvindex, t);
+			lvindex++;
+		}
 
 		H initState = h;
 
 		for (Inst* inst : c.instList) {
 			printInst(*inst);
-			SmtBuilder::computeFrame(*inst, cf, h);
-			os << std::setw(10);
-			h.print(os);
+			os << std::endl;
+			//SmtBuilder::computeFrame(*inst, cf, h);
+			//os << std::setw(10);
+			//h.print(os);
 		}
 
 		ControlFlowGraph cfg(c.instList);
@@ -487,7 +494,8 @@ struct ClassPrinter: private ErrorManager {
 
 				break;
 			case KIND_MULTIARRAY: {
-				std::string className = cf.getClassName(inst.multiarray.classIndex);
+				std::string className = cf.getClassName(
+						inst.multiarray.classIndex);
 
 				instos << className << " " << inst.multiarray.dims;
 
@@ -534,43 +542,44 @@ struct ClassPrinter: private ErrorManager {
 	void printSmt(SmtAttr& smt) {
 
 		auto parseTs =
-				[&](std::vector<SmtAttr::VerType> locs) {
+				[&](std::vector<Type> locs) {
 					line(2) << "["<<locs.size()<<"] ";
 					for (u1 i = 0; i < locs.size(); i++) {
-						SmtAttr::VerType& vt = locs[i];
-						u1 tag = vt.tag;
+						Type& vt = locs[i];
+						Type::Tag tag = vt.tag;
 
 						switch (tag) {
-							case ITEM_Top:
+							case Type::TYPE_TOP:
 							os << "top" << " | ";
 							break;
-							case ITEM_Integer:
+							case Type::TYPE_INTEGER:
 							os << "integer" << " | ";
 							break;
-							case ITEM_Float :
+							case Type::TYPE_FLOAT :
 							os << "float" << " | ";
 							break;
-							case ITEM_Long :
+							case Type::TYPE_LONG :
 							os << "long" << " | ";
 							break;
-							case ITEM_Double:
+							case Type::TYPE_DOUBLE:
 							os << "double" << " | ";
 							break;
-							case ITEM_Null :
+							case Type::TYPE_NULL :
 							os << "null" << " | ";
 							break;
-							case ITEM_UninitializedThis :
+							case Type::TYPE_UNINITTHIS :
 							os << "UninitializedThis" << " | ";
 							break;
-							case ITEM_Object:
-							os << "Object: cpindex = " << vt.Object_variable_info.cpool_index << " | ";
+							case Type::TYPE_OBJECT:
+							os << "Object: cpindex = " << vt.object.cindex << " | ";
 							break;
-							case ITEM_Uninitialized: {
-								os << "Uninitialized: offset = " << vt.Uninitialized_variable_info.offset << " | ";
+							case Type::TYPE_UNINIT: {
+								os << "Uninitialized: offset = " << vt.uninit.offset << " | ";
 								break;
 							}
+							default:
+							raise("invalid type in printing!");
 						}
-
 					}
 
 					os << std::endl;

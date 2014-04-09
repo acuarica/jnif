@@ -722,6 +722,7 @@ class ClassParser: private ErrorManager {
 
 		return lvt;
 	}
+
 	static Attr* parseSmt(BufferReader& br, Attrs& as, ConstPool&, u2 nameIndex,
 			void* args) {
 
@@ -729,48 +730,47 @@ class ClassParser: private ErrorManager {
 
 		SmtAttr* smt = new SmtAttr(nameIndex);
 
-		auto parseTs = [&](int count, std::vector<SmtAttr::VerType>& locs) {
-			for (u1 i = 0; i < count; i++) {
-				u1 tag = br.readu1();
+		auto parseType = [&](BufferReader& br, Inst** labels) {
+			u1 tag = br.readu1();
 
-				SmtAttr::VerType vt;
-				vt.tag = tag;
-
-				switch (tag) {
-					case ITEM_Top:
-					break;
-					case ITEM_Integer:
-					break;
-					case ITEM_Float :
-					break;
-					case ITEM_Long :
-					break;
-					case ITEM_Double:
-					break;
-					case ITEM_Null :
-					break;
-					case ITEM_UninitializedThis :
-					break;
-					case ITEM_Object: {
-						u2 cpIndex = br.readu2();
-						vt.Object_variable_info.cpool_index = cpIndex;
-						break;
-					}
-					case ITEM_Uninitialized: {
-						u2 offset = br.readu2();
-
-						Inst*& label = labels[offset];
-						if (label == nullptr) {
-							label = new Inst(KIND_LABEL);
-						}
-
-						vt.Uninitialized_variable_info.label = label;
-						vt.Uninitialized_variable_info.offset = offset;
-						break;
-					}
+			switch (tag) {
+				case Type::TYPE_TOP:
+				return Type::top();
+				case Type::TYPE_INTEGER:
+				return Type::intt();
+				case Type::TYPE_FLOAT:
+				return Type::floatt();
+				case Type::TYPE_LONG:
+				return Type::longt();
+				case Type::TYPE_DOUBLE:
+				return Type::doublet();
+				case Type::TYPE_NULL:
+				return Type::nullt();
+				case Type::TYPE_UNINITTHIS:
+				return Type::uninitthist();
+				case Type::TYPE_OBJECT: {
+					u2 cpIndex = br.readu2();
+					return Type::objectt(cpIndex);
 				}
+				case Type::TYPE_UNINIT: {
+					u2 offset = br.readu2();
 
-				locs.push_back(vt);
+					Inst*& label = labels[offset];
+					if (label == nullptr) {
+						label = new Inst(KIND_LABEL);
+					}
+
+					return Type::uninitt(offset, label);
+				}
+			}
+
+			raise("Error on parse smt");
+		};
+
+		auto parseTs = [&](int count, std::vector<Type>& locs) {
+			for (u1 i = 0; i < count; i++) {
+				Type t = parseType(br, labels);
+				locs.push_back(t);
 			}
 		};
 
@@ -947,7 +947,7 @@ public:
 };
 
 ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
-		thisClassIndex(0), superClassIndex(0) {
+		accessFlags(0), thisClassIndex(0), superClassIndex(0) {
 	ClassParser::parseClassFile(classFileData, classFileLen, *this);
 }
 

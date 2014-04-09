@@ -12,7 +12,7 @@
 
 namespace jnif {
 
-class SmtBuilder: private ErrorManager {
+class SmtBuilder: private DescParser {
 public:
 
 	static void computeState(ControlFlowGraph::NodeKey to, H& how,
@@ -118,6 +118,27 @@ public:
 			h.pop();
 			h.pop();
 			h.pop();
+		};
+
+		auto invoke = [&](u2 methodRefIndex, bool popThis) {
+			std::string className, name, desc;
+			cp.getMethodRef(methodRefIndex, &className, &name, &desc);
+
+			const char* d = desc.c_str();
+			std::vector<Type> argsType;
+			Type returnType = parseMethodDesc(d, &argsType);
+
+			for (u4 i = 0; i < argsType.size(); i++) {
+				h.pop();
+			}
+
+			if (popThis) {
+				h.pop();
+			}
+
+			if (!returnType.isVoid()) {
+				h.push(returnType);
+			}
 		};
 
 		switch (inst.opcode) {
@@ -619,8 +640,9 @@ public:
 				cp.getFieldRef(inst.field.fieldRefIndex, &className, &name,
 						&desc);
 
-				//parseFieldDesc(desc, );
-				h.pushRef(); // wrong
+				const char* d = desc.c_str();
+				auto t = parseFieldDesc(d);
+				h.push(t);
 				break;
 			}
 			case OPCODE_putstatic:
@@ -635,13 +657,17 @@ public:
 				h.pop();
 				break;
 			case OPCODE_invokevirtual:
-				h.pop();
-				break;
 			case OPCODE_invokespecial:
+				invoke(inst.invoke.methodRefIndex, true);
+				break;
 			case OPCODE_invokestatic:
+				invoke(inst.invoke.methodRefIndex, false);
+				break;
 			case OPCODE_invokeinterface:
+				invoke(inst.invokeinterface.interMethodRefIndex, true);
+				break;
 			case OPCODE_invokedynamic:
-				//ASSERT(false, "instances not implemented");
+				raise("invoke dynamic instances not implemented");
 				break;
 			case OPCODE_new:
 				h.pushRef();

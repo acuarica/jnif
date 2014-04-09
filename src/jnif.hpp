@@ -367,21 +367,6 @@ typedef u2 ClassIndex;
 typedef u2 Label;
 
 /**
- * Items used for the StackMapTable
- */
-enum StackMapItem {
-	ITEM_Top = 0,
-	ITEM_Integer = 1,
-	ITEM_Float = 2,
-	ITEM_Long = 4,
-	ITEM_Double = 3,
-	ITEM_Null = 5,
-	ITEM_UninitializedThis = 6,
-	ITEM_Object = 7,
-	ITEM_Uninitialized = 8
-};
-
-/**
  *
  */
 enum AttrKind {
@@ -402,7 +387,7 @@ public:
 	static inline void raise(TArgs ... args) __attribute__((noreturn)) {
 		std::ostream& os = std::cerr;
 
-		os << "Exception jnif: ";
+		os << "JNIF Exception: ";
 		_raise(os, args...);
 		os << std::endl;
 		throw "Error!!!";
@@ -1215,6 +1200,107 @@ struct LntAttr: Attr {
 };
 
 /**
+ * Verification type class
+ */
+class Type {
+public:
+
+	enum Tag {
+		TYPE_TOP = 0,
+		TYPE_INTEGER = 1,
+		TYPE_FLOAT = 2,
+		TYPE_LONG = 4,
+		TYPE_DOUBLE = 3,
+		TYPE_NULL = 5,
+		TYPE_UNINITTHIS = 6,
+		TYPE_OBJECT = 7,
+		TYPE_UNINIT = 8,
+		TYPE_VOID
+	};
+
+	static inline Type top() {
+		return Type(TYPE_TOP);
+	}
+
+	static inline Type intt() {
+		return Type(TYPE_INTEGER);
+	}
+
+	static inline Type floatt() {
+		return Type(TYPE_FLOAT);
+	}
+
+	static inline Type longt() {
+		return Type(TYPE_LONG);
+	}
+
+	static inline Type doublet() {
+		return Type(TYPE_DOUBLE);
+	}
+
+	static inline Type nullt() {
+		return Type(TYPE_NULL);
+	}
+
+	static inline Type uninitthist() {
+		return Type(TYPE_UNINITTHIS);
+	}
+
+	static inline Type objectt(short index) {
+		return Type(TYPE_OBJECT, index);
+	}
+
+	static inline Type uninitt(short offset, Inst* label) {
+		return Type(TYPE_UNINIT, offset, label);
+	}
+
+	static inline Type voidType() {
+		return Type(TYPE_VOID);
+	}
+
+	Tag tag;
+
+	union {
+		struct {
+			short cindex;
+		} object;
+		struct {
+			short offset;
+			Inst* label;
+		} uninit;
+	};
+
+	inline bool operator==(const Type& other) const {
+		return tag == other.tag;
+	}
+
+	inline bool isTop() const {
+		return tag == TYPE_TOP;
+	}
+
+	inline bool isVoid() const {
+		return tag == TYPE_VOID;
+	}
+
+private:
+
+	inline Type(Tag tag) :
+			tag(tag) {
+	}
+
+	inline Type(Tag tag, short index) :
+			tag(tag) {
+		object.cindex = index;
+	}
+
+	inline Type(Tag tag, short offset, Inst* label) :
+			tag(tag) {
+		uninit.offset = offset;
+		uninit.label = label;
+	}
+};
+
+/**
  *
  */
 class SmtAttr: public Attr {
@@ -1223,36 +1309,6 @@ public:
 	SmtAttr(u2 nameIndex) :
 			Attr(ATTR_SMT, nameIndex) {
 	}
-
-	class VerType {
-	public:
-
-		int tag;
-
-		union {
-			struct {
-			} Top_variable_info;
-			struct {
-			} Integer_variable_info;
-			struct {
-			} Float_variable_info;
-			struct {
-			} Long_variable_info;
-			struct {
-			} Double_variable_info;
-			struct {
-			} Null_variable_info;
-			struct {
-			} UninitializedThis_variable_info;
-			struct {
-				short cpool_index;
-			} Object_variable_info;
-			struct {
-				short offset;
-				Inst* label;
-			} Uninitialized_variable_info;
-		};
-	};
 
 	class Entry {
 	public:
@@ -1263,11 +1319,11 @@ public:
 		struct {
 		} sameFrame;
 		struct {
-			std::vector<VerType> stack; // [1]
+			std::vector<Type> stack; // [1]
 		} sameLocals_1_stack_item_frame;
 		struct {
 			short offset_delta;
-			std::vector<VerType> stack; // [1]
+			std::vector<Type> stack; // [1]
 		} same_locals_1_stack_item_frame_extended;
 		struct {
 			short offset_delta;
@@ -1277,12 +1333,12 @@ public:
 		} same_frame_extended;
 		struct {
 			short offset_delta;
-			std::vector<VerType> locals; // frameType - 251
+			std::vector<Type> locals; // frameType - 251
 		} append_frame;
 		struct {
 			short offset_delta;
-			std::vector<VerType> locals;
-			std::vector<VerType> stack;
+			std::vector<Type> locals;
+			std::vector<Type> stack;
 		} full_frame;
 	};
 

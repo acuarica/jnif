@@ -10,35 +10,46 @@
 
 namespace jnif {
 
-struct H: private ErrorManager {
-	enum T {
-		Top, Int, Long, Float, Double, Ref
+std::ostream& operator<<(std::ostream& os, const Type& t) {
+	switch (t.tag) {
+		case Type::TYPE_TOP:
+			os << "Top";
+			break;
+		case Type::TYPE_INTEGER:
+			os << "Int";
+			break;
+		case Type::TYPE_LONG:
+			os << "Long";
+			break;
+		case Type::TYPE_FLOAT:
+			os << "Float";
+			break;
+		case Type::TYPE_DOUBLE:
+			os << "Double";
+			break;
+		case Type::TYPE_OBJECT:
+			os << "Ref";
+			break;
+		default:
+			os << "UNKNOWN TYPE!!!";
+	}
+
+	return os;
+}
+
+class H: private ErrorManager {
+public:
+
+	enum TEnum {
+		Top = Type::TYPE_TOP,
+		Int = Type::TYPE_INTEGER,
+		Long = Type::TYPE_LONG,
+		Float = Type::TYPE_FLOAT,
+		Double = Type::TYPE_DOUBLE,
+		Ref = Type::TYPE_OBJECT
 	};
 
-	friend std::ostream& operator<<(std::ostream& os, H::T t) {
-		switch (t) {
-			case H::Top:
-				os << "Top";
-				break;
-			case H::Int:
-				os << "Int";
-				break;
-			case H::Long:
-				os << "Long";
-				break;
-			case H::Float:
-				os << "Float";
-				break;
-			case H::Double:
-				os << "Double";
-				break;
-			case H::Ref:
-				os << "Ref";
-				break;
-		}
-
-		return os;
-	}
+	typedef Type T;
 
 	H() :
 			valid(false) {
@@ -55,49 +66,49 @@ struct H: private ErrorManager {
 		stack.push_front(t);
 	}
 	void pushInt() {
-		push(Int);
+		push(Type::intt());
 	}
 	void pushLong() {
-		push(Top);
-		push(Long);
+		push(Type::top());
+		push(Type::longt());
 	}
 	void pushFloat() {
-		push(Float);
+		push(Type::floatt());
 	}
 	void pushDouble() {
-		push(Top);
-		push(Double);
+		push(Type::top());
+		push(Type::doublet());
 	}
 	void pushRef() {
-		push(Ref);
+		push(Type::objectt(-25));
 	}
 	void pushNull() {
-		push(Ref);
+		push(Type::objectt(-26));
 	}
 	void setVar(u4 lvindex, T t) {
 		check(lvindex < 256, "");
 
 		if (lvindex >= lva.size()) {
-			lva.resize(lvindex + 1, Top);
+			lva.resize(lvindex + 1, Type::top());
 		}
 
 		lva[lvindex] = t;
 	}
 
 	void setIntVar(int lvindex) {
-		setVar(lvindex, Int);
+		setVar(lvindex, Type::intt());
 	}
 	void setLongVar(int lvindex) {
-		setVar(lvindex, Long);
+		setVar(lvindex, Type::longt());
 	}
 	void setFloatVar(int lvindex) {
-		setVar(lvindex, Float);
+		setVar(lvindex, Type::floatt());
 	}
 	void setDoubleVar(int lvindex) {
-		setVar(lvindex, Double);
+		setVar(lvindex, Type::doublet());
 	}
 	void setRefVar(int lvindex) {
-		setVar(lvindex, Ref);
+		setVar(lvindex, Type::objectt(-27));
 	}
 
 	std::ostream& print(std::ostream& os) {
@@ -121,7 +132,7 @@ struct H: private ErrorManager {
 			return true;
 		}
 
-		if (supt == Top) {
+		if (supt.isTop()) {
 			return true;
 		}
 
@@ -153,9 +164,9 @@ struct H: private ErrorManager {
 				stack.size(), " != ", how.stack.size());
 
 		if (lva.size() < how.lva.size()) {
-			lva.resize(how.lva.size());
+			lva.resize(how.lva.size(), Type::top());
 		} else if (how.lva.size() < lva.size()) {
-			how.lva.resize(lva.size());
+			how.lva.resize(lva.size(), Type::top());
 		}
 
 		assert(lva.size() == how.lva.size(), "%ld != %ld", lva.size(),
