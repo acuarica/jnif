@@ -130,26 +130,26 @@ public:
 
 		line() << "* Fields [" << cf.fields.size() << "]" << endl;
 		inc();
-		for (Field& f : cf.fields) {
-			line() << "Field " << cf.getUtf8(f.nameIndex) << ": "
-					<< AccessFlagsPrinter(f.accessFlags) << " #" << f.nameIndex
-					<< ": " << cf.getUtf8(f.descIndex) << "#" << f.descIndex
-					<< endl;
+		for (Field* f : cf.fields) {
+			line() << "Field " << cf.getUtf8(f->nameIndex) << ": "
+					<< AccessFlagsPrinter(f->accessFlags) << " #"
+					<< f->nameIndex << ": " << cf.getUtf8(f->descIndex) << "#"
+					<< f->descIndex << endl;
 
-			printAttrs(f);
+			printAttrs(*f);
 		}
 		dec();
 
 		line() << "* Methods [" << cf.methods.size() << "]" << endl;
 		inc();
 
-		for (Method& m : cf.methods) {
-			line() << "+Method " << AccessFlagsPrinter(m.accessFlags) << " "
-					<< cf.getUtf8(m.nameIndex) << ": " << " #" << m.nameIndex
-					<< ": " << cf.getUtf8(m.descIndex) << "#" << m.descIndex
+		for (Method* m : cf.methods) {
+			line() << "+Method " << AccessFlagsPrinter(m->accessFlags) << " "
+					<< cf.getUtf8(m->nameIndex) << ": " << " #" << m->nameIndex
+					<< ": " << cf.getUtf8(m->descIndex) << "#" << m->descIndex
 					<< endl;
 
-			printAttrs(m, &m);
+			printAttrs(*m, m);
 		}
 		dec();
 
@@ -421,8 +421,11 @@ private:
 			case KIND_RESERVED:
 				raise("FrParseReservedInstr not implemented");
 				break;
+			case KIND_FRAME:
+				os << "Frame " << inst.frame.frame;
+				break;
 			default:
-				raise("should not arrive here!");
+				raise("print inst: unknown inst kind!");
 		}
 	}
 

@@ -128,9 +128,9 @@ static void testNopAdderInstrSize() {
 		ClassFile cf(jf.data, jf.len);
 
 		int methodsWithCode = 0;
-		for (Method& m: cf.methods) {
-			if (m.hasCode()) {
-				InstList& instList = m.instList();
+		for (Method* m: cf.methods) {
+			if (m->hasCode()) {
+				InstList& instList = m->instList();
 
 				Inst* nop = new Inst(OPCODE_nop);
 
@@ -162,9 +162,9 @@ static void testNopAdderInstr() {
 		ClassFile cf(jf.data, jf.len);
 
 		int methodsWithCode = 0;
-		for (Method& m: cf.methods) {
-			if (m.hasCode()) {
-				InstList& instList = m.instList();
+		for (Method* m: cf.methods) {
+			if (m->hasCode()) {
+				InstList& instList = m->instList();
 
 				Inst* nop = new Inst(OPCODE_nop);
 				instList.push_front(nop);

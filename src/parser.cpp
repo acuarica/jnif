@@ -186,9 +186,9 @@ public:
 			u2 nameIndex = br.readu2();
 			u2 descIndex = br.readu2();
 
-			Field& f = cf.addField(nameIndex, descIndex, accessFlags);
+			Field* f = cf.addField(nameIndex, descIndex, accessFlags);
 
-			parseAttrs(br, cf, f);
+			parseAttrs(br, cf, *f);
 		}
 
 		u2 methodCount = br.readu2();
@@ -197,9 +197,9 @@ public:
 			u2 nameIndex = br.readu2();
 			u2 descIndex = br.readu2();
 
-			Method& m = cf.addMethod(nameIndex, descIndex, accessFlags);
+			Method* m = cf.addMethod(nameIndex, descIndex, accessFlags);
 
-			parseAttrs(br, cf, m);
+			parseAttrs(br, cf, *m);
 		}
 
 		parseAttrs(br, cf, cf);

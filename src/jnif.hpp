@@ -1747,16 +1747,17 @@ public:
 	/**
 	 *
 	 */
-	Field& addField(ConstPool::Index nameIndex, ConstPool::Index descIndex,
+	Field* addField(ConstPool::Index nameIndex, ConstPool::Index descIndex,
 			AccessFlags accessFlags = ACC_PUBLIC) {
-		fields.emplace_back(accessFlags, nameIndex, descIndex);
-		return fields.back();
+		Field* field = new Field(accessFlags, nameIndex, descIndex);
+		fields.push_back(field);
+		return field;
 	}
 
 	/**
 	 *
 	 */
-	Field& addField(const char* fieldName, const char* fieldDesc,
+	Field* addField(const char* fieldName, const char* fieldDesc,
 			AccessFlags accessFlags = ACC_PUBLIC) {
 		ConstPool::Index nameIndex = addUtf8(fieldName);
 		ConstPool::Index descIndex = addUtf8(fieldDesc);
@@ -1767,16 +1768,17 @@ public:
 	/**
 	 *
 	 */
-	Method& addMethod(ConstPool::Index nameIndex, ConstPool::Index descIndex,
+	Method* addMethod(ConstPool::Index nameIndex, ConstPool::Index descIndex,
 			AccessFlags accessFlags = ACC_PUBLIC) {
-		methods.emplace_back(accessFlags, nameIndex, descIndex);
-		return methods.back();
+		Method* method = new Method(accessFlags, nameIndex, descIndex);
+		methods.push_back(method);
+		return method;
 	}
 
 	/**
 	 *
 	 */
-	Method& addMethod(const char* methodName, const char* methodDesc,
+	Method* addMethod(const char* methodName, const char* methodDesc,
 			AccessFlags accessFlags = ACC_PUBLIC) {
 		ConstPool::Index nameIndex = addUtf8(methodName);
 		ConstPool::Index descIndex = addUtf8(methodDesc);
@@ -1822,8 +1824,8 @@ public:
 	ConstPool::Index thisClassIndex;
 	ConstPool::Index superClassIndex;
 	std::vector<u2> interfaces;
-	std::vector<Field> fields;
-	std::vector<Method> methods;
+	std::vector<Field*> fields;
+	std::vector<Method*> methods;
 };
 
 }

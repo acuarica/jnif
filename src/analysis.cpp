@@ -16,172 +16,93 @@ using namespace std;
 namespace jnif {
 
 struct BasicBlock {
-	BasicBlock(InstList::iterator start, InstList::iterator end, string name) :
-			start(start), end(end), name(name) {
+	BasicBlock(const BasicBlock&) = delete;
+	BasicBlock(BasicBlock&&) = default;
+
+	friend struct ControlFlowGraph;
+
+	void addTarget(BasicBlock* target) {
+		targets.push_back(target);
 	}
 
 	InstList::iterator start;
-	InstList::iterator end;
+	InstList::iterator exit;
 	string name;
 	Frame in;
 	Frame out;
-};
 
-template<typename TNode>
-class Graph {
-public:
-
-	class NodeKey {
-		friend class Graph;
-
-	public:
-		NodeKey next() const {
-			return NodeKey(_index + 1);
-		}
-
-		NodeKey(int index) :
-				_index(index) {
-		}
-
-		int _index;
-	private:
-	};
-
-	class NodeIterator {
-		friend Graph;
-	public:
-		bool operator!=(const NodeIterator& other) const {
-			return current._index != other.current._index;
-		}
-
-		NodeKey operator*() {
-			return current;
-		}
-
-		void operator++() {
-			current._index++;
-		}
-
-	private:
-		NodeIterator(NodeKey current) :
-				current(current) {
-		}
-
-		NodeKey current;
-	};
-
-	class EdgeIterator {
-		friend Graph;
-	public:
-		bool operator!=(const EdgeIterator& other) const {
-			return it != other.it;
-		}
-
-		NodeKey operator*() {
-			return *it;
-		}
-
-		void operator++() {
-			it++;
-		}
-
-	private:
-		EdgeIterator(set<int>::iterator it) :
-				it(it) {
-		}
-		set<int>::iterator it;
-	};
-
-	class EdgeIterable {
-		friend Graph;
-	public:
-		EdgeIterator begin() const {
-			return EdgeIterator(value.begin());
-		}
-
-		EdgeIterator end() const {
-			return EdgeIterator(value.end());
-		}
-
-	private:
-		EdgeIterable(set<int> value) :
-				value(value) {
-
-		}
-		set<int> value;
-	};
-
-	NodeKey addNode(const TNode& nodeValue) {
-		NodeKey nodeKey(nodes.size());
-		nodes.emplace_back(nodeValue);
-		return nodeKey;
+	vector<BasicBlock*>::iterator begin() {
+		return targets.begin();
 	}
 
-	inline int nodeCount() const {
-		return nodes.size();
-	}
-
-	TNode& getNode(NodeKey nodeId) {
-		return nodes[nodeId._index].value;
-	}
-
-	void addEdge(NodeKey to, NodeKey from) {
-		nodes[to._index].outEdges.addEdge(from._index);
-		nodes[from._index].inEdges.addEdge(to._index);
-	}
-
-	inline NodeIterator begin() {
-		return NodeIterator(0);
-	}
-
-	inline NodeIterator end() {
-		return NodeIterator(nodeCount());
-	}
-
-	EdgeIterable outEdges(NodeKey nodeKey) const {
-		return EdgeIterable(nodes[nodeKey._index].outEdges.edges);
-	}
-
-	EdgeIterable inEdges(NodeKey nodeId) const {
-		return EdgeIterable(nodes[nodeId._index].inEdges.edges);
+	vector<BasicBlock*>::iterator end() {
+		return targets.end();
 	}
 
 private:
 
-	struct EdgeSet {
-		void addEdge(NodeKey nodeId) {
-			edges.insert(nodeId._index);
-		}
+	BasicBlock(InstList::iterator start, InstList::iterator exit, string name) :
+			start(start), exit(exit), name(name), next(nullptr) {
+	}
 
-		set<int> edges;
-	};
+	BasicBlock* next;
 
-	struct Node {
-		Node(const TNode& value) :
-				value(value) {
-		}
-		TNode value;
-		EdgeSet outEdges;
-		EdgeSet inEdges;
-	};
-
-	vector<Node> nodes;
+	vector<BasicBlock*> targets;
 };
 
-struct ControlFlowGraph: Graph<BasicBlock>, private ErrorManager {
+struct ControlFlowGraph: private ErrorManager {
 
 	ControlFlowGraph(InstList& instList) :
-			entry(getFixedBb(instList, "Entry")), exit(
-					getFixedBb(instList, "Exit")) {
+			entry(addConstBb(instList, "Entry")), exit(
+					addConstBb(instList, "Exit")) {
 		buildCfg(instList);
 	}
 
-	NodeKey getFixedBb(InstList& instList, const char* name) {
-		return addNode(BasicBlock(instList.end(), instList.end(), name));
+	~ControlFlowGraph() {
+		for (auto bb : *this) {
+			delete bb;
+		}
 	}
 
-	const NodeKey entry;
-	const NodeKey exit;
+	BasicBlock* addBasicBlock(InstList::iterator start, InstList::iterator end,
+			string name) {
+		BasicBlock* bb = new BasicBlock(start, end, name);
+
+		if (basicBlocks.size() > 0) {
+			cerr << "hola en el if: " << name << ": " << basicBlocks.size()
+					<< endl;
+			BasicBlock* prevbb = basicBlocks.back();
+			prevbb->next = bb;
+		}
+
+		cerr << "hola join: " << name << endl;
+
+		basicBlocks.push_back(bb);
+
+		cerr << "chau: " << name << endl;
+
+		return bb;
+	}
+
+	inline vector<BasicBlock*>::iterator begin() {
+		return basicBlocks.begin();
+	}
+
+	inline vector<BasicBlock*>::iterator end() {
+		return basicBlocks.end();
+	}
+
+	BasicBlock* addConstBb(InstList& instList, const char* name) {
+		return addBasicBlock(instList.end(), instList.end(), name);
+	}
+
+private:
+	vector<BasicBlock*> basicBlocks;
+
+public:
+	BasicBlock* entry;
+
+	BasicBlock* exit;
 
 private:
 
@@ -201,11 +122,10 @@ private:
 			return ss.str();
 		};
 
-		auto addBasicBlock = [&](InstList::iterator eit) {
+		auto addBasicBlock2 = [&](InstList::iterator eit) {
 			if (beginBb != eit) {
 				string name = getBasicBlockName(bbid);
-				BasicBlock bb(beginBb, eit, name);
-				addNode(bb);
+				addBasicBlock(beginBb, eit, name);
 
 				beginBb = eit;
 				bbid++;
@@ -216,36 +136,34 @@ private:
 			Inst* inst = *it;
 
 			if (inst->kind == KIND_LABEL) {
-				addBasicBlock(it);
+				addBasicBlock2(it);
 			}
 
 			if (inst->kind == KIND_JUMP) {
 				auto eit = it;
 				eit++;
-				addBasicBlock(eit);
+				addBasicBlock2(eit);
 			}
 
 			if (isExit(inst)) {
 				auto eit = it;
 				eit++;
-				addBasicBlock(eit);
+				addBasicBlock2(eit);
 			}
 		}
 	}
 
-	NodeKey findNodeOfLabel(int labelId, InstList& instList) {
-		for (auto nid : *this) {
-			BasicBlock& bb = getNode(nid);
-
-			if (bb.start == instList.end()) {
-				assert(bb.name == "Entry" || bb.name == "Exit", "");
-				assert(bb.end == instList.end(), "");
+	BasicBlock* findBasicBlockOfLabel(int labelId, InstList& instList) {
+		for (BasicBlock* bb : *this) {
+			if (bb->start == instList.end()) {
+				assert(bb->name == "Entry" || bb->name == "Exit", "");
+				assert(bb->exit == instList.end(), "");
 				continue;
 			}
 
-			Inst* inst = *bb.start;
+			Inst* inst = *bb->start;
 			if (inst->kind == KIND_LABEL && inst->label.id == labelId) {
-				return nid;
+				return bb;
 			}
 		}
 
@@ -253,43 +171,44 @@ private:
 	}
 
 	void buildCfg(InstList& instList) {
+		cerr << "hasta aca llegamos 2";
 
 		buildBasicBlocks(instList);
 
-		for (auto nid : *this) {
-			BasicBlock& bb = getNode(nid);
-
-			if (bb.start == instList.end()) {
-				assert(bb.name == "Entry" || bb.name == "Exit", "");
-				assert(bb.end == instList.end(), "");
+		for (BasicBlock* bb : *this) {
+			if (bb->start == instList.end()) {
+				assert(bb->name == "Entry" || bb->name == "Exit", "");
+				assert(bb->exit == instList.end(), "");
 				continue;
 			}
 
-			cerr << bb.name << endl;
+			cerr << bb->name << endl;
 
-			auto e = bb.end;
+			auto e = bb->exit;
 			e--;
 			assert(e != instList.end(), "");
 
 			//Inst* first = *b;
 			Inst* last = *e;
 
-			if (bb.start == instList.begin()) {
-				addEdge(entry, nid);
+			if (bb->start == instList.begin()) {
+				entry->addTarget(bb);
 			}
 
 			if (last->kind == KIND_JUMP) {
 				int labelId = last->jump.label2->label.id;
-				NodeKey tbbid = findNodeOfLabel(labelId, instList);
-				addEdge(nid, tbbid);
+				BasicBlock* tbbid = findBasicBlockOfLabel(labelId, instList);
+				bb->addTarget(tbbid);
 
 				if (last->opcode != OPCODE_goto) {
-					addEdge(nid, nid.next());
+					assert(bb->next != nullptr, "next bb is null");
+					bb->addTarget(bb->next);
 				}
 			} else if (isExit(last)) {
-				addEdge(nid, exit);
+				bb->addTarget(exit);
 			} else {
-				addEdge(nid, nid.next());
+				assert(bb->next != nullptr, "next bb is null");
+				bb->addTarget(bb->next);
 			}
 		}
 	}
@@ -397,14 +316,14 @@ struct DescParser: protected ErrorManager {
 class SmtBuilder: private DescParser {
 public:
 
-	static void computeState(ControlFlowGraph::NodeKey to, Frame& how,
-			ControlFlowGraph& cfg, InstList& instList, ClassFile& cf) {
+	static void computeState(BasicBlock& to, Frame& how, InstList& instList,
+			ClassFile& cf) {
 
-		BasicBlock& bb = cfg.getNode(to);
+		BasicBlock& bb = to;
 
 		if (bb.start == instList.end()) {
 			assert(bb.name == "Exit", "");
-			assert(bb.end == instList.end(), "");
+			assert(bb.exit == instList.end(), "");
 			return;
 		}
 
@@ -424,14 +343,14 @@ public:
 		}
 
 		if (change) {
-			for (auto it = bb.start; it != bb.end; it++) {
+			for (auto it = bb.start; it != bb.exit; it++) {
 				Inst* inst = *it;
 				computeFrame(*inst, cf, bb.out);
 			}
 
 			Frame h = bb.out;
 
-			for (auto nid : cfg.outEdges(to)) {
+			for (BasicBlock* nid : to) {
 //				InstList::iterator b;
 //				InstList::iterator e;
 //				string name;
@@ -452,7 +371,7 @@ public:
 //				h.print(os);
 //				os << "  going to " << name << endl;
 
-				computeState(nid, h, cfg, instList, cf);
+				computeState(*nid, h, instList, cf);
 			}
 		}
 	}
@@ -1096,23 +1015,20 @@ public:
 };
 
 static void printCfg(ControlFlowGraph& cfg, ostream& os) {
-	for (auto nid : cfg) {
-		BasicBlock& bb = cfg.getNode(nid);
+	os << "printing cfg... ";
 
-		os << "* " << bb.name;
+	for (BasicBlock* bb : cfg) {
+		//BasicBlock& bb = cfg.getNode(nid);
 
-		auto printEdges =
-				[&](ControlFlowGraph::EdgeIterable edges, const char* kind, const char* arrow) {
-					os << " @" << kind << " { ";
-					for (auto eid : edges) {
-						auto bbt = cfg.getNode(eid);
-						os << arrow << bbt.name << ", ";
-					}
-					os << "} ";
-				};
+		os << "* " << bb->name;
 
-		printEdges(cfg.outEdges(nid), "Out", "->");
-		printEdges(cfg.inEdges(nid), "In", "<-");
+		os << " @Out { ";
+		for (BasicBlock* bbt : *bb) {
+			//auto bbt = cfg.getNode(eid);
+			os << "->" << bbt->name << ", ";
+		}
+		os << "} ";
+
 		os << endl;
 
 //		for (auto it = b; it != e; it++) {
@@ -1129,15 +1045,15 @@ static void printCfg(ControlFlowGraph& cfg, ostream& os) {
 //
 //}
 
-static void computeFramesMethod(CodeAttr& code, Method& method, ClassFile& cf) {
+static void computeFramesMethod(CodeAttr* code, Method* method, ClassFile* cf) {
 
-	code.instList.setLabelIds();
+	code->instList.setLabelIds();
 
-	cerr << cf.getUtf8(method.nameIndex) << endl;
+	cerr << cf->getUtf8(method->nameIndex) << endl;
 	Frame initFrame;
 
 	int lvindex = [&]() {
-		if (method.accessFlags & ACC_STATIC) {
+		if (method->accessFlags & ACC_STATIC) {
 			return 0;
 		} else {
 			initFrame.setRefVar(0); // this argument
@@ -1145,7 +1061,7 @@ static void computeFramesMethod(CodeAttr& code, Method& method, ClassFile& cf) {
 		}
 	}();
 
-	const char* methodDesc = cf.getUtf8(method.descIndex);
+	const char* methodDesc = cf->getUtf8(method->descIndex);
 	vector<Type> argsType;
 	DescParser::parseMethodDesc(methodDesc, &argsType);
 
@@ -1154,28 +1070,36 @@ static void computeFramesMethod(CodeAttr& code, Method& method, ClassFile& cf) {
 		lvindex++;
 	}
 
-	ControlFlowGraph cfg(code.instList);
-//	printCfg(cfg, cerr);
+	ControlFlowGraph cfg(code->instList);
+	printCfg(cfg, cerr);
 
 	//vector<State> states(cfg.nodeCount());
 	initFrame.valid = true;
-	BasicBlock& bbe = cfg.getNode(cfg.entry);
-	bbe.in = initFrame;
-	bbe.out = initFrame;
+	BasicBlock* bbe = cfg.entry;
+	bbe->in = initFrame;
+	bbe->out = initFrame;
 
 	//states[cfg.entry._index] = {initFrame, initFrame};
 
-	auto to = *cfg.outEdges(cfg.entry).begin();
-	SmtBuilder::computeState(to, initFrame, cfg, code.instList, cf);
+	BasicBlock* to = *cfg.entry->begin();
+	SmtBuilder::computeState(*to, initFrame, code->instList, *cf);
+
+	for (BasicBlock* bb : cfg) {
+		if (bb->start != code->instList.end()) {
+			Inst* fi = new Inst(KIND_FRAME);
+			fi->frame.frame = bb->in;
+			code->instList.insert(bb->start, fi);
+		}
+	}
 }
 
 void ClassFile::computeFrames() {
 
-	for (Method& method : methods) {
-		CodeAttr* code = method.codeAttr();
+	for (Method* method : methods) {
+		CodeAttr* code = method->codeAttr();
 
 		if (code != nullptr) {
-			computeFramesMethod(*code, method, *this);
+			computeFramesMethod(code, method, this);
 		}
 	}
 }

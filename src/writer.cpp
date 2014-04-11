@@ -134,21 +134,21 @@ public:
 		}
 
 		bw.writeu2(cf.fields.size());
-		for (Field& f : cf.fields) {
-			bw.writeu2(f.accessFlags);
-			bw.writeu2(f.nameIndex);
-			bw.writeu2(f.descIndex);
+		for (Field* f : cf.fields) {
+			bw.writeu2(f->accessFlags);
+			bw.writeu2(f->nameIndex);
+			bw.writeu2(f->descIndex);
 
-			writeAttrs(f);
+			writeAttrs(*f);
 		}
 
 		bw.writeu2(cf.methods.size());
-		for (Method& m : cf.methods) {
-			bw.writeu2(m.accessFlags);
-			bw.writeu2(m.nameIndex);
-			bw.writeu2(m.descIndex);
+		for (Method* m : cf.methods) {
+			bw.writeu2(m->accessFlags);
+			bw.writeu2(m->nameIndex);
+			bw.writeu2(m->descIndex);
 
-			writeAttrs(m);
+			writeAttrs(*m);
 		}
 
 		writeAttrs(cf);
