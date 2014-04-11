@@ -1,13 +1,9 @@
 #ifndef JNIF_HPP
 #define JNIF_HPP
 
-/**
- *
- */
 #include <string>
 #include <vector>
 #include <list>
-#include <functional>
 #include <iostream>
 
 /**
@@ -47,6 +43,104 @@ typedef unsigned int u4;
  */
 enum Magic {
 	CLASSFILE_MAGIC = 0xcafebabe
+};
+
+/**
+ *
+ */
+enum ClassFlags {
+
+	/**
+	 * Declared public; may be accessed from outside its package.
+	 */
+	CLASS_PUBLIC = 0x0001,
+
+	/**
+	 * Declared final; no subclasses allowed.
+	 */
+	CLASS_FINAL = 0x0010,
+
+	/**
+	 * Treat superclass methods specially when invoked by the
+	 * invokespecial instruction.
+	 */
+	CLASS_SUPER = 0x0020,
+
+	/**
+	 * Is an interface, not a class.
+	 */
+	CLASS_INTERFACE = 0x0200,
+
+	/**
+	 * Declared abstract; must not be instantiated.
+	 */
+	CLASS_ABSTRACT = 0x0400,
+
+	/**
+	 * Declared synthetic; not present in the source code.
+	 */
+	CLASS_SYNTHETIC = 0x1000,
+
+	/**
+	 * Declared as an annotation type.
+	 */
+	CLASS_ANNOTATION = 0x2000,
+
+	/**
+	 * Declared as an enum type.
+	 */
+	CLASS_ENUM = 0x4000
+};
+
+/**
+ *
+ */
+enum FieldFlags {
+
+	/**
+	 * Declared public; may be accessed from outside its package.
+	 */
+	FIELD_PUBLIC = 0x0001,
+
+	/**
+	 * Declared private; usable only within the defining class.
+	 */
+	FIELD_PRIVATE = 0x0002,
+
+	/**
+	 * Declared protected; may be accessed within subclasses.
+	 */
+	FIELD_PROTECTED = 0x0004,
+
+	/**
+	 * Declared static.
+	 */
+	FIELD_STATIC = 0x0008,
+	/**
+	 * Declared final;
+	 * never directly assigned to after object construction (JLS $17.5).
+	 */
+	FIELD_FINAL = 0x0010,
+
+	/**
+	 * Declared volatile; cannot be cached.
+	 */
+	FIELD_VOLATILE = 0x0040,
+
+	/**
+	 * Declared transient; not written or read by a persistent object manager.
+	 */
+	FIELD_TRANSIENT = 0x0080,
+
+	/**
+	 * Declared synthetic; not present in the source code.
+	 */
+	FIELD_SYNTHETIC = 0x1000,
+
+	/**
+	 * Declared as an element of an enum.
+	 */
+	FIELD_ENUM = 0x4000
 };
 
 /**
@@ -346,6 +440,7 @@ enum OpKind {
 	KIND_PARSE4TODO,
 	KIND_RESERVED,
 	KIND_LABEL,
+	KIND_FRAME
 };
 
 /**
@@ -418,6 +513,254 @@ private:
 		_raise(os, args...);
 	}
 
+};
+
+struct Inst;
+
+/**
+ * Verification type class
+ */
+class Type {
+public:
+
+	enum Tag {
+		TYPE_TOP = 0,
+		TYPE_INTEGER = 1,
+		TYPE_FLOAT = 2,
+		TYPE_LONG = 4,
+		TYPE_DOUBLE = 3,
+		TYPE_NULL = 5,
+		TYPE_UNINITTHIS = 6,
+		TYPE_OBJECT = 7,
+		TYPE_UNINIT = 8,
+		TYPE_VOID
+	};
+
+	static inline Type top() {
+		return Type(TYPE_TOP);
+	}
+
+	static inline Type intt() {
+		return Type(TYPE_INTEGER);
+	}
+
+	static inline Type floatt() {
+		return Type(TYPE_FLOAT);
+	}
+
+	static inline Type longt() {
+		return Type(TYPE_LONG);
+	}
+
+	static inline Type doublet() {
+		return Type(TYPE_DOUBLE);
+	}
+
+	static inline Type nullt() {
+		return Type(TYPE_NULL);
+	}
+
+	static inline Type uninitthist() {
+		return Type(TYPE_UNINITTHIS);
+	}
+
+	static inline Type objectt(short index) {
+		return Type(TYPE_OBJECT, index);
+	}
+
+	static inline Type uninitt(short offset, Inst* label) {
+		return Type(TYPE_UNINIT, offset, label);
+	}
+
+	static inline Type voidType() {
+		return Type(TYPE_VOID);
+	}
+
+	Tag tag;
+
+	union {
+		struct {
+			short cindex;
+		} object;
+		struct {
+			short offset;
+			Inst* label;
+		} uninit;
+	};
+
+	inline bool operator==(const Type& other) const {
+		return tag == other.tag;
+	}
+
+	inline bool isTop() const {
+		return tag == TYPE_TOP;
+	}
+
+	inline bool isVoid() const {
+		return tag == TYPE_VOID;
+	}
+
+	inline bool isTwoWord() const {
+		return tag == TYPE_LONG || tag == TYPE_DOUBLE;
+	}
+
+private:
+
+	inline Type(Tag tag) :
+			tag(tag) {
+	}
+
+	inline Type(Tag tag, short index) :
+			tag(tag) {
+		object.cindex = index;
+	}
+
+	inline Type(Tag tag, short offset, Inst* label) :
+			tag(tag) {
+		uninit.offset = offset;
+		uninit.label = label;
+	}
+};
+
+class Frame: private ErrorManager {
+public:
+
+	enum TEnum {
+		Top = Type::TYPE_TOP,
+		Int = Type::TYPE_INTEGER,
+		Long = Type::TYPE_LONG,
+		Float = Type::TYPE_FLOAT,
+		Double = Type::TYPE_DOUBLE,
+		Ref = Type::TYPE_OBJECT
+	};
+
+	typedef Type T;
+
+	Frame() :
+			valid(false) {
+	}
+
+	T pop() {
+		check(stack.size() > 0, "Trying to pop in an empty stack.");
+
+		T t = stack.front();
+		stack.pop_front();
+		return t;
+	}
+	void push(const T& t) {
+		stack.push_front(t);
+	}
+	void pushInt() {
+		push(Type::intt());
+	}
+	void pushLong() {
+		push(Type::top());
+		push(Type::longt());
+	}
+	void pushFloat() {
+		push(Type::floatt());
+	}
+	void pushDouble() {
+		push(Type::top());
+		push(Type::doublet());
+	}
+	void pushRef() {
+		push(Type::objectt(-25));
+	}
+	void pushNull() {
+		push(Type::objectt(-26));
+	}
+	void setVar(u4 lvindex, T t) {
+		check(lvindex < 256, "");
+
+		if (lvindex >= lva.size()) {
+			lva.resize(lvindex + 1, Type::top());
+		}
+
+		lva[lvindex] = t;
+	}
+
+	void setIntVar(int lvindex) {
+		setVar(lvindex, Type::intt());
+	}
+	void setLongVar(int lvindex) {
+		setVar(lvindex, Type::longt());
+	}
+	void setFloatVar(int lvindex) {
+		setVar(lvindex, Type::floatt());
+	}
+	void setDoubleVar(int lvindex) {
+		setVar(lvindex, Type::doublet());
+	}
+	void setRefVar(int lvindex) {
+		setVar(lvindex, Type::objectt(-27));
+	}
+
+	void clearStack() {
+		stack.clear();
+	}
+
+	static bool isAssignable(T subt, T supt) {
+		if (subt == supt) {
+			return true;
+		}
+
+		if (supt.isTop()) {
+			return true;
+		}
+
+		return false;
+	}
+
+	static bool assign(T& t, T o) {
+		check(isAssignable(t, o) || isAssignable(o, t), "");
+
+		if (isAssignable(t, o)) {
+			if (t == o) {
+				return false;
+			}
+
+			t = o;
+			return true;
+		}
+
+		assert(isAssignable(o, t), "");
+
+		return false;
+	}
+
+	bool join(Frame& how) {
+		check(stack.size() == how.stack.size(), "Different stack sizes: ",
+				stack.size(), " != ", how.stack.size());
+
+		if (lva.size() < how.lva.size()) {
+			lva.resize(how.lva.size(), Type::top());
+		} else if (how.lva.size() < lva.size()) {
+			how.lva.resize(lva.size(), Type::top());
+		}
+
+		assert(lva.size() == how.lva.size(), "%ld != %ld", lva.size(),
+				how.lva.size());
+
+		bool change = false;
+
+		for (u4 i = 0; i < lva.size(); i++) {
+			assign(lva[i], how.lva[i]);
+		}
+
+		std::list<T>::iterator i = stack.begin();
+		std::list<T>::iterator j = how.stack.begin();
+
+		for (; i != stack.end(); i++, j++) {
+			assign(*i, *j);
+		}
+
+		return change;
+	}
+
+	std::vector<T> lva;
+	std::list<T> stack;
+	bool valid;
 };
 
 /**
@@ -531,6 +874,11 @@ struct Inst {
 		std::vector<u4> keys;
 		std::vector<Inst*> targets;
 	} ls;
+
+	struct {
+		Frame frame;
+	} frame;
+
 };
 
 /**
@@ -542,6 +890,16 @@ public:
 	~InstList() {
 		for (Inst* inst : *this) {
 			delete inst;
+		}
+	}
+
+	void setLabelIds() {
+		int id = 1;
+		for (Inst* inst : *this) {
+			if (inst->kind == KIND_LABEL) {
+				inst->label.id = id;
+				id++;
+			}
 		}
 	}
 };
@@ -981,45 +1339,6 @@ public:
 		} utf8;
 	};
 
-	template<typename TEntry>
-	static void call(TEntry) {
-	}
-
-	template<typename TEntry, typename TFunc, typename ... TFuncs>
-	static void call(TEntry entry, TFunc, TFuncs ... funcs) {
-		call(entry, funcs...);
-	}
-
-	template<typename TEntry, typename ... TFuncs>
-	static void call(TEntry entry, std::function<void(TEntry)> f, TFuncs ...) {
-		f(entry);
-	}
-
-	template<typename ... TFuncList>
-	void get(Index index, TFuncList ... funcList) {
-		const Entry* e = _getEntry(index);
-
-		switch (e->tag) {
-			case CLASS:
-				call<Class>(e->clazz, funcList...);
-				break;
-			case FIELDREF:
-				call<FieldRef>(e->fieldRef, funcList...);
-				call<MemberRef>(e->fieldRef, funcList...);
-				break;
-			case METHODREF:
-				call<MethodRef>(e->methodRef, funcList...);
-				call<MemberRef>(e->methodRef, funcList...);
-				break;
-			case INTERFACEMETHODREF:
-				call<InterMethodRef>(e->interMethodRef, funcList...);
-				call<MemberRef>(e->interMethodRef, funcList...);
-				break;
-			default:
-				break;
-		}
-	}
-
 	std::vector<Entry> entries;
 
 private:
@@ -1197,107 +1516,6 @@ struct LntAttr: Attr {
 
 	std::vector<LnEntry> lnt;
 
-};
-
-/**
- * Verification type class
- */
-class Type {
-public:
-
-	enum Tag {
-		TYPE_TOP = 0,
-		TYPE_INTEGER = 1,
-		TYPE_FLOAT = 2,
-		TYPE_LONG = 4,
-		TYPE_DOUBLE = 3,
-		TYPE_NULL = 5,
-		TYPE_UNINITTHIS = 6,
-		TYPE_OBJECT = 7,
-		TYPE_UNINIT = 8,
-		TYPE_VOID
-	};
-
-	static inline Type top() {
-		return Type(TYPE_TOP);
-	}
-
-	static inline Type intt() {
-		return Type(TYPE_INTEGER);
-	}
-
-	static inline Type floatt() {
-		return Type(TYPE_FLOAT);
-	}
-
-	static inline Type longt() {
-		return Type(TYPE_LONG);
-	}
-
-	static inline Type doublet() {
-		return Type(TYPE_DOUBLE);
-	}
-
-	static inline Type nullt() {
-		return Type(TYPE_NULL);
-	}
-
-	static inline Type uninitthist() {
-		return Type(TYPE_UNINITTHIS);
-	}
-
-	static inline Type objectt(short index) {
-		return Type(TYPE_OBJECT, index);
-	}
-
-	static inline Type uninitt(short offset, Inst* label) {
-		return Type(TYPE_UNINIT, offset, label);
-	}
-
-	static inline Type voidType() {
-		return Type(TYPE_VOID);
-	}
-
-	Tag tag;
-
-	union {
-		struct {
-			short cindex;
-		} object;
-		struct {
-			short offset;
-			Inst* label;
-		} uninit;
-	};
-
-	inline bool operator==(const Type& other) const {
-		return tag == other.tag;
-	}
-
-	inline bool isTop() const {
-		return tag == TYPE_TOP;
-	}
-
-	inline bool isVoid() const {
-		return tag == TYPE_VOID;
-	}
-
-private:
-
-	inline Type(Tag tag) :
-			tag(tag) {
-	}
-
-	inline Type(Tag tag, short index) :
-			tag(tag) {
-		object.cindex = index;
-	}
-
-	inline Type(Tag tag, short offset, Inst* label) :
-			tag(tag) {
-		uninit.offset = offset;
-		uninit.label = label;
-	}
 };
 
 /**
@@ -1496,34 +1714,6 @@ public:
 };
 
 /**
- *
- */
-class Version {
-public:
-
-	/**
-	 *
-	 */
-	Version(u2 major = 51, u2 minor = 0) :
-			_major(major), _minor(minor) {
-	}
-
-	u2 getMajor() const {
-		return _major;
-	}
-
-	u2 getMinor() const {
-		return _minor;
-	}
-
-private:
-
-	u2 _major;
-
-	u2 _minor;
-};
-
-/**
  * Models a Java Class File following the specification from version 7.
  */
 class ClassFile: public ConstPool, public Attrs {
@@ -1534,10 +1724,10 @@ public:
 	 * name and the access flags.
 	 */
 	ClassFile(const char* className, const char* superClassName =
-			"java/lang/Object", u2 accessFlags = ACC_PUBLIC, Version version =
-			Version()) :
-			accessFlags(accessFlags), _version(version), thisClassIndex(
-					addClass(className)), superClassIndex(
+			"java/lang/Object", u2 accessFlags = CLASS_PUBLIC, u2 majorVersion =
+			51, u2 minorVersion = 0) :
+			majorVersion(majorVersion), minorVersion(minorVersion), accessFlags(
+					accessFlags), thisClassIndex(addClass(className)), superClassIndex(
 					addClass(superClassName)) {
 	}
 
@@ -1546,20 +1736,6 @@ public:
 	 * class file.
 	 */
 	ClassFile(const u1* classFileData, int classFileLen);
-
-	/**
-	 *
-	 */
-	Version getVersion() const {
-		return _version;
-	}
-
-	/**
-	 *
-	 */
-	void setVersion(Version version) {
-		_version = version;
-	}
 
 	/**
 	 * Gets the class name of this class file.
@@ -1635,8 +1811,14 @@ public:
 	 */
 	friend std::ostream& operator<<(std::ostream& os, ClassFile& cf);
 
+	/**
+	 *
+	 */
+	void computeFrames();
+
+	u2 majorVersion;
+	u2 minorVersion;
 	u2 accessFlags;
-	Version _version;
 	ConstPool::Index thisClassIndex;
 	ConstPool::Index superClassIndex;
 	std::vector<u2> interfaces;

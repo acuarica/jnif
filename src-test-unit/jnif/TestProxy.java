@@ -4,7 +4,7 @@ import java.lang.reflect.Field;
 
 public class TestProxy {
 
-	public static String show(Object o) {
+	public static String showObject(Object o) {
 		if (o != null) {
 			String values = "";
 

@@ -1,5 +1,7 @@
 #include "jnif.hpp"
 
+using namespace std;
+
 namespace jnif {
 
 /**
@@ -152,6 +154,58 @@ OpKind OPKIND[256] = { KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO,
 		KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, };
 
 class ClassParser: private ErrorManager {
+public:
+
+	static void parseClassFile(const u1* fileImage, const int fileImageLen,
+			ClassFile& cf) {
+		BufferReader br(fileImage, fileImageLen);
+
+		u4 magic = br.readu4();
+
+		check(magic == CLASSFILE_MAGIC,
+				"Invalid magic number. Expected 0xcafebabe, found: ", magic);
+
+		cf.minorVersion = br.readu2();
+		cf.majorVersion = br.readu2();
+
+		parseConstPool(br, cf);
+
+		cf.accessFlags = br.readu2();
+		cf.thisClassIndex = br.readu2();
+		cf.superClassIndex = br.readu2();
+
+		u2 interCount = br.readu2();
+		for (int i = 0; i < interCount; i++) {
+			u2 interIndex = br.readu2();
+			cf.interfaces.push_back(interIndex);
+		}
+
+		u2 fieldCount = br.readu2();
+		for (int i = 0; i < fieldCount; i++) {
+			AccessFlags accessFlags = (AccessFlags) br.readu2();
+			u2 nameIndex = br.readu2();
+			u2 descIndex = br.readu2();
+
+			Field& f = cf.addField(nameIndex, descIndex, accessFlags);
+
+			parseAttrs(br, cf, f);
+		}
+
+		u2 methodCount = br.readu2();
+		for (int i = 0; i < methodCount; i++) {
+			AccessFlags accessFlags = (AccessFlags) br.readu2();
+			u2 nameIndex = br.readu2();
+			u2 descIndex = br.readu2();
+
+			Method& m = cf.addMethod(nameIndex, descIndex, accessFlags);
+
+			parseAttrs(br, cf, m);
+		}
+
+		parseAttrs(br, cf, cf);
+	}
+
+private:
 
 	static void parseConstPool(BufferReader& br, ConstPool& cp) {
 		u2 count = br.readu2();
@@ -252,7 +306,6 @@ class ClassParser: private ErrorManager {
 	}
 
 	static Attr* parseSourceFile(BufferReader& br, Attrs& as, u2 nameIndex) {
-
 		u2 sourceFileIndex = br.readu2();
 
 		Attr* attr = new SourceFileAttr(nameIndex, 2, sourceFileIndex);
@@ -264,7 +317,7 @@ class ClassParser: private ErrorManager {
 	static Attr* parseExceptions(BufferReader& br, Attrs& as, u2 nameIndex) {
 		u2 len = br.readu2();
 
-		std::vector<u2> es;
+		vector<u2> es;
 		for (int i = 0; i < len; i++) {
 			u2 exceptionIndex = br.readu2();
 
@@ -767,7 +820,7 @@ class ClassParser: private ErrorManager {
 			raise("Error on parse smt");
 		};
 
-		auto parseTs = [&](int count, std::vector<Type>& locs) {
+		auto parseTs = [&](int count, vector<Type>& locs) {
 			for (u1 i = 0; i < count; i++) {
 				Type t = parseType(br, labels);
 				locs.push_back(t);
@@ -848,7 +901,6 @@ class ClassParser: private ErrorManager {
 		return smt;
 	}
 
-public:
 	static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as,
 			void* args = nullptr) {
 		u2 attrCount = br.readu2();
@@ -858,7 +910,7 @@ public:
 			u4 len = br.readu4();
 			const u1* data = br.pos();
 
-			std::string attrName = cp.getUtf8(nameIndex);
+			string attrName = cp.getUtf8(nameIndex);
 
 			Attr* a;
 			if (attrName == "SourceFile") {
@@ -893,61 +945,11 @@ public:
 		}
 	}
 
-	static void parseClassFile(const u1* fileImage, const int fileImageLen,
-			ClassFile& cf) {
-		BufferReader br(fileImage, fileImageLen);
-
-		u4 magic = br.readu4();
-
-		check(magic == CLASSFILE_MAGIC,
-				"Invalid magic number. Expected 0xcafebabe, found: ", magic);
-
-		u2 minor = br.readu2();
-		u2 major = br.readu2();
-
-		cf.setVersion(Version(major, minor));
-
-		parseConstPool(br, cf);
-
-		cf.accessFlags = br.readu2();
-		cf.thisClassIndex = br.readu2();
-		cf.superClassIndex = br.readu2();
-
-		u2 interCount = br.readu2();
-		for (int i = 0; i < interCount; i++) {
-			u2 interIndex = br.readu2();
-			cf.interfaces.push_back(interIndex);
-		}
-
-		u2 fieldCount = br.readu2();
-		for (int i = 0; i < fieldCount; i++) {
-			AccessFlags accessFlags = (AccessFlags) br.readu2();
-			u2 nameIndex = br.readu2();
-			u2 descIndex = br.readu2();
-
-			Field& f = cf.addField(nameIndex, descIndex, accessFlags);
-
-			parseAttrs(br, cf, f);
-		}
-
-		u2 methodCount = br.readu2();
-		for (int i = 0; i < methodCount; i++) {
-			AccessFlags accessFlags = (AccessFlags) br.readu2();
-			u2 nameIndex = br.readu2();
-			u2 descIndex = br.readu2();
-
-			Method& m = cf.addMethod(nameIndex, descIndex, accessFlags);
-
-			parseAttrs(br, cf, m);
-		}
-
-		parseAttrs(br, cf, cf);
-	}
-
 };
 
 ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
-		accessFlags(0), thisClassIndex(0), superClassIndex(0) {
+		majorVersion(0), minorVersion(0), accessFlags(0), thisClassIndex(0), superClassIndex(
+				0) {
 	ClassParser::parseClassFile(classFileData, classFileLen, *this);
 }
 

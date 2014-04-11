@@ -3,16 +3,50 @@
 #include <ostream>
 #include <iomanip>
 
-#include <map>
-#include <set>
-
-#include "analysis/Cfg.hpp"
-#include "analysis/Frame.hpp"
-#include "analysis/DescParser.hpp"
-#include "analysis/SmtBuilder.hpp"
-#include "analysis/State.hpp"
+using namespace std;
 
 namespace jnif {
+
+ostream& operator<<(ostream& os, const Type& t) {
+	switch (t.tag) {
+		case Type::TYPE_TOP:
+			os << "Top";
+			break;
+		case Type::TYPE_INTEGER:
+			os << "Int";
+			break;
+		case Type::TYPE_LONG:
+			os << "Long";
+			break;
+		case Type::TYPE_FLOAT:
+			os << "Float";
+			break;
+		case Type::TYPE_DOUBLE:
+			os << "Double";
+			break;
+		case Type::TYPE_OBJECT:
+			os << "Ref";
+			break;
+		default:
+			os << "UNKNOWN TYPE!!!";
+	}
+
+	return os;
+}
+
+ostream& operator<<(ostream& os, const Frame& frame) {
+	os << "{ ";
+	for (u4 i = 0; i < frame.lva.size(); i++) {
+		os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i];
+	}
+	os << " } [ ";
+	int i = 0;
+	for (auto t : frame.stack) {
+		os << (i == 0 ? "" : " | ") << t;
+		i++;
+	}
+	return os << " ]";
+}
 
 class AccessFlagsPrinter {
 public:
@@ -21,8 +55,7 @@ public:
 			value(value), sep(sep) {
 	}
 
-	friend std::ostream& operator<<(std::ostream& out,
-			AccessFlagsPrinter self) {
+	friend ostream& operator<<(ostream& out, AccessFlagsPrinter self) {
 		bool empty = true;
 
 		auto check = [&](AccessFlags accessFlags, const char* name) {
@@ -53,75 +86,86 @@ private:
 	const char* const sep;
 };
 
-std::ostream& operator<<(std::ostream& os, Version version) {
-	return os << version.getMajor() << "." << version.getMinor();
-}
+class ClassPrinter: private ErrorManager {
+public:
 
-struct ClassPrinter: private ErrorManager {
-
-	static const char* OPCODES[];
-
-	static const char* ConstNames[];
-
-	ClassPrinter(ClassFile& cf, std::ostream& os, int tabs) :
+	ClassPrinter(ClassFile& cf, ostream& os, int tabs) :
 			cf(cf), os(os), tabs(tabs) {
 	}
 
 	void print() {
 		line() << AccessFlagsPrinter(cf.accessFlags) << " class "
-				<< cf.getThisClassName() << "#" << cf.thisClassIndex
-				<< std::endl;
+				<< cf.getThisClassName() << "#" << cf.thisClassIndex << endl;
 
 		inc();
-		line() << "Version: " << cf.getVersion() << std::endl;
+		line() << "* Version: " << cf.majorVersion << "." << cf.minorVersion
+				<< endl;
 
-		inc();
-
-		line() << "Constant Pool Items [" << ((ConstPool) cf).size() << "]"
-				<< std::endl;
+		line() << "* Constant Pool [" << ((ConstPool) cf).size() << "]" << endl;
 		inc();
 		printConstPool(cf);
 		dec();
 
-		line() << "accessFlags: " << cf.accessFlags << std::endl;
-		line() << "thisClassIndex: " << cf.getThisClassName() << "#"
-				<< cf.thisClassIndex << std::endl;
+		line() << "* accessFlags: " << AccessFlagsPrinter(cf.accessFlags)
+				<< endl;
+		line() << "* thisClassIndex: " << cf.getThisClassName() << "#"
+				<< cf.thisClassIndex << endl;
 
 		if (cf.superClassIndex != 0) {
-			line() << "superClassIndex: " << cf.getClassName(cf.superClassIndex)
-					<< "#" << cf.superClassIndex << std::endl;
+			line() << "* superClassIndex: "
+					<< cf.getClassName(cf.superClassIndex) << "#"
+					<< cf.superClassIndex << endl;
+		} else {
+			line() << "* superClassIndex: " << "#" << cf.superClassIndex
+					<< endl;
 		}
 
+		line() << "* Interfaces [" << cf.interfaces.size() << "]" << endl;
+		inc();
 		for (u2 interIndex : cf.interfaces) {
 			line() << "Interface '" << cf.getClassName(interIndex) << "'#"
-					<< interIndex << std::endl;
+					<< interIndex << endl;
 		}
+		dec();
 
+		line() << "* Fields [" << cf.fields.size() << "]" << endl;
+		inc();
 		for (Field& f : cf.fields) {
 			line() << "Field " << cf.getUtf8(f.nameIndex) << ": "
 					<< AccessFlagsPrinter(f.accessFlags) << " #" << f.nameIndex
 					<< ": " << cf.getUtf8(f.descIndex) << "#" << f.descIndex
-					<< std::endl;
+					<< endl;
 
 			printAttrs(f);
 		}
+		dec();
+
+		line() << "* Methods [" << cf.methods.size() << "]" << endl;
+		inc();
 
 		for (Method& m : cf.methods) {
 			line() << "+Method " << AccessFlagsPrinter(m.accessFlags) << " "
 					<< cf.getUtf8(m.nameIndex) << ": " << " #" << m.nameIndex
 					<< ": " << cf.getUtf8(m.descIndex) << "#" << m.descIndex
-					<< std::endl;
+					<< endl;
 
 			printAttrs(m, &m);
 		}
+		dec();
 
 		printAttrs(cf);
 
 		dec();
 	}
 
+private:
+
+	static const char* OPCODES[];
+
+	static const char* ConstNames[];
+
 	void printConstPool(ConstPool& cp) {
-		line() << "#0 [null entry]: -" << std::endl;
+		line() << "#0 [null entry]: -" << endl;
 
 		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
 			ConstPool::Index i = *it;
@@ -131,64 +175,39 @@ struct ClassPrinter: private ErrorManager {
 
 			const ConstPool::Entry* entry = &cp.entries[i];
 
-			cp.get(i, [&](ConstPool::Class e) {
-				os << cp.getClassName(i) << "#" << e.nameIndex;
-			}, [&](ConstPool::FieldRef e) {
-				std::string clazzName, name, desc;
-				cp.getFieldRef(i, &clazzName, &name, &desc);
-
-				os << clazzName << "#" << e.classIndex << "."
-				<< name << ":" << desc << "#"
-				<< e.nameAndTypeIndex;
-			}, [&](ConstPool::MethodRef e) {
-				std::string clazzName, name, desc;
-				cp.getMethodRef(i, &clazzName, &name, &desc);
-
-				os << clazzName << "#" << e.classIndex << "."
-				<< name << ":" << desc << "#"
-				<< e.nameAndTypeIndex;
-			}, [&](ConstPool::InterMethodRef e) {
-				std::string clazzName, name, desc;
-				cp.getInterMethodRef(i, &clazzName, &name, &desc);
-
-				os << clazzName << "#" << e.classIndex << "."
-				<< name << ":" << desc << "#"
-				<< e.nameAndTypeIndex;
-			});
-
 			switch (tag) {
 				case ConstPool::CLASS:
-//					os << cp.getClassName(i) << "#" << entry->clazz.nameIndex;
-//					break;
-				case ConstPool::FIELDREF: //{
-//					string clazzName, name, desc;
-//					cp.getFieldRef(i, &clazzName, &name, &desc);
-//
-//					os << clazzName << "#" << entry->memberref.classIndex << "."
-//							<< name << ":" << desc << "#"
-//							<< entry->memberref.nameAndTypeIndex;
-//					break;
-//				}
-//
-				case ConstPool::METHODREF: //{
-//					string clazzName, name, desc;
-//					cp.getMethodRef(i, &clazzName, &name, &desc);
-//
-//					os << clazzName << "#" << entry->memberref.classIndex << "."
-//							<< name << ":" << desc << "#"
-//							<< entry->memberref.nameAndTypeIndex;
-//					break;
-//				}
-//
-				case ConstPool::INTERFACEMETHODREF: //{
-//					string clazzName, name, desc;
-//					cp.getInterMethodRef(i, &clazzName, &name, &desc);
-//
-//					os << clazzName << "#" << entry->memberref.classIndex << "."
-//							<< name << ":" << desc << "#"
-//							<< entry->memberref.nameAndTypeIndex;
+					os << cp.getClassName(i) << "#" << entry->clazz.nameIndex;
 					break;
-//				}
+				case ConstPool::FIELDREF: {
+					string clazzName, name, desc;
+					cp.getFieldRef(i, &clazzName, &name, &desc);
+
+					os << clazzName << "#" << entry->fieldRef.classIndex << "."
+							<< name << ":" << desc << "#"
+							<< entry->fieldRef.nameAndTypeIndex;
+					break;
+				}
+
+				case ConstPool::METHODREF: {
+					string clazzName, name, desc;
+					cp.getMethodRef(i, &clazzName, &name, &desc);
+
+					os << clazzName << "#" << entry->methodRef.classIndex << "."
+							<< name << ":" << desc << "#"
+							<< entry->methodRef.nameAndTypeIndex;
+					break;
+				}
+
+				case ConstPool::INTERFACEMETHODREF: {
+					string clazzName, name, desc;
+					cp.getInterMethodRef(i, &clazzName, &name, &desc);
+
+					os << clazzName << "#" << entry->interMethodRef.classIndex
+							<< "." << name << ":" << desc << "#"
+							<< entry->interMethodRef.nameAndTypeIndex;
+					break;
+				}
 				case ConstPool::STRING:
 					os << cp.getUtf8(entry->s.stringIndex) << "#"
 							<< entry->s.stringIndex;
@@ -227,7 +246,7 @@ struct ClassPrinter: private ErrorManager {
 					break;
 			}
 
-			os << std::endl;
+			os << endl;
 		}
 	}
 
@@ -265,94 +284,39 @@ struct ClassPrinter: private ErrorManager {
 	}
 
 	void printSourceFile(SourceFileAttr& attr) {
-		const std::string& sourceFileName = cf.getUtf8(attr.sourceFileIndex);
+		const string& sourceFileName = cf.getUtf8(attr.sourceFileIndex);
 		line() << "Source file: " << sourceFileName << "#"
-				<< attr.sourceFileIndex << std::endl;
+				<< attr.sourceFileIndex << endl;
 	}
 
 	void printUnknown(UnknownAttr& attr) {
-		const std::string& attrName = cf.getUtf8(attr.nameIndex);
+		const string& attrName = cf.getUtf8(attr.nameIndex);
 
 		line() << "  Attribute unknown '" << attrName << "' # "
-				<< attr.nameIndex << "[" << attr.len << "]" << std::endl;
+				<< attr.nameIndex << "[" << attr.len << "]" << endl;
 
 	}
 
-	void printCode(CodeAttr& c, Method* m) {
+	void printCode(CodeAttr& c, Method*) {
 		line(1) << "maxStack: " << c.maxStack << ", maxLocals: " << c.maxLocals
-				<< std::endl;
+				<< endl;
 
-		line(1) << "Code length: " << c.codeLen << std::endl;
+		line(1) << "Code length: " << c.codeLen << endl;
 
 		inc();
 
-		int id = 1;
-		for (Inst* inst : c.instList) {
-			if (inst->kind == KIND_LABEL) {
-				inst->label.id = id;
-				id++;
-			}
-		}
-
-		H h;
-
-		int lvindex = [&]() {
-			if (m->accessFlags & ACC_STATIC) {
-				return 0;
-			} else {
-				h.setRefVar(0); // this argument
-				return 1;
-			}
-		}();
-
-		const char* methodDesc = cf.getUtf8(m->descIndex);
-		std::vector<Type> argsType;
-		DescParser::parseMethodDesc(methodDesc, &argsType);
-
-		for (Type t : argsType) {
-			h.setVar(lvindex, t);
-			lvindex++;
-		}
-
-		H initState = h;
+		c.instList.setLabelIds();
 
 		for (Inst* inst : c.instList) {
 			printInst(*inst);
-			os << std::endl;
-			//SmtBuilder::computeFrame(*inst, cf, h);
-			//os << std::setw(10);
-			//h.print(os);
-		}
-
-		ControlFlowGraph cfg(c.instList);
-		printCfg(cfg);
-
-		std::vector<State> states(cfg.nodeCount());
-		initState.valid = true;
-		states[cfg.entry._index] = {initState, initState};
-
-		auto to = *cfg.outEdges(cfg.entry).begin();
-		SmtBuilder::computeState(to, initState, cfg, states, c.instList, os,
-				cf);
-
-		for (auto nkey : cfg) {
-			InstList::iterator b;
-			InstList::iterator e;
-			std::string name;
-			std::tie(b, e, name) = cfg.getNode(nkey);
-
-			os << name << ": ";
-			State& s = states[nkey._index];
-			s.in.print(os);
-			s.out.print(os);
-			os << std::endl;
+			os << endl;
 		}
 
 		for (CodeExceptionEntry& e : c.exceptions) {
 			line(1) << "exception entry: startpc: " << e.startpc->label.id
 					<< ", endpc: " << e.endpc->label.offset << ", handlerpc: "
 					<< e.handlerpc->label.offset << ", catchtype: "
-					<< e.catchtype << std::endl;
+					<< e.catchtype << endl;
 		}
 
 		printAttrs(c.attrs);
@@ -360,122 +324,78 @@ struct ClassPrinter: private ErrorManager {
 		dec();
 	}
 
-	void printCfg(ControlFlowGraph& cfg) {
-		for (auto nid : cfg) {
-			InstList::iterator b;
-			InstList::iterator e;
-			std::string name;
-			std::tie(b, e, name) = cfg.getNode(nid);
-
-			os << "* " << name;
-
-			auto printEdges =
-					[&](ControlFlowGraph::EdgeIterable edges, const char* kind, const char* arrow) {
-						os << " @" << kind << " { ";
-						for (auto eid : edges) {
-							auto bb = cfg.getNode(eid);
-							os << arrow << std::get<2>(bb) << ", ";
-						}
-						os << "} ";
-					};
-
-			printEdges(cfg.outEdges(nid), "Out", "->");
-			printEdges(cfg.inEdges(nid), "In", "<-");
-			os << std::endl;
-
-			for (auto it = b; it != e; it++) {
-				Inst* inst = *it;
-				printInst(*inst);
-				os << std::endl;
-			}
-		}
-
-		os << std::endl;
-	}
-
 	void printInst(Inst& inst) {
 		int offset = inst._offset;
 
 		if (inst.kind == KIND_LABEL) {
-			os << "   label: " << inst.label.id;
+			line() << "label: " << inst.label.id;
 			return;
 		}
 
-		line() << std::setw(4) << offset << ": (" << std::setw(3)
-				<< (int) inst.opcode << ") " << OPCODES[inst.opcode] << " ";
-
-		std::ostream& instos = os;
+		line() << setw(4) << offset << ": (" << setw(3) << (int) inst.opcode
+				<< ") " << OPCODES[inst.opcode] << " ";
 
 		switch (inst.kind) {
 			case KIND_ZERO:
-				//instos << std::endl;
 				break;
 			case KIND_BIPUSH:
-				instos << int(inst.push.value);
+				os << int(inst.push.value);
 				break;
 			case KIND_SIPUSH:
-				instos << int(inst.push.value);
+				os << int(inst.push.value);
 				break;
 			case KIND_LDC:
-				instos << "#" << int(inst.ldc.valueIndex);
+				os << "#" << int(inst.ldc.valueIndex);
 				break;
 			case KIND_VAR:
-				instos << int(inst.var.lvindex);
+				os << int(inst.var.lvindex);
 				break;
 			case KIND_IINC:
-				instos << int(inst.iinc.index) << " " << int(inst.iinc.value);
+				os << int(inst.iinc.index) << " " << int(inst.iinc.value);
 				break;
 			case KIND_JUMP:
-				instos << "label: " << inst.jump.label2->label.id;
+				os << "label: " << inst.jump.label2->label.id;
 				break;
 			case KIND_TABLESWITCH:
-				instos << "default: " << inst.ts.def->label.id << ", from: "
+				os << "default: " << inst.ts.def->label.id << ", from: "
 						<< inst.ts.low << " " << inst.ts.high << ":";
 
 				for (int i = 0; i < inst.ts.high - inst.ts.low + 1; i++) {
 					Inst* l = inst.ts.targets[i];
 					os << " " << l->label.id;
 				}
-
-				//instos;
-
 				break;
 			case KIND_LOOKUPSWITCH:
-				instos << inst.ls.defbyte->label.id << " " << inst.ls.npairs
-						<< ":";
+				os << inst.ls.defbyte->label.id << " " << inst.ls.npairs << ":";
 
 				for (u4 i = 0; i < inst.ls.npairs; i++) {
 					u4 k = inst.ls.keys[i];
 					Inst* l = inst.ls.targets[i];
-					instos << " " << k << " -> " << l->label.id;
+					os << " " << k << " -> " << l->label.id;
 				}
-
-				//instos << std::endl;
 				break;
 			case KIND_FIELD: {
-				std::string className, name, desc;
+				string className, name, desc;
 				cf.getFieldRef(inst.field.fieldRefIndex, &className, &name,
 						&desc);
 
-				instos << className << name << desc;
-
+				os << className << name << desc;
 				break;
 			}
 			case KIND_INVOKE: {
-				std::string className, name, desc;
+				string className, name, desc;
 				cf.getMethodRef(inst.invoke.methodRefIndex, &className, &name,
 						&desc);
 
-				instos << className << "." << name << ": " << desc;
-
+				os << className << "." << name << ": " << desc;
 				break;
 			}
 			case KIND_INVOKEINTERFACE: {
-				std::string className, name, desc;
+				string className, name, desc;
 				cf.getInterMethodRef(inst.invokeinterface.interMethodRefIndex,
 						&className, &name, &desc);
 
-				instos << className << "." << name << ": " << desc << "("
+				os << className << "." << name << ": " << desc << "("
 						<< inst.invokeinterface.count << ")";
 				break;
 			}
@@ -483,22 +403,16 @@ struct ClassPrinter: private ErrorManager {
 				raise("FrParseInvokeDynamicInstr not implemented");
 				break;
 			case KIND_TYPE: {
-				std::string className = cf.getClassName(inst.type.classIndex);
-
-				instos << className;
-
+				string className = cf.getClassName(inst.type.classIndex);
+				os << className;
 				break;
 			}
 			case KIND_NEWARRAY:
-				instos << int(inst.newarray.atype);
-
+				os << int(inst.newarray.atype);
 				break;
 			case KIND_MULTIARRAY: {
-				std::string className = cf.getClassName(
-						inst.multiarray.classIndex);
-
-				instos << className << " " << inst.multiarray.dims;
-
+				string className = cf.getClassName(inst.multiarray.classIndex);
+				os << className << " " << inst.multiarray.dims;
 				break;
 			}
 			case KIND_PARSE4TODO:
@@ -516,17 +430,17 @@ struct ClassPrinter: private ErrorManager {
 		for (u4 i = 0; i < attr.es.size(); i++) {
 			u2 exceptionIndex = attr.es[i];
 
-			const std::string& exceptionName = cf.getClassName(exceptionIndex);
+			const string& exceptionName = cf.getClassName(exceptionIndex);
 
 			line() << "  Exceptions entry: '" << exceptionName << "'#"
-					<< exceptionIndex << std::endl;
+					<< exceptionIndex << endl;
 		}
 	}
 
 	void printLnt(LntAttr& attr) {
 		for (LntAttr::LnEntry e : attr.lnt) {
 			line() << "  LocalNumberTable entry: startpc: " << e.startpc
-					<< ", lineno: " << e.lineno << std::endl;
+					<< ", lineno: " << e.lineno << endl;
 		}
 	}
 
@@ -535,14 +449,14 @@ struct ClassPrinter: private ErrorManager {
 			line() << "  LocalVariable(or Type)Table  entry: start: "
 					<< e.startPc << ", len: " << e.len << ", varNameIndex: "
 					<< e.varNameIndex << ", varDescIndex: " << e.varDescIndex
-					<< ", index: " << std::endl;
+					<< ", index: " << endl;
 		}
 	}
 
 	void printSmt(SmtAttr& smt) {
 
 		auto parseTs =
-				[&](std::vector<Type> locs) {
+				[&](vector<Type> locs) {
 					line(2) << "["<<locs.size()<<"] ";
 					for (u1 i = 0; i < locs.size(); i++) {
 						Type& vt = locs[i];
@@ -582,10 +496,10 @@ struct ClassPrinter: private ErrorManager {
 						}
 					}
 
-					os << std::endl;
+					os << endl;
 				};
 
-		line() << "Stack Map Table: " << std::endl;
+		line() << "Stack Map Table: " << endl;
 
 		int toff = -1;
 		for (SmtAttr::Entry& e : smt.entries) {
@@ -597,7 +511,7 @@ struct ClassPrinter: private ErrorManager {
 				toff += frameType + 1;
 				os << "offset = " << toff << " ";
 
-				os << "same frame" << std::endl;
+				os << "same frame" << endl;
 			} else if (64 <= frameType && frameType <= 127) {
 				toff += frameType - 64 + 1;
 				os << "offset = " << toff << " ";
@@ -611,35 +525,33 @@ struct ClassPrinter: private ErrorManager {
 
 				os << "same_locals_1_stack_item_frame_extended. ";
 				os << e.same_locals_1_stack_item_frame_extended.offset_delta
-						<< std::endl;
+						<< endl;
 				parseTs(e.same_locals_1_stack_item_frame_extended.stack);
 			} else if (248 <= frameType && frameType <= 250) {
 				toff += e.chop_frame.offset_delta + 1;
 				os << "offset = " << toff << " ";
 
 				os << "chop_frame, ";
-				os << "offset_delta = " << e.chop_frame.offset_delta
-						<< std::endl;
+				os << "offset_delta = " << e.chop_frame.offset_delta << endl;
 			} else if (frameType == 251) {
 				toff += e.same_frame_extended.offset_delta + 1;
 				os << "offset = " << toff << " ";
 
 				os << "same_frame_extended. ";
-				os << e.same_frame_extended.offset_delta << std::endl;
+				os << e.same_frame_extended.offset_delta << endl;
 			} else if (252 <= frameType && frameType <= 254) {
 				toff += e.append_frame.offset_delta + 1;
 				os << "offset = " << toff << " ";
 
 				os << "append_frame, ";
-				os << "offset_delta = " << e.append_frame.offset_delta
-						<< std::endl;
+				os << "offset_delta = " << e.append_frame.offset_delta << endl;
 				parseTs(e.append_frame.locals);
 			} else if (frameType == 255) {
 				toff += e.full_frame.offset_delta + 1;
 				os << "offset = " << toff << " ";
 
 				os << "full_frame. ";
-				os << e.full_frame.offset_delta << std::endl;
+				os << e.full_frame.offset_delta << endl;
 				parseTs(e.full_frame.locals);
 				parseTs(e.full_frame.stack);
 			}
@@ -650,7 +562,7 @@ private:
 
 	ClassFile& cf;
 
-	std::ostream& os;
+	ostream& os;
 
 	int tabs;
 
@@ -662,13 +574,9 @@ private:
 		tabs--;
 	}
 
-	inline std::ostream& line(int moretabs = 0) {
-		return tab(os, moretabs);
-	}
-
-	inline std::ostream& tab(std::ostream& os, int moretabs = 0) {
-		for (int _ii = 0; _ii < tabs + moretabs; _ii++) {
-			os << "  ";
+	inline ostream& line(int moretabs = 0) {
+		for (int i = 0; i < tabs + moretabs; i++) {
+			os << "    ";
 		}
 
 		return os;
@@ -738,7 +646,7 @@ const char* ClassPrinter::OPCODES[] = { "nop", "aconst_null", "iconst_m1",
 		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "impdep1",
 		"impdep2" };
 
-std::ostream& operator<<(std::ostream& os, ClassFile& cf) {
+ostream& operator<<(ostream& os, ClassFile& cf) {
 	ClassPrinter cp(cf, os, 0);
 	cp.print();
 

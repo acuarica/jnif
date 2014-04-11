@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.regex.*;
+import java.util.*;
 
 public class BasicClass {
 
@@ -16,7 +17,7 @@ public class BasicClass {
 
 		return result;
 	}
-	
+
 	static int abs1(int value) {
 		int result;
 		result = value;
@@ -107,35 +108,35 @@ public class BasicClass {
 		}
 
 		switch (args.length) {
-			case 0:
-			case 1:
-				System.out.println("args.length = " + args.length);
-				break;
-			case 2:
-				System.out.println("args.length = 2");
-				break;
-			case 3:
-				System.out.println("args.length = 3");
-				break;
-			case 4:
-				System.out.println("args.length = 4");
-				break;
-			default:
-				System.out.println("args.length unknown");
-				break;
+		case 0:
+		case 1:
+			System.out.println("args.length = " + args.length);
+			break;
+		case 2:
+			System.out.println("args.length = 2");
+			break;
+		case 3:
+			System.out.println("args.length = 3");
+			break;
+		case 4:
+			System.out.println("args.length = 4");
+			break;
+		default:
+			System.out.println("args.length unknown");
+			break;
 		}
 
 		if (args.length > 0) {
 			switch (args[0].charAt(0)) {
-				case 'A':
-					System.out.println("A");
-					break;
-				case 'B':
-					System.out.println("B");
-					break;
-				case 'C':
-					System.out.println("C");
-					break;
+			case 'A':
+				System.out.println("A");
+				break;
+			case 'B':
+				System.out.println("B");
+				break;
+			case 'C':
+				System.out.println("C");
+				break;
 			}
 		}
 
@@ -180,6 +181,24 @@ public class BasicClass {
 				}
 			}
 		}
+	}
+
+	private List listFactory(int listClass) {
+		List list;
+
+		if (listClass == 0) {
+			list = new ArrayList();
+		} else if (listClass == 1) {
+			list = new LinkedList();
+		} else if (listClass == 2) {
+			list = new Vector();
+		} else if (listClass == 3) {
+			list = new Stack();
+		} else {
+			throw new IllegalArgumentException("Invalid value for listClass");
+		}
+
+		return list;
 	}
 
 }

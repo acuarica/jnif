@@ -1,8 +1,7 @@
 /*
  * Includes
  */
-#include "jnif.hpp"
-
+#include <jnif.hpp>
 #include <stdlib.h>
 #include <iostream>
 
@@ -27,29 +26,22 @@ struct JavaFile {
 extern u1 jnif_BasicClass_class[];
 extern int jnif_BasicClass_class_len;
 
-//extern u1 jnif_ExceptionClass_class[];
-//extern int jnif_ExceptionClass_class_len;
-//
-//extern u1 jnif_TestProxy_class[];
-//extern int jnif_TestProxy_class_len;
-//
-//extern u1 classes_java_io_OutputStreamWriter_class[];
-//extern int classes_java_io_OutputStreamWriter_class_len;
+extern u1 jnif_ExceptionClass_class[];
+extern int jnif_ExceptionClass_class_len;
+
+extern u1 jnif_TestProxy_class[];
+extern int jnif_TestProxy_class_len;
 
 JavaFile tests[] = {
 
 { jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass" },
 
-//{ jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
-//		"jnif/ExceptionClass" },
+{ jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
+		"jnif/ExceptionClass" },
 
-//{ jnif_TestProxy_class, jnif_TestProxy_class_len, "jnif/TestProxy" },
+{ jnif_TestProxy_class, jnif_TestProxy_class_len, "jnif/TestProxy" },
 
-//{ classes_java_io_OutputStreamWriter_class,
-//		classes_java_io_OutputStreamWriter_class_len,
-//		"java/io/OutputStreamWriter" },
-
-		};
+};
 
 template<typename TFunc>
 static void apply(TFunc instr) {
@@ -67,41 +59,30 @@ static void _run(TTestFunc test, const char* testName) {
 
 #define run(test) _run(test, #test);
 
-static void testPrinter() {
-//	ClassFile cf1("jnif/test/generated/Class1");
-	//cout << cf1;
+static void testPrinterModel() {
+	ClassFile emptyCf("jnif/test/generated/Class1");
+	cout << emptyCf;
 
-//	ClassFile cf2("jnif/test/generated/Class2", "jnif/test/generated/Class");
-	//Method& m = cf2.addMethod("main", "([Ljava/lang/String;)V");
-	//m.
-//	cout << cf2;
+	ClassFile cf2("jnif/test/generated/Class2", "jnif/test/generated/Class");
+	cf2.addMethod("main", "([Ljava/lang/String;)V", ACC_PROTECTED);
+	cout << cf2;
+}
 
+static void testPrinterParser() {
 	apply([](const JavaFile& jf) {
 		ClassFile cf(jf.data, jf.len);
 		cout << cf;
-
-		cf.get(5, [&](ConstPool::Class e) -> void {
-					fprintf(stderr, "asdfasdfsadfasdfasdf");
-					cerr << "We reach class!"<<endl;
-				},
-				[&](ConstPool::FieldRef e) -> void {
-					fprintf(stderr, "we reached field");
-				}
-		);
-
-		for (Method& m: cf.methods) {
-			cout << "Method: " << cf.getUtf8( m.nameIndex) << endl;
-
-			if (m.hasCode()) {
-				InstList& instList = m.instList();
-
-				for (Inst* instp : instList) {
-					Inst& inst = *instp;
-				}
-			}
-		}
 	});
+}
 
+static void testPrinterParserCompute() {
+	apply([](const JavaFile& jf) {
+		ClassFile cf(jf.data, jf.len);
+
+		cout << "Computing frames on class " << cf.getThisClassName() << endl;
+		cf.computeFrames();
+		cout << cf;
+	});
 }
 
 static void testIdentityComputeSize() {
@@ -230,14 +211,14 @@ static void testNopAdderInstr() {
 	});
 }
 
-#define PSIZEOF(typeExpr) fprintf(stderr, "sizeof(" #typeExpr "): %ld\n", sizeof(typeExpr))
-
 int main(int, const char*[]) {
-	run(testPrinter);
-//	run(testIdentityComputeSize);
-//	run(testIdentityParserWriter);
-//	run(testNopAdderInstrSize);
-//	run(testNopAdderInstr);
+	run(testPrinterModel);
+	run(testPrinterParser);
+	run(testPrinterParserCompute);
+	run(testIdentityComputeSize);
+	run(testIdentityParserWriter);
+	run(testNopAdderInstrSize);
+	run(testNopAdderInstr);
 
 	return 0;
 }

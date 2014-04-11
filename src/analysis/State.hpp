@@ -10,10 +10,6 @@
 
 namespace jnif {
 
-struct State {
-	H in;
-	H out;
-};
 
 }
 

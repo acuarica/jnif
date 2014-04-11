@@ -6,6 +6,8 @@
  */
 #include "jnif.hpp"
 
+using namespace std;
+
 namespace jnif {
 
 /**
@@ -87,7 +89,7 @@ public:
 	void writecount(const void* source, int count) {
 		check(offset + count <= len, "Invalid write count");
 
-		std::copy((u1*) source, (u1*) source + count, buffer + offset);
+		copy((u1*) source, (u1*) source + count, buffer + offset);
 
 		offset += count;
 	}
@@ -114,9 +116,8 @@ public:
 	void writeClassFile(ClassFile& cf) {
 		bw.writeu4(CLASSFILE_MAGIC);
 
-		Version version = cf.getVersion();
-		bw.writeu2(version.getMinor());
-		bw.writeu2(version.getMajor());
+		bw.writeu2(cf.minorVersion);
+		bw.writeu2(cf.majorVersion);
 
 		writeConstPool(cf);
 
@@ -280,44 +281,43 @@ public:
 	}
 
 	void writeSmt(SmtAttr& attr) {
-		auto parseTs =
-				[&](std::vector<Type>& locs) {
-					for (u1 i = 0; i < locs.size(); i++) {
-						Type& vt = locs[i];
+		auto parseTs = [&](vector<Type>& locs) {
+			for (u1 i = 0; i < locs.size(); i++) {
+				Type& vt = locs[i];
 
-						u1 tag = vt.tag;
-						bw.writeu1(tag);
+				u1 tag = vt.tag;
+				bw.writeu1(tag);
 
-						switch (tag) {
-							case Type::TYPE_TOP:
-							break;
-							case Type::TYPE_INTEGER:
-							break;
-							case Type::TYPE_FLOAT :
-							break;
-							case Type::TYPE_LONG :
-							break;
-							case Type::TYPE_DOUBLE:
-							break;
-							case Type::TYPE_NULL :
-							break;
-							case Type::TYPE_UNINITTHIS :
-							break;
-							case Type::TYPE_OBJECT: {
-								u2 cpIndex = vt.object.cindex;
-								bw.writeu2( cpIndex);
-								break;
-							}
-							case Type::TYPE_UNINIT: {
-								u2 offset = vt.uninit.offset;
-
-								offset = vt.uninit.label->label.offset;
-								bw.writeu2(offset);
-								break;
-							}
-						}
+				switch (tag) {
+					case Type::TYPE_TOP:
+					break;
+					case Type::TYPE_INTEGER:
+					break;
+					case Type::TYPE_FLOAT :
+					break;
+					case Type::TYPE_LONG :
+					break;
+					case Type::TYPE_DOUBLE:
+					break;
+					case Type::TYPE_NULL :
+					break;
+					case Type::TYPE_UNINITTHIS :
+					break;
+					case Type::TYPE_OBJECT: {
+						u2 cpIndex = vt.object.cindex;
+						bw.writeu2( cpIndex);
+						break;
 					}
-				};
+					case Type::TYPE_UNINIT: {
+						u2 offset = vt.uninit.offset;
+
+						offset = vt.uninit.label->label.offset;
+						bw.writeu2(offset);
+						break;
+					}
+				}
+			}
+		};
 
 		bw.writeu2(attr.entries.size());
 
