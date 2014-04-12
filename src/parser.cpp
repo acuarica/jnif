@@ -182,7 +182,7 @@ public:
 
 		u2 fieldCount = br.readu2();
 		for (int i = 0; i < fieldCount; i++) {
-			AccessFlags accessFlags = (AccessFlags) br.readu2();
+			u2 accessFlags = br.readu2();
 			u2 nameIndex = br.readu2();
 			u2 descIndex = br.readu2();
 
@@ -193,7 +193,7 @@ public:
 
 		u2 methodCount = br.readu2();
 		for (int i = 0; i < methodCount; i++) {
-			AccessFlags accessFlags = (AccessFlags) br.readu2();
+			u2 accessFlags = br.readu2();
 			u2 nameIndex = br.readu2();
 			u2 descIndex = br.readu2();
 

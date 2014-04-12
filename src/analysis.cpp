@@ -15,11 +15,12 @@ using namespace std;
 
 namespace jnif {
 
-struct BasicBlock {
+class BasicBlock {
+public:
 	BasicBlock(const BasicBlock&) = delete;
 	BasicBlock(BasicBlock&&) = default;
 
-	friend struct ControlFlowGraph;
+	friend class ControlFlowGraph;
 
 	void addTarget(BasicBlock* target) {
 		targets.push_back(target);
@@ -50,7 +51,14 @@ private:
 	vector<BasicBlock*> targets;
 };
 
-struct ControlFlowGraph: private ErrorManager {
+class ControlFlowGraph: private ErrorManager {
+private:
+	vector<BasicBlock*> basicBlocks;
+
+public:
+	BasicBlock* const entry;
+
+	BasicBlock* const exit;
 
 	ControlFlowGraph(InstList& instList) :
 			entry(addConstBb(instList, "Entry")), exit(
@@ -69,17 +77,11 @@ struct ControlFlowGraph: private ErrorManager {
 		BasicBlock* bb = new BasicBlock(start, end, name);
 
 		if (basicBlocks.size() > 0) {
-			cerr << "hola en el if: " << name << ": " << basicBlocks.size()
-					<< endl;
 			BasicBlock* prevbb = basicBlocks.back();
 			prevbb->next = bb;
 		}
 
-		cerr << "hola join: " << name << endl;
-
 		basicBlocks.push_back(bb);
-
-		cerr << "chau: " << name << endl;
 
 		return bb;
 	}
@@ -95,14 +97,6 @@ struct ControlFlowGraph: private ErrorManager {
 	BasicBlock* addConstBb(InstList& instList, const char* name) {
 		return addBasicBlock(instList.end(), instList.end(), name);
 	}
-
-private:
-	vector<BasicBlock*> basicBlocks;
-
-public:
-	BasicBlock* entry;
-
-	BasicBlock* exit;
 
 private:
 
@@ -171,8 +165,6 @@ private:
 	}
 
 	void buildCfg(InstList& instList) {
-		cerr << "hasta aca llegamos 2";
-
 		buildBasicBlocks(instList);
 
 		for (BasicBlock* bb : *this) {
@@ -182,13 +174,10 @@ private:
 				continue;
 			}
 
-			cerr << bb->name << endl;
-
 			auto e = bb->exit;
 			e--;
 			assert(e != instList.end(), "");
 
-			//Inst* first = *b;
 			Inst* last = *e;
 
 			if (bb->start == instList.begin()) {
@@ -1015,8 +1004,6 @@ public:
 };
 
 static void printCfg(ControlFlowGraph& cfg, ostream& os) {
-	os << "printing cfg... ";
-
 	for (BasicBlock* bb : cfg) {
 		//BasicBlock& bb = cfg.getNode(nid);
 
@@ -1049,11 +1036,11 @@ static void computeFramesMethod(CodeAttr* code, Method* method, ClassFile* cf) {
 
 	code->instList.setLabelIds();
 
-	cerr << cf->getUtf8(method->nameIndex) << endl;
+	//cerr << cf->getUtf8(method->nameIndex) << endl;
 	Frame initFrame;
 
 	int lvindex = [&]() {
-		if (method->accessFlags & ACC_STATIC) {
+		if (method->accessFlags & METHOD_STATIC) {
 			return 0;
 		} else {
 			initFrame.setRefVar(0); // this argument
@@ -1071,15 +1058,12 @@ static void computeFramesMethod(CodeAttr* code, Method* method, ClassFile* cf) {
 	}
 
 	ControlFlowGraph cfg(code->instList);
-	printCfg(cfg, cerr);
+//	printCfg(cfg, cerr);
 
-	//vector<State> states(cfg.nodeCount());
 	initFrame.valid = true;
 	BasicBlock* bbe = cfg.entry;
 	bbe->in = initFrame;
 	bbe->out = initFrame;
-
-	//states[cfg.entry._index] = {initFrame, initFrame};
 
 	BasicBlock* to = *cfg.entry->begin();
 	SmtBuilder::computeState(*to, initFrame, code->instList, *cf);

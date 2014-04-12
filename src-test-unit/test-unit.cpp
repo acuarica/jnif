@@ -64,7 +64,8 @@ static void testPrinterModel() {
 	cout << emptyCf;
 
 	ClassFile cf2("jnif/test/generated/Class2", "jnif/test/generated/Class");
-	cf2.addMethod("main", "([Ljava/lang/String;)V", ACC_PROTECTED);
+	cf2.addMethod("main", "([Ljava/lang/String;)V",
+			METHOD_FINAL | METHOD_PUBLIC);
 	cout << cf2;
 }
 

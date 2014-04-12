@@ -58,25 +58,25 @@ public:
 	friend ostream& operator<<(ostream& out, AccessFlagsPrinter self) {
 		bool empty = true;
 
-		auto check = [&](AccessFlags accessFlags, const char* name) {
+		auto check = [&](MethodFlags accessFlags, const char* name) {
 			if (self.value & accessFlags) {
 				out << (empty ? "" : self.sep) << name;
 				empty = false;
 			}
 		};
 
-		check(ACC_PUBLIC, "public");
-		check(ACC_PRIVATE, "private");
-		check(ACC_PROTECTED, "protected");
-		check(ACC_STATIC, "static");
-		check(ACC_FINAL, "final");
-		check(ACC_SYNCHRONIZED, "synchronized");
-		check(ACC_BRIDGE, "bridge");
-		check(ACC_VARARGS, "varargs");
-		check(ACC_NATIVE, "native");
-		check(ACC_ABSTRACT, "abstract");
-		check(ACC_STRICT, "strict");
-		check(ACC_SYNTHETIC, "synthetic");
+		check(METHOD_PUBLIC, "public");
+		check(METHOD_PRIVATE, "private");
+		check(METHOD_PROTECTED, "protected");
+		check(METHOD_STATIC, "static");
+		check(METHOD_FINAL, "final");
+		check(METHOD_SYNCHRONIZED, "synchronized");
+		check(METHOD_BRIDGE, "bridge");
+		check(METHOD_VARARGS, "varargs");
+		check(METHOD_NATIVE, "native");
+		check(METHOD_ABSTRACT, "abstract");
+		check(METHOD_STRICT, "strict");
+		check(METHOD_SYNTHETIC, "synthetic");
 
 		return out;
 	}
