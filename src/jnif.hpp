@@ -1403,6 +1403,8 @@ private:
 
 };
 
+class Visitor;
+
 /**
  * Defines the base class for all attributes in the class file.
  */
@@ -1413,6 +1415,8 @@ struct Attr {
 
 	u2 nameIndex;
 	u4 len;
+
+//	virtual void accept(Visitor* v) = 0;
 
 protected:
 
@@ -1474,6 +1478,9 @@ struct UnknownAttr: public Attr {
 			Attr(ATTR_UNKNOWN, nameIndex, len), data(data) {
 	}
 
+//	void accept(Visitor* v) {
+//		v->visit(*this);
+//	}
 };
 
 /**
@@ -1639,6 +1646,38 @@ public:
 //
 //	}
 
+private:
+
+	Member(u2 accessFlags, ConstPool::Index nameIndex,
+			ConstPool::Index descIndex) :
+			accessFlags(accessFlags), nameIndex(nameIndex), descIndex(descIndex) {
+	}
+};
+
+/**
+ *
+ */
+class Field: public Member {
+public:
+
+	Field(u2 accessFlags, ConstPool::Index nameIndex,
+			ConstPool::Index descIndex) :
+			Member(accessFlags, nameIndex, descIndex) {
+	}
+
+};
+
+/**
+ *
+ */
+class Method: public Member {
+public:
+
+	Method(u2 accessFlags, ConstPool::Index nameIndex,
+			ConstPool::Index descIndex) :
+			Member(accessFlags, nameIndex, descIndex) {
+	}
+
 	bool hasCode() {
 		for (Attr* attr : attrs) {
 			if (attr->kind == ATTR_CODE) {
@@ -1680,37 +1719,6 @@ public:
 		raise("ERROR! setting inst list");
 	}
 
-private:
-
-	Member(u2 accessFlags, ConstPool::Index nameIndex,
-			ConstPool::Index descIndex) :
-			accessFlags(accessFlags), nameIndex(nameIndex), descIndex(descIndex) {
-	}
-};
-
-/**
- *
- */
-class Field: public Member {
-public:
-
-	Field(u2 accessFlags, ConstPool::Index nameIndex,
-			ConstPool::Index descIndex) :
-			Member(accessFlags, nameIndex, descIndex) {
-	}
-
-};
-
-/**
- *
- */
-class Method: public Member {
-public:
-
-	Method(u2 accessFlags, ConstPool::Index nameIndex,
-			ConstPool::Index descIndex) :
-			Member(accessFlags, nameIndex, descIndex) {
-	}
 };
 
 /**

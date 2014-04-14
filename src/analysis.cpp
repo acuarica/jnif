@@ -1032,58 +1032,149 @@ static void printCfg(ControlFlowGraph& cfg, ostream& os) {
 //
 //}
 
-static void computeFramesMethod(CodeAttr* code, Method* method, ClassFile* cf) {
+class Compute: private ErrorManager {
+public:
+	static void computeFramesMethod(CodeAttr* code, Method* method,
+			ClassFile* cf, ConstPool::Index attrIndex) {
 
-	code->instList.setLabelIds();
+		code->instList.setLabelIds();
 
-	//cerr << cf->getUtf8(method->nameIndex) << endl;
-	Frame initFrame;
+		//cerr << cf->getUtf8(method->nameIndex) << endl;
+		Frame initFrame;
 
-	int lvindex = [&]() {
-		if (method->accessFlags & METHOD_STATIC) {
-			return 0;
-		} else {
-			initFrame.setRefVar(0); // this argument
-			return 1;
+		int lvindex = [&]() {
+			if (method->accessFlags & METHOD_STATIC) {
+				return 0;
+			} else {
+				initFrame.setRefVar(0); // this argument
+				return 1;
+			}
+		}();
+
+		const char* methodDesc = cf->getUtf8(method->descIndex);
+		vector<Type> argsType;
+		DescParser::parseMethodDesc(methodDesc, &argsType);
+
+		for (Type t : argsType) {
+			initFrame.setVar(lvindex, t);
+			lvindex++;
 		}
-	}();
 
-	const char* methodDesc = cf->getUtf8(method->descIndex);
-	vector<Type> argsType;
-	DescParser::parseMethodDesc(methodDesc, &argsType);
-
-	for (Type t : argsType) {
-		initFrame.setVar(lvindex, t);
-		lvindex++;
-	}
-
-	ControlFlowGraph cfg(code->instList);
+		ControlFlowGraph cfg(code->instList);
 //	printCfg(cfg, cerr);
 
-	initFrame.valid = true;
-	BasicBlock* bbe = cfg.entry;
-	bbe->in = initFrame;
-	bbe->out = initFrame;
+		initFrame.valid = true;
+		BasicBlock* bbe = cfg.entry;
+		bbe->in = initFrame;
+		bbe->out = initFrame;
 
-	BasicBlock* to = *cfg.entry->begin();
-	SmtBuilder::computeState(*to, initFrame, code->instList, *cf);
+		BasicBlock* to = *cfg.entry->begin();
+		SmtBuilder::computeState(*to, initFrame, code->instList, *cf);
 
-	for (BasicBlock* bb : cfg) {
-		if (bb->start != code->instList.end()) {
-			Inst* fi = new Inst(KIND_FRAME);
-			fi->frame.frame = bb->in;
-			code->instList.insert(bb->start, fi);
+		SmtAttr* smt = new SmtAttr(attrIndex);
+
+		int totalOffset = -1;
+
+		Frame* f = &cfg.entry->out;
+
+		auto isSame = [] (Frame& current, Frame& prev) {
+			return current.lva == prev.lva && current.stack.size() == 0;
+		};
+
+		auto isSameLocals1StackItem = [](Frame& current, Frame& prev) {
+			return current.lva == prev.lva && current.stack.size() == 1;
+		};
+
+		auto isChopAppend = [] (Frame& current, Frame& prev) -> int {
+			int diff = current.lva.size() - prev.lva.size();
+			bool emptyStack = current.stack.size() == 0;
+			bool res = diff != 0 && diff >= -3 && diff <= 3 && emptyStack;
+			return res ? diff : 0;
+		};
+
+		for (BasicBlock* bb : cfg) {
+			if (bb->start != code->instList.end()) {
+				Inst* start = *bb->start;
+				if (start->kind == KIND_LABEL) {
+					Frame& current = bb->in;
+					SmtAttr::Entry e;
+
+					Inst* fi = new Inst(KIND_FRAME);
+					fi->frame.frame = bb->in;
+					code->instList.insert(bb->start, fi);
+
+					totalOffset += 1;
+					int offsetDelta = start->label.offset - totalOffset;
+
+					int diff;
+
+					if (isSame(current, *f)) {
+						if (offsetDelta <= 63) {
+							e.frameType = offsetDelta;
+						} else {
+							e.frameType = 251;
+							e.same_frame_extended.offset_delta = offsetDelta;
+						}
+					} else if (isSameLocals1StackItem(current, *f)) {
+						if (offsetDelta <= 63) {
+							e.frameType = 64 + offsetDelta;
+							auto t = current.stack.front();
+							e.sameLocals_1_stack_item_frame.stack.push_back(t);
+						} else {
+							e.frameType = 247;
+							auto t = current.stack.front();
+							e.same_locals_1_stack_item_frame_extended.stack.push_back(
+									t);
+							e.same_locals_1_stack_item_frame_extended.offset_delta =
+									offsetDelta;
+						}
+					} else if ((diff = isChopAppend(current, *f)) != 0) {
+						assert(diff != 0 && diff >= -3 && diff <= 3);
+
+						e.frameType = 251 + diff;
+						if (diff > 0) {
+							e.append_frame.offset_delta = offsetDelta;
+							int size = current.lva.size();
+							for (int i = 0; i < diff; i++) {
+								Type t = current.lva[size - diff + i];
+								e.append_frame.locals.push_back(t);
+							}
+						} else {
+							e.chop_frame.offset_delta = offsetDelta;
+						}
+					} else {
+						e.frameType = 255;
+						e.full_frame.offset_delta = offsetDelta;
+						e.full_frame.locals = current.lva;
+
+						for (auto t : current.stack) {
+							e.full_frame.stack.push_back(t);
+						}
+					}
+
+					totalOffset += offsetDelta;
+					smt->entries.push_back(e);
+					f = &bb->in;
+				}
+			}
 		}
+
+		code->attrs.add(smt);
 	}
-}
+};
 
 void ClassFile::computeFrames() {
+
+// To compute label offsets.
+	computeSize();
+
+	auto attrIndex = addUtf8("StackMapTable");
 
 	for (Method* method : methods) {
 		CodeAttr* code = method->codeAttr();
 
 		if (code != nullptr) {
-			computeFramesMethod(code, method, this);
+			Compute::computeFramesMethod(code, method, this, attrIndex);
 		}
 	}
 }

@@ -122,12 +122,12 @@ void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 			return inst;
 		};
 
-	for (Method& m : cf.methods) {
+	for (Method* m : cf.methods) {
 
-		string name = cf.getUtf8(m.nameIndex);
+		string name = cf.getUtf8(m->nameIndex);
 
-		if (m.hasCode() && name == "<init>") {
-			InstList& instList = m.instList();
+		if (m->hasCode() && name == "<init>") {
+			InstList& instList = m->instList();
 
 			instList.push_front(invoke(OPCODE_invokestatic, allocMethodRef));
 			instList.push_front(new Inst(OPCODE_aload_0));
@@ -165,9 +165,9 @@ void InstrClassNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 			return inst;
 		};
 
-	for (Method& m : cf.methods) {
-		if (m.hasCode()) {
-			InstList& instList = m.instList();
+	for (Method* m : cf.methods) {
+		if (m->hasCode()) {
+			InstList& instList = m->instList();
 
 			InstList code;
 
@@ -204,8 +204,8 @@ void InstrClassNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 				}
 			}
 
-			m.instList(code);
-			m.codeAttr()->maxStack += 3;
+			m->instList(code);
+			m->codeAttr()->maxStack += 3;
 		}
 	}
 
@@ -245,9 +245,9 @@ void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 			return inst;
 		};
 
-	for (Method& m : cf.methods) {
-		if (m.hasCode()) {
-			InstList& instList = m.instList();
+	for (Method* m : cf.methods) {
+		if (m->hasCode()) {
+			InstList& instList = m->instList();
 
 			InstList& code = instList;
 
@@ -287,7 +287,7 @@ void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 				}
 			}
 
-			m.codeAttr()->maxStack += 3;
+			m->codeAttr()->maxStack += 3;
 
 			//	m.instList(code);
 		}
@@ -314,15 +314,15 @@ void InstrClassMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 			return inst;
 		};
 
-	for (Method& m : cf.methods) {
+	for (Method* m : cf.methods) {
 
-		string name = cf.getUtf8(m.nameIndex);
-		string desc = cf.getUtf8(m.descIndex);
+		string name = cf.getUtf8(m->nameIndex);
+		string desc = cf.getUtf8(m->descIndex);
 
-		if (m.hasCode() && name == "main" && (m.accessFlags & ACC_STATIC)
-				&& (m.accessFlags & ACC_PUBLIC)
+		if (m->hasCode() && name == "main" && (m->accessFlags & METHOD_STATIC)
+				&& (m->accessFlags & METHOD_PUBLIC)
 				&& desc == "([Ljava/lang/String;)V") {
-			InstList& instList = m.instList();
+			InstList& instList = m->instList();
 
 			instList.push_front(
 					invoke(OPCODE_invokestatic, enterMainMethodRef));
@@ -368,11 +368,11 @@ void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 		u2 allocMethodRef = cf.addMethodRef(classIndex, "alloc",
 				"(Ljava/lang/Object;)V");
 
-		for (Method& m : cf.methods) {
-			const string& name = cf.getUtf8(m.nameIndex);
+		for (Method* m : cf.methods) {
+			const string& name = cf.getUtf8(m->nameIndex);
 
-			if (m.hasCode() && name == "<init>") {
-				InstList& instList = m.instList();
+			if (m->hasCode() && name == "<init>") {
+				InstList& instList = m->instList();
 
 				instList.push_front(
 						invoke(OPCODE_invokestatic, allocMethodRef));
@@ -381,12 +381,12 @@ void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 		}
 	}
 
-	for (Method& m : cf.methods) {
-		if (m.hasCode()) {
-			const string& methodName = cf.getUtf8(m.nameIndex);
-			const string& methodDesc = cf.getUtf8(m.descIndex);
+	for (Method* m : cf.methods) {
+		if (m->hasCode()) {
+			const string& methodName = cf.getUtf8(m->nameIndex);
+			const string& methodDesc = cf.getUtf8(m->descIndex);
 
-			InstList& instList = m.instList();
+			InstList& instList = m->instList();
 			InstList& code = instList;
 
 			for (auto instp = instList.begin(); instp != instList.end();
@@ -424,10 +424,10 @@ void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 				}
 			}
 
-			m.codeAttr()->maxStack += 3;
+			m->codeAttr()->maxStack += 3;
 
-			if (methodName == "main" && (m.accessFlags & ACC_STATIC)
-					&& (m.accessFlags & ACC_PUBLIC)
+			if (methodName == "main" && (m->accessFlags & METHOD_STATIC)
+					&& (m->accessFlags & METHOD_PUBLIC)
 					&& methodDesc == "([Ljava/lang/String;)V") {
 				instList.push_front(
 						invoke(OPCODE_invokestatic, enterMainMethodRef));

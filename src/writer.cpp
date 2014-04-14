@@ -527,7 +527,7 @@ public:
 					raise("not implemetd");
 					break;
 				default:
-					raise("default kind in instlist!!");
+					raise("default kind in instlist: ", inst.kind);
 			}
 		}
 	}
@@ -566,37 +566,37 @@ public:
 
 			u4 offset = bw.getOffset();
 
-			if (attr.kind == ATTR_UNKNOWN) {
-				writeUnknown((UnknownAttr&) attr);
-			} else {
-				//BufferWriter bw(pos, attr.len);
+//			if (attr.kind == ATTR_UNKNOWN) {
+			//		} else {
+			//BufferWriter bw(pos, attr.len);
 
-				switch (attr.kind) {
-					case ATTR_UNKNOWN:
-
-					case ATTR_SOURCEFILE:
-						writeSourceFile((SourceFileAttr&) attr);
-						break;
-					case ATTR_CODE:
-						writeCode((CodeAttr&) attr);
-						break;
-					case ATTR_EXCEPTIONS:
-						writeExceptions((ExceptionsAttr&) attr);
-						break;
-					case ATTR_LVT:
-						writeLvt((LvtAttr&) attr);
-						break;
-					case ATTR_LVTT:
-						writeLvt((LvtAttr&) attr);
-						break;
-					case ATTR_LNT:
-						writeLnt((LntAttr&) attr);
-						break;
-					case ATTR_SMT:
-						writeSmt((SmtAttr&) attr);
-						break;
-				}
+			switch (attr.kind) {
+				case ATTR_SOURCEFILE:
+					writeSourceFile((SourceFileAttr&) attr);
+					break;
+				case ATTR_CODE:
+					writeCode((CodeAttr&) attr);
+					break;
+				case ATTR_EXCEPTIONS:
+					writeExceptions((ExceptionsAttr&) attr);
+					break;
+				case ATTR_LVT:
+					writeLvt((LvtAttr&) attr);
+					break;
+				case ATTR_LVTT:
+					writeLvt((LvtAttr&) attr);
+					break;
+				case ATTR_LNT:
+					writeLnt((LntAttr&) attr);
+					break;
+				case ATTR_SMT:
+					writeSmt((SmtAttr&) attr);
+					break;
+				case ATTR_UNKNOWN:
+					writeUnknown((UnknownAttr&) attr);
+					break;
 			}
+			//}
 
 //		u4 len = bw.getOffset() - offset;
 //		ASSERT(attr.len == len, "Expected %d, actual %d in %d", attr.len, len,

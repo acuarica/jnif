@@ -305,16 +305,15 @@ private:
 		}
 	}
 
-	static Attr* parseSourceFile(BufferReader& br, Attrs& as, u2 nameIndex) {
+	static Attr* parseSourceFile(BufferReader& br, u2 nameIndex) {
 		u2 sourceFileIndex = br.readu2();
 
 		Attr* attr = new SourceFileAttr(nameIndex, 2, sourceFileIndex);
-		as.add(attr);
 
 		return attr;
 	}
 
-	static Attr* parseExceptions(BufferReader& br, Attrs& as, u2 nameIndex) {
+	static Attr* parseExceptions(BufferReader& br, u2 nameIndex) {
 		u2 len = br.readu2();
 
 		vector<u2> es;
@@ -325,7 +324,6 @@ private:
 		}
 
 		Attr* attr = new ExceptionsAttr(nameIndex, len * 2 + 2, es);
-		as.add(attr);
 
 		return attr;
 	}
@@ -617,8 +615,7 @@ private:
 		}
 	}
 
-	static Attr* parseCode(BufferReader& br, Attrs& as, ConstPool& cp,
-			u2 nameIndex) {
+	static Attr* parseCode(BufferReader& br, ConstPool& cp, u2 nameIndex) {
 
 		CodeAttr* ca = new CodeAttr(nameIndex);
 
@@ -683,15 +680,12 @@ private:
 			parseInstList(br, ca->instList, labels);
 		}
 
-		as.add(ca);
-
 		delete[] labels;
 
 		return ca;
 	}
 
-	static Attr* parseLnt(BufferReader& br, Attrs& /*as*/, u2 nameIndex,
-			void* /*args*/) {
+	static Attr* parseLnt(BufferReader& br, u2 nameIndex, void* /*args*/) {
 		//Inst** labels = (Inst**) args;
 
 		u2 lntlen = br.readu2();
@@ -711,13 +705,10 @@ private:
 			lnt->lnt.push_back(e);
 		}
 
-		//as.add(lnt);
-
 		return lnt;
 	}
 
-	static Attr* parseLvt(BufferReader& br, Attrs& as, u2 nameIndex,
-			void* args) {
+	static Attr* parseLvt(BufferReader& br, u2 nameIndex, void* args) {
 		Inst** labels = (Inst**) args;
 
 		u2 count = br.readu2();
@@ -740,13 +731,10 @@ private:
 			lvt->lvt.push_back(e);
 		}
 
-		as.add(lvt);
-
 		return lvt;
 	}
 
-	static Attr* parseLvtt(BufferReader& br, Attrs& as, u2 nameIndex,
-			void* args) {
+	static Attr* parseLvtt(BufferReader& br, u2 nameIndex, void* args) {
 		Inst** labels = (Inst**) args;
 
 		u2 count = br.readu2();
@@ -771,12 +759,10 @@ private:
 			lvt->lvt.push_back(e);
 		}
 
-		as.add(lvt);
-
 		return lvt;
 	}
 
-	static Attr* parseSmt(BufferReader& br, Attrs& as, ConstPool&, u2 nameIndex,
+	static Attr* parseSmt(BufferReader& br, ConstPool&, u2 nameIndex,
 			void* args) {
 
 		Inst** labels = (Inst**) args;
@@ -896,52 +882,53 @@ private:
 			smt->entries.push_back(e);
 		}
 
-		as.add(smt);
-
 		return smt;
 	}
 
 	static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as,
 			void* args = nullptr) {
-		u2 attrCount = br.readu2();
 
-		for (int i = 0; i < attrCount; i++) {
+		auto parseAttr = [&]() -> Attr* {
 			u2 nameIndex = br.readu2();
 			u4 len = br.readu4();
 			const u1* data = br.pos();
 
+			br.skip(len);
+
 			string attrName = cp.getUtf8(nameIndex);
 
-			Attr* a;
 			if (attrName == "SourceFile") {
 				BufferReader br(data, len);
-				a = parseSourceFile(br, as, nameIndex);
+				return parseSourceFile(br, nameIndex);
 			} else if (attrName == "Exceptions") {
 				BufferReader br(data, len);
-				a = parseExceptions(br, as, nameIndex);
+				return parseExceptions(br, nameIndex);
 			} else if (attrName == "Code") {
 				BufferReader br(data, len);
-				a = parseCode(br, as, cp, nameIndex);
+				return parseCode(br, cp, nameIndex);
 			} else if (attrName == "LineNumberTable") {
 				BufferReader br(data, len);
-				a = parseLnt(br, as, nameIndex, args);
+				return parseLnt(br, nameIndex, args);
 			} else if (attrName == "LocalVariableTable") {
 				BufferReader br(data, len);
-				a = parseLvt(br, as, nameIndex, args);
+				return parseLvt(br, nameIndex, args);
 			} else if (attrName == "StackMapTable") {
 				BufferReader br(data, len);
-				a = parseSmt(br, as, cp, nameIndex, args);
+				return parseSmt(br, cp, nameIndex, args);
 			} else if (attrName == "LocalVariableTypeTable") {
 				BufferReader br(data, len);
-				a = parseLvtt(br, as, nameIndex, args);
+				return parseLvtt(br, nameIndex, args);
 			} else {
-				a = new UnknownAttr(nameIndex, len, data);
-				as.add(a);
+				return new UnknownAttr(nameIndex, len, data);
 			}
+		};
 
-			a->len = len;
+		u2 attrCount = br.readu2();
+		for (int i = 0; i < attrCount; i++) {
+			Attr* a = parseAttr();
 
-			br.skip(len);
+			as.add(a);
+			//a->len = l;
 		}
 	}
 
