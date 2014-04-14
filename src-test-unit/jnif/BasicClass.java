@@ -183,7 +183,7 @@ public class BasicClass {
 		}
 	}
 
-	private List listFactory(int listClass) {
+	private List listFactory0(int listClass) {
 		List list;
 
 		if (listClass == 0) {
@@ -197,6 +197,26 @@ public class BasicClass {
 		} else {
 			throw new IllegalArgumentException("Invalid value for listClass");
 		}
+
+		return list;
+	}
+
+	private List<BasicClass> listFactory1(int listClass) {
+		List<BasicClass> list;
+
+		if (listClass == 0) {
+			list = new ArrayList<BasicClass>();
+		} else if (listClass == 1) {
+			list = new LinkedList<BasicClass>();
+		} else if (listClass == 2) {
+			list = new Vector<BasicClass>();
+		} else if (listClass == 3) {
+			list = new Stack<BasicClass>();
+		} else {
+			throw new IllegalArgumentException("Invalid value for listClass");
+		}
+
+		list.add(new BasicClass());
 
 		return list;
 	}

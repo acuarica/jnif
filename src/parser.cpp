@@ -685,8 +685,8 @@ private:
 		return ca;
 	}
 
-	static Attr* parseLnt(BufferReader& br, u2 nameIndex, void* /*args*/) {
-		//Inst** labels = (Inst**) args;
+	static Attr* parseLnt(BufferReader& br, u2 nameIndex, void* args) {
+		Inst** labels = (Inst**) args;
 
 		u2 lntlen = br.readu2();
 
@@ -697,7 +697,7 @@ private:
 			u2 startpc = br.readu2();
 			u2 lineno = br.readu2();
 
-//		e.startPcLabel = createLabel(labels, startpc);
+			e.startPcLabel = createLabel(labels, startpc);
 
 			e.startpc = startpc;
 			e.lineno = lineno;

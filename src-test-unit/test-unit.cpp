@@ -76,7 +76,7 @@ static void testPrinterParser() {
 	});
 }
 
-static void testPrinterParserCompute() {
+static void testPrinterParserWithFrames() {
 	apply([](const JavaFile& jf) {
 		ClassFile cf(jf.data, jf.len);
 
@@ -90,6 +90,19 @@ static void testIdentityComputeSize() {
 	apply([](const JavaFile& jf) {
 		ClassFile cf(jf.data, jf.len);
 
+		int newlen = cf.computeSize();
+
+		ASSERT(newlen == jf.len,
+				"Expected class file len %d, actual was %d, on class %s",
+				jf.len, newlen, jf.name);
+	});
+}
+
+static void testIdentityComputeSizeWithFrames() {
+	apply([](const JavaFile& jf) {
+		ClassFile cf(jf.data, jf.len);
+
+		cf.computeFrames();
 		int newlen = cf.computeSize();
 
 		ASSERT(newlen == jf.len,
@@ -215,8 +228,9 @@ static void testNopAdderInstr() {
 int main(int, const char*[]) {
 	run(testPrinterModel);
 	run(testPrinterParser);
-	run(testPrinterParserCompute);
+	run(testPrinterParserWithFrames);
 	run(testIdentityComputeSize);
+	run(testIdentityComputeSizeWithFrames);
 	run(testIdentityParserWriter);
 	run(testNopAdderInstrSize);
 	run(testNopAdderInstr);

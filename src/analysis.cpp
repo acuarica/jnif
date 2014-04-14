@@ -397,9 +397,7 @@ public:
 			h.pop();
 		};
 
-		auto invoke = [&](u2 methodRefIndex, bool popThis) {
-			string className, name, desc;
-			cp.getMethodRef(methodRefIndex, &className, &name, &desc);
+		auto invoke = [&](const string& desc, bool popThis) {
 
 			const char* d = desc.c_str();
 			vector<Type> argsType;
@@ -418,6 +416,18 @@ public:
 				assert(!returnType.isTwoWord(), "Two word in return type");
 				h.push(returnType);
 			}
+		};
+
+		auto invokeMethod = [&](u2 methodRefIndex, bool popThis) {
+			string className, name, desc;
+			cp.getMethodRef(methodRefIndex, &className, &name, &desc);
+			invoke(desc, popThis);
+		};
+
+		auto invokeInterface = [&](u2 interMethodRefIndex) {
+			string className, name, desc;
+			cp.getInterMethodRef(interMethodRefIndex, &className, &name, &desc);
+			invoke(desc, true);
 		};
 
 		auto fieldType = [&](Inst& inst) {
@@ -943,13 +953,13 @@ public:
 				break;
 			case OPCODE_invokevirtual:
 			case OPCODE_invokespecial:
-				invoke(inst.invoke.methodRefIndex, true);
+				invokeMethod(inst.invoke.methodRefIndex, true);
 				break;
 			case OPCODE_invokestatic:
-				invoke(inst.invoke.methodRefIndex, false);
+				invokeMethod(inst.invoke.methodRefIndex, false);
 				break;
 			case OPCODE_invokeinterface:
-				invoke(inst.invokeinterface.interMethodRefIndex, true);
+				invokeInterface(inst.invokeinterface.interMethodRefIndex);
 				break;
 			case OPCODE_invokedynamic:
 				raise("invoke dynamic instances not implemented");
@@ -1039,7 +1049,7 @@ public:
 
 		code->instList.setLabelIds();
 
-		//cerr << cf->getUtf8(method->nameIndex) << endl;
+		cout << cf->getUtf8(method->nameIndex) << endl;
 		Frame initFrame;
 
 		int lvindex = [&]() {
@@ -1061,7 +1071,7 @@ public:
 		}
 
 		ControlFlowGraph cfg(code->instList);
-//	printCfg(cfg, cerr);
+		printCfg(cfg, cout);
 
 		initFrame.valid = true;
 		BasicBlock* bbe = cfg.entry;
@@ -1099,9 +1109,11 @@ public:
 					Frame& current = bb->in;
 					SmtAttr::Entry e;
 
-					Inst* fi = new Inst(KIND_FRAME);
-					fi->frame.frame = bb->in;
-					code->instList.insert(bb->start, fi);
+					e.label = start;
+
+					//Inst* fi = new Inst(KIND_FRAME);
+					//fi->frame.frame = bb->in;
+					//code->instList.insert(bb->start, fi);
 
 					totalOffset += 1;
 					int offsetDelta = start->label.offset - totalOffset;

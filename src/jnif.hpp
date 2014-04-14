@@ -1375,7 +1375,8 @@ private:
 	const Entry* _getEntry(Index index, u1 tag, const char* message) const {
 		const Entry* entry = _getEntry(index);
 
-		check(entry->tag == tag, "Invalid constant %s tag", message);
+		check(entry->tag == tag, "Invalid constant ", message, (int) tag,
+				(int) entry->tag);
 
 		return entry;
 	}
