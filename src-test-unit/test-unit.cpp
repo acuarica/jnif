@@ -22,6 +22,8 @@ struct JavaFile {
 	int len;
 	const char* name;
 };
+extern u1 jnif_TestAbs_class[];
+extern int jnif_TestAbs_class_len;
 
 extern u1 jnif_BasicClass_class[];
 extern int jnif_BasicClass_class_len;
@@ -33,6 +35,8 @@ extern u1 jnif_TestProxy_class[];
 extern int jnif_TestProxy_class_len;
 
 JavaFile tests[] = {
+
+{ jnif_TestAbs_class, jnif_TestAbs_class_len, "jnif/TestAbs" },
 
 { jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass" },
 

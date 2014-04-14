@@ -160,43 +160,43 @@ public:
 
 		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
 			ConstPool::Index i = *it;
-			const ConstPool::Entry* entry = &cp.entries[i];
+			const ConstItem* entry = &cp.entries[i];
 
 			bw.writeu1(entry->tag);
 
 			switch (entry->tag) {
-				case ConstPool::CLASS:
+				case CONST_CLASS:
 					bw.writeu2(entry->clazz.nameIndex);
 					break;
-				case ConstPool::FIELDREF:
+				case CONST_FIELDREF:
 					bw.writeu2(entry->fieldRef.classIndex);
 					bw.writeu2(entry->fieldRef.nameAndTypeIndex);
 					break;
-				case ConstPool::METHODREF:
+				case CONST_METHODREF:
 					bw.writeu2(entry->methodRef.classIndex);
 					bw.writeu2(entry->methodRef.nameAndTypeIndex);
 					break;
-				case ConstPool::INTERFACEMETHODREF:
+				case CONST_INTERMETHODREF:
 					bw.writeu2(entry->interMethodRef.classIndex);
 					bw.writeu2(entry->interMethodRef.nameAndTypeIndex);
 					break;
-				case ConstPool::STRING:
+				case CONST_STRING:
 					bw.writeu2(entry->s.stringIndex);
 					break;
-				case ConstPool::INTEGER:
+				case CONST_INTEGER:
 					bw.writeu4(entry->i.value);
 					break;
-				case ConstPool::FLOAT:
+				case CONST_FLOAT:
 					bw.writeu4(entry->f.value);
 					break;
-				case ConstPool::LONG: {
+				case CONST_LONG: {
 					long value = cp.getLong(i);
 					bw.writeu4(value >> 32);
 					bw.writeu4(value & 0xffffffff);
 					//		i++;
 					break;
 				}
-				case ConstPool::DOUBLE: {
+				case CONST_DOUBLE: {
 					double dvalue = cp.getDouble(i);
 					long value = *(long*) &dvalue;
 					bw.writeu4(value >> 32);
@@ -204,25 +204,25 @@ public:
 					//			i++;
 					break;
 				}
-				case ConstPool::NAMEANDTYPE:
+				case CONST_NAMEANDTYPE:
 					bw.writeu2(entry->nameandtype.nameIndex);
 					bw.writeu2(entry->nameandtype.descriptorIndex);
 					break;
-				case ConstPool::UTF8: {
+				case CONST_UTF8: {
 					u2 len = entry->utf8.str.length();
 					const char* str = entry->utf8.str.c_str();
 					bw.writeu2(len);
 					bw.writecount(str, len);
 					break;
 				}
-				case ConstPool::METHODHANDLE:
+				case CONST_METHODHANDLE:
 					bw.writeu1(entry->methodhandle.referenceKind);
 					bw.writeu2(entry->methodhandle.referenceIndex);
 					break;
-				case ConstPool::METHODTYPE:
+				case CONST_METHODTYPE:
 					bw.writeu2(entry->methodtype.descriptorIndex);
 					break;
-				case ConstPool::INVOKEDYNAMIC:
+				case CONST_INVOKEDYNAMIC:
 					bw.writeu2(entry->invokedynamic.bootstrapMethodAttrIndex);
 					bw.writeu2(entry->invokedynamic.nameAndTypeIndex);
 					break;

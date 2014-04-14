@@ -8,57 +8,6 @@ import java.util.*;
 
 public class BasicClass {
 
-	static int abs0(int value) {
-		int result;
-		result = value;
-		if (result < 0) {
-			result = -result;
-		}
-
-		return result;
-	}
-
-	static int abs1(int value) {
-		int result;
-		result = value;
-		if (result < 0) {
-			int a = result;
-			a = -a;
-			result = a;
-		}
-
-		return result;
-	}
-
-	static int sum(int n) {
-		int result = 0;
-
-		for (int i = 1; i <= n; i++) {
-			result += i;
-		}
-
-		return result;
-	}
-
-	static boolean isPositive(int value) {
-		boolean result;
-		if (value >= 1) {
-			result = true;
-		} else {
-			result = false;
-		}
-		return result;
-	}
-
-	int something(long l) {
-		return 42;
-	}
-
-	int hola(int a, int b) {
-		int c = a + b;
-		return c;
-	}
-
 	public static int hola2(int a, int b) {
 		Pattern p = Pattern.compile("a*b");
 

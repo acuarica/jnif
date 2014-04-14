@@ -729,6 +729,17 @@ public:
 		return false;
 	}
 
+	void cleanTops() {
+		for (int i = lva.size() - 1; i >= 0; i--) {
+			Type t = lva[i];
+			if (t.isTop()) {
+				lva.erase(lva.begin() + i);
+			} else {
+				return;
+			}
+		}
+	}
+
 	bool join(Frame& how) {
 		check(stack.size() == how.stack.size(), "Different stack sizes: ",
 				stack.size(), " != ", how.stack.size());
@@ -767,20 +778,24 @@ public:
  * Represent a bytecode instruction.
  */
 struct Inst {
+public:
 
 //	Inst() {
 //	}
 
 	Inst(OpKind kind) :
 			opcode(OPCODE_nop), kind(kind), _offset(0) {
+		label.isBranchTarget = false;
 	}
 
 	Inst(Opcode opcode) :
 			opcode(opcode), kind(KIND_ZERO), _offset(0) {
+		label.isBranchTarget = false;
 	}
 
 	Inst(Opcode opcode, OpKind kind) :
 			opcode(opcode), kind(kind), _offset(0) {
+		label.isBranchTarget = false;
 	}
 
 	/**
@@ -792,6 +807,27 @@ struct Inst {
 	 * The kind of this instruction.
 	 */
 	OpKind kind;
+
+	inline bool isJump() const {
+		return kind == KIND_JUMP;
+	}
+
+	inline bool isTableSwitch() const {
+		return kind == KIND_TABLESWITCH;
+	}
+
+	inline bool isLookupSwitch() const {
+		return kind == KIND_LOOKUPSWITCH;
+	}
+
+	inline bool isBranch() const {
+		return isJump() || isTableSwitch() || isLookupSwitch();
+	}
+
+	inline bool isExit() const {
+		return (opcode >= OPCODE_ireturn && opcode <= OPCODE_return)
+				|| opcode == OPCODE_athrow;
+	}
 
 	int _offset;
 
@@ -809,6 +845,7 @@ struct Inst {
 			u2 offset;
 			u2 deltaOffset;
 			int id;
+			bool isBranchTarget;
 		} label;
 		struct {
 			int value;
@@ -902,6 +939,125 @@ public:
 			}
 		}
 	}
+
+	bool hasBranches() const {
+		for (Inst* inst : *this) {
+			if (inst->isBranch()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+};
+
+/**
+ * Constant pool enum
+ */
+enum ConstTag {
+	CONST_CLASS = 7,
+	CONST_FIELDREF = 9,
+	CONST_METHODREF = 10,
+	CONST_INTERMETHODREF = 11,
+	CONST_STRING = 8,
+	CONST_INTEGER = 3,
+	CONST_FLOAT = 4,
+	CONST_LONG = 5,
+	CONST_DOUBLE = 6,
+	CONST_NAMEANDTYPE = 12,
+	CONST_UTF8 = 1,
+	CONST_METHODHANDLE = 15,
+	CONST_METHODTYPE = 16,
+	CONST_INVOKEDYNAMIC = 18
+};
+
+struct Class {
+	u2 nameIndex;
+};
+
+struct MemberRef {
+	u2 classIndex;
+	u2 nameAndTypeIndex;
+};
+
+struct FieldRef: MemberRef {
+};
+
+struct MethodRef: MemberRef {
+};
+
+struct InterMethodRef: MemberRef {
+};
+
+struct String {
+	u2 stringIndex;
+};
+
+struct Integer {
+	u4 value;
+};
+
+struct Float {
+	u4 value;
+};
+
+struct Long {
+	long value;
+};
+
+struct Double {
+	double value;
+};
+
+struct NameAndType {
+	u2 nameIndex;
+	u2 descriptorIndex;
+};
+
+struct MethodHandle {
+	u1 referenceKind;
+	u2 referenceIndex;
+};
+
+struct MethodType {
+	u2 descriptorIndex;
+};
+
+struct InvokeDynamic {
+	u2 bootstrapMethodAttrIndex;
+	u2 nameAndTypeIndex;
+};
+
+/**
+ *
+ */
+class ConstItem {
+public:
+
+	ConstItem(ConstTag tag) :
+			tag(tag) {
+	}
+
+	ConstTag tag;
+
+	union {
+		Class clazz;
+		FieldRef fieldRef;
+		MethodRef methodRef;
+		InterMethodRef interMethodRef;
+		String s;
+		Integer i;
+		Float f;
+		Long l;
+		Double d;
+		NameAndType nameandtype;
+		MethodHandle methodhandle;
+		MethodType methodtype;
+		InvokeDynamic invokedynamic;
+	};
+	struct {
+		std::string str;
+	} utf8;
 };
 
 /**
@@ -920,26 +1076,6 @@ public:
 	 * be addressed.
 	 */
 	typedef u2 Index;
-
-	/**
-	 * Constant pool enum
-	 */
-	enum Tag {
-		CLASS = 7,
-		FIELDREF = 9,
-		METHODREF = 10,
-		INTERFACEMETHODREF = 11,
-		STRING = 8,
-		INTEGER = 3,
-		FLOAT = 4,
-		LONG = 5,
-		DOUBLE = 6,
-		NAMEANDTYPE = 12,
-		UTF8 = 1,
-		METHODHANDLE = 15,
-		METHODTYPE = 16,
-		INVOKEDYNAMIC = 18
-	};
 
 	/**
 	 * Defines how to iterate the constant pool.
@@ -982,7 +1118,7 @@ public:
 	 */
 	ConstPool() {
 		// TODO: This is plain wrong!!!
-		Entry nullEntry(INVOKEDYNAMIC);
+		ConstItem nullEntry(CONST_INVOKEDYNAMIC);
 
 		entries.push_back(nullEntry);
 	}
@@ -1009,7 +1145,7 @@ public:
 	 * @returns the index of the newly created reference to a class item.
 	 */
 	Index addClass(u2 classNameIndex) {
-		Entry e(CLASS);
+		ConstItem e(CONST_CLASS);
 		e.clazz.nameIndex = classNameIndex;
 
 		return _addSingle(e);
@@ -1031,7 +1167,7 @@ public:
 	 * Adds a field reference.
 	 */
 	Index addFieldRef(Index classIndex, Index nameAndTypeIndex) {
-		Entry e(FIELDREF);
+		ConstItem e(CONST_FIELDREF);
 		e.fieldRef.classIndex = classIndex;
 		e.fieldRef.nameAndTypeIndex = nameAndTypeIndex;
 
@@ -1042,7 +1178,7 @@ public:
 	 * Adds a class method reference.
 	 */
 	Index addMethodRef(Index classIndex, Index nameAndTypeIndex) {
-		Entry e(METHODREF);
+		ConstItem e(CONST_METHODREF);
 		e.methodRef.classIndex = classIndex;
 		e.methodRef.nameAndTypeIndex = nameAndTypeIndex;
 
@@ -1066,7 +1202,7 @@ public:
 	 * Adds an interface method reference.
 	 */
 	Index addInterMethodRef(Index classIndex, Index nameAndTypeIndex) {
-		Entry e(INTERFACEMETHODREF);
+		ConstItem e(CONST_INTERMETHODREF);
 		e.interMethodRef.classIndex = classIndex;
 		e.interMethodRef.nameAndTypeIndex = nameAndTypeIndex;
 
@@ -1077,7 +1213,7 @@ public:
 	 *
 	 */
 	Index addString(Index utf8Index) {
-		Entry e(STRING);
+		ConstItem e(CONST_STRING);
 		e.s.stringIndex = utf8Index;
 
 		return _addSingle(e);
@@ -1099,7 +1235,7 @@ public:
 	 * @param value the integer value.
 	 */
 	Index addInteger(u4 value) {
-		Entry e(INTEGER);
+		ConstItem e(CONST_INTEGER);
 		e.i.value = value;
 
 		return _addSingle(e);
@@ -1111,28 +1247,28 @@ public:
 	 * @param value the float value.
 	 */
 	Index addFloat(u4 value) {
-		Entry e(FLOAT);
+		ConstItem e(CONST_FLOAT);
 		e.f.value = value;
 
 		return _addSingle(e);
 	}
 
 	Index addLong(long value) {
-		Entry e(LONG);
+		ConstItem e(CONST_LONG);
 		e.l.value = value;
 
 		return _addDoubleEntry(e);
 	}
 
 	Index addDouble(double value) {
-		Entry entry(DOUBLE);
+		ConstItem entry(CONST_DOUBLE);
 		entry.d.value = value;
 
 		return _addDoubleEntry(entry);
 	}
 
 	Index addNameAndType(Index nameIndex, Index descIndex) {
-		Entry e(NAMEANDTYPE);
+		ConstItem e(CONST_NAMEANDTYPE);
 		e.nameandtype.nameIndex = nameIndex;
 		e.nameandtype.descriptorIndex = descIndex;
 
@@ -1140,7 +1276,7 @@ public:
 	}
 
 	Index addUtf8(const char* utf8, int len) {
-		Entry e(UTF8);
+		ConstItem e(CONST_UTF8);
 		std::string str(utf8, len);
 		e.utf8.str = str;
 
@@ -1148,28 +1284,28 @@ public:
 	}
 
 	Index addUtf8(const char* str) {
-		Entry e(UTF8);
+		ConstItem e(CONST_UTF8);
 		e.utf8.str = str;
 
 		return _addSingle(e);
 	}
 
 	Index addMethodHandle(u1 refKind, u2 refIndex) {
-		Entry e(METHODHANDLE);
+		ConstItem e(CONST_METHODHANDLE);
 		e.methodhandle.referenceKind = refKind;
 		e.methodhandle.referenceIndex = refIndex;
 		return _addSingle(e);
 	}
 
 	Index addMethodType(u2 descIndex) {
-		Entry e(METHODTYPE);
+		ConstItem e(CONST_METHODTYPE);
 		e.methodtype.descriptorIndex = descIndex;
 		return _addSingle(e);
 
 	}
 
 	Index addInvokeDynamic(u2 bootstrapMethodAttrIndex, u2 nameAndTypeIndex) {
-		Entry e(INVOKEDYNAMIC);
+		ConstItem e(CONST_INVOKEDYNAMIC);
 		e.invokedynamic.bootstrapMethodAttrIndex = bootstrapMethodAttrIndex;
 		e.invokedynamic.nameAndTypeIndex = nameAndTypeIndex;
 		return _addSingle(e);
@@ -1178,8 +1314,8 @@ public:
 	/**
 	 *
 	 */
-	Tag getTag(Index index) const {
-		const Entry* entry = _getEntry(index);
+	ConstTag getTag(Index index) const {
+		const ConstItem* entry = _getEntry(index);
 
 		return entry->tag;
 	}
@@ -1188,13 +1324,16 @@ public:
 	 * Checks whether the requested index holds a class reference.
 	 */
 	bool isClass(Index index) const {
-		const Entry* entry = _getEntry(index);
+		return _getEntry(index)->tag == CONST_CLASS;
+	}
 
-		return entry->tag == CLASS;
+	bool isUtf8(Index index) const {
+		return _getEntry(index)->tag == CONST_UTF8;
 	}
 
 	Index getClassNameIndex(Index classIndex) const {
-		const Entry* e = _getEntry(classIndex, CLASS, "CONSTANT_Class");
+		const ConstItem* e = _getEntry(classIndex, CONST_CLASS,
+				"CONSTANT_Class");
 
 		u2 ni = e->clazz.nameIndex;
 
@@ -1203,35 +1342,35 @@ public:
 
 	void getFieldRef(Index index, std::string* className, std::string* name,
 			std::string* desc) const {
-		const Entry* e = _getEntry(index, FIELDREF, "FieldRef");
+		const ConstItem* e = _getEntry(index, CONST_FIELDREF, "FieldRef");
 		const MemberRef& mr = e->fieldRef;
 		_getMemberRef(className, name, desc, mr);
 	}
 
 	void getMethodRef(Index index, std::string* clazzName, std::string* name,
 			std::string* desc) const {
-		const Entry* e = _getEntry(index, METHODREF, "MethodRef");
+		const ConstItem* e = _getEntry(index, CONST_METHODREF, "MethodRef");
 		const MemberRef& mr = e->methodRef;
 		_getMemberRef(clazzName, name, desc, mr);
 	}
 
 	void getInterMethodRef(Index index, std::string* clazzName,
 			std::string* name, std::string* desc) const {
-		const Entry* e = _getEntry(index, INTERFACEMETHODREF, "imr");
+		const ConstItem* e = _getEntry(index, CONST_INTERMETHODREF, "imr");
 		const MemberRef& mr = e->interMethodRef;
 		_getMemberRef(clazzName, name, desc, mr);
 	}
 
 	long getLong(Index index) const {
-		return _getEntry(index, LONG, "CONSTANT_Long")->l.value;
+		return _getEntry(index, CONST_LONG, "CONSTANT_Long")->l.value;
 	}
 
 	double getDouble(Index index) const {
-		return _getEntry(index, DOUBLE, "CONSTANT_Double")->d.value;
+		return _getEntry(index, CONST_DOUBLE, "CONSTANT_Double")->d.value;
 	}
 
 	const char* getUtf8(Index utf8Index) const {
-		const Entry* entry = _getEntry(utf8Index, UTF8, "Utf8");
+		const ConstItem* entry = _getEntry(utf8Index, CONST_UTF8, "Utf8");
 
 		return entry->utf8.str.c_str();
 	}
@@ -1244,7 +1383,7 @@ public:
 
 	void getNameAndType(Index index, std::string* name,
 			std::string* desc) const {
-		const Entry* e = _getEntry(index, NAMEANDTYPE, "NameAndType");
+		const ConstItem* e = _getEntry(index, CONST_NAMEANDTYPE, "NameAndType");
 
 		u2 nameIndex = e->nameandtype.nameIndex;
 		u2 descIndex = e->nameandtype.descriptorIndex;
@@ -1253,127 +1392,67 @@ public:
 		*desc = getUtf8(Index(descIndex));
 	}
 
-	struct Class {
-		u2 nameIndex;
-	};
+	Index getIndexOfUtf8(const char* utf8) {
 
-	struct MemberRef {
-		u2 classIndex;
-		u2 nameAndTypeIndex;
-	};
+		ConstPool& cp = *this;
+		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
+			ConstPool::Index i = *it;
+			//ConstPool::Tag tag = cp.getTag(i);
 
-	struct FieldRef: MemberRef {
-	};
+			//const Entry* entry = &cp.entries[i];
 
-	struct MethodRef: MemberRef {
-	};
-
-	struct InterMethodRef: MemberRef {
-	};
-
-	struct String {
-		u2 stringIndex;
-	};
-
-	struct Integer {
-		u4 value;
-	};
-
-	struct Float {
-		u4 value;
-	};
-
-	struct Long {
-		long value;
-	};
-
-	struct Double {
-		double value;
-	};
-
-	struct NameAndType {
-		u2 nameIndex;
-		u2 descriptorIndex;
-	};
-
-	struct MethodHandle {
-		u1 referenceKind;
-		u2 referenceIndex;
-	};
-
-	struct MethodType {
-		u2 descriptorIndex;
-	};
-
-	struct InvokeDynamic {
-		u2 bootstrapMethodAttrIndex;
-		u2 nameAndTypeIndex;
-	};
-
-	/**
-	 *
-	 */
-	struct Entry {
-		Entry(Tag tag) :
-				tag(tag) {
+			if (isUtf8(i) && getUtf8(i) == std::string(utf8)) {
+				return i;
+			}
 		}
 
-		Tag tag;
-		union {
-			Class clazz;
-			FieldRef fieldRef;
-			MethodRef methodRef;
-			InterMethodRef interMethodRef;
-			String s;
-			Integer i;
-			Float f;
-			Long l;
-			Double d;
-			NameAndType nameandtype;
-			MethodHandle methodhandle;
-			MethodType methodtype;
-			InvokeDynamic invokedynamic;
-		};
-		struct {
-			std::string str;
-		} utf8;
-	};
+		return NULLENTRY;
+	}
 
-	std::vector<Entry> entries;
+	Index putUtf8(const char* utf8) {
+		Index i = getIndexOfUtf8(utf8);
+		if (i == NULLENTRY) {
+			return addUtf8(utf8);
+		} else {
+			return i;
+		}
+	}
+
+	std::vector<ConstItem> entries;
 
 private:
 
-	Index _addSingle(const Entry& entry) {
+	Index _addSingle(const ConstItem& entry) {
 		Index index = Index(entries.size());
 		entries.push_back(entry);
 
 		return index;
 	}
 
-	Index _addDoubleEntry(const Entry& entry) {
+	Index _addDoubleEntry(const ConstItem& entry) {
 		Index index = Index(entries.size());
 
 		entries.push_back(entry);
 
 		// TODO: This is plain wrong!!!
-		Entry nullEntry(INVOKEDYNAMIC);
+		ConstItem nullEntry(CONST_INVOKEDYNAMIC);
 		entries.push_back(nullEntry);
 
 		return index;
 	}
 
-	const Entry* _getEntry(Index i) const {
+	const ConstItem* _getEntry(Index i) const {
 		ErrorManager::check(i > NULLENTRY,
 				"Null access to constant pool: index = ", i);
 		check(i < entries.size(), "Index out of bounds: index = ", i);
 
-		const Entry* entry = &entries[i];
+		const ConstItem* entry = &entries[i];
 
 		return entry;
 	}
 
-	const Entry* _getEntry(Index index, u1 tag, const char* message) const {
-		const Entry* entry = _getEntry(index);
+	const ConstItem* _getEntry(Index index, u1 tag, const char* message) const {
+		const ConstItem* entry = _getEntry(index);
 
 		check(entry->tag == tag, "Invalid constant ", message, (int) tag,
 				(int) entry->tag);
@@ -1382,11 +1461,11 @@ private:
 	}
 
 	bool _isDoubleEntry(Index index) const {
-		const Entry* e = _getEntry(index);
+		const ConstItem* e = _getEntry(index);
 
 		switch (e->tag) {
-			case LONG:
-			case DOUBLE:
+			case CONST_LONG:
+			case CONST_DOUBLE:
 				return true;
 			default:
 				return false;
@@ -1404,7 +1483,7 @@ private:
 
 };
 
-class Visitor;
+//class Visitor;
 
 /**
  * Defines the base class for all attributes in the class file.

@@ -214,45 +214,45 @@ private:
 			u1 tag = br.readu1();
 
 			switch (tag) {
-				case ConstPool::CLASS: {
+				case CONST_CLASS: {
 					u2 classNameIndex = br.readu2();
 					cp.addClass(classNameIndex);
 					break;
 				}
-				case ConstPool::FIELDREF: {
+				case CONST_FIELDREF: {
 					u2 classIndex = br.readu2();
 					u2 nameAndTypeIndex = br.readu2();
 					cp.addFieldRef(classIndex, nameAndTypeIndex);
 					break;
 				}
-				case ConstPool::METHODREF: {
+				case CONST_METHODREF: {
 					u2 classIndex = br.readu2();
 					u2 nameAndTypeIndex = br.readu2();
 					cp.addMethodRef(classIndex, nameAndTypeIndex);
 					break;
 				}
-				case ConstPool::INTERFACEMETHODREF: {
+				case CONST_INTERMETHODREF: {
 					u2 classIndex = br.readu2();
 					u2 nameAndTypeIndex = br.readu2();
 					cp.addInterMethodRef(classIndex, nameAndTypeIndex);
 					break;
 				}
-				case ConstPool::STRING: {
+				case CONST_STRING: {
 					u2 utf8Index = br.readu2();
 					cp.addString(utf8Index);
 					break;
 				}
-				case ConstPool::INTEGER: {
+				case CONST_INTEGER: {
 					u4 value = br.readu4();
 					cp.addInteger(value);
 					break;
 				}
-				case ConstPool::FLOAT: {
+				case CONST_FLOAT: {
 					u4 value = br.readu4();
 					cp.addFloat(value);
 					break;
 				}
-				case ConstPool::LONG: {
+				case CONST_LONG: {
 					u4 high = br.readu4();
 					u4 low = br.readu4();
 					long value = ((long) high << 32) + low;
@@ -260,7 +260,7 @@ private:
 					i++;
 					break;
 				}
-				case ConstPool::DOUBLE: {
+				case CONST_DOUBLE: {
 					u4 high = br.readu4();
 					u4 low = br.readu4();
 					long lvalue = ((long) high << 32) + low;
@@ -269,30 +269,30 @@ private:
 					i++;
 					break;
 				}
-				case ConstPool::NAMEANDTYPE: {
+				case CONST_NAMEANDTYPE: {
 					u2 nameIndex = br.readu2();
 					u2 descIndex = br.readu2();
 					cp.addNameAndType(nameIndex, descIndex);
 					break;
 				}
-				case ConstPool::UTF8: {
+				case CONST_UTF8: {
 					u2 len = br.readu2();
 					cp.addUtf8((const char*) br.pos(), len);
 					br.skip(len);
 					break;
 				}
-				case ConstPool::METHODHANDLE: {
+				case CONST_METHODHANDLE: {
 					u1 refKind = br.readu1();
 					u2 refIndex = br.readu2();
 					cp.addMethodHandle(refKind, refIndex);
 					break;
 				}
-				case ConstPool::METHODTYPE: {
+				case CONST_METHODTYPE: {
 					u2 descIndex = br.readu2();
 					cp.addMethodType(descIndex);
 					break;
 				}
-				case ConstPool::INVOKEDYNAMIC: {
+				case CONST_INVOKEDYNAMIC: {
 					u2 bootstrapMethodAttrIndex = br.readu2();
 					u2 nameAndTypeIndex = br.readu2();
 					cp.addInvokeDynamic(bootstrapMethodAttrIndex,

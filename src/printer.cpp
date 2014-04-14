@@ -7,47 +7,6 @@ using namespace std;
 
 namespace jnif {
 
-ostream& operator<<(ostream& os, const Type& t) {
-	switch (t.tag) {
-		case Type::TYPE_TOP:
-			os << "Top";
-			break;
-		case Type::TYPE_INTEGER:
-			os << "Int";
-			break;
-		case Type::TYPE_LONG:
-			os << "Long";
-			break;
-		case Type::TYPE_FLOAT:
-			os << "Float";
-			break;
-		case Type::TYPE_DOUBLE:
-			os << "Double";
-			break;
-		case Type::TYPE_OBJECT:
-			os << "Ref";
-			break;
-		default:
-			os << "UNKNOWN TYPE!!!";
-	}
-
-	return os;
-}
-
-ostream& operator<<(ostream& os, const Frame& frame) {
-	os << "{ ";
-	for (u4 i = 0; i < frame.lva.size(); i++) {
-		os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i];
-	}
-	os << " } [ ";
-	int i = 0;
-	for (auto t : frame.stack) {
-		os << (i == 0 ? "" : " | ") << t;
-		i++;
-	}
-	return os << " ]";
-}
-
 class AccessFlagsPrinter {
 public:
 
@@ -169,17 +128,17 @@ private:
 
 		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
 			ConstPool::Index i = *it;
-			ConstPool::Tag tag = cp.getTag(i);
+			ConstTag tag = cp.getTag(i);
 
 			line() << "#" << i << " [" << ConstNames[tag] << "]: ";
 
-			const ConstPool::Entry* entry = &cp.entries[i];
+			const ConstItem* entry = &cp.entries[i];
 
 			switch (tag) {
-				case ConstPool::CLASS:
+				case CONST_CLASS:
 					os << cp.getClassName(i) << "#" << entry->clazz.nameIndex;
 					break;
-				case ConstPool::FIELDREF: {
+				case CONST_FIELDREF: {
 					string clazzName, name, desc;
 					cp.getFieldRef(i, &clazzName, &name, &desc);
 
@@ -189,7 +148,7 @@ private:
 					break;
 				}
 
-				case ConstPool::METHODREF: {
+				case CONST_METHODREF: {
 					string clazzName, name, desc;
 					cp.getMethodRef(i, &clazzName, &name, &desc);
 
@@ -199,7 +158,7 @@ private:
 					break;
 				}
 
-				case ConstPool::INTERFACEMETHODREF: {
+				case CONST_INTERMETHODREF: {
 					string clazzName, name, desc;
 					cp.getInterMethodRef(i, &clazzName, &name, &desc);
 
@@ -208,39 +167,39 @@ private:
 							<< entry->interMethodRef.nameAndTypeIndex;
 					break;
 				}
-				case ConstPool::STRING:
+				case CONST_STRING:
 					os << cp.getUtf8(entry->s.stringIndex) << "#"
 							<< entry->s.stringIndex;
 					break;
-				case ConstPool::INTEGER:
+				case CONST_INTEGER:
 					os << entry->i.value;
 					break;
-				case ConstPool::FLOAT:
+				case CONST_FLOAT:
 					os << entry->f.value;
 					break;
-				case ConstPool::LONG:
+				case CONST_LONG:
 					os << cp.getLong(i);
 					//i++;
 					break;
-				case ConstPool::DOUBLE:
+				case CONST_DOUBLE:
 					os << cp.getDouble(i);
 					//i++;
 					break;
-				case ConstPool::NAMEANDTYPE:
+				case CONST_NAMEANDTYPE:
 					os << "#" << entry->nameandtype.nameIndex << ".#"
 							<< entry->nameandtype.descriptorIndex;
 					break;
-				case ConstPool::UTF8:
+				case CONST_UTF8:
 					os << entry->utf8.str;
 					break;
-				case ConstPool::METHODHANDLE:
+				case CONST_METHODHANDLE:
 					os << entry->methodhandle.referenceKind << " #"
 							<< entry->methodhandle.referenceIndex;
 					break;
-				case ConstPool::METHODTYPE:
+				case CONST_METHODTYPE:
 					os << "#" << entry->methodtype.descriptorIndex;
 					break;
-				case ConstPool::INVOKEDYNAMIC:
+				case CONST_INVOKEDYNAMIC:
 					os << "#" << entry->invokedynamic.bootstrapMethodAttrIndex
 							<< ".#" << entry->invokedynamic.nameAndTypeIndex;
 					break;
@@ -422,7 +381,7 @@ private:
 				raise("FrParseReservedInstr not implemented");
 				break;
 			case KIND_FRAME:
-				os << "Frame " << inst.frame.frame;
+			//	os << "Frame " << inst.frame.frame;
 				break;
 			default:
 				raise("print inst: unknown inst kind!");

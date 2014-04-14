@@ -100,25 +100,41 @@ public:
 
 private:
 
-	inline static bool isExit(Inst* inst) {
-		Opcode opcode = inst->opcode;
-		return (opcode >= OPCODE_ireturn && opcode <= OPCODE_return)
-				|| opcode == OPCODE_athrow;
+	void setBranchTargets(InstList& instList) {
+		for (Inst* inst : instList) {
+			if (inst->kind == KIND_JUMP) {
+				inst->jump.label2->label.isBranchTarget = true;
+			} else if (inst->kind == KIND_TABLESWITCH) {
+				for (Inst* target : inst->ts.targets) {
+					target->label.isBranchTarget = true;
+				}
+			} else if (inst->kind == KIND_LOOKUPSWITCH) {
+				for (Inst* target : inst->ls.targets) {
+					target->label.isBranchTarget = true;
+				}
+			}
+		}
 	}
 
 	void buildBasicBlocks(InstList& instList) {
+		setBranchTargets(instList);
+
 		int bbid = 0;
 		auto beginBb = instList.begin();
 
-		auto getBasicBlockName = [&](int bbid) {
+		auto getBasicBlockName = [&](int bbid, int lid) {
 			stringstream ss;
 			ss << "BB" << bbid;
+			if (lid > 0) {
+			//	ss << ":labelId=" << lid;
+			}
+
 			return ss.str();
 		};
 
-		auto addBasicBlock2 = [&](InstList::iterator eit) {
+		auto addBasicBlock2 = [&](InstList::iterator eit, int labelId) {
 			if (beginBb != eit) {
-				string name = getBasicBlockName(bbid);
+				string name = getBasicBlockName(bbid, labelId);
 				addBasicBlock(beginBb, eit, name);
 
 				beginBb = eit;
@@ -129,20 +145,20 @@ private:
 		for (auto it = instList.begin(); it != instList.end(); it++) {
 			Inst* inst = *it;
 
-			if (inst->kind == KIND_LABEL) {
-				addBasicBlock2(it);
+			if (inst->kind == KIND_LABEL && inst->label.isBranchTarget) {
+				addBasicBlock2(it, inst->label.id);
 			}
 
-			if (inst->kind == KIND_JUMP) {
+			if (inst->isBranch()) {
 				auto eit = it;
 				eit++;
-				addBasicBlock2(eit);
+				addBasicBlock2(eit, 0);
 			}
 
-			if (isExit(inst)) {
+			if (inst->isExit()) {
 				auto eit = it;
 				eit++;
-				addBasicBlock2(eit);
+				addBasicBlock2(eit, 0);
 			}
 		}
 	}
@@ -193,7 +209,7 @@ private:
 					assert(bb->next != nullptr, "next bb is null");
 					bb->addTarget(bb->next);
 				}
-			} else if (isExit(last)) {
+			} else if (last->isExit()) {
 				bb->addTarget(exit);
 			} else {
 				assert(bb->next != nullptr, "next bb is null");
@@ -481,18 +497,18 @@ public:
 				//				h.pushLong();
 				//			});
 
-				ConstPool::Tag tag = cp.getTag(inst.ldc.valueIndex);
+				ConstTag tag = cp.getTag(inst.ldc.valueIndex);
 				switch (tag) {
-					case ConstPool::INTEGER:
+					case CONST_INTEGER:
 						h.pushInt();
 						break;
-					case ConstPool::FLOAT:
+					case CONST_FLOAT:
 						h.pushFloat();
 						break;
-					case ConstPool::LONG:
+					case CONST_LONG:
 						h.pushLong();
 						break;
-					case ConstPool::DOUBLE:
+					case CONST_DOUBLE:
 						h.pushLong();
 						break;
 					default:
@@ -1013,6 +1029,47 @@ public:
 
 };
 
+ostream& operator<<(ostream& os, const Type& t) {
+	switch (t.tag) {
+		case Type::TYPE_TOP:
+			os << "Top";
+			break;
+		case Type::TYPE_INTEGER:
+			os << "Int";
+			break;
+		case Type::TYPE_LONG:
+			os << "Long";
+			break;
+		case Type::TYPE_FLOAT:
+			os << "Float";
+			break;
+		case Type::TYPE_DOUBLE:
+			os << "Double";
+			break;
+		case Type::TYPE_OBJECT:
+			os << "Ref";
+			break;
+		default:
+			os << "UNKNOWN TYPE!!!";
+	}
+
+	return os;
+}
+
+ostream& operator<<(ostream& os, const Frame& frame) {
+	os << "{ ";
+	for (u4 i = 0; i < frame.lva.size(); i++) {
+		os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i];
+	}
+	os << " } [ ";
+	int i = 0;
+	for (auto t : frame.stack) {
+		os << (i == 0 ? "" : " | ") << t;
+		i++;
+	}
+	return os << " ]";
+}
+
 static void printCfg(ControlFlowGraph& cfg, ostream& os) {
 	for (BasicBlock* bb : cfg) {
 		//BasicBlock& bb = cfg.getNode(nid);
@@ -1026,6 +1083,7 @@ static void printCfg(ControlFlowGraph& cfg, ostream& os) {
 		}
 		os << "} ";
 
+		os << "in frame: " << bb->in << ", out frame: " << bb->out;
 		os << endl;
 
 //		for (auto it = b; it != e; it++) {
@@ -1046,6 +1104,18 @@ class Compute: private ErrorManager {
 public:
 	static void computeFramesMethod(CodeAttr* code, Method* method,
 			ClassFile* cf, ConstPool::Index attrIndex) {
+
+		for (auto it = code->attrs.begin(); it != code->attrs.end(); it++) {
+			auto attr = *it;
+			if (attr->kind == ATTR_SMT) {
+				code->attrs.attrs.erase(it);
+				break;
+			}
+		}
+
+		if (!code->instList.hasBranches()) {
+			return;
+		}
 
 		code->instList.setLabelIds();
 
@@ -1071,7 +1141,6 @@ public:
 		}
 
 		ControlFlowGraph cfg(code->instList);
-		printCfg(cfg, cout);
 
 		initFrame.valid = true;
 		BasicBlock* bbe = cfg.entry;
@@ -1081,11 +1150,14 @@ public:
 		BasicBlock* to = *cfg.entry->begin();
 		SmtBuilder::computeState(*to, initFrame, code->instList, *cf);
 
+		printCfg(cfg, cout);
+
 		SmtAttr* smt = new SmtAttr(attrIndex);
 
 		int totalOffset = -1;
 
 		Frame* f = &cfg.entry->out;
+		f->cleanTops();
 
 		auto isSame = [] (Frame& current, Frame& prev) {
 			return current.lva == prev.lva && current.stack.size() == 0;
@@ -1105,8 +1177,10 @@ public:
 		for (BasicBlock* bb : cfg) {
 			if (bb->start != code->instList.end()) {
 				Inst* start = *bb->start;
-				if (start->kind == KIND_LABEL) {
+				if (start->kind == KIND_LABEL && start->label.isBranchTarget) {
 					Frame& current = bb->in;
+					current.cleanTops();
+
 					SmtAttr::Entry e;
 
 					e.label = start;
@@ -1180,7 +1254,7 @@ void ClassFile::computeFrames() {
 // To compute label offsets.
 	computeSize();
 
-	auto attrIndex = addUtf8("StackMapTable");
+	auto attrIndex = putUtf8("StackMapTable");
 
 	for (Method* method : methods) {
 		CodeAttr* code = method->codeAttr();
