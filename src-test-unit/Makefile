@@ -19,11 +19,6 @@ run: $(BUILD)/$(EXE)
 $(BUILD)/$(EXE): $(OBJS) $(BUILD)/libjnif.a
 	clang++ $(CFLAGS) -fsanitize=leak -stdlib=libc++ -o $@ $^
 
-#$(BUILD)/%.class.o: %.class
-#	mkdir -p $(@D) ; cp $< $(@D)
-#	cd $(BUILD) ; xxd -i $*.class $*.c
-#	$(LINK.c) -c -o $@ $(BUILD)/$*.c
-
 $(BUILD)/%.java.o: %.java
 	javac -d $(BUILD)/ $<
 	cd $(BUILD) ; xxd -include $*.class $*.c
@@ -32,10 +27,12 @@ $(BUILD)/%.java.o: %.java
 #	echo "extern u1 $(subst /,_,$*)_class[];" >> $(BUILD)/$*.h
 #	echo "extern int $(subst /,_,$*)_class_len;" >> $(BUILD)/$*.h
 
-#$(BUILD)/filelist.cpp:
-#$(foreach dir,$(dirs),$(wildcard $(dir)/*))
-#$(BUILD)/filelist.cpp.o: $(BUILD)/filelist.cpp | $(BUILD)
-#	$(LINK.c) -std=c++11 -stdlib=libc++ -c -o $@ $<
+#$(BUILD)/filelist.cpp: jnif
+#	echo "// AUTOMATICALLY GENERATED; DO NOT MODIFY" > $(BUILD)/filelist.cpp
+#	$(foreach dir,$(dirs),$(wildcard $(dir)/*))
+
+$(BUILD)/filelist.cpp.o: $(BUILD)/filelist.cpp | $(BUILD)
+	$(LINK.c) -std=c++11 -stdlib=libc++ -c -o $@ $<
 
 $(BUILD)/%.cpp.o: %.cpp $(HPPS) | $(BUILD)
 	$(LINK.c) -std=c++11 -stdlib=libc++ -c -o $@ $<

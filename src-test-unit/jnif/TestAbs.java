@@ -46,10 +46,6 @@ public class TestAbs {
 	static int sumWithWhile(int n) {
 		int result = 0;
 
-		// for (int i = 1; i <= n; i++) {
-		// result += i;
-		// }
-
 		int i = 1;
 		while (i <= n) {
 			result += i;
@@ -59,13 +55,21 @@ public class TestAbs {
 		return result;
 	}
 
-	static int sumWithFor(int n) {
-		int result = 0;
+	private static void m1(int a) {
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
+		System.out.println("AB");
 
-		for (int i = 1; i <= n; i++) {
-			result += i;
+		if (a == 0) {
+			System.out.print("Z");
 		}
-
-		return result;
 	}
 }

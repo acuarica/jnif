@@ -22,30 +22,19 @@ struct JavaFile {
 	int len;
 	const char* name;
 };
-extern u1 jnif_TestAbs_class[];
-extern int jnif_TestAbs_class_len;
 
-extern u1 jnif_BasicClass_class[];
-extern int jnif_BasicClass_class_len;
+#define JAVAFILE(name) extern u1 jnif_##name ## _class[]; \
+	extern int jnif_##name ## _class_len; \
+	static JavaFile jnif##name = { jnif_##name ## _class, jnif_##name ## _class_len, "jnif/" # name }
 
-extern u1 jnif_ExceptionClass_class[];
-extern int jnif_ExceptionClass_class_len;
+JAVAFILE(TestAbs);
+JAVAFILE(ExceptionClass);
+JAVAFILE(BasicClass);
+JAVAFILE(TestProxy);
+JAVAFILE(MainClass);
 
-extern u1 jnif_TestProxy_class[];
-extern int jnif_TestProxy_class_len;
-
-JavaFile tests[] = {
-
-{ jnif_TestAbs_class, jnif_TestAbs_class_len, "jnif/TestAbs" },
-
-{ jnif_BasicClass_class, jnif_BasicClass_class_len, "jnif/BasicClass" },
-
-{ jnif_ExceptionClass_class, jnif_ExceptionClass_class_len,
-		"jnif/ExceptionClass" },
-
-{ jnif_TestProxy_class, jnif_TestProxy_class_len, "jnif/TestProxy" },
-
-};
+JavaFile tests[] = { jnifTestAbs, jnifExceptionClass, jnifBasicClass,
+		jnifTestProxy, jnifMainClass };
 
 template<typename TFunc>
 static void apply(TFunc instr) {

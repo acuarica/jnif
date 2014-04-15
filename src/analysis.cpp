@@ -15,100 +15,19 @@ using namespace std;
 
 namespace jnif {
 
-class BasicBlock {
-public:
-	BasicBlock(const BasicBlock&) = delete;
-	BasicBlock(BasicBlock&&) = default;
+struct ControlFlowGraphBuilder: private ErrorManager {
 
-	friend class ControlFlowGraph;
-
-	void addTarget(BasicBlock* target) {
-		targets.push_back(target);
-	}
-
-	InstList::iterator start;
-	InstList::iterator exit;
-	string name;
-	Frame in;
-	Frame out;
-
-	vector<BasicBlock*>::iterator begin() {
-		return targets.begin();
-	}
-
-	vector<BasicBlock*>::iterator end() {
-		return targets.end();
-	}
-
-private:
-
-	BasicBlock(InstList::iterator start, InstList::iterator exit, string name) :
-			start(start), exit(exit), name(name), next(nullptr) {
-	}
-
-	BasicBlock* next;
-
-	vector<BasicBlock*> targets;
-};
-
-class ControlFlowGraph: private ErrorManager {
-private:
-	vector<BasicBlock*> basicBlocks;
-
-public:
-	BasicBlock* const entry;
-
-	BasicBlock* const exit;
-
-	ControlFlowGraph(InstList& instList) :
-			entry(addConstBb(instList, "Entry")), exit(
-					addConstBb(instList, "Exit")) {
-		buildCfg(instList);
-	}
-
-	~ControlFlowGraph() {
-		for (auto bb : *this) {
-			delete bb;
-		}
-	}
-
-	BasicBlock* addBasicBlock(InstList::iterator start, InstList::iterator end,
-			string name) {
-		BasicBlock* bb = new BasicBlock(start, end, name);
-
-		if (basicBlocks.size() > 0) {
-			BasicBlock* prevbb = basicBlocks.back();
-			prevbb->next = bb;
-		}
-
-		basicBlocks.push_back(bb);
-
-		return bb;
-	}
-
-	inline vector<BasicBlock*>::iterator begin() {
-		return basicBlocks.begin();
-	}
-
-	inline vector<BasicBlock*>::iterator end() {
-		return basicBlocks.end();
-	}
-
-	BasicBlock* addConstBb(InstList& instList, const char* name) {
-		return addBasicBlock(instList.end(), instList.end(), name);
-	}
-
-private:
-
-	void setBranchTargets(InstList& instList) {
+	static void setBranchTargets(InstList& instList) {
 		for (Inst* inst : instList) {
-			if (inst->kind == KIND_JUMP) {
+			if (inst->isJump()) {
 				inst->jump.label2->label.isBranchTarget = true;
-			} else if (inst->kind == KIND_TABLESWITCH) {
+			} else if (inst->isTableSwitch()) {
+				inst->ts.def->label.isBranchTarget = true;
 				for (Inst* target : inst->ts.targets) {
 					target->label.isBranchTarget = true;
 				}
-			} else if (inst->kind == KIND_LOOKUPSWITCH) {
+			} else if (inst->isLookupSwitch()) {
+				inst->ls.defbyte->label.isBranchTarget = true;
 				for (Inst* target : inst->ls.targets) {
 					target->label.isBranchTarget = true;
 				}
@@ -116,26 +35,23 @@ private:
 		}
 	}
 
-	void buildBasicBlocks(InstList& instList) {
+	static void buildBasicBlocks(InstList& instList, ControlFlowGraph& cfg) {
 		setBranchTargets(instList);
 
 		int bbid = 0;
 		auto beginBb = instList.begin();
 
-		auto getBasicBlockName = [&](int bbid, int lid) {
+		auto getBasicBlockName = [&](int bbid) {
 			stringstream ss;
 			ss << "BB" << bbid;
-			if (lid > 0) {
-			//	ss << ":labelId=" << lid;
-			}
 
 			return ss.str();
 		};
 
-		auto addBasicBlock2 = [&](InstList::iterator eit, int labelId) {
+		auto addBasicBlock2 = [&](InstList::iterator eit) {
 			if (beginBb != eit) {
-				string name = getBasicBlockName(bbid, labelId);
-				addBasicBlock(beginBb, eit, name);
+				string name = getBasicBlockName(bbid);
+				cfg.addBasicBlock(beginBb, eit, name);
 
 				beginBb = eit;
 				bbid++;
@@ -145,26 +61,27 @@ private:
 		for (auto it = instList.begin(); it != instList.end(); it++) {
 			Inst* inst = *it;
 
-			if (inst->kind == KIND_LABEL && inst->label.isBranchTarget) {
-				addBasicBlock2(it, inst->label.id);
+			if (inst->isLabel() && inst->label.isBranchTarget) {
+				addBasicBlock2(it);
 			}
 
 			if (inst->isBranch()) {
 				auto eit = it;
 				eit++;
-				addBasicBlock2(eit, 0);
+				addBasicBlock2(eit);
 			}
 
 			if (inst->isExit()) {
 				auto eit = it;
 				eit++;
-				addBasicBlock2(eit, 0);
+				addBasicBlock2(eit);
 			}
 		}
 	}
 
-	BasicBlock* findBasicBlockOfLabel(int labelId, InstList& instList) {
-		for (BasicBlock* bb : *this) {
+	static BasicBlock* findBasicBlockOfLabel(int labelId, InstList& instList,
+			ControlFlowGraph& cfg) {
+		for (BasicBlock* bb : cfg) {
 			if (bb->start == instList.end()) {
 				assert(bb->name == "Entry" || bb->name == "Exit", "");
 				assert(bb->exit == instList.end(), "");
@@ -180,10 +97,18 @@ private:
 		raise("se pudrio el chorran");
 	}
 
-	void buildCfg(InstList& instList) {
-		buildBasicBlocks(instList);
+	static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
+		buildBasicBlocks(instList, cfg);
 
-		for (BasicBlock* bb : *this) {
+		auto addTarget2 = [&] (BasicBlock* bb, Inst* inst) {
+			assert(inst->isLabel(), "Expected label instruction");
+			int labelId = inst->label.id;
+			BasicBlock* tbbid = findBasicBlockOfLabel(labelId, instList,
+					cfg);
+			bb->addTarget(tbbid);
+		};
+
+		for (BasicBlock* bb : cfg) {
 			if (bb->start == instList.end()) {
 				assert(bb->name == "Entry" || bb->name == "Exit", "");
 				assert(bb->exit == instList.end(), "");
@@ -197,20 +122,30 @@ private:
 			Inst* last = *e;
 
 			if (bb->start == instList.begin()) {
-				entry->addTarget(bb);
+				cfg.entry->addTarget(bb);
 			}
 
-			if (last->kind == KIND_JUMP) {
-				int labelId = last->jump.label2->label.id;
-				BasicBlock* tbbid = findBasicBlockOfLabel(labelId, instList);
-				bb->addTarget(tbbid);
+			if (last->isJump()) {
+				addTarget2(bb, last->jump.label2);
 
 				if (last->opcode != OPCODE_goto) {
 					assert(bb->next != nullptr, "next bb is null");
 					bb->addTarget(bb->next);
 				}
+			} else if (last->isTableSwitch()) {
+				addTarget2(bb, last->ts.def);
+
+				for (Inst* target : last->ts.targets) {
+					addTarget2(bb, target);
+				}
+			} else if (last->isLookupSwitch()) {
+				addTarget2(bb, last->ls.defbyte);
+
+				for (Inst* target : last->ls.targets) {
+					addTarget2(bb, target);
+				}
 			} else if (last->isExit()) {
-				bb->addTarget(exit);
+				bb->addTarget(cfg.exit);
 			} else {
 				assert(bb->next != nullptr, "next bb is null");
 				bb->addTarget(bb->next);
@@ -218,6 +153,11 @@ private:
 		}
 	}
 };
+
+ControlFlowGraph::ControlFlowGraph(InstList& instList) :
+		entry(addConstBb(instList, "Entry")), exit(addConstBb(instList, "Exit")) {
+	ControlFlowGraphBuilder::buildCfg(instList, *this);
+}
 
 struct DescParser: protected ErrorManager {
 
@@ -1029,73 +969,6 @@ public:
 
 };
 
-ostream& operator<<(ostream& os, const Type& t) {
-	switch (t.tag) {
-		case Type::TYPE_TOP:
-			os << "Top";
-			break;
-		case Type::TYPE_INTEGER:
-			os << "Int";
-			break;
-		case Type::TYPE_LONG:
-			os << "Long";
-			break;
-		case Type::TYPE_FLOAT:
-			os << "Float";
-			break;
-		case Type::TYPE_DOUBLE:
-			os << "Double";
-			break;
-		case Type::TYPE_OBJECT:
-			os << "Ref";
-			break;
-		default:
-			os << "UNKNOWN TYPE!!!";
-	}
-
-	return os;
-}
-
-ostream& operator<<(ostream& os, const Frame& frame) {
-	os << "{ ";
-	for (u4 i = 0; i < frame.lva.size(); i++) {
-		os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i];
-	}
-	os << " } [ ";
-	int i = 0;
-	for (auto t : frame.stack) {
-		os << (i == 0 ? "" : " | ") << t;
-		i++;
-	}
-	return os << " ]";
-}
-
-static void printCfg(ControlFlowGraph& cfg, ostream& os) {
-	for (BasicBlock* bb : cfg) {
-		//BasicBlock& bb = cfg.getNode(nid);
-
-		os << "* " << bb->name;
-
-		os << " @Out { ";
-		for (BasicBlock* bbt : *bb) {
-			//auto bbt = cfg.getNode(eid);
-			os << "->" << bbt->name << ", ";
-		}
-		os << "} ";
-
-		os << "in frame: " << bb->in << ", out frame: " << bb->out;
-		os << endl;
-
-//		for (auto it = b; it != e; it++) {
-//			Inst* inst = *it;
-//			//printInst(*inst);
-//			//os << endl;
-//		}
-	}
-
-	os << endl;
-}
-
 //static void appendComputedFrames(CodeAttr& code) {
 //
 //}
@@ -1103,7 +976,7 @@ static void printCfg(ControlFlowGraph& cfg, ostream& os) {
 class Compute: private ErrorManager {
 public:
 	static void computeFramesMethod(CodeAttr* code, Method* method,
-			ClassFile* cf, ConstPool::Index attrIndex) {
+			ClassFile* cf, ConstPool::Index* attrIndex) {
 
 		for (auto it = code->attrs.begin(); it != code->attrs.end(); it++) {
 			auto attr = *it;
@@ -1115,6 +988,10 @@ public:
 
 		if (!code->instList.hasBranches()) {
 			return;
+		}
+
+		if (*attrIndex == ConstPool::NULLENTRY) {
+			*attrIndex = cf->putUtf8("StackMapTable");
 		}
 
 		code->instList.setLabelIds();
@@ -1140,7 +1017,8 @@ public:
 			lvindex++;
 		}
 
-		ControlFlowGraph cfg(code->instList);
+		ControlFlowGraph* cfgp = new ControlFlowGraph(code->instList);
+		ControlFlowGraph& cfg = *cfgp;
 
 		initFrame.valid = true;
 		BasicBlock* bbe = cfg.entry;
@@ -1150,9 +1028,7 @@ public:
 		BasicBlock* to = *cfg.entry->begin();
 		SmtBuilder::computeState(*to, initFrame, code->instList, *cf);
 
-		printCfg(cfg, cout);
-
-		SmtAttr* smt = new SmtAttr(attrIndex);
+		SmtAttr* smt = new SmtAttr(*attrIndex);
 
 		int totalOffset = -1;
 
@@ -1245,6 +1121,8 @@ public:
 			}
 		}
 
+		code->cfg = cfgp;
+
 		code->attrs.add(smt);
 	}
 };
@@ -1254,13 +1132,13 @@ void ClassFile::computeFrames() {
 // To compute label offsets.
 	computeSize();
 
-	auto attrIndex = putUtf8("StackMapTable");
+	u2 attrIndex = ConstPool::NULLENTRY;
 
 	for (Method* method : methods) {
 		CodeAttr* code = method->codeAttr();
 
 		if (code != nullptr) {
-			Compute::computeFramesMethod(code, method, this, attrIndex);
+			Compute::computeFramesMethod(code, method, this, &attrIndex);
 		}
 	}
 }

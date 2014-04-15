@@ -829,6 +829,10 @@ public:
 				|| opcode == OPCODE_athrow;
 	}
 
+	inline bool isLabel() const {
+		return kind == KIND_LABEL;
+	}
+
 	int _offset;
 
 //	friend Inst InvokeInst(Opcode opcode, u2 index) {
@@ -1483,7 +1487,88 @@ private:
 
 };
 
-//class Visitor;
+class BasicBlock {
+public:
+	BasicBlock(const BasicBlock&) = delete;
+	BasicBlock(BasicBlock&&) = default;
+
+	friend class ControlFlowGraph;
+
+	void addTarget(BasicBlock* target) {
+		targets.push_back(target);
+	}
+
+	InstList::iterator start;
+	InstList::iterator exit;
+	std::string name;
+	Frame in;
+	Frame out;
+
+	std::vector<BasicBlock*>::iterator begin() {
+		return targets.begin();
+	}
+
+	std::vector<BasicBlock*>::iterator end() {
+		return targets.end();
+	}
+
+	BasicBlock* next;
+
+private:
+
+	BasicBlock(InstList::iterator start, InstList::iterator exit,
+			std::string name) :
+			start(start), exit(exit), name(name), next(nullptr) {
+	}
+
+	std::vector<BasicBlock*> targets;
+};
+
+class ControlFlowGraph: private ErrorManager {
+private:
+	std::vector<BasicBlock*> basicBlocks;
+
+public:
+	BasicBlock* const entry;
+
+	BasicBlock* const exit;
+
+	ControlFlowGraph(InstList& instList);
+
+	~ControlFlowGraph() {
+		for (auto bb : *this) {
+			delete bb;
+		}
+	}
+
+	BasicBlock* addBasicBlock(InstList::iterator start, InstList::iterator end,
+			std::string name) {
+		BasicBlock* bb = new BasicBlock(start, end, name);
+
+		if (basicBlocks.size() > 0) {
+			BasicBlock* prevbb = basicBlocks.back();
+			prevbb->next = bb;
+		}
+
+		basicBlocks.push_back(bb);
+
+		return bb;
+	}
+
+	inline std::vector<BasicBlock*>::iterator begin() {
+		return basicBlocks.begin();
+	}
+
+	inline std::vector<BasicBlock*>::iterator end() {
+		return basicBlocks.end();
+	}
+
+private:
+	BasicBlock* addConstBb(InstList& instList, const char* name) {
+		return addBasicBlock(instList.end(), instList.end(), name);
+	}
+
+};
 
 /**
  * Defines the base class for all attributes in the class file.
@@ -1678,7 +1763,8 @@ struct CodeExceptionEntry {
 struct CodeAttr: Attr {
 
 	CodeAttr(u2 nameIndex) :
-			Attr(ATTR_CODE, nameIndex), maxStack(0), maxLocals(0), codeLen(0) {
+			Attr(ATTR_CODE, nameIndex), maxStack(0), maxLocals(0), codeLen(0), cfg(
+					nullptr) {
 	}
 
 	u2 maxStack;
@@ -1688,6 +1774,8 @@ struct CodeAttr: Attr {
 	InstList instList;
 
 	std::vector<CodeExceptionEntry> exceptions;
+
+	ControlFlowGraph* cfg;
 
 	Attrs attrs;
 };

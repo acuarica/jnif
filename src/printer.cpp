@@ -7,6 +7,47 @@ using namespace std;
 
 namespace jnif {
 
+ostream& operator<<(ostream& os, const Type& t) {
+	switch (t.tag) {
+		case Type::TYPE_TOP:
+			os << "Top";
+			break;
+		case Type::TYPE_INTEGER:
+			os << "Int";
+			break;
+		case Type::TYPE_LONG:
+			os << "Long";
+			break;
+		case Type::TYPE_FLOAT:
+			os << "Float";
+			break;
+		case Type::TYPE_DOUBLE:
+			os << "Double";
+			break;
+		case Type::TYPE_OBJECT:
+			os << "Ref";
+			break;
+		default:
+			os << "UNKNOWN TYPE!!!";
+	}
+
+	return os;
+}
+
+ostream& operator<<(ostream& os, const Frame& frame) {
+	os << "{ ";
+	for (u4 i = 0; i < frame.lva.size(); i++) {
+		os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i];
+	}
+	os << " } [ ";
+	int i = 0;
+	for (auto t : frame.stack) {
+		os << (i == 0 ? "" : " | ") << t;
+		i++;
+	}
+	return os << " ]";
+}
+
 class AccessFlagsPrinter {
 public:
 
@@ -271,6 +312,10 @@ private:
 			os << endl;
 		}
 
+		if (c.cfg != nullptr) {
+			printCfg(*c.cfg);
+		}
+
 		for (CodeExceptionEntry& e : c.exceptions) {
 			line(1) << "exception entry: startpc: " << e.startpc->label.id
 					<< ", endpc: " << e.endpc->label.offset << ", handlerpc: "
@@ -281,6 +326,29 @@ private:
 		printAttrs(c.attrs);
 
 		dec();
+	}
+
+	void printCfg(ControlFlowGraph& cfg) {
+		for (BasicBlock* bb : cfg) {
+			os << "* " << bb->name;
+
+			os << " @Out { ";
+			for (BasicBlock* bbt : *bb) {
+				os << "->" << bbt->name << ", ";
+			}
+			os << "} ";
+
+			os << "in frame: " << bb->in << ", out frame: " << bb->out;
+			os << endl;
+
+			for (auto it = bb->start; it != bb->exit; it++) {
+				Inst* inst = *it;
+				printInst(*inst);
+				os << endl;
+			}
+		}
+
+		os << endl;
 	}
 
 	void printInst(Inst& inst) {
@@ -381,7 +449,7 @@ private:
 				raise("FrParseReservedInstr not implemented");
 				break;
 			case KIND_FRAME:
-			//	os << "Frame " << inst.frame.frame;
+				//	os << "Frame " << inst.frame.frame;
 				break;
 			default:
 				raise("print inst: unknown inst kind!");
