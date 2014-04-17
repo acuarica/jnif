@@ -638,7 +638,10 @@ public:
 	};
 
 	inline bool operator==(const Type& other) const {
-		return tag == other.tag;
+		return tag == other.tag
+				&& (tag != TYPE_OBJECT
+						|| object.className == other.object.className)
+				&& dims == other.dims;
 	}
 
 	inline bool isTop() const {
@@ -699,6 +702,11 @@ public:
 		return object.cindex;
 	}
 
+	inline void setCpIndex(u2 index) {
+		//check(isObject(), "Type is not object type to get cp index: ", *this);
+		object.cindex = index;
+	}
+
 	Type(const Type& other) = default;
 
 private:
@@ -735,17 +743,6 @@ private:
 
 class Frame: private ErrorManager {
 public:
-
-//	enum TEnum {
-//		Top = Type::TYPE_TOP,
-//		Int = Type::TYPE_INTEGER,
-//		Long = Type::TYPE_LONG,
-//		Float = Type::TYPE_FLOAT,
-//		Double = Type::TYPE_DOUBLE,
-//		Ref = Type::TYPE_OBJECT
-//	};
-
-//typedef Type T;
 
 	Frame() :
 			valid(false) {

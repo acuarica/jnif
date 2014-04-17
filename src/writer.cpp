@@ -281,44 +281,6 @@ public:
 	}
 
 	void writeSmt(SmtAttr& attr) {
-		auto parseTs = [&](vector<Type>& locs) {
-			for (u1 i = 0; i < locs.size(); i++) {
-				Type& vt = locs[i];
-
-				u1 tag = vt.tag;
-				bw.writeu1(tag);
-
-				switch (tag) {
-					case Type::TYPE_TOP:
-					break;
-					case Type::TYPE_INTEGER:
-					break;
-					case Type::TYPE_FLOAT :
-					break;
-					case Type::TYPE_LONG :
-					break;
-					case Type::TYPE_DOUBLE:
-					break;
-					case Type::TYPE_NULL :
-					break;
-					case Type::TYPE_UNINITTHIS :
-					break;
-					case Type::TYPE_OBJECT: {
-						u2 cpIndex = vt.getCpIndex();
-						bw.writeu2(cpIndex);
-						break;
-					}
-					case Type::TYPE_UNINIT: {
-						u2 offset = vt.uninit.offset;
-
-						offset = vt.uninit.label->label.offset;
-						bw.writeu2(offset);
-						break;
-					}
-				}
-			}
-		};
-
 		bw.writeu2(attr.entries.size());
 
 		int toff = -1;
@@ -356,11 +318,11 @@ public:
 
 			if (0 <= frameType && frameType <= 63) {
 			} else if (64 <= frameType && frameType <= 127) {
-				parseTs(e.sameLocals_1_stack_item_frame.stack);
+				writeSmtTypes(e.sameLocals_1_stack_item_frame.stack);
 			} else if (frameType == 247) {
 				u2 offsetDelta = deltaOffset;
 				bw.writeu2(offsetDelta);
-				parseTs(e.same_locals_1_stack_item_frame_extended.stack);
+				writeSmtTypes(e.same_locals_1_stack_item_frame_extended.stack);
 			} else if (248 <= frameType && frameType <= 250) {
 				u2 offsetDelta = deltaOffset;
 				bw.writeu2(offsetDelta);
@@ -370,18 +332,56 @@ public:
 			} else if (252 <= frameType && frameType <= 254) {
 				u2 offsetDelta = deltaOffset;
 				bw.writeu2(offsetDelta);
-				parseTs(e.append_frame.locals);
+				writeSmtTypes(e.append_frame.locals);
 			} else if (frameType == 255) {
 				u2 offsetDelta = deltaOffset;
 				bw.writeu2(offsetDelta);
 
 				u2 numberOfLocals = e.full_frame.locals.size();
 				bw.writeu2(numberOfLocals);
-				parseTs(e.full_frame.locals);
+				writeSmtTypes(e.full_frame.locals);
 
 				u2 numberOfStackItems = e.full_frame.stack.size();
 				bw.writeu2(numberOfStackItems);
-				parseTs(e.full_frame.stack);
+				writeSmtTypes(e.full_frame.stack);
+			}
+		}
+	}
+
+	void writeSmtTypes(const vector<Type>& locs) {
+		for (u1 i = 0; i < locs.size(); i++) {
+			const Type& type = locs[i];
+
+			u1 tag = type.tag;
+			bw.writeu1(tag);
+
+			switch (tag) {
+				case Type::TYPE_TOP:
+					break;
+				case Type::TYPE_INTEGER:
+					break;
+				case Type::TYPE_FLOAT:
+					break;
+				case Type::TYPE_LONG:
+					break;
+				case Type::TYPE_DOUBLE:
+					break;
+				case Type::TYPE_NULL:
+					break;
+				case Type::TYPE_UNINITTHIS:
+					break;
+				case Type::TYPE_OBJECT: {
+					u2 cpIndex = type.getCpIndex();
+					bw.writeu2(cpIndex);
+					break;
+				}
+				case Type::TYPE_UNINIT: {
+					u2 offset = type.uninit.offset;
+
+					offset = type.uninit.label->label.offset;
+					bw.writeu2(offset);
+					break;
+				}
 			}
 		}
 	}

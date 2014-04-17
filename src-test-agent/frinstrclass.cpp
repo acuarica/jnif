@@ -93,6 +93,10 @@ void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 //cf.write(newdata, newlen);
 
 	cf.computeFrames();
+
+	ofstream os(outFileName(className, "disasm").c_str());
+	os << cf;
+
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 
 //	for (int i = 0; i < newlen; i++) {

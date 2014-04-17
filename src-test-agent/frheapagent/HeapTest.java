@@ -101,43 +101,43 @@ public class HeapTest {
 	}
 
 	public static void main(String[] args) throws IOException {
-		HeapTest ht = new HeapTest();
-		System.out.println("Is course text?: " + ht.isCourseText());
-		System.out.println("Really?: " + ht.isCourseText);
-
-		int[] as = new int[34];
-		int[] as1 = new int[34];
-		int[] as2 = new int[34];
-
-		System.out.println("HeapTest: " + as.length);
-
-		try {
-			for (int i = 0; i < as.length; i++) {
-				int[] arr = new int[i];
-			}
-
-			for (int i = 0; i < 27; i++) {
-				HeapTest[] arr = new HeapTest[i];
-			}
-
-			for (int i = 0; i < 27; i++) {
-				HeapTest[] arr = new HeapTest[i];
-
-				System.out.println("elem: " + arr[i]);
-
-				System.out.println("HeapTest array len: " + arr.length);
-			}
-
-		} catch (Exception e) {
-			System.out.println(e);
-		}
-
-		System.out.println("HeapTest: " + as.length);
-
-		ts(args);
-		ls(args);
-
-		hola2(1, 2);
+//		HeapTest ht = new HeapTest();
+//		System.out.println("Is course text?: " + ht.isCourseText());
+//		System.out.println("Really?: " + ht.isCourseText);
+//
+//		int[] as = new int[34];
+//		int[] as1 = new int[34];
+//		int[] as2 = new int[34];
+//
+//		System.out.println("HeapTest: " + as.length);
+//
+//		try {
+//			for (int i = 0; i < as.length; i++) {
+//				int[] arr = new int[i];
+//			}
+//
+//			for (int i = 0; i < 27; i++) {
+//				HeapTest[] arr = new HeapTest[i];
+//			}
+//
+//			for (int i = 0; i < 27; i++) {
+//				HeapTest[] arr = new HeapTest[i];
+//
+//				System.out.println("elem: " + arr[i]);
+//
+//				System.out.println("HeapTest array len: " + arr.length);
+//			}
+//
+//		} catch (Exception e) {
+//			System.out.println(e);
+//		}
+//
+//		System.out.println("HeapTest: " + as.length);
+//
+//		ts(args);
+//		ls(args);
+//
+//		hola2(1, 2);
 		// System.out.println("HeapTest: " + as[as.length - 1]);
 	}
 }

@@ -1075,6 +1075,32 @@ public:
 
 class Compute: private ErrorManager {
 public:
+
+	static void setCpIndex(Type& type, ConstPool& cp) {
+		if (type.isObject()) {
+			stringstream ss;
+			for (u4 i = 0; i < type.dims; i++) {
+				ss << "[";
+			}
+
+			const string& className = type.getClassName();
+
+			ss << className;
+			ConstPool::Index index = cp.putUtf8(ss.str().c_str());
+			type.setCpIndex(index);
+		}
+	}
+
+	static void setCpIndexes(Frame& frame, ConstPool& cp) {
+		for (Type& type : frame.lva) {
+			setCpIndex(type, cp);
+		}
+
+		for (Type& type : frame.stack) {
+			setCpIndex(type, cp);
+		}
+	}
+
 	static void computeFramesMethod(CodeAttr* code, Method* method,
 			ClassFile* cf, ConstPool::Index* attrIndex) {
 
@@ -1160,6 +1186,8 @@ public:
 				if (start->kind == KIND_LABEL && start->label.isBranchTarget) {
 					Frame& current = bb->in;
 					current.cleanTops();
+
+					setCpIndexes(current, *cf);
 
 					SmtAttr::Entry e;
 
