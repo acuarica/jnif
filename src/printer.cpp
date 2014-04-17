@@ -552,7 +552,7 @@ private:
 							os << "UninitializedThis" << " | ";
 							break;
 							case Type::TYPE_OBJECT:
-							os << "Object: cpindex = " << cf.getUtf8(vt.getCpIndex()) << "#" << vt.getCpIndex() << " | ";
+							os << "Object: cpindex = " << cf.getClassName(vt.getCpIndex()) << "#" << vt.getCpIndex() << " | ";
 							break;
 							case Type::TYPE_UNINIT: {
 								os << "Uninitialized: offset = " << vt.uninit.offset << " | ";

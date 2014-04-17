@@ -1,6 +1,33 @@
 package jnif;
 
+import java.util.*;
+import java.io.*;
+
 public class TestAbs {
+
+	static Object inter0(int arg) {
+		Serializable o;
+
+		if (arg == 0) {
+			o = new ArrayList<Object>();
+		} else {
+			o = new LinkedList<Object>();
+		}
+
+		return o;
+	}
+
+	static Object inter1(int arg) {
+		Cloneable o;
+
+		if (arg == 0) {
+			o = new ArrayList<Object>();
+		} else {
+			o = new LinkedList<Object>();
+		}
+
+		return o;
+	}
 
 	static int iaload0() {
 		int[] arr = null;

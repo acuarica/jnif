@@ -9,19 +9,19 @@ public class HeapTest {
 
 	private boolean isCourseText;
 
-	public int covariant(int arg, int size) {
-		Object[] arr;
-
-		if (arg == 0) {
-			arr = new Integer[size];
-		} else if (arg == 1) {
-			arr = new Float[arg];
-		} else {
-			throw new RuntimeException("Invalid args!");
-		}
-
-		return arr.length;
-	}
+//	public int covariant(int arg, int size) {
+//		Object[] arr;
+//
+//		if (arg == 0) {
+//			arr = new Integer[size];
+//		} else if (arg == 1) {
+//			arr = new Float[arg];
+//		} else {
+//			throw new RuntimeException("Invalid args!");
+//		}
+//
+//		return arr.length;
+//	}
 
 	int something(long l) {
 		return 42;

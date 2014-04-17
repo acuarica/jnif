@@ -941,6 +941,10 @@ public:
 			return true;
 		}
 
+//		if (subt.isArray() && supt.isArray()) {
+//			return true;
+//		}
+
 		return false;
 	}
 
@@ -1696,8 +1700,8 @@ private:
 	const ConstItem* _getEntry(Index index, u1 tag, const char* message) const {
 		const ConstItem* entry = _getEntry(index);
 
-		check(entry->tag == tag, "Invalid constant ", message, (int) tag,
-				(int) entry->tag);
+		check(entry->tag == tag, "Invalid constant ", message, ", expected: ",
+				(int) tag, ", actual: ", (int) entry->tag);
 
 		return entry;
 	}
@@ -2129,6 +2133,16 @@ public:
 		return accessFlags & METHOD_STATIC;
 	}
 
+};
+
+class IClassPath {
+public:
+	virtual ~IClassPath() {
+
+	}
+
+	virtual const std::string& getSuperclass(const std::string& className) = 0;
+	//virtual void getSuperclass(const char* className) = 0;
 };
 
 /**

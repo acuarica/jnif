@@ -1085,8 +1085,14 @@ public:
 
 			const string& className = type.getClassName();
 
-			ss << className;
-			ConstPool::Index index = cp.putUtf8(ss.str().c_str());
+			if (type.isArray()) {
+				ss << "L" << className << ";";
+			} else {
+				ss << className;
+			}
+
+			ConstPool::Index utf8index = cp.putUtf8(ss.str().c_str());
+			ConstPool::Index index = cp.addClass(utf8index);
 			type.setCpIndex(index);
 		}
 	}
