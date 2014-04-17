@@ -8,7 +8,21 @@ import java.util.regex.*;
 public class HeapTest {
 
 	private boolean isCourseText;
-	
+
+	public int covariant(int arg, int size) {
+		Object[] arr;
+
+		if (arg == 0) {
+			arr = new Integer[size];
+		} else if (arg == 1) {
+			arr = new Float[arg];
+		} else {
+			throw new RuntimeException("Invalid args!");
+		}
+
+		return arr.length;
+	}
+
 	int something(long l) {
 		return 42;
 	}
@@ -37,52 +51,52 @@ public class HeapTest {
 
 	public static void ts(String[] args) {
 		switch (args.length) {
-			case 0:
-				HeapTest[] arr0 = new HeapTest[0];
-				break;
-			case 1:
-				HeapTest[] arr1 = new HeapTest[1];
-				System.out.println("args.length = " + args.length);
-				break;
-			case 2:
-				System.out.println("args.length = 2");
-				break;
-			case 3:
-				System.out.println("args.length = 3");
-				break;
-			case 4:
-				System.out.println("args.length = 4");
-				break;
-			default:
-				System.out.println("args.length unknown");
-				break;
+		case 0:
+			HeapTest[] arr0 = new HeapTest[0];
+			break;
+		case 1:
+			HeapTest[] arr1 = new HeapTest[1];
+			System.out.println("args.length = " + args.length);
+			break;
+		case 2:
+			System.out.println("args.length = 2");
+			break;
+		case 3:
+			System.out.println("args.length = 3");
+			break;
+		case 4:
+			System.out.println("args.length = 4");
+			break;
+		default:
+			System.out.println("args.length unknown");
+			break;
 		}
 	}
 
 	public static void ls(String[] args) {
 		switch (args.length) {
-			case 0:
-				HeapTest[] arr0 = new HeapTest[0];
-				break;
-			case 1000:
-				HeapTest[] arr1000 = new HeapTest[1000];
-				break;
-			case 2000:
-				HeapTest[] arr2000 = new HeapTest[2000];
-				System.out.println("args.length = " + args.length);
-				break;
-			case 3000:
-				System.out.println("args.length = 3000");
-				break;
-			case 4000:
-				System.out.println("args.length = 4000");
-				break;
-			case 5000:
-				System.out.println("args.length = 5000");
-				break;
-			default:
-				System.out.println("args.length unknown");
-				break;
+		case 0:
+			HeapTest[] arr0 = new HeapTest[0];
+			break;
+		case 1000:
+			HeapTest[] arr1000 = new HeapTest[1000];
+			break;
+		case 2000:
+			HeapTest[] arr2000 = new HeapTest[2000];
+			System.out.println("args.length = " + args.length);
+			break;
+		case 3000:
+			System.out.println("args.length = 3000");
+			break;
+		case 4000:
+			System.out.println("args.length = 4000");
+			break;
+		case 5000:
+			System.out.println("args.length = 5000");
+			break;
+		default:
+			System.out.println("args.length unknown");
+			break;
 		}
 	}
 
@@ -90,7 +104,7 @@ public class HeapTest {
 		HeapTest ht = new HeapTest();
 		System.out.println("Is course text?: " + ht.isCourseText());
 		System.out.println("Really?: " + ht.isCourseText);
-		 
+
 		int[] as = new int[34];
 		int[] as1 = new int[34];
 		int[] as2 = new int[34];

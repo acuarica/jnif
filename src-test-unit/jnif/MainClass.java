@@ -42,11 +42,12 @@ public class MainClass {
 		}
 
 		System.out.println("HeapTest: " + as[as.length - 1]);
-		
-//		for (int i = 0; i < as.length; i++) {
-//			as[i] = i;
-//		}
 
+		int i = 0;
+		while (i < as.length) {
+			as[i] = i;
+			i++;
+		}
 	}
 //
 //	public static String showObject(Object o) {
@@ -79,5 +80,4 @@ public class MainClass {
 //
 //		return "(null)";
 //	}
-
 }

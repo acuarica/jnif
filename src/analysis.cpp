@@ -182,35 +182,37 @@ struct DescParser: protected ErrorManager {
 				case 'C':
 				case 'S':
 				case 'I':
-				return Type::intt();
+				return Type::intType();
 				case 'D':
-				return Type::doublet();
+				return Type::doubleType();
 				case 'F':
-				return Type::floatt();
+				return Type::floatType();
 				case 'J':
-				return Type::longt();
+				return Type::longType();
 				case 'L': {
 					fieldDesc++;
 
-					//const char* className = fieldDesc;
-				int len = 0;
-				while (*fieldDesc != ';') {
-					check(*fieldDesc != '\0', "");
-					fieldDesc++;
-					len++;
+					const char* classNameStart = fieldDesc;
+					int len = 0;
+					while (*fieldDesc != ';') {
+						check(*fieldDesc != '\0', "");
+						fieldDesc++;
+						len++;
+					}
+
+					string className (classNameStart, len);
+					return Type::objectType(className);
 				}
-				return Type::objectt(-1);
-			}
-			default:
-			raise("Invalid field desc ", originalFieldDesc);
-		}};
+				default:
+				raise("Invalid field desc ", originalFieldDesc);
+			}};
 
 		Type t = [&]() {
 			Type baseType = parseBaseType();
 			if (dims == 0) {
 				return baseType;
 			} else {
-				return Type::objectt(-2);
+				return Type::arrayType(baseType, dims);
 			}
 		}();
 
@@ -321,80 +323,129 @@ public:
 		}
 	}
 
-	static void computeFrame(Inst& inst, const ConstPool& cp, Frame& h) {
+	static void aload(u4 lvindex, Frame& h) {
+		const Type& type = h.getVar(lvindex);
+		check(type.isObject() || type.isNull(), "Bad ref var at index[",
+				lvindex, "]: ", type, " @ frame: ", h);
+		h.pushType(type);
+	}
 
-		auto xaload = [&]() {
-			h.pop();
-			h.pop();
-		};
+	static void invoke(const string& desc, bool popThis, Frame& h) {
+		const char* d = desc.c_str();
+		vector<Type> argsType;
+		Type returnType = parseMethodDesc(d, &argsType);
+
+		for (int i = argsType.size() - 1; i >= 0; i--) {
+			const Type& argType = argsType[i];
+			assert(argType.isOneOrTwoWord(), "Invalid arg type in method");
+//				if (argType.isOneWord()) {
+//					h.popOneWord();
+//				} else {
+//					h.popTwoWord();
+//				}
+			h.popType(argType);
+		}
+
+		if (popThis) {
+			h.popRef();
+		}
+
+		if (!returnType.isVoid()) {
+			assert(returnType.isOneOrTwoWord(), "Ret type: ", returnType);
+			//assert(!returnType.isTwoWord(), "Two word in return type");
+			h.pushType(returnType);
+			//h.push(returnType);
+		}
+	}
+	static void invokeMethod(u2 methodRefIndex, bool popThis, Frame& h,
+			const ConstPool& cp) {
+		string className, name, desc;
+		cp.getMethodRef(methodRefIndex, &className, &name, &desc);
+		invoke(desc, popThis, h);
+	}
+
+	static inline void invokeInterface(u2 interMethodRefIndex, Frame& h,
+			const ConstPool& cp) {
+		string className, name, desc;
+		cp.getInterMethodRef(interMethodRefIndex, &className, &name, &desc);
+		invoke(desc, true, h);
+	}
+
+	static inline void xastore(Frame& h) {
+		h.popInt();
+		h.popArray();
+	}
+
+	static inline Type getBaseArrayType(int atype) {
+		switch (atype) {
+			case T_BOOLEAN:
+//				return Type::booleanType();
+			case T_CHAR:
+//				return Type::charType();
+			case T_BYTE:
+//				return Type::byteType();
+			case T_SHORT:
+//				return Type::shortType();
+			case T_INT:
+				return Type::intType();
+			case T_FLOAT:
+				return Type::floatType();
+			case T_LONG:
+				return Type::longType();
+			case T_DOUBLE:
+				return Type::doubleType();
+		}
+
+		raise("invalid atype: ", atype);
+	}
+
+	static Type fieldType(const Inst& inst, const ConstPool& cp) {
+		string className, name, desc;
+		cp.getFieldRef(inst.field.fieldRefIndex, &className, &name, &desc);
+
+		const char* d = desc.c_str();
+		auto t = parseFieldDesc(d);
+
+		//assert(!t.isTwoWord(), "Two word in field");
+		return t;
+	}
+
+	static void multianewarray(const Inst& inst, const ConstPool& cp,
+			Frame& h) {
+		u1 dims = inst.multiarray.dims;
+		check(dims >= 1, "invalid dims: ", dims);
+
+		for (int i = 0; i < dims; i++) {
+			h.popInt();
+		}
+
+		string arrayClassName = cp.getClassName(inst.multiarray.classIndex);
+		const char* d = arrayClassName.c_str();
+		Type arrayType = parseFieldDesc(d);
+
+		h.pushType(arrayType);
+	}
+
+	static void computeFrame(Inst& inst, const ConstPool& cp, Frame& h) {
 		auto istore = [&](int lvindex) {
-			h.pop();
+			h.popInt();
 			h.setIntVar(lvindex);
 		};
 		auto lstore = [&](int lvindex) {
-			h.pop();
+			h.popLong();
 			h.setLongVar(lvindex);
 		};
 		auto fstore = [&](int lvindex) {
-			h.pop();
+			h.popFloat();
 			h.setFloatVar(lvindex);
 		};
 		auto dstore = [&](int lvindex) {
-			h.pop();
+			h.popDouble();
 			h.setDoubleVar(lvindex);
 		};
 		auto astore = [&](int lvindex) {
-			h.pop();
-			h.setRefVar(lvindex);
-		};
-		auto xastore = [&]() {
-			h.pop();
-			h.pop();
-			h.pop();
-		};
-
-		auto invoke = [&](const string& desc, bool popThis) {
-
-			const char* d = desc.c_str();
-			vector<Type> argsType;
-			Type returnType = parseMethodDesc(d, &argsType);
-
-			for (Type argType : argsType) {
-				assert(!argType.isTwoWord(), "Two word in method");
-				h.pop();
-			}
-
-			if (popThis) {
-				h.pop();
-			}
-
-			if (!returnType.isVoid()) {
-				assert(!returnType.isTwoWord(), "Two word in return type");
-				h.push(returnType);
-			}
-		};
-
-		auto invokeMethod = [&](u2 methodRefIndex, bool popThis) {
-			string className, name, desc;
-			cp.getMethodRef(methodRefIndex, &className, &name, &desc);
-			invoke(desc, popThis);
-		};
-
-		auto invokeInterface = [&](u2 interMethodRefIndex) {
-			string className, name, desc;
-			cp.getInterMethodRef(interMethodRefIndex, &className, &name, &desc);
-			invoke(desc, true);
-		};
-
-		auto fieldType = [&](Inst& inst) {
-			string className, name, desc;
-			cp.getFieldRef(inst.field.fieldRefIndex, &className, &name, &desc);
-
-			const char* d = desc.c_str();
-			auto t = parseFieldDesc(d);
-
-			assert(!t.isTwoWord(), "Two word in field");
-			return t;
+			Type refType = h.popRef();
+			h.setRefVar(lvindex, refType);
 		};
 
 		switch (inst.opcode) {
@@ -428,15 +479,7 @@ public:
 				h.pushDouble();
 				break;
 			case OPCODE_ldc:
-			case OPCODE_ldc_w:
-			case OPCODE_ldc2_w: {
-
-				//			cp.accept(2, [&](ConstPool::Class i) {
-				//				h.pushDouble();
-				//			}, [&](ConstPool::FieldRef i) {
-				//				h.pushLong();
-				//			});
-
+			case OPCODE_ldc_w: {
 				ConstTag tag = cp.getTag(inst.ldc.valueIndex);
 				switch (tag) {
 					case CONST_INTEGER:
@@ -445,6 +488,20 @@ public:
 					case CONST_FLOAT:
 						h.pushFloat();
 						break;
+					case CONST_CLASS:
+						h.pushRef(cp.getClassName(inst.ldc.valueIndex));
+						break;
+					case CONST_STRING:
+						h.pushRef("java/lang/String");
+						break;
+					default:
+						raise("Invalid tag entry: ", tag);
+				}
+				break;
+			}
+			case OPCODE_ldc2_w: {
+				ConstTag tag = cp.getTag(inst.ldc.valueIndex);
+				switch (tag) {
 					case CONST_LONG:
 						h.pushLong();
 						break;
@@ -452,8 +509,7 @@ public:
 						h.pushLong();
 						break;
 					default:
-						h.pushRef();
-						break;
+						raise("Invalid constant for ldc2_w");
 				}
 				break;
 			}
@@ -486,35 +542,53 @@ public:
 				h.pushDouble();
 				break;
 			case OPCODE_aload:
+				aload(inst.var.lvindex, h);
+				break;
 			case OPCODE_aload_0:
+				aload(0, h);
+				break;
 			case OPCODE_aload_1:
+				aload(1, h);
+				break;
 			case OPCODE_aload_2:
+				aload(2, h);
+				break;
 			case OPCODE_aload_3:
-				h.pushRef();
+				aload(3, h);
 				break;
 			case OPCODE_iaload:
 			case OPCODE_baload:
 			case OPCODE_caload:
 			case OPCODE_saload:
-				xaload();
+				h.popInt();
+				h.popArray();
 				h.pushInt();
 				break;
 			case OPCODE_laload:
-				xaload();
+				h.popInt();
+				h.popArray();
 				h.pushLong();
 				break;
 			case OPCODE_faload:
-				xaload();
+				h.popInt();
+				h.popArray();
 				h.pushFloat();
 				break;
 			case OPCODE_daload:
-				xaload();
+				h.popInt();
+				h.popArray();
 				h.pushDouble();
 				break;
-			case OPCODE_aaload:
-				xaload();
-				h.pushRef();
+			case OPCODE_aaload: {
+				h.popInt();
+				Type arrayType = h.popArray();
+				if (arrayType.isNull()) {
+					h.pushNull();
+				} else {
+					h.pushRef(arrayType.getClassName());
+				}
 				break;
+			}
 			case OPCODE_istore:
 				istore(inst.var.lvindex);
 				break;
@@ -591,38 +665,36 @@ public:
 				astore(3);
 				break;
 			case OPCODE_iastore:
-				xastore();
+			case OPCODE_bastore:
+			case OPCODE_castore:
+			case OPCODE_sastore:
+				h.popInt();
+				xastore(h);
 				break;
 			case OPCODE_lastore:
-				xastore();
+				h.popLong();
+				xastore(h);
 				break;
 			case OPCODE_fastore:
-				xastore();
+				h.popFloat();
+				xastore(h);
 				break;
 			case OPCODE_dastore:
-				xastore();
+				h.popDouble();
+				xastore(h);
 				break;
 			case OPCODE_aastore:
-				xastore();
-				break;
-			case OPCODE_bastore:
-				xastore();
-				break;
-			case OPCODE_castore:
-				xastore();
-				break;
-			case OPCODE_sastore:
-				xastore();
+				h.popRef();
+				xastore(h);
 				break;
 			case OPCODE_pop:
-				h.pop();
+				h.popOneWord();
 				break;
 			case OPCODE_pop2:
-				h.pop();
-				h.pop();
+				h.popTwoWord();
 				break;
 			case OPCODE_dup: {
-				auto t1 = h.pop();
+				auto t1 = h.popOneWord();
 				h.push(t1);
 				h.push(t1);
 				break;
@@ -711,19 +783,20 @@ public:
 			case OPCODE_lmul:
 			case OPCODE_ldiv:
 			case OPCODE_lrem:
+			case OPCODE_land:
+			case OPCODE_lor:
+			case OPCODE_lxor:
+				h.popLong();
+				h.popLong();
+				h.pushLong();
+				break;
 			case OPCODE_lshl:
 			case OPCODE_lshr:
 			case OPCODE_lushr:
-			case OPCODE_land:
-			case OPCODE_lor:
-			case OPCODE_lxor: {
-				h.pop();
-				h.pop();
-				h.pop();
-				h.pop();
+				h.popInt();
+				h.popLong();
 				h.pushLong();
 				break;
-			}
 			case OPCODE_dadd:
 			case OPCODE_dsub:
 			case OPCODE_dmul:
@@ -743,14 +816,16 @@ public:
 				break;
 			}
 			case OPCODE_lneg: {
-				h.pop();
-				h.pop();
+				//h.pop();
+				//h.pop();
+				h.popLong();
 				h.pushLong();
 				break;
 			}
 			case OPCODE_dneg: {
-				h.pop();
-				h.pop();
+				//h.pop();
+				//h.pop();
+				h.popDouble();
 				h.pushDouble();
 				break;
 			}
@@ -758,63 +833,69 @@ public:
 				h.setIntVar(inst.iinc.index);
 				break;
 			case OPCODE_i2l:
-				h.pop();
+				h.popInt();
 				h.pushLong();
 				break;
 			case OPCODE_i2f:
-				h.pop();
+				h.popInt();
 				h.pushFloat();
 				break;
 			case OPCODE_i2d:
-				h.pop();
+				h.popInt();
 				h.pushDouble();
 				break;
 			case OPCODE_l2i:
-				h.pop();
-				h.pop();
+				//h.pop();
+				//h.pop();
+				h.popLong();
 				h.pushInt();
 				break;
 			case OPCODE_l2f:
-				h.pop();
-				h.pop();
+				//h.pop();
+				//h.pop();
+				h.popLong();
 				h.pushFloat();
 				break;
 			case OPCODE_l2d:
-				h.pop();
-				h.pop();
+				//h.pop();
+				//h.pop();
+				h.popLong();
 				h.pushDouble();
 				break;
 			case OPCODE_f2i:
-				h.pop();
+				h.popFloat();
 				h.pushInt();
 				break;
 			case OPCODE_f2l:
-				h.pop();
+				h.popFloat();
 				h.pushLong();
 				break;
 			case OPCODE_f2d:
-				h.pop();
+				h.popFloat();
 				h.pushDouble();
 				break;
 			case OPCODE_d2i:
-				h.pop();
-				h.pop();
+				//h.pop();
+				//h.pop();
+				h.popDouble();
 				h.pushInt();
 				break;
 			case OPCODE_d2l:
-				h.pop();
-				h.pop();
+				//h.pop();
+				//h.pop();
+				h.popDouble();
 				h.pushLong();
 				break;
 			case OPCODE_d2f:
-				h.pop();
-				h.pop();
+				//h.pop();
+				//h.pop();
+				h.popDouble();
 				h.pushFloat();
 				break;
 			case OPCODE_i2b:
 			case OPCODE_i2c:
 			case OPCODE_i2s:
-				h.pop();
+				h.popInt();
 				h.pushInt();
 				break;
 			case OPCODE_lcmp:
@@ -892,64 +973,83 @@ public:
 			case OPCODE_return:
 				break;
 			case OPCODE_getstatic: {
-				auto t = fieldType(inst);
-				h.push(t);
+				auto t = fieldType(inst, cp);
+				h.pushType(t);
 				break;
 			}
-			case OPCODE_putstatic:
-				h.pop(); // wrong: could be double or long.
+			case OPCODE_putstatic: {
+				auto t = fieldType(inst, cp);
+				h.popType(t);
 				break;
-			case OPCODE_getfield:
-				h.pop(); // wrong: could be double or long.
-				h.pushRef();
+			}
+			case OPCODE_getfield: {
+				auto t = fieldType(inst, cp);
+				h.popRef();
+				h.pushType(t);
 				break;
-			case OPCODE_putfield:
-				h.pop();
-				h.pop();
+			}
+			case OPCODE_putfield: {
+				auto t = fieldType(inst, cp);
+				h.popType(t);
+				h.popRef();
 				break;
+			}
 			case OPCODE_invokevirtual:
 			case OPCODE_invokespecial:
-				invokeMethod(inst.invoke.methodRefIndex, true);
+				invokeMethod(inst.invoke.methodRefIndex, true, h, cp);
 				break;
 			case OPCODE_invokestatic:
-				invokeMethod(inst.invoke.methodRefIndex, false);
+				invokeMethod(inst.invoke.methodRefIndex, false, h, cp);
 				break;
 			case OPCODE_invokeinterface:
-				invokeInterface(inst.invokeinterface.interMethodRefIndex);
+				invokeInterface(inst.invokeinterface.interMethodRefIndex, h,
+						cp);
 				break;
 			case OPCODE_invokedynamic:
 				raise("invoke dynamic instances not implemented");
 				break;
 			case OPCODE_new:
-				h.pushRef();
+				//h.pushRef();
+				h.pushRef(cp.getClassName(inst.type.classIndex));
 				break;
 			case OPCODE_newarray:
-				h.pop();
-				h.pushRef();
+				h.popInt();
+				h.pushArray(getBaseArrayType(inst.newarray.atype), 1);
 				break;
-			case OPCODE_anewarray:
-				h.pop();
-				h.pushRef();
+			case OPCODE_anewarray: {
+				h.popInt();
+				string className = cp.getClassName(inst.type.classIndex);
+				Type refType = Type::objectType(className);
+				h.pushArray(refType, 1);
 				break;
+			}
 			case OPCODE_arraylength:
 				h.pop();
 				h.pushInt();
 				break;
 			case OPCODE_athrow: {
-				auto t = h.pop();
+				auto t = h.popRef();
 				h.clearStack();
 				h.push(t);
 				break;
 			}
 			case OPCODE_checkcast:
+				h.popRef();
+				h.pushRef(cp.getClassName(inst.type.classIndex));
+				break;
 			case OPCODE_instanceof:
+				h.popRef();
+				h.pushInt();
+				break;
 			case OPCODE_monitorenter:
 			case OPCODE_monitorexit:
-				raise("athrow checkcast instanceof me, me not implemented");
+				h.popRef();
 				break;
 			case OPCODE_wide:
+				raise("wide not implemented");
+				break;
 			case OPCODE_multianewarray:
-				raise("wide, multianewarray not implemented");
+				multianewarray(inst, cp, h);
 				break;
 			case OPCODE_ifnull:
 			case OPCODE_ifnonnull:
@@ -963,7 +1063,7 @@ public:
 				raise("goto_w, jsr_w breakpoint not implemented");
 				break;
 			default:
-				break;
+				raise("unknown opcode not implemented");
 		}
 	}
 
@@ -996,14 +1096,18 @@ public:
 
 		code->instList.setLabelIds();
 
-		cout << cf->getUtf8(method->nameIndex) << endl;
+		const string& methodName = cf->getUtf8(method->nameIndex);
+		cerr << "computeFramesMethod: " << cf->getThisClassName() << "."
+				<< methodName << cf->getUtf8(method->descIndex) << endl;
+
 		Frame initFrame;
 
-		int lvindex = [&]() {
-			if (method->accessFlags & METHOD_STATIC) {
+		u4 lvindex = [&]() {
+			if (method->isStatic()) {
 				return 0;
 			} else {
-				initFrame.setRefVar(0); // this argument
+				string className = cf->getThisClassName();
+				initFrame.setRefVar(0, className); // this argument
 				return 1;
 			}
 		}();
@@ -1013,8 +1117,8 @@ public:
 		DescParser::parseMethodDesc(methodDesc, &argsType);
 
 		for (Type t : argsType) {
-			initFrame.setVar(lvindex, t);
-			lvindex++;
+			initFrame.setVar(&lvindex, t);
+			//lvindex++;
 		}
 
 		ControlFlowGraph* cfgp = new ControlFlowGraph(code->instList);

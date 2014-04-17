@@ -762,7 +762,7 @@ private:
 		return lvt;
 	}
 
-	static Attr* parseSmt(BufferReader& br, ConstPool&, u2 nameIndex,
+	static Attr* parseSmt(BufferReader& br, ConstPool& cp, u2 nameIndex,
 			void* args) {
 
 		Inst** labels = (Inst**) args;
@@ -774,22 +774,24 @@ private:
 
 			switch (tag) {
 				case Type::TYPE_TOP:
-				return Type::top();
+				return Type::topType();
 				case Type::TYPE_INTEGER:
-				return Type::intt();
+				return Type::intType();
 				case Type::TYPE_FLOAT:
-				return Type::floatt();
+				return Type::floatType();
 				case Type::TYPE_LONG:
-				return Type::longt();
+				return Type::longType();
 				case Type::TYPE_DOUBLE:
-				return Type::doublet();
+				return Type::doubleType();
 				case Type::TYPE_NULL:
-				return Type::nullt();
+				return Type::nullType();
 				case Type::TYPE_UNINITTHIS:
 				return Type::uninitthist();
 				case Type::TYPE_OBJECT: {
 					u2 cpIndex = br.readu2();
-					return Type::objectt(cpIndex);
+					check(cp.isClass(cpIndex), "Bad cpindex: ", cpIndex);
+					string className = cp.getClassName(cpIndex);
+					return Type::objectType(className, cpIndex);
 				}
 				case Type::TYPE_UNINIT: {
 					u2 offset = br.readu2();

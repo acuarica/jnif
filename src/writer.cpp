@@ -304,8 +304,8 @@ public:
 					case Type::TYPE_UNINITTHIS :
 					break;
 					case Type::TYPE_OBJECT: {
-						u2 cpIndex = vt.object.cindex;
-						bw.writeu2( cpIndex);
+						u2 cpIndex = vt.getCpIndex();
+						bw.writeu2(cpIndex);
 						break;
 					}
 					case Type::TYPE_UNINIT: {

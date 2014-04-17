@@ -130,6 +130,33 @@ static void testIdentityParserWriter() {
 	});
 }
 
+static void testIdentityParserWriterWithFrames() {
+	apply([](const JavaFile& jf) {
+		ClassFile cf(jf.data, jf.len);
+
+		cf.computeFrames();
+
+		int newlen = cf.computeSize();
+
+		ASSERT(jf.len == newlen, "Expected class file len %d, "
+				"actual was %d, on class %s",
+				jf.len, newlen, jf.name);
+
+		u1* newdata = new u1[newlen];
+
+		cf.write(newdata, newlen);
+
+		for (int i = 0; i < newlen; i++) {
+			ASSERT(jf.data[i] == newdata[i], "error on %d: "
+					"%d:%d != %d:%d, on class %s", i,
+					jf.data[i],jf.data[i+1],
+					newdata[i],newdata[i+1], jf.name
+			);
+		}
+
+		delete [] newdata;
+	});
+}
 static void testNopAdderInstrSize() {
 	apply([](const JavaFile& jf) {
 		ClassFile cf(jf.data, jf.len);
@@ -225,6 +252,7 @@ int main(int, const char*[]) {
 	run(testIdentityComputeSize);
 	run(testIdentityComputeSizeWithFrames);
 	run(testIdentityParserWriter);
+	run(testIdentityParserWriterWithFrames);
 	run(testNopAdderInstrSize);
 	run(testNopAdderInstr);
 

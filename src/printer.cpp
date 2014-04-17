@@ -7,34 +7,32 @@ using namespace std;
 
 namespace jnif {
 
-ostream& operator<<(ostream& os, const Type& t) {
-	switch (t.tag) {
-		case Type::TYPE_TOP:
-			os << "Top";
-			break;
-		case Type::TYPE_INTEGER:
-			os << "Int";
-			break;
-		case Type::TYPE_LONG:
-			os << "Long";
-			break;
-		case Type::TYPE_FLOAT:
-			os << "Float";
-			break;
-		case Type::TYPE_DOUBLE:
-			os << "Double";
-			break;
-		case Type::TYPE_OBJECT:
-			os << "Ref";
-			break;
-		default:
-			os << "UNKNOWN TYPE!!!";
-	}
+const char* ConstNames[] = { "**** 0 ****", // 0
+		"Utf8",			// 1
+		"**** 2 ****",	// 2
+		"Integer",		// 3
+		"Float",		// 4
+		"Long",			// 5
+		"Double",		// 6
+		"Class",		// 7
+		"String",		// 8
+		"Fieldref",		// 9
+		"Methodref",		// 10
+		"InterfaceMethodref",	// 11
+		"NameAndType",		// 12
+		"**** 13 ****",	// 13
+		"**** 14 ****",	// 14
+		"MethodHandle",	// 15
+		"MethodType",	// 16
+		"**** 17 ****",	// 17
+		"InvokeDynamic",	// 18
+		};
 
-	return os;
+std::ostream& operator<<(std::ostream& os, const ConstTag& tag) {
+	return os << ConstNames[tag];
 }
 
-ostream& operator<<(ostream& os, const Frame& frame) {
+std::ostream& operator<<(std::ostream& os, const Frame& frame) {
 	os << "{ ";
 	for (u4 i = 0; i < frame.lva.size(); i++) {
 		os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i];
@@ -46,6 +44,45 @@ ostream& operator<<(ostream& os, const Frame& frame) {
 		i++;
 	}
 	return os << " ]";
+}
+
+std::ostream& operator<<(std::ostream& os, const Type& type) {
+	for (u4 i = 0; i < type.dims; i++) {
+		os << "[";
+	}
+
+	switch (type.tag) {
+		case Type::TYPE_TOP:
+			return os << "Top";
+		case Type::TYPE_INTEGER:
+			return os << "Int";
+		case Type::TYPE_FLOAT:
+			return os << "Float";
+		case Type::TYPE_LONG:
+			return os << "Long";
+		case Type::TYPE_DOUBLE:
+			return os << "Double";
+		case Type::TYPE_NULL:
+			return os << "Null";
+		case Type::TYPE_UNINITTHIS:
+			return os << "Uninitialized this";
+		case Type::TYPE_OBJECT:
+			return os << "Object:" << type.getClassName() << ";";
+		case Type::TYPE_UNINIT:
+			return os << "Uninitialized offset";
+		case Type::TYPE_VOID:
+			return os << "Void";
+//		case Type::TYPE_BOOLEAN:
+//			return os << "Boolean";
+//		case Type::TYPE_BYTE:
+//			return os << "Byte";
+//		case Type::TYPE_CHAR:
+//			return os << "Char";
+//		case Type::TYPE_SHORT:
+//			return os << "Short";
+	}
+
+	return os << "UNKNOWN TYPE!!!";
 }
 
 class AccessFlagsPrinter {
@@ -162,7 +199,7 @@ private:
 
 	static const char* OPCODES[];
 
-	static const char* ConstNames[];
+	//static const char* ConstNames[];
 
 	void printConstPool(ConstPool& cp) {
 		line() << "#0 [null entry]: -" << endl;
@@ -318,9 +355,9 @@ private:
 
 		for (CodeExceptionEntry& e : c.exceptions) {
 			line(1) << "exception entry: startpc: " << e.startpc->label.id
-					<< ", endpc: " << e.endpc->label.offset << ", handlerpc: "
-					<< e.handlerpc->label.offset << ", catchtype: "
-					<< e.catchtype << endl;
+					<< ", endpc: " << e.endpc->label.id << ", handlerpc: "
+					<< e.handlerpc->label.id << ", catchtype: " << e.catchtype
+					<< endl;
 		}
 
 		printAttrs(c.attrs);
@@ -515,7 +552,7 @@ private:
 							os << "UninitializedThis" << " | ";
 							break;
 							case Type::TYPE_OBJECT:
-							os << "Object: cpindex = " << vt.object.cindex << " | ";
+							os << "Object: cpindex = " << vt.getCpIndex() << " | ";
 							break;
 							case Type::TYPE_UNINIT: {
 								os << "Uninitialized: offset = " << vt.uninit.offset << " | ";
@@ -612,27 +649,6 @@ private:
 		return os;
 	}
 };
-
-const char* ClassPrinter::ConstNames[] = { "**** 0 ****", // 0
-		"Utf8",			// 1
-		"**** 2 ****",	// 2
-		"Integer",		// 3
-		"Float",		// 4
-		"Long",			// 5
-		"Double",		// 6
-		"Class",		// 7
-		"String",		// 8
-		"Fieldref",		// 9
-		"Methodref",		// 10
-		"InterfaceMethodref",	// 11
-		"NameAndType",		// 12
-		"**** 13 ****",	// 13
-		"**** 14 ****",	// 14
-		"MethodHandle",	// 15
-		"MethodType",	// 16
-		"**** 17 ****",	// 17
-		"InvokeDynamic",	// 18
-		};
 
 const char* ClassPrinter::OPCODES[] = { "nop", "aconst_null", "iconst_m1",
 		"iconst_0", "iconst_1", "iconst_2", "iconst_3", "iconst_4", "iconst_5",

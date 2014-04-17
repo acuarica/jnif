@@ -12,7 +12,7 @@ HPPS=$(wildcard $(INCLUDE)/*.hpp)
 LIB=libfrheapagent.jnilib
 SRCS=$(wildcard *.c) $(wildcard *.cpp) $(wildcard frproxy/*.java)
 OBJS=$(SRCS:%=$(BUILD)/%.o)
-CFLAGS= -W -Wall -Wextra -O3 -Wno-unused-parameter -I$(JAVA_HOME)/include
+CFLAGS= -W -Wall -Wextra -O0 -g -Wno-unused-parameter -I$(JAVA_HOME)/include
 MAINCLASS=frheapagent.HeapTest
 MAINCLASSFILE=$(subst .,/,$(MAINCLASS)).class
 MAINJAVAFILE=$(subst .,/,$(MAINCLASS)).java
@@ -32,13 +32,13 @@ runall:
 	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Main $(MAINCLASS)
 
 run: $(BUILD)/$(MAINCLASSFILE) $(BUILD)/$(LIB)
-	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Heap $(MAINCLASS)
+	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Identity $(MAINCLASS)
 
 $(BUILD)/$(MAINCLASSFILE): $(MAINJAVAFILE)
 	javac $^ -d $(BUILD)
 
 $(BUILD)/$(LIB): $(OBJS) $(BUILD)/libjnif.a
-	clang++ -fPIC -lpthread -shared -lstdc++ -stdlib=libc++ -o $@ $^
+	clang++ -fPIC -O0 -g -lpthread -shared -lstdc++ -stdlib=libc++ -o $@ $^
 
 $(BUILD)/%.java.o: %.java
 	$(JAVAC) -d $(BUILD)/ $<

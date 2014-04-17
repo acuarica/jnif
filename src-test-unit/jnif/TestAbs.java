@@ -2,6 +2,78 @@ package jnif;
 
 public class TestAbs {
 
+	static int iaload0() {
+		int[] arr = null;
+
+		if (arr == null) {
+			arr = null;
+		}
+
+		return arr[1];
+	}
+
+	static float faload0() {
+		float[] arr = null;
+
+		if (arr == null) {
+			arr = null;
+		}
+
+		return arr[1];
+	}
+
+	static Object aaload0() {
+		Object[] arr = null;
+
+		if (arr == null) {
+			arr = null;
+		}
+
+		return arr[0];
+	}
+
+	static BasicClass aaload1() {
+		BasicClass[] arr = null;
+
+		if (arr == null) {
+			arr = null;
+		}
+
+		return arr[0];
+	}
+
+	static Object aaload2(Object[] arrArg) {
+		// int len;
+		Object[] arr = null;
+
+		if (arrArg != null) {
+			// len = arrArg.length;
+			// arr = null;
+		} else {
+			// len = 0;
+			arr = null;
+		}
+		return arr[5];
+
+		// for (int i = 0; i < 5; i++) {
+		// System.out.println(arr[i]);
+		// }
+	}
+
+	static long join0(long value) {
+		long result;
+		result = value;
+		if (result < 0) {
+			float c = 1.5f;
+			result *= c;
+		} else {
+			int c = 2;
+			result *= c;
+		}
+
+		return result;
+	}
+
 	static int abs0(int value) {
 		int result;
 		result = value;
@@ -50,6 +122,16 @@ public class TestAbs {
 		while (i <= n) {
 			result += i;
 			i++;
+		}
+
+		return result;
+	}
+
+	static int sumWithFor(int n) {
+		int result = 0;
+
+		for (int i = 1; i <= n; i++) {
+			result += i;
 		}
 
 		return result;

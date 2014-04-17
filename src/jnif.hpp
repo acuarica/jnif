@@ -6,6 +6,10 @@
 #include <list>
 #include <iostream>
 
+#include <execinfo.h>
+#include <stdio.h>
+#include <unistd.h>
+
 /**
  * The jnif namespace contains all type definitions, constants, enumerations
  * and structs of the jnif framework.
@@ -485,6 +489,18 @@ public:
 		os << "JNIF Exception: ";
 		_raise(os, args...);
 		os << std::endl;
+
+		void *array[20];
+		size_t size;
+
+		// get void*'s for all entries on the stack
+		size = backtrace(array, 20);
+
+		// print out all the frames to stderr
+		fprintf(stderr, "Error: exception on jnif:\n");
+		backtrace_symbols_fd(array, size, STDERR_FILENO);
+		//exit(1);
+
 		throw "Error!!!";
 	}
 
@@ -493,6 +509,8 @@ public:
 		if (!cond) {
 			raise(args...);
 		}
+
+//		return cond;
 	}
 
 	template<typename ... TArgs>
@@ -520,7 +538,7 @@ struct Inst;
 /**
  * Verification type class
  */
-class Type {
+class Type: private ErrorManager {
 public:
 
 	enum Tag {
@@ -533,30 +551,50 @@ public:
 		TYPE_UNINITTHIS = 6,
 		TYPE_OBJECT = 7,
 		TYPE_UNINIT = 8,
+//		TYPE_BOOLEAN,
+//		TYPE_BYTE,
+//		TYPE_CHAR,
+//		TYPE_SHORT,
 		TYPE_VOID
 	};
 
-	static inline Type top() {
+	static inline Type topType() {
 		return Type(TYPE_TOP);
 	}
 
-	static inline Type intt() {
+//	static inline Type booleanType() {
+//		return Type(TYPE_BOOLEAN);
+//	}
+//
+//	static inline Type byteType() {
+//		return Type(TYPE_BYTE);
+//	}
+//
+//	static inline Type charType() {
+//		return Type(TYPE_CHAR);
+//	}
+//
+//	static inline Type shortType() {
+//		return Type(TYPE_SHORT);
+//	}
+
+	static inline Type intType() {
 		return Type(TYPE_INTEGER);
 	}
 
-	static inline Type floatt() {
+	static inline Type floatType() {
 		return Type(TYPE_FLOAT);
 	}
 
-	static inline Type longt() {
+	static inline Type longType() {
 		return Type(TYPE_LONG);
 	}
 
-	static inline Type doublet() {
+	static inline Type doubleType() {
 		return Type(TYPE_DOUBLE);
 	}
 
-	static inline Type nullt() {
+	static inline Type nullType() {
 		return Type(TYPE_NULL);
 	}
 
@@ -564,8 +602,12 @@ public:
 		return Type(TYPE_UNINITTHIS);
 	}
 
-	static inline Type objectt(short index) {
-		return Type(TYPE_OBJECT, index);
+	static inline Type objectType(const std::string& className,
+			u2 cpindex = 0) {
+		check(!className.empty(),
+				"Expected non-empty class name for object type");
+
+		return Type(TYPE_OBJECT, className, cpindex);
 	}
 
 	static inline Type uninitt(short offset, Inst* label) {
@@ -576,12 +618,19 @@ public:
 		return Type(TYPE_VOID);
 	}
 
+	static inline Type arrayType(const Type& baseType, u4 dims) {
+		check(dims > 0, "Invalid dims: ", dims);
+		check(dims < 255, "Invalid dims: ", dims);
+		check(!baseType.isArray(), "base type is already an array: ", baseType);
+
+		return Type(baseType, dims);
+	}
+
 	Tag tag;
 
+	u4 dims;
+
 	union {
-		struct {
-			short cindex;
-		} object;
 		struct {
 			short offset;
 			Inst* label;
@@ -593,114 +642,296 @@ public:
 	}
 
 	inline bool isTop() const {
-		return tag == TYPE_TOP;
+		return tag == TYPE_TOP && !isArray();
+	}
+
+	inline bool isInt() const {
+		return tag == TYPE_INTEGER && !isArray();
+	}
+
+	inline bool isFloat() const {
+		return tag == TYPE_FLOAT && !isArray();
+	}
+
+	inline bool isLong() const {
+		return tag == TYPE_LONG && !isArray();
+	}
+
+	inline bool isDouble() const {
+		return tag == TYPE_DOUBLE && !isArray();
+	}
+
+	inline bool isNull() const {
+		return tag == TYPE_NULL;
+	}
+
+	inline bool isObject() const {
+		return tag == TYPE_OBJECT || isArray();
+	}
+
+	inline bool isArray() const {
+		return dims > 0;
 	}
 
 	inline bool isVoid() const {
 		return tag == TYPE_VOID;
 	}
 
-	inline bool isTwoWord() const {
-		return tag == TYPE_LONG || tag == TYPE_DOUBLE;
+	inline bool isOneWord() const {
+		return isInt() || isFloat() || isNull() || isObject();
 	}
+
+	inline bool isTwoWord() const {
+		return isLong() || isDouble();
+	}
+
+	inline bool isOneOrTwoWord() const {
+		return isOneWord() || isTwoWord();
+	}
+
+	inline const std::string& getClassName() const {
+		check(isObject(), "Type is not object type to get class name: ", *this);
+		return object.className;
+	}
+
+	inline u2 getCpIndex() const {
+		check(isObject(), "Type is not object type to get cp index: ", *this);
+		return object.cindex;
+	}
+
+	Type(const Type& other) = default;
 
 private:
 
 	inline Type(Tag tag) :
-			tag(tag) {
+			tag(tag), dims(0) {
 	}
 
 	inline Type(Tag tag, short index) :
-			tag(tag) {
+			tag(tag), dims(0) {
 		object.cindex = index;
 	}
 
 	inline Type(Tag tag, short offset, Inst* label) :
-			tag(tag) {
+			tag(tag), dims(0) {
 		uninit.offset = offset;
 		uninit.label = label;
 	}
+
+	inline Type(Tag tag, const std::string& className, u2 cpindex) :
+			tag(tag), dims(0), object( { cpindex, className }) {
+	}
+
+	inline Type(const Type& other, u4 dims) :
+			Type(other) {
+		this->dims = dims;
+	}
+
+	struct {
+		u2 cindex;
+		std::string className;
+	} object;
 };
 
 class Frame: private ErrorManager {
 public:
 
-	enum TEnum {
-		Top = Type::TYPE_TOP,
-		Int = Type::TYPE_INTEGER,
-		Long = Type::TYPE_LONG,
-		Float = Type::TYPE_FLOAT,
-		Double = Type::TYPE_DOUBLE,
-		Ref = Type::TYPE_OBJECT
-	};
+//	enum TEnum {
+//		Top = Type::TYPE_TOP,
+//		Int = Type::TYPE_INTEGER,
+//		Long = Type::TYPE_LONG,
+//		Float = Type::TYPE_FLOAT,
+//		Double = Type::TYPE_DOUBLE,
+//		Ref = Type::TYPE_OBJECT
+//	};
 
-	typedef Type T;
+//typedef Type T;
 
 	Frame() :
 			valid(false) {
 	}
 
-	T pop() {
+	Type pop() {
 		check(stack.size() > 0, "Trying to pop in an empty stack.");
 
-		T t = stack.front();
+		Type t = stack.front();
 		stack.pop_front();
 		return t;
 	}
-	void push(const T& t) {
+
+	Type popOneWord() {
+		Type t = pop();
+		assert(t.isOneWord(), "Type is not one word type: ", t);
+		return t;
+	}
+
+	Type popTwoWord() {
+		Type t = pop();
+		Type top = pop();
+
+		assert(t.isTwoWord(), "Type is two word type");
+		assert(top.isTop(), "Type is not Top type");
+
+		return t;
+	}
+
+	Type popArray() {
+		return popOneWord();
+	}
+
+	Type popInt() {
+		Type t = popOneWord();
+		assert(t.isInt(), "invalid int type on top of the stack: ", t);
+		return t;
+	}
+
+	Type popFloat() {
+		Type t = popOneWord();
+		assert(t.isFloat(), "invalid float type on top of the stack");
+		return t;
+	}
+
+	Type popLong() {
+		Type t = popTwoWord();
+		assert(t.isLong(), "invalid long type on top of the stack");
+		return t;
+	}
+
+	Type popDouble() {
+		Type t = popTwoWord();
+		assert(t.isDouble(), "invalid double type on top of the stack");
+		return t;
+	}
+
+	Type popRef() {
+		Type t = popOneWord();
+		//assert(t.is(), "invalid ref type on top of the stack");
+		return t;
+	}
+
+	void popType(const Type& type) {
+		if (type.isInt()) {
+			popInt();
+		} else if (type.isFloat()) {
+			popFloat();
+		} else if (type.isLong()) {
+			popLong();
+		} else if (type.isDouble()) {
+			popDouble();
+		} else if (type.isObject()) {
+			popRef();
+		} else {
+			raise("invalid pop type: ", type);
+		}
+	}
+
+	void pushType(const Type& type) {
+		if (type.isInt()) {
+			pushInt();
+		} else if (type.isFloat()) {
+			pushFloat();
+		} else if (type.isLong()) {
+			pushLong();
+		} else if (type.isDouble()) {
+			pushDouble();
+		} else if (type.isNull()) {
+			pushNull();
+		} else if (type.isObject()) {
+			push(type);
+		} else {
+			raise("invalid push type: ", type);
+		}
+	}
+
+	void push(const Type& t) {
 		stack.push_front(t);
 	}
+
 	void pushInt() {
-		push(Type::intt());
+		push(Type::intType());
 	}
 	void pushLong() {
-		push(Type::top());
-		push(Type::longt());
+		push(Type::topType());
+		push(Type::longType());
 	}
 	void pushFloat() {
-		push(Type::floatt());
+		push(Type::floatType());
 	}
 	void pushDouble() {
-		push(Type::top());
-		push(Type::doublet());
+		push(Type::topType());
+		push(Type::doubleType());
 	}
-	void pushRef() {
-		push(Type::objectt(-25));
+
+	void pushRef(const std::string& className) {
+		push(Type::objectType(className));
 	}
+
+	void pushArray(const Type& type, u4 dims) {
+		push(Type::arrayType(type, dims));
+	}
+
 	void pushNull() {
-		push(Type::objectt(-26));
+		push(Type::nullType());
 	}
-	void setVar(u4 lvindex, T t) {
+
+	void _setVar(u4 lvindex, const Type& t) {
 		check(lvindex < 256, "");
 
 		if (lvindex >= lva.size()) {
-			lva.resize(lvindex + 1, Type::top());
+			lva.resize(lvindex + 1, Type::topType());
 		}
 
 		lva[lvindex] = t;
 	}
 
-	void setIntVar(int lvindex) {
-		setVar(lvindex, Type::intt());
+	const Type& getVar(u4 lvindex) {
+		return lva.at(lvindex);
 	}
-	void setLongVar(int lvindex) {
-		setVar(lvindex, Type::longt());
+
+	void setVar(u4* lvindex, const Type& t) {
+		assert(t.isOneOrTwoWord(), "Setting var on non one-two word ");
+
+		if (t.isOneWord()) {
+			_setVar(*lvindex, t);
+			(*lvindex)++;
+		} else {
+			_setVar(*lvindex, t);
+			_setVar(*lvindex + 1, Type::topType());
+			(*lvindex) += 2;
+		}
 	}
-	void setFloatVar(int lvindex) {
-		setVar(lvindex, Type::floatt());
+
+	void setIntVar(u4 lvindex) {
+		setVar(&lvindex, Type::intType());
 	}
-	void setDoubleVar(int lvindex) {
-		setVar(lvindex, Type::doublet());
+
+	void setLongVar(u4 lvindex) {
+		setVar(&lvindex, Type::longType());
 	}
-	void setRefVar(int lvindex) {
-		setVar(lvindex, Type::objectt(-27));
+
+	void setFloatVar(u4 lvindex) {
+		setVar(&lvindex, Type::floatType());
+	}
+
+	void setDoubleVar(u4 lvindex) {
+		setVar(&lvindex, Type::doubleType());
+	}
+
+	void setRefVar(u4 lvindex, const std::string& className) {
+		setVar(&lvindex, Type::objectType(className));
+	}
+
+	void setRefVar(u4 lvindex, const Type& type) {
+		check(type.isObject() || type.isNull(), "Type must be object type: ",
+				type);
+		setVar(&lvindex, type);
 	}
 
 	void clearStack() {
 		stack.clear();
 	}
 
-	static bool isAssignable(T subt, T supt) {
+	static bool isAssignable(const Type& subt, const Type& supt) {
 		if (subt == supt) {
 			return true;
 		}
@@ -709,11 +940,21 @@ public:
 			return true;
 		}
 
+		if (subt.isNull() && supt.isObject()) {
+			return true;
+		}
+
 		return false;
 	}
 
-	static bool assign(T& t, T o) {
-		check(isAssignable(t, o) || isAssignable(o, t), "");
+	bool assign(Type& t, Type o) {
+//		check(isAssignable(t, o) || isAssignable(o, t), "Invalid assign type: ",
+//				t, " <> ", o, " @ frame: ", *this);
+
+		if (!isAssignable(t, o) && !isAssignable(o, t)) {
+			t = Type::topType();
+			return true;
+		}
 
 		if (isAssignable(t, o)) {
 			if (t == o) {
@@ -724,7 +965,7 @@ public:
 			return true;
 		}
 
-		assert(isAssignable(o, t), "");
+		assert(isAssignable(o, t), "Invalid assign type: ", t, " <> ", o);
 
 		return false;
 	}
@@ -745,9 +986,9 @@ public:
 				stack.size(), " != ", how.stack.size());
 
 		if (lva.size() < how.lva.size()) {
-			lva.resize(how.lva.size(), Type::top());
+			lva.resize(how.lva.size(), Type::topType());
 		} else if (how.lva.size() < lva.size()) {
-			how.lva.resize(lva.size(), Type::top());
+			how.lva.resize(lva.size(), Type::topType());
 		}
 
 		assert(lva.size() == how.lva.size(), "%ld != %ld", lva.size(),
@@ -759,8 +1000,8 @@ public:
 			assign(lva[i], how.lva[i]);
 		}
 
-		std::list<T>::iterator i = stack.begin();
-		std::list<T>::iterator j = how.stack.begin();
+		std::list<Type>::iterator i = stack.begin();
+		std::list<Type>::iterator j = how.stack.begin();
 
 		for (; i != stack.end(); i++, j++) {
 			assign(*i, *j);
@@ -769,8 +1010,8 @@ public:
 		return change;
 	}
 
-	std::vector<T> lva;
-	std::list<T> stack;
+	std::vector<Type> lva;
+	std::list<Type> stack;
 	bool valid;
 };
 
@@ -1887,6 +2128,10 @@ public:
 		raise("ERROR! setting inst list");
 	}
 
+	inline bool isStatic() const {
+		return accessFlags & METHOD_STATIC;
+	}
+
 };
 
 /**
@@ -2003,6 +2248,10 @@ public:
 	std::vector<Field*> fields;
 	std::vector<Method*> methods;
 };
+
+std::ostream& operator<<(std::ostream& os, const ConstTag& tag);
+std::ostream& operator<<(std::ostream& os, const Frame& frame);
+std::ostream& operator<<(std::ostream& os, const Type& type);
 
 }
 
