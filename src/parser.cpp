@@ -786,7 +786,7 @@ private:
 				case Type::TYPE_NULL:
 				return Type::nullType();
 				case Type::TYPE_UNINITTHIS:
-				return Type::uninitthist();
+				return Type::uninitThisType();
 				case Type::TYPE_OBJECT: {
 					u2 cpIndex = br.readu2();
 					check(cp.isClass(cpIndex), "Bad cpindex: ", cpIndex);
@@ -801,7 +801,7 @@ private:
 						label = new Inst(KIND_LABEL);
 					}
 
-					return Type::uninitt(offset, label);
+					return Type::uninitType(offset, label);
 				}
 			}
 

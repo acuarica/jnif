@@ -522,49 +522,16 @@ private:
 
 	void printSmt(SmtAttr& smt) {
 
-		auto parseTs =
-				[&](vector<Type> locs) {
-					line(2) << "["<<locs.size()<<"] ";
-					for (u1 i = 0; i < locs.size(); i++) {
-						Type& vt = locs[i];
-						Type::Tag tag = vt.tag;
+		auto parseTs = [&](vector<Type> locs) {
+			line(2) << "["<<locs.size()<<"] ";
+			for (u1 i = 0; i < locs.size(); i++) {
+				Type& vt = locs[i];
 
-						switch (tag) {
-							case Type::TYPE_TOP:
-							os << "top" << " | ";
-							break;
-							case Type::TYPE_INTEGER:
-							os << "integer" << " | ";
-							break;
-							case Type::TYPE_FLOAT :
-							os << "float" << " | ";
-							break;
-							case Type::TYPE_LONG :
-							os << "long" << " | ";
-							break;
-							case Type::TYPE_DOUBLE:
-							os << "double" << " | ";
-							break;
-							case Type::TYPE_NULL :
-							os << "null" << " | ";
-							break;
-							case Type::TYPE_UNINITTHIS :
-							os << "UninitializedThis" << " | ";
-							break;
-							case Type::TYPE_OBJECT:
-							os << "Object: cpindex = " << cf.getClassName(vt.getCpIndex()) << "#" << vt.getCpIndex() << " | ";
-							break;
-							case Type::TYPE_UNINIT: {
-								os << "Uninitialized: offset = " << vt.uninit.offset << " | ";
-								break;
-							}
-							default:
-							raise("invalid type in printing!");
-						}
-					}
+				os << vt << " | ";
+			}
 
-					os << endl;
-				};
+			os << endl;
+		};
 
 		line() << "Stack Map Table: " << endl;
 

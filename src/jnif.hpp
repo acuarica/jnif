@@ -598,7 +598,7 @@ public:
 		return Type(TYPE_NULL);
 	}
 
-	static inline Type uninitthist() {
+	static inline Type uninitThisType() {
 		return Type(TYPE_UNINITTHIS);
 	}
 
@@ -610,7 +610,7 @@ public:
 		return Type(TYPE_OBJECT, className, cpindex);
 	}
 
-	static inline Type uninitt(short offset, Inst* label) {
+	static inline Type uninitType(short offset, Inst* label) {
 		return Type(TYPE_UNINIT, offset, label);
 	}
 
@@ -2141,7 +2141,9 @@ public:
 
 	}
 
+	virtual bool isAssignableFrom(const std::string& className) = 0;
 	virtual const std::string& getSuperclass(const std::string& className) = 0;
+
 	//virtual void getSuperclass(const char* className) = 0;
 };
 
