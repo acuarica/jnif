@@ -58,6 +58,7 @@ static string outFileName(const char* className, const char* ext,
 extern "C" {
 
 void InstrClassEmpty(jvmtiEnv*, u1*, int, const char*, int*, u1**) {
+
 }
 
 void InstrClassDump(jvmtiEnv*, u1* data, int len, const char* className, int*,

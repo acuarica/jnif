@@ -15,7 +15,7 @@ static inline int nothing() {
 	return 0;
 }
 
-#define NO_LOG
+//#define NO_LOG
 
 #ifndef NO_LOG
 //#define _LOG(levelmsg, format, ...) \

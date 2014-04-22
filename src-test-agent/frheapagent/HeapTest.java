@@ -3,11 +3,83 @@ package frheapagent;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.*;
 import java.util.regex.*;
 
 public class HeapTest {
 
 	private boolean isCourseText;
+
+	private static void use(Object arr) {
+
+	}
+
+	private static void arrays0(int size) {
+		use(new boolean[size]);
+		use(new byte[size]);
+		use(new char[size]);
+		use(new short[size]);
+		use(new int[size]);
+		use(new float[size]);
+		use(new long[size]);
+		use(new double[size]);
+
+		use(new Object[size]);
+		use(new Byte[size]);
+		use(new Integer[size]);
+		use(new HeapTest[size]);
+
+		use(new boolean[size][size]);
+		use(new byte[size][size]);
+		use(new char[size][size]);
+		use(new short[size][size]);
+		use(new int[size][size]);
+		use(new float[size][size]);
+		use(new long[size][size]);
+		use(new double[size][size]);
+
+		use(new Object[size][size]);
+		use(new Byte[size][size]);
+		use(new Integer[size][size]);
+		use(new HeapTest[size][size]);
+
+		use(new short[size][size][size]);
+		use(new int[size][size][size]);
+
+		use(new short[size][]);
+
+		// int[][] arr0 = new int[size][size];
+		// arr0[0] = new int[size];
+	}
+
+	private static boolean char0(int size) {
+		char[] array = new char[size];
+
+		int n = array.length;
+
+		boolean res;
+		if (n == 0) {
+			res = false;
+		} else {
+			res = true;
+		}
+
+		return res;
+	}
+
+//	public int covariant(int arg, int size) {
+//		Object[] arr;
+//
+//		if (arg == 0) {
+//			arr = new ArrayList[size];
+//		} else if (arg == 1) {
+//			arr = new Vector[arg];
+//		} else {
+//			throw new RuntimeException("Invalid args!");
+//		}
+//
+//		return arr.length;
+//	}
 
 	private static void sort0(int[] array) {
 		int n = array.length;
@@ -50,20 +122,6 @@ public class HeapTest {
 			c++;
 		}
 	}
-
-	// public int covariant(int arg, int size) {
-	// Object[] arr;
-	//
-	// if (arg == 0) {
-	// arr = new Integer[size];
-	// } else if (arg == 1) {
-	// arr = new Float[arg];
-	// } else {
-	// throw new RuntimeException("Invalid args!");
-	// }
-	//
-	// return arr.length;
-	// }
 
 	int something(long l) {
 		return 42;

@@ -51,27 +51,52 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 		os << "[";
 	}
 
-	switch (type.tag) {
-		case Type::TYPE_TOP:
-			return os << "Top";
-		case Type::TYPE_INTEGER:
-			return os << "Int";
-		case Type::TYPE_FLOAT:
-			return os << "Float";
-		case Type::TYPE_LONG:
-			return os << "Long";
-		case Type::TYPE_DOUBLE:
-			return os << "Double";
-		case Type::TYPE_NULL:
-			return os << "Null";
-		case Type::TYPE_UNINITTHIS:
-			return os << "Uninitialized this";
-		case Type::TYPE_OBJECT:
-			return os << "Object:" << type.getClassName() << ";";
-		case Type::TYPE_UNINIT:
-			return os << "Uninitialized offset";
-		case Type::TYPE_VOID:
-			return os << "Void";
+	if (type.isTop()) {
+		os << "Top";
+	} else if (type.isInt()) {
+		os << "Integer";
+	} else if (type.isFloat()) {
+		os << "Float";
+	} else if (type.isLong()) {
+		os << "Long";
+	} else if (type.isDouble()) {
+		os << "Double";
+	} else if (type.isUninitThis()) {
+		os << "Uninitialized this";
+	} else if (type.isObject()) {
+		os << "Object:" << type.getClassName() << ";@" << type.getCpIndex();
+	} else if (type.isUninit()) {
+		u2 offset = type.uninit.label->label.offset;
+		os << "Uninitialized offset" << type.uninit.offset << " " << offset;
+	} else {
+		os << "UNKNOWN TYPE!!!";
+
+		//raise("Invalid type on write: ", type);
+	}
+
+	return os;
+
+//	switch (type.tag) {
+//		case Type::TYPE_TOP:
+//			return os << "Top";
+//		case Type::TYPE_INTEGER:
+//			return os << "Int";
+//		case Type::TYPE_FLOAT:
+//			return os << "Float";
+//		case Type::TYPE_LONG:
+//			return os << "Long";
+//		case Type::TYPE_DOUBLE:
+//			return os << "Double";
+//		case Type::TYPE_NULL:
+//			return os << "Null";
+//		case Type::TYPE_UNINITTHIS:
+//			return os << "Uninitialized this";
+//		case Type::TYPE_OBJECT:
+//			return os << "Object:" << type.getClassName() << ";";
+//		case Type::TYPE_UNINIT:
+//			return os << "Uninitialized offset";
+//		case Type::TYPE_VOID:
+//			return os << "Void";
 //		case Type::TYPE_BOOLEAN:
 //			return os << "Boolean";
 //		case Type::TYPE_BYTE:
@@ -80,9 +105,9 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 //			return os << "Char";
 //		case Type::TYPE_SHORT:
 //			return os << "Short";
-	}
+//	}
 
-	return os << "UNKNOWN TYPE!!!";
+//	return os << "UNKNOWN TYPE!!!";
 }
 
 class AccessFlagsPrinter {
@@ -123,7 +148,7 @@ private:
 	const char* const sep;
 };
 
-class ClassPrinter: private ErrorManager {
+class ClassPrinter: private Error {
 public:
 
 	ClassPrinter(ClassFile& cf, ostream& os, int tabs) :

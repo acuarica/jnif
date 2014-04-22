@@ -47,7 +47,7 @@ private:
 /**
  * Implements a memory buffer writer in big-endian encoding.
  */
-class BufferWriter: private ErrorManager {
+class BufferWriter: private Error {
 public:
 
 	BufferWriter(u1* buffer, int len) :
@@ -106,7 +106,7 @@ private:
 };
 
 template<typename TWriter>
-class ClassWriter: private ErrorManager {
+class ClassWriter: private Error {
 public:
 
 	ClassWriter(TWriter& bw) :
@@ -352,37 +352,60 @@ public:
 		for (u1 i = 0; i < locs.size(); i++) {
 			const Type& type = locs[i];
 
-			u1 tag = type.tag;
-			bw.writeu1(tag);
-
-			switch (tag) {
-				case Type::TYPE_TOP:
-					break;
-				case Type::TYPE_INTEGER:
-					break;
-				case Type::TYPE_FLOAT:
-					break;
-				case Type::TYPE_LONG:
-					break;
-				case Type::TYPE_DOUBLE:
-					break;
-				case Type::TYPE_NULL:
-					break;
-				case Type::TYPE_UNINITTHIS:
-					break;
-				case Type::TYPE_OBJECT: {
-					u2 cpIndex = type.getCpIndex();
-					bw.writeu2(cpIndex);
-					break;
-				}
-				case Type::TYPE_UNINIT: {
-					u2 offset = type.uninit.offset;
-
-					offset = type.uninit.label->label.offset;
-					bw.writeu2(offset);
-					break;
-				}
+			if (type.isTop()) {
+				bw.writeu1(Type::TYPE_TOP);
+			} else if (type.isInt()) {
+				bw.writeu1(Type::TYPE_INTEGER);
+			} else if (type.isFloat()) {
+				bw.writeu1(Type::TYPE_FLOAT);
+			} else if (type.isLong()) {
+				bw.writeu1(Type::TYPE_LONG);
+			} else if (type.isDouble()) {
+				bw.writeu1(Type::TYPE_DOUBLE);
+			} else if (type.isUninitThis()) {
+				bw.writeu1(Type::TYPE_UNINITTHIS);
+			} else if (type.isObject()) {
+				bw.writeu1(Type::TYPE_OBJECT);
+				u2 cpIndex = type.getCpIndex();
+				bw.writeu2(cpIndex);
+			} else if (type.isUninit()) {
+				bw.writeu1(Type::TYPE_UNINIT);
+				u2 offset = type.uninit.offset;
+				offset = type.uninit.label->label.offset;
+				bw.writeu2(offset);
+			} else {
+				raise("Invalid type on write: ", type);
 			}
+
+//			u1 tag = type.tag;
+//			bw.writeu1(tag);
+//			switch (tag) {
+//				case Type::TYPE_TOP:
+//					break;
+//				case Type::TYPE_INTEGER:
+//					break;
+//				case Type::TYPE_FLOAT:
+//					break;
+//				case Type::TYPE_LONG:
+//					break;
+//				case Type::TYPE_DOUBLE:
+//					break;
+//				case Type::TYPE_NULL:
+//					break;
+//				case Type::TYPE_UNINITTHIS:
+//					break;
+//				case Type::TYPE_OBJECT: {
+//					u2 cpIndex = type.getCpIndex();
+//					bw.writeu2(cpIndex);
+//					break;
+//				}
+//				case Type::TYPE_UNINIT: {
+//					u2 offset = type.uninit.offset;
+//					offset = type.uninit.label->label.offset;
+//					bw.writeu2(offset);
+//					break;
+//				}
+//			}
 		}
 	}
 

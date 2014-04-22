@@ -1,14 +1,15 @@
 #ifndef JNIF_HPP
 #define JNIF_HPP
 
+#include <stdio.h>
+#include <execinfo.h>
+#include <unistd.h>
+
 #include <string>
 #include <vector>
 #include <list>
+#include <sstream>
 #include <iostream>
-
-#include <execinfo.h>
-#include <stdio.h>
-#include <unistd.h>
 
 /**
  * The jnif namespace contains all type definitions, constants, enumerations
@@ -479,7 +480,7 @@ enum AttrKind {
 	ATTR_SMT
 };
 
-class ErrorManager {
+class Error {
 public:
 
 	template<typename ... TArgs>
@@ -509,8 +510,6 @@ public:
 		if (!cond) {
 			raise(args...);
 		}
-
-//		return cond;
 	}
 
 	template<typename ... TArgs>
@@ -538,7 +537,7 @@ struct Inst;
 /**
  * Verification type class
  */
-class Type: private ErrorManager {
+class Type: private Error {
 public:
 
 	enum Tag {
@@ -551,47 +550,47 @@ public:
 		TYPE_UNINITTHIS = 6,
 		TYPE_OBJECT = 7,
 		TYPE_UNINIT = 8,
-//		TYPE_BOOLEAN,
-//		TYPE_BYTE,
-//		TYPE_CHAR,
-//		TYPE_SHORT,
-		TYPE_VOID
+		TYPE_VOID,
+		TYPE_BOOLEAN,
+		TYPE_BYTE,
+		TYPE_CHAR,
+		TYPE_SHORT,
 	};
 
 	static inline Type topType() {
 		return Type(TYPE_TOP);
 	}
 
-//	static inline Type booleanType() {
-//		return Type(TYPE_BOOLEAN);
-//	}
-//
-//	static inline Type byteType() {
-//		return Type(TYPE_BYTE);
-//	}
-//
-//	static inline Type charType() {
-//		return Type(TYPE_CHAR);
-//	}
-//
-//	static inline Type shortType() {
-//		return Type(TYPE_SHORT);
-//	}
-
 	static inline Type intType() {
-		return Type(TYPE_INTEGER);
+		return Type(TYPE_INTEGER, "I");
 	}
 
 	static inline Type floatType() {
-		return Type(TYPE_FLOAT);
+		return Type(TYPE_FLOAT, "F");
 	}
 
 	static inline Type longType() {
-		return Type(TYPE_LONG);
+		return Type(TYPE_LONG, "J");
 	}
 
 	static inline Type doubleType() {
-		return Type(TYPE_DOUBLE);
+		return Type(TYPE_DOUBLE, "D");
+	}
+
+	static inline Type booleanType() {
+		return Type(TYPE_BOOLEAN, "Z");
+	}
+
+	static inline Type byteType() {
+		return Type(TYPE_BYTE, "B");
+	}
+
+	static inline Type charType() {
+		return Type(TYPE_CHAR, "C");
+	}
+
+	static inline Type shortType() {
+		return Type(TYPE_SHORT, "S");
 	}
 
 	static inline Type nullType() {
@@ -607,7 +606,10 @@ public:
 		check(!className.empty(),
 				"Expected non-empty class name for object type");
 
-		return Type(TYPE_OBJECT, className, cpindex);
+		std::stringstream ss;
+		ss << "L" << className << ";";
+		//return Type(TYPE_OBJECT, className, cpindex);
+		return Type(TYPE_OBJECT, ss.str(), cpindex);
 	}
 
 	static inline Type uninitType(short offset, Inst* label) {
@@ -625,8 +627,6 @@ public:
 
 		return Type(baseType, dims);
 	}
-
-	Tag tag;
 
 	u4 dims;
 
@@ -649,7 +649,18 @@ public:
 	}
 
 	inline bool isInt() const {
-		return tag == TYPE_INTEGER && !isArray();
+		switch (tag) {
+			case TYPE_INTEGER:
+			case TYPE_BOOLEAN:
+			case TYPE_BYTE:
+			case TYPE_CHAR:
+			case TYPE_SHORT:
+				return !isArray();
+			default:
+				return false;
+
+		}
+		//return tag == TYPE_INTEGER && !isArray();
 	}
 
 	inline bool isFloat() const {
@@ -666,6 +677,14 @@ public:
 
 	inline bool isNull() const {
 		return tag == TYPE_NULL;
+	}
+
+	inline bool isUninitThis() const {
+		return tag == TYPE_UNINITTHIS;
+	}
+
+	inline bool isUninit() const {
+		return tag == TYPE_UNINIT;
 	}
 
 	inline bool isObject() const {
@@ -707,17 +726,19 @@ public:
 		object.cindex = index;
 	}
 
-	Type(const Type& other) = default;
+//	Type(const Type& other) = default;
 
 private:
 
+	Tag tag;
+
+	struct {
+		u2 cindex;
+		std::string className;
+	} object;
+
 	inline Type(Tag tag) :
 			tag(tag), dims(0) {
-	}
-
-	inline Type(Tag tag, short index) :
-			tag(tag), dims(0) {
-		object.cindex = index;
 	}
 
 	inline Type(Tag tag, short offset, Inst* label) :
@@ -726,7 +747,7 @@ private:
 		uninit.label = label;
 	}
 
-	inline Type(Tag tag, const std::string& className, u2 cpindex) :
+	inline Type(Tag tag, const std::string& className, u2 cpindex = 0) :
 			tag(tag), dims(0), object( { cpindex, className }) {
 	}
 
@@ -734,14 +755,9 @@ private:
 			Type(other) {
 		this->dims = dims;
 	}
-
-	struct {
-		u2 cindex;
-		std::string className;
-	} object;
 };
 
-class Frame: private ErrorManager {
+class Frame: private Error {
 public:
 
 	Frame() :
@@ -1314,7 +1330,7 @@ public:
  * integers, floats, longs, doubles, name and type, utf8 arrays,
  * method handles, method types and invoke dynamic bootstrap methods.
  */
-class ConstPool: private ErrorManager {
+class ConstPool: private Error {
 public:
 
 	/**
@@ -1688,8 +1704,8 @@ private:
 	}
 
 	const ConstItem* _getEntry(Index i) const {
-		ErrorManager::check(i > NULLENTRY,
-				"Null access to constant pool: index = ", i);
+		Error::check(i > NULLENTRY, "Null access to constant pool: index = ",
+				i);
 		check(i < entries.size(), "Index out of bounds: index = ", i);
 
 		const ConstItem* entry = &entries[i];
@@ -1766,7 +1782,7 @@ private:
 	std::vector<BasicBlock*> targets;
 };
 
-class ControlFlowGraph: private ErrorManager {
+class ControlFlowGraph: private Error {
 private:
 	std::vector<BasicBlock*> basicBlocks;
 
@@ -2039,7 +2055,7 @@ struct SourceFileAttr: Attr {
 /**
  *
  */
-class Member: public Attrs, private ErrorManager {
+class Member: public Attrs, private Error {
 public:
 
 	friend class Field;

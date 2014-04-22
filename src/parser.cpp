@@ -7,7 +7,7 @@ namespace jnif {
 /**
  * Implements a memory buffer reader in big-endian encoding.
  */
-class BufferReader: private ErrorManager {
+class BufferReader: private Error {
 public:
 
 	/**
@@ -153,7 +153,7 @@ OpKind OPKIND[256] = { KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO,
 		KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, KIND_RESERVED,
 		KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, };
 
-class ClassParser: private ErrorManager {
+class ClassParser: private Error {
 public:
 
 	static void parseClassFile(const u1* fileImage, const int fileImageLen,

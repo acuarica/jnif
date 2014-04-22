@@ -37,7 +37,7 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 static void JNICALL ClassLoadEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
 		jclass klass) {
 	char* classsig;
-	FrGetClassSignature(jvmti, klass, &classsig, NULL );
+	FrGetClassSignature(jvmti, klass, &classsig, NULL);
 
 	_TLOG("CLASSLOAD:%s", classsig);
 
@@ -53,7 +53,7 @@ static void JNICALL ClassPrepareEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jthread thread, jclass klass) {
 	char* classsig;
 
-	FrGetClassSignature(jvmti, klass, &classsig, NULL );
+	FrGetClassSignature(jvmti, klass, &classsig, NULL);
 
 	_TLOG("CLASSPREPARE:%s", classsig);
 
@@ -86,7 +86,7 @@ static void JNICALL VMStartEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 	jclass proxyClass = (*jni)->DefineClass(jni, FR_PROXY_CLASS, NULL,
 			frproxy_FrInstrProxy_class, frproxy_FrInstrProxy_class_len);
 
-	if (proxyClass == NULL ) {
+	if (proxyClass == NULL) {
 		ERROR("Error on define class");
 	}
 }
@@ -97,6 +97,25 @@ static void JNICALL VMInitEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread) {
 	_TLOG("VMINIT");
 
 	StampThread(jvmti, thread);
+
+	jclass javaLangClass = (*jni)->FindClass(jni, "java/lang/Class");
+	jmethodID getNameMethod = (*jni)->GetMethodID(jni, javaLangClass, "getName",
+			"()Ljava/lang/String;");
+
+	jclass clazz1 = (*jni)->FindClass(jni, "java/util/ArrayList");
+	jclass clazz2 = (*jni)->FindClass(jni, "java/util/Vector");
+	jclass clazz3 = (*jni)->FindClass(jni, "[[Ljava/lang/Integer;");
+	jclass clazz4 = (*jni)->FindClass(jni, "[[Ljava/util/Vector;");
+
+	jclass superClass = (*jni)->GetSuperclass(jni, clazz3);
+	jstring name = (*jni)->CallObjectMethod(jni, superClass, getNameMethod);
+	jsize namelen = (*jni)->GetStringUTFLength(jni, name);
+	const char* nameutf8 = (*jni)->GetStringUTFChars(jni, name, NULL);
+	INFO("nameutf8:%.*s", namelen, nameutf8);
+	(*jni)->ReleaseStringUTFChars(jni, name, nameutf8);
+
+	jboolean res = (*jni)->IsAssignableFrom(jni, clazz1, clazz2);
+	INFO("res: %i", res);
 }
 
 static void JNICALL ExceptionEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
@@ -205,7 +224,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options, void* reserved) 
 
 	jvmtiEnv* jvmti;
 	jint res = (*jvm)->GetEnv(jvm, (void **) &jvmti, JVMTI_VERSION_1_0);
-	if (res != JNI_OK || jvmti == NULL ) {
+	if (res != JNI_OK || jvmti == NULL) {
 		EXCEPTION(
 				"Unable to access JVMTI Version 1 (0x%x)," " is your J2SE a 1.5 or newer version?" " JNIEnv's GetEnv() returned %d\n",
 				JVMTI_VERSION_1, res);
@@ -241,26 +260,26 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options, void* reserved) 
 	FrSetEventCallbacks(jvmti, &callbacks, (jint) sizeof(jvmtiEventCallbacks));
 
 	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE,
-			JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL );
+			JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
 	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE, JVMTI_EVENT_CLASS_LOAD,
-			NULL );
+	NULL);
 	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE, JVMTI_EVENT_CLASS_PREPARE,
-			NULL );
+	NULL);
 	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE, JVMTI_EVENT_OBJECT_FREE,
-			NULL );
+	NULL);
 	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE, JVMTI_EVENT_VM_START,
-			NULL );
-	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE, JVMTI_EVENT_VM_INIT, NULL );
+	NULL);
+	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE, JVMTI_EVENT_VM_INIT, NULL);
 	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE, JVMTI_EVENT_VM_DEATH,
-			NULL );
+	NULL);
 	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE, JVMTI_EVENT_THREAD_START,
-			NULL );
+	NULL);
 	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE, JVMTI_EVENT_THREAD_END,
-			NULL );
+	NULL);
 	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE, JVMTI_EVENT_EXCEPTION,
-			NULL );
+	NULL);
 	FrSetEventNotificationMode(jvmti, JVMTI_ENABLE,
-			JVMTI_EVENT_GARBAGE_COLLECTION_START, NULL );
+			JVMTI_EVENT_GARBAGE_COLLECTION_START, NULL);
 
 	FrSetInstrHandlerJvmtiEnv(jvmti);
 

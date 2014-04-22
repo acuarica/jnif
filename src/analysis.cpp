@@ -6,16 +6,11 @@
  */
 #include "jnif.hpp"
 
-#include <map>
-#include <set>
-#include <sstream>
-#include <tuple>
-
 using namespace std;
 
 namespace jnif {
 
-struct ControlFlowGraphBuilder: private ErrorManager {
+struct ControlFlowGraphBuilder: private Error {
 
 	static void setBranchTargets(InstList& instList) {
 		for (Inst* inst : instList) {
@@ -159,7 +154,7 @@ ControlFlowGraph::ControlFlowGraph(InstList& instList) :
 	ControlFlowGraphBuilder::buildCfg(instList, *this);
 }
 
-struct DescParser: protected ErrorManager {
+struct DescParser: protected Error {
 
 	static Type parseFieldDesc(const char*& fieldDesc) {
 		const char* originalFieldDesc = fieldDesc;
@@ -178,9 +173,13 @@ struct DescParser: protected ErrorManager {
 		auto parseBaseType = [&] () {
 			switch (*fieldDesc) {
 				case 'Z':
+				return Type::booleanType();
 				case 'B':
+				return Type::byteType();
 				case 'C':
+				return Type::charType();
 				case 'S':
+				return Type::shortType();
 				case 'I':
 				return Type::intType();
 				case 'D':
@@ -376,16 +375,16 @@ public:
 		h.popArray();
 	}
 
-	static inline Type getBaseArrayType(int atype) {
+	static inline Type getArrayBaseType(int atype) {
 		switch (atype) {
 			case T_BOOLEAN:
-//				return Type::booleanType();
+				return Type::booleanType();
 			case T_CHAR:
-//				return Type::charType();
+				return Type::charType();
 			case T_BYTE:
-//				return Type::byteType();
+				return Type::byteType();
 			case T_SHORT:
-//				return Type::shortType();
+				return Type::shortType();
 			case T_INT:
 				return Type::intType();
 			case T_FLOAT:
@@ -1014,7 +1013,7 @@ public:
 				break;
 			case OPCODE_newarray:
 				h.popInt();
-				h.pushArray(getBaseArrayType(inst.newarray.atype), 1);
+				h.pushArray(getArrayBaseType(inst.newarray.atype), 1);
 				break;
 			case OPCODE_anewarray: {
 				h.popInt();
@@ -1073,7 +1072,7 @@ public:
 //
 //}
 
-class Compute: private ErrorManager {
+class Compute: private Error {
 public:
 
 	static void setCpIndex(Type& type, ConstPool& cp) {
@@ -1086,7 +1085,8 @@ public:
 			const string& className = type.getClassName();
 
 			if (type.isArray()) {
-				ss << "L" << className << ";";
+				//ss << "L" << className << ";";
+				ss << className;
 			} else {
 				ss << className;
 			}
