@@ -642,11 +642,13 @@ private:
 			parseInstTargets(br, labels);
 		}
 
-		auto getLabel = [&](u2 labelpos) {
+		auto getLabel = [&](u2 labelpos, bool isTryStart) {
 			Inst*& lab = labels[labelpos];
 			if (lab == nullptr) {
 				lab = new Inst(KIND_LABEL);
 			}
+
+			lab->label.isTryStart = isTryStart;
 
 			return lab;
 		};
@@ -665,9 +667,9 @@ private:
 					"");
 
 			CodeExceptionEntry e;
-			e.startpc = getLabel(startPc);
-			e.endpc = getLabel(endPc);
-			e.handlerpc = getLabel(handlerPc);
+			e.startpc = getLabel(startPc, true);
+			e.endpc = getLabel(endPc, false);
+			e.handlerpc = getLabel(handlerPc, false);
 			e.catchtype = catchType;
 
 			ca->exceptions.push_back(e);
@@ -773,27 +775,27 @@ private:
 			u1 tag = br.readu1();
 
 			switch (tag) {
-				case Type::TYPE_TOP:
+				case TYPE_TOP:
 				return Type::topType();
-				case Type::TYPE_INTEGER:
+				case TYPE_INTEGER:
 				return Type::intType();
-				case Type::TYPE_FLOAT:
+				case TYPE_FLOAT:
 				return Type::floatType();
-				case Type::TYPE_LONG:
+				case TYPE_LONG:
 				return Type::longType();
-				case Type::TYPE_DOUBLE:
+				case TYPE_DOUBLE:
 				return Type::doubleType();
-				case Type::TYPE_NULL:
+				case TYPE_NULL:
 				return Type::nullType();
-				case Type::TYPE_UNINITTHIS:
+				case TYPE_UNINITTHIS:
 				return Type::uninitThisType();
-				case Type::TYPE_OBJECT: {
+				case TYPE_OBJECT: {
 					u2 cpIndex = br.readu2();
 					check(cp.isClass(cpIndex), "Bad cpindex: ", cpIndex);
 					string className = cp.getClassName(cpIndex);
 					return Type::objectType(className, cpIndex);
 				}
-				case Type::TYPE_UNINIT: {
+				case TYPE_UNINIT: {
 					u2 offset = br.readu2();
 
 					Inst*& label = labels[offset];

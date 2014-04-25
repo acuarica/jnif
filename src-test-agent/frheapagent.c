@@ -166,6 +166,8 @@ static void ParseOptions(const char* options) {
 	extern InstrFunc InstrClassDump;
 	extern InstrFunc InstrClassPrint;
 	extern InstrFunc InstrClassIdentity;
+	extern InstrFunc InstrClassCompute;
+	extern InstrFunc InstrClassComputeApp;
 	extern InstrFunc InstrClassObjectInit;
 	extern InstrFunc InstrClassNewArray;
 	extern InstrFunc InstrClassANewArray;
@@ -187,6 +189,10 @@ static void ParseOptions(const char* options) {
 	{ &InstrClassPrint, "Print" },
 
 	{ &InstrClassIdentity, "Identity" },
+
+	{ &InstrClassCompute, "Compute" },
+
+	{ &InstrClassComputeApp, "ComputeApp" },
 
 	{ &InstrClassObjectInit, "ObjectInit" },
 

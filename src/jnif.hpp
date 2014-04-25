@@ -451,20 +451,16 @@ enum OpKind {
 /**
  *
  */
-enum AType {
-	T_BOOLEAN = 4,
-	T_CHAR = 5,
-	T_FLOAT = 6,
-	T_DOUBLE = 7,
-	T_BYTE = 8,
-	T_SHORT = 9,
-	T_INT = 10,
-	T_LONG = 11
+enum NewArrayType {
+	NEWARRAYTYPE_BOOLEAN = 4,
+	NEWARRAYTYPE_CHAR = 5,
+	NEWARRAYTYPE_FLOAT = 6,
+	NEWARRAYTYPE_DOUBLE = 7,
+	NEWARRAYTYPE_BYTE = 8,
+	NEWARRAYTYPE_SHORT = 9,
+	NEWARRAYTYPE_INT = 10,
+	NEWARRAYTYPE_LONG = 11
 };
-
-typedef u2 ClassIndex;
-
-typedef u2 Label;
 
 /**
  *
@@ -480,6 +476,29 @@ enum AttrKind {
 	ATTR_SMT
 };
 
+/**
+ *
+ */
+enum TypeTag {
+	TYPE_TOP = 0,
+	TYPE_INTEGER = 1,
+	TYPE_FLOAT = 2,
+	TYPE_LONG = 4,
+	TYPE_DOUBLE = 3,
+	TYPE_NULL = 5,
+	TYPE_UNINITTHIS = 6,
+	TYPE_OBJECT = 7,
+	TYPE_UNINIT = 8,
+	TYPE_VOID,
+	TYPE_BOOLEAN,
+	TYPE_BYTE,
+	TYPE_CHAR,
+	TYPE_SHORT,
+};
+
+/**
+ *
+ */
 class Error {
 public:
 
@@ -534,28 +553,15 @@ private:
 
 struct Inst;
 
+typedef u2 ClassIndex;
+
+typedef u2 Label;
+
 /**
  * Verification type class
  */
-class Type: private Error {
+class Type {
 public:
-
-	enum Tag {
-		TYPE_TOP = 0,
-		TYPE_INTEGER = 1,
-		TYPE_FLOAT = 2,
-		TYPE_LONG = 4,
-		TYPE_DOUBLE = 3,
-		TYPE_NULL = 5,
-		TYPE_UNINITTHIS = 6,
-		TYPE_OBJECT = 7,
-		TYPE_UNINIT = 8,
-		TYPE_VOID,
-		TYPE_BOOLEAN,
-		TYPE_BYTE,
-		TYPE_CHAR,
-		TYPE_SHORT,
-	};
 
 	static inline Type topType() {
 		return Type(TYPE_TOP);
@@ -603,13 +609,13 @@ public:
 
 	static inline Type objectType(const std::string& className,
 			u2 cpindex = 0) {
-		check(!className.empty(),
+		Error::check(!className.empty(),
 				"Expected non-empty class name for object type");
 
-		std::stringstream ss;
-		ss << "L" << className << ";";
-		//return Type(TYPE_OBJECT, className, cpindex);
-		return Type(TYPE_OBJECT, ss.str(), cpindex);
+//		std::stringstream ss;
+		//	ss << "L" << className << ";";
+		return Type(TYPE_OBJECT, className, cpindex);
+		//return Type(TYPE_OBJECT, ss.str(), cpindex);
 	}
 
 	static inline Type uninitType(short offset, Inst* label) {
@@ -621,14 +627,14 @@ public:
 	}
 
 	static inline Type arrayType(const Type& baseType, u4 dims) {
-		check(dims > 0, "Invalid dims: ", dims);
-		check(dims < 255, "Invalid dims: ", dims);
-		check(!baseType.isArray(), "base type is already an array: ", baseType);
+		//u4 d = baseType.dims + dims;
+		Error::check(dims > 0, "Invalid dims: ", dims);
+		Error::check(dims <= 255, "Invalid dims: ", dims);
+//		Error::check(!baseType.isArray(), "base type is already an array: ",
+//				baseType);
 
 		return Type(baseType, dims);
 	}
-
-	u4 dims;
 
 	union {
 		struct {
@@ -639,8 +645,7 @@ public:
 
 	inline bool operator==(const Type& other) const {
 		return tag == other.tag
-				&& (tag != TYPE_OBJECT
-						|| object.className == other.object.className)
+				&& (tag != TYPE_OBJECT || className == other.className)
 				&& dims == other.dims;
 	}
 
@@ -658,9 +663,7 @@ public:
 				return !isArray();
 			default:
 				return false;
-
 		}
-		//return tag == TYPE_INTEGER && !isArray();
 	}
 
 	inline bool isFloat() const {
@@ -711,44 +714,68 @@ public:
 		return isOneWord() || isTwoWord();
 	}
 
-	inline const std::string& getClassName() const {
-		check(isObject(), "Type is not object type to get class name: ", *this);
-		return object.className;
+	inline std::string getClassName() const {
+		Error::check(isObject(), "Type is not object type to get class name: ",
+				*this);
+
+		if (isArray()) {
+			std::stringstream ss;
+			for (u4 i = 0; i < dims; i++) {
+				ss << "[";
+			}
+
+			if (tag == TYPE_OBJECT) {
+				ss << "L" << className << ";";
+			} else {
+				ss << className;
+			}
+
+			return ss.str();
+		} else {
+			return className;
+		}
 	}
 
 	inline u2 getCpIndex() const {
-		check(isObject(), "Type is not object type to get cp index: ", *this);
-		return object.cindex;
+		Error::check(isObject(), "Type is not object type to get cp index: ",
+				*this);
+		return classIndex;
 	}
 
 	inline void setCpIndex(u2 index) {
 		//check(isObject(), "Type is not object type to get cp index: ", *this);
-		object.cindex = index;
+		classIndex = index;
 	}
 
-//	Type(const Type& other) = default;
+	inline u4 getDims() const {
+		return dims;
+	}
+
+	inline Type elementType() const {
+		Error::check(isArray(), "Type is not array: ", *this);
+
+		return Type(*this, dims - 1);
+	}
 
 private:
 
-	Tag tag;
+	TypeTag tag;
+	u4 dims;
+	u2 classIndex;
+	std::string className;
 
-	struct {
-		u2 cindex;
-		std::string className;
-	} object;
-
-	inline Type(Tag tag) :
-			tag(tag), dims(0) {
+	inline Type(TypeTag tag) :
+			tag(tag), dims(0), classIndex(0) {
 	}
 
-	inline Type(Tag tag, short offset, Inst* label) :
-			tag(tag), dims(0) {
+	inline Type(TypeTag tag, short offset, Inst* label) :
+			tag(tag), dims(0), classIndex(0) {
 		uninit.offset = offset;
 		uninit.label = label;
 	}
 
-	inline Type(Tag tag, const std::string& className, u2 cpindex = 0) :
-			tag(tag), dims(0), object( { cpindex, className }) {
+	inline Type(TypeTag tag, const std::string& className, u2 classIndex = 0) :
+			tag(tag), dims(0), classIndex(classIndex), className(className) {
 	}
 
 	inline Type(const Type& other, u4 dims) :
@@ -1038,22 +1065,22 @@ public:
 struct Inst {
 public:
 
-//	Inst() {
-//	}
-
 	Inst(OpKind kind) :
 			opcode(OPCODE_nop), kind(kind), _offset(0) {
 		label.isBranchTarget = false;
+		label.isTryStart = false;
 	}
 
 	Inst(Opcode opcode) :
 			opcode(opcode), kind(KIND_ZERO), _offset(0) {
 		label.isBranchTarget = false;
+		label.isTryStart = false;
 	}
 
 	Inst(Opcode opcode, OpKind kind) :
 			opcode(opcode), kind(kind), _offset(0) {
 		label.isBranchTarget = false;
+		label.isTryStart = false;
 	}
 
 	/**
@@ -1108,6 +1135,7 @@ public:
 			u2 deltaOffset;
 			int id;
 			bool isBranchTarget;
+			bool isTryStart;
 		} label;
 		struct {
 			int value;

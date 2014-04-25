@@ -47,8 +47,8 @@ std::ostream& operator<<(std::ostream& os, const Frame& frame) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Type& type) {
-	for (u4 i = 0; i < type.dims; i++) {
-		os << "[";
+	for (u4 i = 0; i < type.getDims(); i++) {
+		os << "[]";
 	}
 
 	if (type.isTop()) {
@@ -61,17 +61,19 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 		os << "Long";
 	} else if (type.isDouble()) {
 		os << "Double";
+	} else if (type.isNull()) {
+		os << "Null";
 	} else if (type.isUninitThis()) {
 		os << "Uninitialized this";
 	} else if (type.isObject()) {
-		os << "Object:" << type.getClassName() << ";@" << type.getCpIndex();
+		os << "Object: <<" << type.getClassName() << ">>@" << type.getCpIndex();
 	} else if (type.isUninit()) {
 		u2 offset = type.uninit.label->label.offset;
 		os << "Uninitialized offset" << type.uninit.offset << " " << offset;
 	} else {
 		os << "UNKNOWN TYPE!!!";
 
-		//raise("Invalid type on write: ", type);
+		Error::raise("Invalid type on write: ", type);
 	}
 
 	return os;
@@ -416,8 +418,14 @@ private:
 	void printInst(Inst& inst) {
 		int offset = inst._offset;
 
+		auto yesNo = [&](bool value) {
+			return value? "Yes" : "No";
+		};
+
 		if (inst.kind == KIND_LABEL) {
-			line() << "label: " << inst.label.id;
+			line() << "label " << inst.label.id << ", B: "
+					<< yesNo(inst.label.isBranchTarget) << ", T: "
+					<< yesNo(inst.label.isTryStart);
 			return;
 		}
 

@@ -56,7 +56,8 @@ struct ControlFlowGraphBuilder: private Error {
 		for (auto it = instList.begin(); it != instList.end(); it++) {
 			Inst* inst = *it;
 
-			if (inst->isLabel() && inst->label.isBranchTarget) {
+			if (inst->isLabel()
+					&& (inst->label.isBranchTarget || inst->label.isTryStart)) {
 				addBasicBlock2(it);
 			}
 
@@ -155,6 +156,19 @@ ControlFlowGraph::ControlFlowGraph(InstList& instList) :
 }
 
 struct DescParser: protected Error {
+
+	static Type parseConstClass(const std::string& className) {
+		Error::assert(!className.empty(), "Invalid string class");
+
+		if (className[0] == '[') {
+			const char* classNamePtr = className.c_str();
+			Type arrayType = parseFieldDesc(classNamePtr);
+			Error::assert(arrayType.isArray(), "Not an array: ", arrayType);
+			return arrayType;
+		} else {
+			return Type::objectType(className);
+		}
+	}
 
 	static Type parseFieldDesc(const char*& fieldDesc) {
 		const char* originalFieldDesc = fieldDesc;
@@ -377,21 +391,21 @@ public:
 
 	static inline Type getArrayBaseType(int atype) {
 		switch (atype) {
-			case T_BOOLEAN:
+			case NEWARRAYTYPE_BOOLEAN:
 				return Type::booleanType();
-			case T_CHAR:
+			case NEWARRAYTYPE_CHAR:
 				return Type::charType();
-			case T_BYTE:
+			case NEWARRAYTYPE_BYTE:
 				return Type::byteType();
-			case T_SHORT:
+			case NEWARRAYTYPE_SHORT:
 				return Type::shortType();
-			case T_INT:
+			case NEWARRAYTYPE_INT:
 				return Type::intType();
-			case T_FLOAT:
+			case NEWARRAYTYPE_FLOAT:
 				return Type::floatType();
-			case T_LONG:
+			case NEWARRAYTYPE_LONG:
 				return Type::longType();
-			case T_DOUBLE:
+			case NEWARRAYTYPE_DOUBLE:
 				return Type::doubleType();
 		}
 
@@ -573,18 +587,25 @@ public:
 				h.popArray();
 				h.pushFloat();
 				break;
-			case OPCODE_daload:
+			case OPCODE_daload: {
 				h.popInt();
-				h.popArray();
+				Type arrayType = h.popArray();
+				//Error::check(arrayType.isArray(), "Not array: ", arrayType);
+				//Error::check(arrayType.elementType().isDouble(), "Not array: ", arrayType);
 				h.pushDouble();
 				break;
+			}
 			case OPCODE_aaload: {
 				h.popInt();
 				Type arrayType = h.popArray();
 				if (arrayType.isNull()) {
 					h.pushNull();
 				} else {
-					h.pushRef(arrayType.getClassName());
+					//h.pushRef(arrayType.getClassName());
+					Type elementType = arrayType.elementType();
+					Error::check(elementType.isObject(), "Not an object:",
+							elementType);
+					h.push(elementType);
 				}
 				break;
 			}
@@ -1007,19 +1028,26 @@ public:
 			case OPCODE_invokedynamic:
 				raise("invoke dynamic instances not implemented");
 				break;
-			case OPCODE_new:
+			case OPCODE_new: {
 				//h.pushRef();
-				h.pushRef(cp.getClassName(inst.type.classIndex));
+				const string& className = cp.getClassName(inst.type.classIndex);
+				Type t = parseConstClass(className);
+				Error::check(!t.isArray(), "New with array: ", t);
+				h.push(t);
 				break;
+			}
 			case OPCODE_newarray:
 				h.popInt();
 				h.pushArray(getArrayBaseType(inst.newarray.atype), 1);
 				break;
 			case OPCODE_anewarray: {
 				h.popInt();
-				string className = cp.getClassName(inst.type.classIndex);
-				Type refType = Type::objectType(className);
-				h.pushArray(refType, 1);
+//				string className = cp.getClassName(inst.type.classIndex);
+				const string& className = cp.getClassName(inst.type.classIndex);
+				Type t = parseConstClass(className);
+				//			h.push(parseConstClass(className));
+				//Type refType = Type::objectType(className);
+				h.pushArray(t, t.getDims() + 1);
 				break;
 			}
 			case OPCODE_arraylength:
@@ -1032,10 +1060,21 @@ public:
 				h.push(t);
 				break;
 			}
-			case OPCODE_checkcast:
+			case OPCODE_checkcast: {
 				h.popRef();
-				h.pushRef(cp.getClassName(inst.type.classIndex));
+				const string& className = cp.getClassName(inst.type.classIndex);
+				h.push(parseConstClass(className));
+//				if (className[0] == '[') {
+//					const char* clsname = className.c_str();
+//					Type arrayType = parseFieldDesc(clsname);
+//					Error::check(arrayType.isArray(), "Not an array: ",
+//							arrayType);
+//					h.push(arrayType);
+//				} else {
+//					h.pushRef(className);
+//				}
 				break;
+			}
 			case OPCODE_instanceof:
 				h.popRef();
 				h.pushInt();
@@ -1077,21 +1116,21 @@ public:
 
 	static void setCpIndex(Type& type, ConstPool& cp) {
 		if (type.isObject()) {
-			stringstream ss;
-			for (u4 i = 0; i < type.dims; i++) {
-				ss << "[";
-			}
+//			stringstream ss;
+//			for (u4 i = 0; i < type.dims; i++) {
+//				ss << "[";
+//			}
 
 			const string& className = type.getClassName();
 
-			if (type.isArray()) {
-				//ss << "L" << className << ";";
-				ss << className;
-			} else {
-				ss << className;
-			}
+//			if (type.isArray()) {
+//				//ss << "L" << className << ";";
+//				ss << className;
+//			} else {
+//				ss << className;
+//			}
 
-			ConstPool::Index utf8index = cp.putUtf8(ss.str().c_str());
+			ConstPool::Index utf8index = cp.putUtf8(className.c_str());
 			ConstPool::Index index = cp.addClass(utf8index);
 			type.setCpIndex(index);
 		}

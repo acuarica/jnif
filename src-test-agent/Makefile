@@ -16,23 +16,42 @@ CFLAGS= -W -Wall -Wextra -O0 -g -Wno-unused-parameter -I$(JAVA_HOME)/include
 MAINCLASS=frheapagent.HeapTest
 MAINCLASSFILE=$(subst .,/,$(MAINCLASS)).class
 MAINJAVAFILE=$(subst .,/,$(MAINCLASS)).java
+RUNINSTR=cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)
 
-.PHONY: all run
-
+.PHONY: all
 all: $(BUILD)/$(MAINCLASSFILE) $(BUILD)/$(LIB)
 
-runall:
-	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Empty $(MAINCLASS)
-	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Dump $(MAINCLASS)
-	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Print $(MAINCLASS)
-	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Identity $(MAINCLASS)
-	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=ObjectInit $(MAINCLASS)
-	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=NewArray $(MAINCLASS)
-	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=ANewArray $(MAINCLASS)
-	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Main $(MAINCLASS)
+#	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=ObjectInit $(MAINCLASS)
+#	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=NewArray $(MAINCLASS)
+#	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=ANewArray $(MAINCLASS)
+#	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Main $(MAINCLASS)
 
-run: $(BUILD)/$(MAINCLASSFILE) $(BUILD)/$(LIB)
-	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Identity $(MAINCLASS)
+.PHONY: instr-empty
+instr-empty: instr
+	$(RUNINSTR)=Empty $(MAINCLASS)
+
+.PHONY: instr-dump
+instr-dump: instr
+	$(RUNINSTR)=Dump $(MAINCLASS)
+
+.PHONY: instr-print
+instr-print: instr
+	$(RUNINSTR)=Print $(MAINCLASS)
+
+.PHONY: instr-identity
+instr-identity: instr
+	$(RUNINSTR)=Identity $(MAINCLASS)
+
+.PHONY: instr-compute
+instr-compute: instr
+	$(RUNINSTR)=Compute $(MAINCLASS)
+
+.PHONY: instr-computeapp
+instr-computeapp: instr
+	$(RUNINSTR)=ComputeApp $(MAINCLASS)
+
+.PHONY: instr
+instr: $(BUILD)/$(MAINCLASSFILE) $(BUILD)/$(LIB)
 
 $(BUILD)/$(MAINCLASSFILE): $(MAINJAVAFILE)
 	javac $^ -d $(BUILD)

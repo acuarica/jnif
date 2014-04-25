@@ -353,23 +353,25 @@ public:
 			const Type& type = locs[i];
 
 			if (type.isTop()) {
-				bw.writeu1(Type::TYPE_TOP);
+				bw.writeu1(TYPE_TOP);
 			} else if (type.isInt()) {
-				bw.writeu1(Type::TYPE_INTEGER);
+				bw.writeu1(TYPE_INTEGER);
 			} else if (type.isFloat()) {
-				bw.writeu1(Type::TYPE_FLOAT);
+				bw.writeu1(TYPE_FLOAT);
 			} else if (type.isLong()) {
-				bw.writeu1(Type::TYPE_LONG);
+				bw.writeu1(TYPE_LONG);
 			} else if (type.isDouble()) {
-				bw.writeu1(Type::TYPE_DOUBLE);
+				bw.writeu1(TYPE_DOUBLE);
+			} else if (type.isNull()) {
+				bw.writeu1(TYPE_NULL);
 			} else if (type.isUninitThis()) {
-				bw.writeu1(Type::TYPE_UNINITTHIS);
+				bw.writeu1(TYPE_UNINITTHIS);
 			} else if (type.isObject()) {
-				bw.writeu1(Type::TYPE_OBJECT);
+				bw.writeu1(TYPE_OBJECT);
 				u2 cpIndex = type.getCpIndex();
 				bw.writeu2(cpIndex);
 			} else if (type.isUninit()) {
-				bw.writeu1(Type::TYPE_UNINIT);
+				bw.writeu1(TYPE_UNINIT);
 				u2 offset = type.uninit.offset;
 				offset = type.uninit.label->label.offset;
 				bw.writeu2(offset);

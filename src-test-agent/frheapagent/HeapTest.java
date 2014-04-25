@@ -10,6 +10,20 @@ public class HeapTest {
 
 	private boolean isCourseText;
 
+	private static void checkcast0() throws CloneNotSupportedException {
+		for (int i = 0; i < 10; i++) {
+			HeapTest obj1 = (HeapTest) new HeapTest().clone();
+		}
+	}
+
+	private static void checkcast1() throws CloneNotSupportedException {
+		HeapTest[] arr1 = (HeapTest[]) new HeapTest[20].clone();
+
+		for (int i = 0; i < 10; i++) {
+			use(arr1[i]);
+		}
+	}
+
 	private static void use(Object arr) {
 
 	}
@@ -46,10 +60,30 @@ public class HeapTest {
 		use(new short[size][size][size]);
 		use(new int[size][size][size]);
 
-		use(new short[size][]);
+		short[][] arr0 = new short[size][];
+		for (int i = 0; i < size; i++) {
+			arr0[i] = new short[size];
 
-		// int[][] arr0 = new int[size][size];
-		// arr0[0] = new int[size];
+			short[] innerArray = arr0[i];
+			for (int j = 0; j < size; j++) {
+				short value = innerArray[i];
+				use(value);
+			}
+		}
+	}
+
+	private static void arrays1(int size) {
+
+		HeapTest[][] arr0 = new HeapTest[size][];
+		for (int i = 0; i < size; i++) {
+			arr0[i] = new HeapTest[size];
+
+			HeapTest[] innerArray = arr0[i];
+			for (int j = 0; j < size; j++) {
+				HeapTest value = innerArray[i];
+				use(value);
+			}
+		}
 	}
 
 	private static boolean char0(int size) {
@@ -67,19 +101,140 @@ public class HeapTest {
 		return res;
 	}
 
-//	public int covariant(int arg, int size) {
-//		Object[] arr;
-//
-//		if (arg == 0) {
-//			arr = new ArrayList[size];
-//		} else if (arg == 1) {
-//			arr = new Vector[arg];
-//		} else {
-//			throw new RuntimeException("Invalid args!");
-//		}
-//
-//		return arr.length;
-//	}
+	private static Object nullArray0(boolean isNull) {
+		Object[] arr;
+
+		if (isNull) {
+			arr = null;
+		} else {
+			arr = new Object[10];
+		}
+
+		return arr[0];
+	}
+
+	private static Object nullArray1(boolean isNull) {
+		Object[] arr = null;
+
+		if (isNull) {
+			arr = null;
+		}
+
+		return arr[0];
+	}
+
+	private static double nullArray2(boolean isNull) {
+		double[] arr;
+
+		if (isNull) {
+			arr = null;
+		} else {
+			arr = new double[10];
+		}
+
+		return arr[0];
+	}
+
+	private static double nullArray3(boolean isNull) {
+		double[] arr = null;
+
+		if (isNull) {
+			arr = null;
+		}
+
+		return arr[0];
+	}
+
+	private static HeapTest tryCatch0(HeapTest arg)
+			throws CloneNotSupportedException {
+		HeapTest obj0;
+		HeapTest obj1;
+		try {
+			obj0 = (HeapTest) new HeapTest().clone();
+			obj1 = (HeapTest) arg.clone();
+		} catch (Exception e) {
+			e.printStackTrace();
+			obj0 = null;
+			obj1 = null;
+
+			// throw e;
+		}
+
+		return obj0;
+	}
+
+	private static HeapTest tryCatch1(HeapTest arg)
+			throws CloneNotSupportedException {
+		HeapTest obj0;
+		System.out.println("Enter method tryCatch1");
+		try {
+			obj0 = (HeapTest) new HeapTest().clone();
+		} catch (Exception e) {
+			e.printStackTrace();
+			obj0 = null;
+		}
+
+		return obj0;
+	}
+
+	private static HeapTest tryCatch2(HeapTest arg)
+			throws CloneNotSupportedException {
+		HeapTest obj0;
+		HeapTest obj1;
+		HeapTest obj2 = null;
+		HeapTest obj3 = null;
+
+		if (arg == null) {
+			arg = obj2;
+		} else {
+			arg = obj3;
+		}
+
+		try {
+			obj0 = (HeapTest) new HeapTest().clone();
+			obj1 = (HeapTest) arg.clone();
+		} catch (Exception e) {
+			e.printStackTrace();
+			obj0 = null;
+			obj1 = null;
+
+			// throw e;
+		}
+
+		return obj0;
+	}
+
+	private static HeapTest tryCatch3(HeapTest arg, int size)
+			throws CloneNotSupportedException {
+		HeapTest obj0;
+		System.out.println("Enter method tryCatch1");
+		int n = size;
+		try {
+			do {
+				obj0 = (HeapTest) new HeapTest().clone();
+				n--;
+			} while (n > 0);
+		} catch (Exception e) {
+			e.printStackTrace();
+			obj0 = null;
+		}
+
+		return obj0;
+	}
+
+	// public int covariant(int arg, int size) {
+	// Object[] arr;
+	//
+	// if (arg == 0) {
+	// arr = new ArrayList[size];
+	// } else if (arg == 1) {
+	// arr = new Vector[arg];
+	// } else {
+	// throw new RuntimeException("Invalid args!");
+	// }
+	//
+	// return arr.length;
+	// }
 
 	private static void sort0(int[] array) {
 		int n = array.length;
@@ -222,9 +377,7 @@ public class HeapTest {
 		//
 		// for (int i = 0; i < 27; i++) {
 		// HeapTest[] arr = new HeapTest[i];
-		//
 		// System.out.println("elem: " + arr[i]);
-		//
 		// System.out.println("HeapTest array len: " + arr.length);
 		// }
 		//

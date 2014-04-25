@@ -79,35 +79,33 @@ void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
 void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata) {
 	ClassFile cf(data, len);
+	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+}
 
-	if (string(className) != "frheapagent/HeapTest") {
-		return;
-	}
-
-//	*newlen = cf.computeSize();
-
-//	ASSERT(len == newlen,
-//			"Expected class file len %d, actual was %d, on class %s", len,
-//			newlen, className);
-
-//u1* newdata = Allocate(jvmti, newlen);
-//cf.write(newdata, newlen);
-
+void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
+		const char* className, int* newlen, u1** newdata) {
+	ClassFile cf(data, len);
 	cf.computeFrames();
 
 	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
 
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+}
 
-//	for (int i = 0; i < newlen; i++) {
-//		ASSERT(data[i] == newdata[i],
-//				"error at position %d in class %s: %d:%d != %d:%d", i,
-//				className, data[i], data[i + 1], newdata[i], newdata[i + 1]);
-//	}
+void InstrClassComputeApp(jvmtiEnv* jvmti, u1* data, int len,
+		const char* className, int* newlen, u1** newdata) {
+	if (string(className) != "frheapagent/HeapTest") {
+		return;
+	}
 
-//	*newlenp = newlen;
-//	*newdatap = newdata;
+	ClassFile cf(data, len);
+	cf.computeFrames();
+
+	ofstream os(outFileName(className, "disasm").c_str());
+	os << cf;
+
+	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
 
 void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
