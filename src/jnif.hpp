@@ -1027,7 +1027,8 @@ public:
 
 	bool join(Frame& how) {
 		check(stack.size() == how.stack.size(), "Different stack sizes: ",
-				stack.size(), " != ", how.stack.size());
+				stack.size(), " != ", how.stack.size(), ": #", *this, " != #",
+				how);
 
 		if (lva.size() < how.lva.size()) {
 			lva.resize(how.lva.size(), Type::topType());
@@ -1069,18 +1070,21 @@ public:
 			opcode(OPCODE_nop), kind(kind), _offset(0) {
 		label.isBranchTarget = false;
 		label.isTryStart = false;
+		label.isCatchHandler = false;
 	}
 
 	Inst(Opcode opcode) :
 			opcode(opcode), kind(KIND_ZERO), _offset(0) {
 		label.isBranchTarget = false;
 		label.isTryStart = false;
+		label.isCatchHandler = false;
 	}
 
 	Inst(Opcode opcode, OpKind kind) :
 			opcode(opcode), kind(kind), _offset(0) {
 		label.isBranchTarget = false;
 		label.isTryStart = false;
+		label.isCatchHandler = false;
 	}
 
 	/**
@@ -1136,6 +1140,7 @@ public:
 			int id;
 			bool isBranchTarget;
 			bool isTryStart;
+			bool isCatchHandler;
 		} label;
 		struct {
 			int value;
@@ -1773,14 +1778,18 @@ private:
 
 };
 
+class ControlFlowGraph;
+
 class BasicBlock {
 public:
 	BasicBlock(const BasicBlock&) = delete;
 	BasicBlock(BasicBlock&&) = default;
 
-	friend class ControlFlowGraph;
+	friend ControlFlowGraph;
 
 	void addTarget(BasicBlock* target) {
+		Error::check(cfg == target->cfg, "invalid owner for basic block");
+
 		targets.push_back(target);
 	}
 
@@ -1799,12 +1808,13 @@ public:
 	}
 
 	BasicBlock* next;
+	ControlFlowGraph* cfg;
 
 private:
 
 	BasicBlock(InstList::iterator start, InstList::iterator exit,
-			std::string name) :
-			start(start), exit(exit), name(name), next(nullptr) {
+			std::string name, ControlFlowGraph* cfg) :
+			start(start), exit(exit), name(name), next(nullptr), cfg(cfg) {
 	}
 
 	std::vector<BasicBlock*> targets;
@@ -1829,7 +1839,7 @@ public:
 
 	BasicBlock* addBasicBlock(InstList::iterator start, InstList::iterator end,
 			std::string name) {
-		BasicBlock* bb = new BasicBlock(start, end, name);
+		BasicBlock* bb = new BasicBlock(start, end, name, this);
 
 		if (basicBlocks.size() > 0) {
 			BasicBlock* prevbb = basicBlocks.back();

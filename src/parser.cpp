@@ -642,16 +642,18 @@ private:
 			parseInstTargets(br, labels);
 		}
 
-		auto getLabel = [&](u2 labelpos, bool isTryStart) {
-			Inst*& lab = labels[labelpos];
-			if (lab == nullptr) {
-				lab = new Inst(KIND_LABEL);
-			}
+		auto getLabel =
+				[&](u2 labelpos, bool isTryStart, bool isCatchHandler) {
+					Inst*& lab = labels[labelpos];
+					if (lab == nullptr) {
+						lab = new Inst(KIND_LABEL);
+					}
 
-			lab->label.isTryStart = isTryStart;
+					lab->label.isTryStart =lab->label.isTryStart || isTryStart;
+					lab->label.isCatchHandler =lab->label.isCatchHandler || isCatchHandler;
 
-			return lab;
-		};
+					return lab;
+				};
 
 		u2 exceptionTableCount = br.readu2();
 		for (int i = 0; i < exceptionTableCount; i++) {
@@ -667,9 +669,9 @@ private:
 					"");
 
 			CodeExceptionEntry e;
-			e.startpc = getLabel(startPc, true);
-			e.endpc = getLabel(endPc, false);
-			e.handlerpc = getLabel(handlerPc, false);
+			e.startpc = getLabel(startPc, true, false);
+			e.endpc = getLabel(endPc, false, false);
+			e.handlerpc = getLabel(handlerPc, false, true);
 			e.catchtype = catchType;
 
 			ca->exceptions.push_back(e);

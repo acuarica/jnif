@@ -10,6 +10,13 @@ public class HeapTest {
 
 	private boolean isCourseText;
 
+	private static void whileTrue() {
+		int n = 0;
+		while (true) {
+			n++;
+		}
+	}
+
 	private static void checkcast0() throws CloneNotSupportedException {
 		for (int i = 0; i < 10; i++) {
 			HeapTest obj1 = (HeapTest) new HeapTest().clone();
@@ -217,6 +224,26 @@ public class HeapTest {
 		} catch (Exception e) {
 			e.printStackTrace();
 			obj0 = null;
+		}
+
+		return obj0;
+	}
+
+	private static HeapTest tryCatchFinally(HeapTest arg, int size)
+			throws CloneNotSupportedException {
+		HeapTest obj0;
+		System.out.println("Enter method tryCatch1");
+		int n = size;
+		try {
+			do {
+				obj0 = (HeapTest) new HeapTest().clone();
+				n--;
+			} while (n > 0);
+		} catch (Exception e) {
+			e.printStackTrace();
+			obj0 = null;
+		} finally {
+			System.out.print("finally!");
 		}
 
 		return obj0;

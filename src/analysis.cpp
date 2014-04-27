@@ -276,21 +276,14 @@ struct DescParser: protected Error {
 class SmtBuilder: private DescParser {
 public:
 
-	static void computeState(BasicBlock& to, Frame& how, InstList& instList,
-			ClassFile& cf) {
-
-		BasicBlock& bb = to;
-
+	static void computeState(BasicBlock& bb, Frame& how, InstList& instList,
+			ClassFile& cf, CodeAttr* code, Type pushType = Type::topType()) {
 		if (bb.start == instList.end()) {
-			assert(bb.name == "Exit", "");
-			assert(bb.exit == instList.end(), "");
+			assert(bb.name == "Exit" && bb.exit == instList.end(), "");
 			return;
 		}
 
 		assert(how.valid, "how valid");
-
-		//State& s = states[to._index];
-
 		assert(bb.in.valid == bb.out.valid, "");
 
 		bool change;
@@ -303,6 +296,42 @@ public:
 		}
 
 		if (change) {
+			if ((*bb.start)->isLabel()) {
+				for (auto ex : code->exceptions) {
+					if (ex.startpc->label.id == (*bb.start)->label.id) {
+						BasicBlock* handlerBb =
+								ControlFlowGraphBuilder::findBasicBlockOfLabel(
+										ex.handlerpc->label.id, instList,
+										*bb.cfg);
+
+						Type exType = [&]() {
+							if (ex.catchtype != ConstPool::NULLENTRY) {
+								const string& className = cf.getClassName(
+										ex.catchtype);
+								return parseConstClass(className);
+							} else {
+								return Type::objectType("java/lang/Throwable");
+							}
+						}();
+
+						Frame frame = bb.in;
+						frame.clearStack();
+						frame.push(exType);
+
+						computeState(*handlerBb, frame, instList, cf, code,
+								exType);
+					}
+				}
+			}
+
+//			if (!pushType.isTop()) {
+////				Frame& frame = bb.out;
+//				//			frame.push(pushType);
+//
+////				bb.in.push(pushType);
+//				bb.out.push(pushType);
+//			}
+
 			for (auto it = bb.start; it != bb.exit; it++) {
 				Inst* inst = *it;
 				computeFrame(*inst, cf, bb.out);
@@ -310,28 +339,8 @@ public:
 
 			Frame h = bb.out;
 
-			for (BasicBlock* nid : to) {
-//				InstList::iterator b;
-//				InstList::iterator e;
-//				string name;
-//				tie(b, e, name) = cfg.getNode(nid);
-//
-//				if (b == instList.end()) {
-//					ASSERT(name == "Entry" || name == "Exit", "");
-//					ASSERT(e == instList.end(), "");
-//					continue;
-//				}
-
-//				H h = outState;
-//				for (auto it = b; it != e; it++) {
-//					Inst* inst = *it;
-//					computeFrame(*inst, cf, h);
-//				}
-
-//				h.print(os);
-//				os << "  going to " << name << endl;
-
-				computeState(*nid, h, instList, cf);
+			for (BasicBlock* nid : bb) {
+				computeState(*nid, h, instList, cf, code);
 			}
 		}
 	}
@@ -1201,7 +1210,7 @@ public:
 		bbe->out = initFrame;
 
 		BasicBlock* to = *cfg.entry->begin();
-		SmtBuilder::computeState(*to, initFrame, code->instList, *cf);
+		SmtBuilder::computeState(*to, initFrame, code->instList, *cf, code);
 
 		SmtAttr* smt = new SmtAttr(*attrIndex);
 
@@ -1228,7 +1237,9 @@ public:
 		for (BasicBlock* bb : cfg) {
 			if (bb->start != code->instList.end()) {
 				Inst* start = *bb->start;
-				if (start->kind == KIND_LABEL && start->label.isBranchTarget) {
+				if (start->kind == KIND_LABEL
+						&& (start->label.isBranchTarget
+								|| start->label.isCatchHandler)) {
 					Frame& current = bb->in;
 					current.cleanTops();
 

@@ -371,13 +371,13 @@ private:
 
 		c.instList.setLabelIds();
 
-		for (Inst* inst : c.instList) {
-			printInst(*inst);
-			os << endl;
-		}
-
 		if (c.cfg != nullptr) {
 			printCfg(*c.cfg);
+		} else {
+			for (Inst* inst : c.instList) {
+				printInst(*inst);
+				os << endl;
+			}
 		}
 
 		for (CodeExceptionEntry& e : c.exceptions) {
@@ -425,7 +425,8 @@ private:
 		if (inst.kind == KIND_LABEL) {
 			line() << "label " << inst.label.id << ", B: "
 					<< yesNo(inst.label.isBranchTarget) << ", T: "
-					<< yesNo(inst.label.isTryStart);
+					<< yesNo(inst.label.isTryStart) << ", C: "
+					<< yesNo(inst.label.isCatchHandler);
 			return;
 		}
 
