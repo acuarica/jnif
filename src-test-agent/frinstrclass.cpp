@@ -22,6 +22,112 @@
 using namespace std;
 using namespace jnif;
 
+class ClassPath: public IClassPath {
+public:
+
+	ClassPath(JNIEnv* jni) :
+			jni(jni) {
+		javaLangClass = jni->FindClass("java/lang/Class");
+		ASSERT(javaLangClass != NULL, "javaLangClass is null!");
+
+		getNameMethodId = jni->GetMethodID(javaLangClass, "getName",
+				"()Ljava/lang/String;");
+		ASSERT(getNameMethodId != NULL, "getNameMethodId is null!");
+	}
+
+	const std::string getCommonSuperClass(const std::string& className1,
+			const std::string& className2) {
+		cerr << "arg clazz1: " << className1 << ", arg clazz2: " << className2
+				<< endl;
+
+		jclass clazz1 = jni->FindClass(className1.c_str());
+
+		if (clazz1 == NULL) {
+//			jni->ExceptionDescribe();
+//
+			jthrowable ex = jni->ExceptionOccurred();
+			ASSERT(ex != NULL, "invalid ex");
+//
+//			jni->ExceptionClear();
+//
+//			jclass clazzT = jni->FindClass("java/lang/Throwable");
+//			jmethodID pstid = jni->GetMethodID(clazzT, "printStackTrace",
+//					"()V");
+//			jni->CallObjectMethod(ex, pstid);
+
+			jni->ExceptionDescribe();
+			jclass exClass = jni->GetObjectClass(ex);
+			jmethodID mid = jni->GetMethodID(exClass, "toString",
+					"()Ljava/lang/String;");
+			jni->ExceptionClear();
+			jstring errMsg = (jstring) jni->CallObjectMethod(ex, mid);
+			jboolean isCopy = JNI_FALSE;
+			const char* msg = jni->GetStringUTFChars(errMsg, &isCopy);
+
+			INFO("Exception message: %s", msg);
+			jni->ReleaseStringUTFChars(errMsg, msg);
+
+		}
+
+		ASSERT(clazz1 != NULL, "clazz1 is null for class: %s",
+				className1.c_str());
+
+		jclass clazz2 = jni->FindClass(className2.c_str());
+		ASSERT(clazz2 != NULL, "clazz2 is null!");
+
+		cerr << "clazz1: " << getClassName(clazz1) << ", clazz2: "
+				<< getClassName(clazz2) << endl;
+
+		while (!jni->IsAssignableFrom(clazz2, clazz1)) {
+			clazz1 = jni->GetSuperclass(clazz1);
+			ASSERT(clazz1 != NULL, "superclass is null!");
+
+			cerr << "super clazz: " << getClassName(clazz1) << endl;
+		}
+
+		string common = fromBinaryName(getClassName(clazz1));
+		cerr << common << endl;
+
+		return common;
+	}
+
+private:
+
+	string fromBinaryName(const string& className) {
+		string newName = className;
+
+		for (u4 i = 0; i < newName.length(); i++) {
+			newName[i] = className[i] == '.' ? '/' : className[i];
+		}
+
+		return newName;
+	}
+
+	string getString(jstring str) {
+		jsize len = jni->GetStringUTFLength(str);
+		ASSERT(len > 0, "len is zero!");
+
+		const char* strUtf8 = jni->GetStringUTFChars(str, NULL);
+		ASSERT(strUtf8 != NULL, "strUtf8 is zero!");
+
+		string res(strUtf8, len);
+		jni->ReleaseStringUTFChars(str, strUtf8);
+
+		return res;
+	}
+
+	string getClassName(jclass clazz) {
+		jstring name = (jstring) jni->CallObjectMethod(clazz, getNameMethodId);
+		ASSERT(name != NULL, "name is null!");
+
+		return getString(name);
+	}
+
+	JNIEnv* jni;
+	jclass javaLangClass;
+	jmethodID getNameMethodId;
+};
+
 static unsigned char* Allocate(jvmtiEnv* jvmti, jlong size) {
 
 	unsigned char* memptr;
@@ -57,19 +163,19 @@ static string outFileName(const char* className, const char* ext,
 
 extern "C" {
 
-void InstrClassEmpty(jvmtiEnv*, u1*, int, const char*, int*, u1**) {
+void InstrClassEmpty(jvmtiEnv*, u1*, int, const char*, int*, u1**, JNIEnv*) {
 
 }
 
 void InstrClassDump(jvmtiEnv*, u1* data, int len, const char* className, int*,
-		u1**) {
+		u1**, JNIEnv*) {
 
 	ofstream os(outFileName(className, "class").c_str(), ios::binary);
 	os.write((char*) data, len);
 }
 
 void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
-		u1**) {
+		u1**, JNIEnv*) {
 	ClassFile cf(data, len);
 
 	ofstream os(outFileName(className, "disasm").c_str());
@@ -77,15 +183,25 @@ void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
 }
 
 void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
-		const char* className, int* newlen, u1** newdata) {
+		const char* className, int* newlen, u1** newdata, JNIEnv*) {
 	ClassFile cf(data, len);
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
 
+extern int isMainLoaded;
+
+extern int inStartPhase;
+extern int inLivePhase;
+
 void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
-		const char* className, int* newlen, u1** newdata) {
+		const char* className, int* newlen, u1** newdata, JNIEnv* jni) {
 	ClassFile cf(data, len);
-	cf.computeFrames();
+
+	//if (inLivePhase) {
+	if (isMainLoaded) {
+		ClassPath cp(jni);
+		cf.computeFrames(&cp);
+	}
 
 	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
@@ -94,13 +210,19 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 }
 
 void InstrClassComputeApp(jvmtiEnv* jvmti, u1* data, int len,
-		const char* className, int* newlen, u1** newdata) {
-	if (string(className) != "frheapagent/HeapTest") {
+		const char* className, int* newlen, u1** newdata, JNIEnv* jni) {
+
+	if (isMainLoaded == 0) {
 		return;
 	}
 
+//	if (string(className) != "frheapagent/HeapTest") {
+//		return;
+//	}
+
 	ClassFile cf(data, len);
-	cf.computeFrames();
+	ClassPath cp(jni);
+	cf.computeFrames(&cp);
 
 	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
@@ -109,7 +231,8 @@ void InstrClassComputeApp(jvmtiEnv* jvmti, u1* data, int len,
 }
 
 void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata) {
+		const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni) {
 
 	if (string(className) != "java/lang/Object") {
 		return;
@@ -147,7 +270,8 @@ void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 }
 
 void InstrClassNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata) {
+		const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni) {
 	ClassFile cf(data, len);
 
 	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
@@ -222,7 +346,8 @@ void InstrClassNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 }
 
 void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata) {
+		const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni) {
 
 //	if (string(className) != "frheapagent/HeapTest") {
 //		return;
@@ -306,7 +431,8 @@ void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 }
 
 void InstrClassMain(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata) {
+		const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni) {
 
 	ClassFile cf(data, len);
 
@@ -347,7 +473,8 @@ void InstrClassMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 }
 
 void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata) {
+		const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni) {
 
 	ClassFile cf(data, len);
 

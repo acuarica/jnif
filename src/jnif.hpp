@@ -44,14 +44,96 @@ typedef unsigned short u2;
 typedef unsigned int u4;
 
 /**
- *
+ * The magic number signature that must appear at the beginning of each
+ * class file.
  */
 enum Magic {
 	CLASSFILE_MAGIC = 0xcafebabe
 };
 
 /**
- *
+ * Constant pool enum used to distinguish between different kinds of elements
+ * inside the constant pool.
+ */
+enum ConstTag {
+
+	/**
+	 * Represents a class or an interface.
+	 */
+	CONST_CLASS = 7,
+
+	/**
+	 * Represents a field.
+	 */
+	CONST_FIELDREF = 9,
+
+	/**
+	 * Represents a method.
+	 */
+	CONST_METHODREF = 10,
+
+	/**
+	 * Represents an inteface method.
+	 */
+	CONST_INTERMETHODREF = 11,
+
+	/**
+	 * Used to represent constant objects of the type String.
+	 */
+	CONST_STRING = 8,
+
+	/**
+	 * Represents 4-byte numeric int constants.
+	 */
+	CONST_INTEGER = 3,
+
+	/**
+	 * Represents 4-byte numeric float constants.
+	 */
+	CONST_FLOAT = 4,
+
+	/**
+	 * Represents 8-byte numeric long constants.
+	 */
+	CONST_LONG = 5,
+
+	/**
+	 * Represents 8-byte numeric double constants.
+	 */
+	CONST_DOUBLE = 6,
+
+	/**
+	 * Used to represent a field or method, without indicating which class
+	 * or interface type it belongs to.
+	 */
+	CONST_NAMEANDTYPE = 12,
+
+	/**
+	 * Used to represent constant string values.
+	 */
+	CONST_UTF8 = 1,
+
+	/**
+	 * Used to represent a method handle.
+	 */
+	CONST_METHODHANDLE = 15,
+
+	/**
+	 * Used to represent a method type.
+	 */
+	CONST_METHODTYPE = 16,
+
+	/**
+	 * Used by an invokedynamic instruction to specify a bootstrap method,
+	 * the dynamic invocation name, the argument and return types of the call,
+	 * and optionally, a sequence of additional constants called static
+	 * arguments to the bootstrap method.
+	 */
+	CONST_INVOKEDYNAMIC = 18
+};
+
+/**
+ * Access flags for the class itself.
  */
 enum ClassFlags {
 
@@ -98,7 +180,7 @@ enum ClassFlags {
 };
 
 /**
- *
+ * Access flags used by methods.
  */
 enum MethodFlags {
 
@@ -164,7 +246,7 @@ enum MethodFlags {
 };
 
 /**
- *
+ * Access flags used by fields.
  */
 enum FieldFlags {
 
@@ -215,7 +297,7 @@ enum FieldFlags {
 };
 
 /**
- * OPCODES constants definitions
+ * OPCODES constants definitions.
  */
 enum Opcode {
 	OPCODE_nop = 0x00,
@@ -497,7 +579,7 @@ enum TypeTag {
 };
 
 /**
- *
+ * This class contains static method to facilitate error handling mechanism.
  */
 class Error {
 public:
@@ -513,13 +595,10 @@ public:
 		void *array[20];
 		size_t size;
 
-		// get void*'s for all entries on the stack
 		size = backtrace(array, 20);
 
-		// print out all the frames to stderr
 		fprintf(stderr, "Error: exception on jnif:\n");
 		backtrace_symbols_fd(array, size, STDERR_FILENO);
-		//exit(1);
 
 		throw "Error!!!";
 	}
@@ -714,6 +793,10 @@ public:
 		return isOneWord() || isTwoWord();
 	}
 
+	inline bool isClass() const {
+		return isObject() && !isArray();
+	}
+
 	inline std::string getClassName() const {
 		Error::check(isObject(), "Type is not object type to get class name: ",
 				*this);
@@ -839,7 +922,7 @@ public:
 
 	Type popDouble() {
 		Type t = popTwoWord();
-		assert(t.isDouble(), "invalid double type on top of the stack");
+		assert(t.isDouble(), "Invalid double type on top of the stack: ", t);
 		return t;
 	}
 
@@ -971,88 +1054,25 @@ public:
 		stack.clear();
 	}
 
-	static bool isAssignable(const Type& subt, const Type& supt) {
-		if (subt == supt) {
-			return true;
-		}
-
-		if (supt.isTop()) {
-			return true;
-		}
-
-		if (subt.isNull() && supt.isObject()) {
-			return true;
-		}
-
-//		if (subt.isArray() && supt.isArray()) {
-//			return true;
-//		}
-
-		return false;
-	}
-
-	bool assign(Type& t, Type o) {
-//		check(isAssignable(t, o) || isAssignable(o, t), "Invalid assign type: ",
-//				t, " <> ", o, " @ frame: ", *this);
-
-		if (!isAssignable(t, o) && !isAssignable(o, t)) {
-			t = Type::topType();
-			return true;
-		}
-
-		if (isAssignable(t, o)) {
-			if (t == o) {
-				return false;
-			}
-
-			t = o;
-			return true;
-		}
-
-		assert(isAssignable(o, t), "Invalid assign type: ", t, " <> ", o);
-
-		return false;
-	}
-
 	void cleanTops() {
+		for (u4 i = 0; i < lva.size(); i++) {
+			Type t = lva[i];
+			if (t.isTwoWord()) {
+				Type top = lva[i + 1];
+				assert(top.isTop(), "Not top for two word: ", top);
+				lva.erase(lva.begin() + i + 1);
+			}
+		}
+
 		for (int i = lva.size() - 1; i >= 0; i--) {
 			Type t = lva[i];
 			if (t.isTop()) {
+
 				lva.erase(lva.begin() + i);
 			} else {
 				return;
 			}
 		}
-	}
-
-	bool join(Frame& how) {
-		check(stack.size() == how.stack.size(), "Different stack sizes: ",
-				stack.size(), " != ", how.stack.size(), ": #", *this, " != #",
-				how);
-
-		if (lva.size() < how.lva.size()) {
-			lva.resize(how.lva.size(), Type::topType());
-		} else if (how.lva.size() < lva.size()) {
-			how.lva.resize(lva.size(), Type::topType());
-		}
-
-		assert(lva.size() == how.lva.size(), "%ld != %ld", lva.size(),
-				how.lva.size());
-
-		bool change = false;
-
-		for (u4 i = 0; i < lva.size(); i++) {
-			assign(lva[i], how.lva[i]);
-		}
-
-		std::list<Type>::iterator i = stack.begin();
-		std::list<Type>::iterator j = how.stack.begin();
-
-		for (; i != stack.end(); i++, j++) {
-			assign(*i, *j);
-		}
-
-		return change;
 	}
 
 	std::vector<Type> lva;
@@ -1244,26 +1264,6 @@ public:
 
 		return false;
 	}
-};
-
-/**
- * Constant pool enum
- */
-enum ConstTag {
-	CONST_CLASS = 7,
-	CONST_FIELDREF = 9,
-	CONST_METHODREF = 10,
-	CONST_INTERMETHODREF = 11,
-	CONST_STRING = 8,
-	CONST_INTEGER = 3,
-	CONST_FLOAT = 4,
-	CONST_LONG = 5,
-	CONST_DOUBLE = 6,
-	CONST_NAMEANDTYPE = 12,
-	CONST_UTF8 = 1,
-	CONST_METHODHANDLE = 15,
-	CONST_METHODTYPE = 16,
-	CONST_INVOKEDYNAMIC = 18
 };
 
 struct Class {
@@ -2069,6 +2069,10 @@ struct CodeAttr: Attr {
 
 	InstList instList;
 
+	bool hasTryCatch() const {
+		return exceptions.size() > 0;
+	}
+
 	std::vector<CodeExceptionEntry> exceptions;
 
 	ControlFlowGraph* cfg;
@@ -2124,7 +2128,7 @@ private:
 class Field: public Member {
 public:
 
-	Field(u2 accessFlags, ConstPool::Index nameIndex,
+	inline Field(u2 accessFlags, ConstPool::Index nameIndex,
 			ConstPool::Index descIndex) :
 			Member(accessFlags, nameIndex, descIndex) {
 	}
@@ -2192,13 +2196,11 @@ public:
 class IClassPath {
 public:
 	virtual ~IClassPath() {
-
 	}
 
-	virtual bool isAssignableFrom(const std::string& className) = 0;
-	virtual const std::string& getSuperclass(const std::string& className) = 0;
+	virtual const std::string getCommonSuperClass(const std::string& className1,
+			const std::string& className2) = 0;
 
-	//virtual void getSuperclass(const char* className) = 0;
 };
 
 /**
@@ -2281,6 +2283,11 @@ public:
 	u4 computeSize();
 
 	/**
+	 *
+	 */
+	void computeFrames(IClassPath* classPath);
+
+	/**
 	 * Writes this class file in the specified buffer according to the
 	 * specification.
 	 */
@@ -2296,16 +2303,6 @@ public:
 		write(*classFileData, *classFileSize);
 	}
 
-	/**
-	 * Shows the class file in a textual format, useful for debugging purposes.
-	 */
-	friend std::ostream& operator<<(std::ostream& os, ClassFile& cf);
-
-	/**
-	 *
-	 */
-	void computeFrames();
-
 	u2 majorVersion;
 	u2 minorVersion;
 	u2 accessFlags;
@@ -2319,6 +2316,8 @@ public:
 std::ostream& operator<<(std::ostream& os, const ConstTag& tag);
 std::ostream& operator<<(std::ostream& os, const Frame& frame);
 std::ostream& operator<<(std::ostream& os, const Type& type);
+//std::ostream& operator<<(std::ostream& os, const Inst& inst);
+std::ostream& operator<<(std::ostream& os, ClassFile& cf);
 
 }
 

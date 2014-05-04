@@ -12,6 +12,9 @@ HPPS=$(wildcard $(INCLUDE)/*.hpp)
 LIB=libfrheapagent.jnilib
 SRCS=$(wildcard *.c) $(wildcard *.cpp) $(wildcard frproxy/*.java)
 OBJS=$(SRCS:%=$(BUILD)/%.o)
+JAVAS=$(wildcard frheapagent/*.java)
+CLASSES=$(JAVAS:%.java=$(BUILD)/%.class)
+
 CFLAGS= -W -Wall -Wextra -O0 -g -Wno-unused-parameter -I$(JAVA_HOME)/include
 MAINCLASS=frheapagent.HeapTest
 MAINCLASSFILE=$(subst .,/,$(MAINCLASS)).class
@@ -51,9 +54,9 @@ instr-computeapp: instr
 	$(RUNINSTR)=ComputeApp $(MAINCLASS)
 
 .PHONY: instr
-instr: $(BUILD)/$(MAINCLASSFILE) $(BUILD)/$(LIB)
+instr: $(CLASSES) $(BUILD)/$(LIB)
 
-$(BUILD)/$(MAINCLASSFILE): $(MAINJAVAFILE)
+$(BUILD)/%.class: %.java
 	javac $^ -d $(BUILD)
 
 $(BUILD)/$(LIB): $(OBJS) $(BUILD)/libjnif.a

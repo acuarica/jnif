@@ -10,6 +10,46 @@ public class HeapTest {
 
 	private boolean isCourseText;
 
+	public void method() {
+		System.out.println("HeapTest.method");
+	}
+
+	private static void if0(boolean arg) {
+		HeapTest o = null;
+
+		if (arg) {
+			o = null;
+		}
+
+		o.method();
+	}
+
+	private static void scope0(int arg) {
+		// HeapTest o = null;
+
+		// if (arg > 0)
+		{
+			int o = arg;
+
+			if (arg == 0) {
+				System.out.println("0");
+			}
+
+			System.out.println(o);
+		}
+
+		// if (arg < 0)
+		{
+			String o = "";
+
+			if (arg == -1) {
+				System.out.println("-1");
+			}
+
+			System.out.println(o);
+		}
+	}
+
 	private static void whileTrue() {
 		int n = 0;
 		while (true) {
@@ -31,8 +71,13 @@ public class HeapTest {
 		}
 	}
 
-	private static void use(Object arr) {
-
+	private static void use(Object obj) {
+		if (obj == null) {
+			System.err.println("(null)");
+		} else {
+			Class<?> clazz = obj.getClass();
+			System.err.println(clazz);
+		}
 	}
 
 	private static void arrays0(int size) {
@@ -178,6 +223,7 @@ public class HeapTest {
 			obj0 = (HeapTest) new HeapTest().clone();
 		} catch (Exception e) {
 			e.printStackTrace();
+			// System.out.println(obj0.val());
 			obj0 = null;
 		}
 
@@ -229,6 +275,33 @@ public class HeapTest {
 		return obj0;
 	}
 
+	private static AbstractList tryCatch4() {
+		try {
+			return new Vector();
+		} catch (Throwable e) {
+			return null;
+		}
+	}
+
+	private static HeapTest tryCatch5() {
+		HeapTest o = null;
+		try {
+			return o;
+		} catch (Throwable e) {
+			return o;
+		}
+	}
+
+	private static HeapTest tryCatch6() {
+		HeapTest o = null;
+		try {
+			o = new HeapTest();
+			return o;
+		} catch (Throwable e) {
+			return o;
+		}
+	}
+
 	private static HeapTest tryCatchFinally(HeapTest arg, int size)
 			throws CloneNotSupportedException {
 		HeapTest obj0;
@@ -247,6 +320,20 @@ public class HeapTest {
 		}
 
 		return obj0;
+	}
+
+	private static Object hierarchy0(int arg, int size) {
+		Object obj;
+
+		if (arg == 0) {
+			obj = new ArrayList();
+		} else if (arg == 1) {
+			obj = new Vector();
+		} else {
+			throw new RuntimeException("Invalid args!");
+		}
+
+		return obj;
 	}
 
 	// public int covariant(int arg, int size) {
@@ -382,7 +469,27 @@ public class HeapTest {
 		}
 	}
 
+	private static Object inner0(int arg) {
+		HashMap<String, String> map = new HashMap<String, String>();
+
+		Object obj = null;
+		for (Map.Entry<String, String> entry : map.entrySet()) {
+			obj = entry;
+		}
+
+		if (obj == null) {
+			obj = new Object();
+
+		}
+
+		return obj;
+	}
+
 	public static void main(String[] args) throws IOException {
+		// use(new Chapter3Snippets());
+		// use(new Chapter3Snippets().new Far());
+		// use(new Chapter3Snippets.TestExc1());
+		// use(new Chapter3Snippets.Example());
 		// HeapTest ht = new HeapTest();
 		// System.out.println("Is course text?: " + ht.isCourseText());
 		// System.out.println("Really?: " + ht.isCourseText);
@@ -420,4 +527,5 @@ public class HeapTest {
 		// hola2(1, 2);
 		// System.out.println("HeapTest: " + as[as.length - 1]);
 	}
+
 }

@@ -1,16 +1,17 @@
 
 BUILD=../build
-
 OUTPUT=$(BUILD)/libjnif.a
 INCS=$(wildcard *.hpp)
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:%=$(BUILD)/%.o)
-
 CFLAGS += -fPIC -W -O0 -g -Wall -Wextra
 
-.PHONY: all clean
-
+.PHONY: all
 all: $(OUTPUT)
+
+.PHONY: clean
+clean:
+	rm -rf $(BUILD)
 
 $(OUTPUT): $(OBJS)
 	ar crv $@ $^
@@ -20,6 +21,3 @@ $(BUILD)/%.cpp.o: %.cpp $(INCS) | $(BUILD)
 
 $(BUILD):
 	mkdir -p $(BUILD)
-
-clean:
-	rm -rf $(BUILD)

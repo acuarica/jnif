@@ -14,9 +14,14 @@
 #include "frinstr.h"
 
 typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata);
+		const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni);
 
 InstrFunc* instrFunc;
+
+char* javaCommand;
+
+int isMainLoaded = 0;
 
 static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jclass class_being_redefined, jobject loader, const char* name,
@@ -25,12 +30,13 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		unsigned char** new_class_data) {
 	_TLOG("CLASSFILELOAD:%s", name);
 
-	if (!FrIsProxyClassName(name)) {
+	if (strcmp(name, javaCommand) == 0) {
+		isMainLoaded = 1;
+	}
 
+	if (!FrIsProxyClassName(name)) {
 		(*instrFunc)(jvmti, (unsigned char*) class_data, class_data_len, name,
-				new_class_data_len, new_class_data);
-//		FrInstrClassFile(jvmti, class_data, class_data_len, name,
-//				new_class_data_len, new_class_data);
+				new_class_data_len, new_class_data, jni);
 	}
 }
 
@@ -69,16 +75,21 @@ static void JNICALL ClassPrepareEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 extern signed char frproxy_FrInstrProxy_class[];
 extern int frproxy_FrInstrProxy_class_len;
 
+int inStartPhase = 0;
+int inLivePhase = 0;
+
 /**
  * Changes from JVMTI_PHASE_PRIMORDIAL to JVMTI_PHASE_START phase.
  * This phase is when the JVM is starting to execute java bytecode.
- * Therefore since we want to catch all the event in this bootstrap phase, we need
- * to define the proxy class as earlier as possibly.
+ * Therefore since we want to catch all the event in this bootstrap phase,
+ * we need to define the proxy class as earlier as possibly.
  *
- * Also it is needed to stamp classes that won't be prepared ever, like primitive classes
- * and Finalizer (why?)
+ * Also it is needed to stamp classes that won't be prepared ever,
+ * like primitive classes and Finalizer (why?)
  */
 static void JNICALL VMStartEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
+	inStartPhase = 1;
+
 	NOTICE("VM started");
 
 	_TLOG("VMSTART");
@@ -92,36 +103,39 @@ static void JNICALL VMStartEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 }
 
 static void JNICALL VMInitEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread) {
+	inLivePhase = 1;
+
 	NOTICE("VM init");
 
 	_TLOG("VMINIT");
 
 	StampThread(jvmti, thread);
-
-	jclass javaLangClass = (*jni)->FindClass(jni, "java/lang/Class");
-	jmethodID getNameMethod = (*jni)->GetMethodID(jni, javaLangClass, "getName",
-			"()Ljava/lang/String;");
-
-	jclass clazz1 = (*jni)->FindClass(jni, "java/util/ArrayList");
-	jclass clazz2 = (*jni)->FindClass(jni, "java/util/Vector");
-	jclass clazz3 = (*jni)->FindClass(jni, "[[Ljava/lang/Integer;");
-	jclass clazz4 = (*jni)->FindClass(jni, "[[Ljava/util/Vector;");
-
-	jclass superClass = (*jni)->GetSuperclass(jni, clazz3);
-	jstring name = (*jni)->CallObjectMethod(jni, superClass, getNameMethod);
-	jsize namelen = (*jni)->GetStringUTFLength(jni, name);
-	const char* nameutf8 = (*jni)->GetStringUTFChars(jni, name, NULL);
-	INFO("nameutf8:%.*s", namelen, nameutf8);
-	(*jni)->ReleaseStringUTFChars(jni, name, nameutf8);
-
-	jboolean res = (*jni)->IsAssignableFrom(jni, clazz1, clazz2);
-	INFO("res: %i", res);
 }
 
 static void JNICALL ExceptionEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
-		jmethodID method, jlocation location, jobject exception,
+		jmethodID method, jlocation location, jobject ex,
 		jmethodID catch_method, jlocation catch_location) {
-	//NOTICE("Exception ocurred");
+//	ERROR("Exception in bytecode");
+
+//	(*jni)->ExceptionClear(jni);
+
+//	jclass cls = (*jni)->GetObjectClass(jni, ex);
+//
+//	jclass javaLangClass = (*jni)->FindClass(jni, "java/lang/Class");
+//	jmethodID getNameMethod = (*jni)->GetMethodID(jni, javaLangClass, "getName",
+//			"()Ljava/lang/String;");
+//	jstring name = (*jni)->CallObjectMethod(jni, cls, getNameMethod);
+//	jsize namelen = (*jni)->GetStringUTFLength(jni, name);
+//	const char* nameutf8 = (*jni)->GetStringUTFChars(jni, name, NULL);
+//	INFO("nameutf8:%.*s", namelen, nameutf8);
+//	(*jni)->ReleaseStringUTFChars(jni, name, nameutf8);
+
+	if (inLivePhase) {
+//		jclass clazz = (*jni)->FindClass(jni, "java/lang/Throwable");
+//		jmethodID pstid = (*jni)->GetMethodID(jni, clazz, "printStackTrace",
+//				"()V");
+//		(*jni)->CallObjectMethod(jni, ex, pstid);
+	}
 
 	_TLOG("EXCEPTION");
 }
@@ -223,6 +237,21 @@ static void ParseOptions(const char* options) {
 	EXCEPTION("Invalid name options for instfuncindex: %s.", options);
 }
 
+void PrintProperties(jvmtiEnv* jvmti) {
+	jint count;
+	char** properties;
+	//jvmtiError error =
+	(*jvmti)->GetSystemProperties(jvmti, &count, &properties);
+
+	for (int i = 0; i < count; i++) {
+		const char* property = properties[i];
+		char* value;
+		(*jvmti)->GetSystemProperty(jvmti, property, &value);
+
+		_TLOG("Property %d: %s=%s", i, property, value);
+	}
+}
+
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options, void* reserved) {
 	NOTICE("Agent loaded. options: %s", options);
 
@@ -235,6 +264,17 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options, void* reserved) 
 				"Unable to access JVMTI Version 1 (0x%x)," " is your J2SE a 1.5 or newer version?" " JNIEnv's GetEnv() returned %d\n",
 				JVMTI_VERSION_1, res);
 	}
+
+	PrintProperties(jvmti);
+
+	(*jvmti)->GetSystemProperty(jvmti, "sun.java.command", &javaCommand);
+	for (int i = 0; javaCommand[i] != '\0'; i++) {
+		if (javaCommand[i] == '.') {
+			javaCommand[i] = '/';
+		}
+	}
+
+	_TLOG("sun.java.command: %s", javaCommand);
 
 	jvmtiCapabilities cap;
 	memset(&cap, 0, sizeof(cap));

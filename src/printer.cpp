@@ -32,6 +32,10 @@ std::ostream& operator<<(std::ostream& os, const ConstTag& tag) {
 	return os << ConstNames[tag];
 }
 
+//std::ostream& operator<<(std::ostream& os, const Inst& inst){
+
+//}
+
 std::ostream& operator<<(std::ostream& os, const Frame& frame) {
 	os << "{ ";
 	for (u4 i = 0; i < frame.lva.size(); i++) {
@@ -415,7 +419,7 @@ private:
 		os << endl;
 	}
 
-	void printInst(Inst& inst) {
+	void printInst(const Inst& inst) {
 		int offset = inst._offset;
 
 		auto yesNo = [&](bool value) {

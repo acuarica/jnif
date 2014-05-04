@@ -276,8 +276,122 @@ struct DescParser: protected Error {
 class SmtBuilder: private DescParser {
 public:
 
+	static bool isAssignable(const Type& subt, const Type& supt) {
+		if (subt == supt) {
+			return true;
+		}
+
+		if (supt.isTop()) {
+			return true;
+		}
+
+		if (subt.isNull() && supt.isObject()) {
+			return true;
+		}
+
+//		if (subt.isArray() && supt.isArray()) {
+//			return true;
+//		}
+
+		return false;
+	}
+
+	static bool assign(Type& t, Type o, IClassPath* classPath) {
+//		check(isAssignable(t, o) || isAssignable(o, t), "Invalid assign type: ",
+//				t, " <> ", o, " @ frame: ", *this);
+
+		if (!isAssignable(t, o) && !isAssignable(o, t)) {
+			if (t.isClass() && o.isClass()) {
+				string clazz1 = t.getClassName();
+				string clazz2 = o.getClassName();
+				string res = classPath->getCommonSuperClass(clazz1, clazz2);
+
+				t = Type::objectType(res);
+				return true;
+			}
+
+			t = Type::topType();
+			return true;
+		}
+
+		if (isAssignable(t, o)) {
+			if (t == o) {
+				return false;
+			}
+
+			t = o;
+			return true;
+		}
+
+		assert(isAssignable(o, t), "Invalid assign type: ", t, " <> ", o);
+
+		return false;
+	}
+
+	static bool join(Frame& frame, Frame& how, IClassPath* classPath) {
+		check(frame.stack.size() == how.stack.size(), "Different stack sizes: ",
+				frame.stack.size(), " != ", how.stack.size(), ": #", frame,
+				" != #", how);
+
+		if (frame.lva.size() < how.lva.size()) {
+			frame.lva.resize(how.lva.size(), Type::topType());
+		} else if (how.lva.size() < frame.lva.size()) {
+			how.lva.resize(frame.lva.size(), Type::topType());
+		}
+
+		assert(frame.lva.size() == how.lva.size(), "%ld != %ld",
+				frame.lva.size(), how.lva.size());
+
+		bool change = false;
+
+		for (u4 i = 0; i < frame.lva.size(); i++) {
+			assign(frame.lva[i], how.lva[i], classPath);
+		}
+
+		std::list<Type>::iterator i = frame.stack.begin();
+		std::list<Type>::iterator j = how.stack.begin();
+
+		for (; i != frame.stack.end(); i++, j++) {
+			assign(*i, *j, classPath);
+		}
+
+		return change;
+	}
+
+	static void visitCatch(BasicBlock& bb, InstList& instList, ClassFile& cf,
+			CodeAttr* code, IClassPath* classPath, bool useIn) {
+		if ((*bb.start)->isLabel()) {
+			for (auto ex : code->exceptions) {
+				if (ex.startpc->label.id == (*bb.start)->label.id) {
+					BasicBlock* handlerBb =
+							ControlFlowGraphBuilder::findBasicBlockOfLabel(
+									ex.handlerpc->label.id, instList, *bb.cfg);
+
+					Type exType = [&]() {
+						if (ex.catchtype != ConstPool::NULLENTRY) {
+							const string& className = cf.getClassName(
+									ex.catchtype);
+							return parseConstClass(className);
+						} else {
+							return Type::objectType("java/lang/Throwable");
+						}
+					}();
+
+					Frame frame = useIn ? bb.in : bb.out;
+					//Frame frame = bb.out;
+					frame.clearStack();
+					frame.push(exType);
+
+					computeState(*handlerBb, frame, instList, cf, code,
+							classPath);
+				}
+			}
+		}
+
+	}
+
 	static void computeState(BasicBlock& bb, Frame& how, InstList& instList,
-			ClassFile& cf, CodeAttr* code, Type pushType = Type::topType()) {
+			ClassFile& cf, CodeAttr* code, IClassPath* classPath) {
 		if (bb.start == instList.end()) {
 			assert(bb.name == "Exit" && bb.exit == instList.end(), "");
 			return;
@@ -292,45 +406,11 @@ public:
 			bb.out = bb.in;
 			change = true;
 		} else {
-			change = bb.in.join(how);
+			change = join(bb.in, how, classPath);
 		}
 
 		if (change) {
-			if ((*bb.start)->isLabel()) {
-				for (auto ex : code->exceptions) {
-					if (ex.startpc->label.id == (*bb.start)->label.id) {
-						BasicBlock* handlerBb =
-								ControlFlowGraphBuilder::findBasicBlockOfLabel(
-										ex.handlerpc->label.id, instList,
-										*bb.cfg);
-
-						Type exType = [&]() {
-							if (ex.catchtype != ConstPool::NULLENTRY) {
-								const string& className = cf.getClassName(
-										ex.catchtype);
-								return parseConstClass(className);
-							} else {
-								return Type::objectType("java/lang/Throwable");
-							}
-						}();
-
-						Frame frame = bb.in;
-						frame.clearStack();
-						frame.push(exType);
-
-						computeState(*handlerBb, frame, instList, cf, code,
-								exType);
-					}
-				}
-			}
-
-//			if (!pushType.isTop()) {
-////				Frame& frame = bb.out;
-//				//			frame.push(pushType);
-//
-////				bb.in.push(pushType);
-//				bb.out.push(pushType);
-//			}
+			visitCatch(bb, instList, cf, code, classPath, true);
 
 			for (auto it = bb.start; it != bb.exit; it++) {
 				Inst* inst = *it;
@@ -339,8 +419,10 @@ public:
 
 			Frame h = bb.out;
 
+			visitCatch(bb, instList, cf, code, classPath, false);
+
 			for (BasicBlock* nid : bb) {
-				computeState(*nid, h, instList, cf, code);
+				computeState(*nid, h, instList, cf, code, classPath);
 			}
 		}
 	}
@@ -528,7 +610,7 @@ public:
 						h.pushLong();
 						break;
 					case CONST_DOUBLE:
-						h.pushLong();
+						h.pushDouble();
 						break;
 					default:
 						raise("Invalid constant for ldc2_w");
@@ -1156,7 +1238,7 @@ public:
 	}
 
 	static void computeFramesMethod(CodeAttr* code, Method* method,
-			ClassFile* cf, ConstPool::Index* attrIndex) {
+			ClassFile* cf, ConstPool::Index* attrIndex, IClassPath* classPath) {
 
 		for (auto it = code->attrs.begin(); it != code->attrs.end(); it++) {
 			auto attr = *it;
@@ -1166,7 +1248,7 @@ public:
 			}
 		}
 
-		if (!code->instList.hasBranches()) {
+		if (!code->instList.hasBranches() && !code->hasTryCatch()) {
 			return;
 		}
 
@@ -1210,7 +1292,8 @@ public:
 		bbe->out = initFrame;
 
 		BasicBlock* to = *cfg.entry->begin();
-		SmtBuilder::computeState(*to, initFrame, code->instList, *cf, code);
+		SmtBuilder::computeState(*to, initFrame, code->instList, *cf, code,
+				classPath);
 
 		SmtAttr* smt = new SmtAttr(*attrIndex);
 
@@ -1315,7 +1398,7 @@ public:
 	}
 };
 
-void ClassFile::computeFrames() {
+void ClassFile::computeFrames(IClassPath* classPath) {
 
 // To compute label offsets.
 	computeSize();
@@ -1326,7 +1409,8 @@ void ClassFile::computeFrames() {
 		CodeAttr* code = method->codeAttr();
 
 		if (code != nullptr) {
-			Compute::computeFramesMethod(code, method, this, &attrIndex);
+			Compute::computeFramesMethod(code, method, this, &attrIndex,
+					classPath);
 		}
 	}
 }
