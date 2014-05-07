@@ -48,20 +48,57 @@ public class HeapTest {
 	private static Object for1() {
 		Object obj = null;
 		for (int i = 0; i < 4; i++) {
-			obj = new HeapTest();
+			obj = new Base();
 		}
 
 		if (obj == null) {
+			obj = new Base();
+		}
+
+		return obj;
+	}
+
+	private static Object for2() {
+		Object obj = null;
+		for (int i = 0; i < 4; i++) {
+			obj = new Derived1();
+		}
+
+		if (obj == null) {
+			obj = new Base();
+		}
+
+		return obj;
+	}
+
+	private static Object self0(int arg) {
+		Object obj = new HeapTest();
+		if (arg == 0) {
 			obj = new HeapTest();
 		}
 
 		return obj;
 	}
 
-	private static void scope0(int arg) {
-		// HeapTest o = null;
+	private static Object self1(int arg) {
+		Object obj = null;
+		if (arg == 0) {
+			obj = new HeapTest();
+		}
 
-		// if (arg > 0)
+		return obj;
+	}
+
+	// private static Object self1(int arg) {
+	// Object obj = new Object();
+	// if (arg == 0) {
+	// obj = new HeapTest();
+	// }
+	//
+	// return obj;
+	// }
+
+	private static void scope0(int arg) {
 		{
 			int o = arg;
 
@@ -72,7 +109,6 @@ public class HeapTest {
 			System.out.println(o);
 		}
 
-		// if (arg < 0)
 		{
 			String o = "";
 
@@ -257,7 +293,6 @@ public class HeapTest {
 			obj0 = (HeapTest) new HeapTest().clone();
 		} catch (Exception e) {
 			e.printStackTrace();
-			// System.out.println(obj0.val());
 			obj0 = null;
 		}
 
@@ -284,8 +319,6 @@ public class HeapTest {
 			e.printStackTrace();
 			obj0 = null;
 			obj1 = null;
-
-			// throw e;
 		}
 
 		return obj0;
@@ -370,19 +403,19 @@ public class HeapTest {
 		return obj;
 	}
 
-	// public int covariant(int arg, int size) {
-	// Object[] arr;
-	//
-	// if (arg == 0) {
-	// arr = new ArrayList[size];
-	// } else if (arg == 1) {
-	// arr = new Vector[arg];
-	// } else {
-	// throw new RuntimeException("Invalid args!");
-	// }
-	//
-	// return arr.length;
-	// }
+	public int covariant(int arg, int size) {
+		Object[] arr;
+
+		if (arg == 0) {
+			arr = new ArrayList[size];
+		} else if (arg == 1) {
+			arr = new Vector[arg];
+		} else {
+			throw new RuntimeException("Invalid args!");
+		}
+
+		return arr.length;
+	}
 
 	private static void sort0(int[] array) {
 		int n = array.length;

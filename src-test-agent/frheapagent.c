@@ -134,10 +134,10 @@ static void JNICALL ExceptionEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
 //	(*jni)->ReleaseStringUTFChars(jni, name, nameutf8);
 
 	if (inLivePhase) {
-		jclass clazz = (*jni)->FindClass(jni, "java/lang/Throwable");
-		jmethodID pstid = (*jni)->GetMethodID(jni, clazz, "printStackTrace",
-				"()V");
-		(*jni)->CallObjectMethod(jni, ex, pstid);
+//		jclass clazz = (*jni)->FindClass(jni, "java/lang/Throwable");
+//		jmethodID pstid = (*jni)->GetMethodID(jni, clazz, "printStackTrace",
+//				"()V");
+//		(*jni)->CallObjectMethod(jni, ex, pstid);
 	}
 
 	_TLOG("EXCEPTION");
