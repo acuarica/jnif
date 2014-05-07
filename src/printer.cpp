@@ -70,7 +70,7 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 	} else if (type.isUninitThis()) {
 		os << "Uninitialized this";
 	} else if (type.isObject()) {
-		os << "Object: <<" << type.getClassName() << ">>@" << type.getCpIndex();
+		os << "Object: #" << type.getClassName() << "#@" << type.getCpIndex();
 	} else if (type.isUninit()) {
 		u2 offset = type.uninit.label->label.offset;
 		os << "Uninitialized offset" << type.uninit.offset << " " << offset;

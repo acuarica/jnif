@@ -134,10 +134,10 @@ static void JNICALL ExceptionEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
 //	(*jni)->ReleaseStringUTFChars(jni, name, nameutf8);
 
 	if (inLivePhase) {
-//		jclass clazz = (*jni)->FindClass(jni, "java/lang/Throwable");
-//		jmethodID pstid = (*jni)->GetMethodID(jni, clazz, "printStackTrace",
-//				"()V");
-//		(*jni)->CallObjectMethod(jni, ex, pstid);
+		jclass clazz = (*jni)->FindClass(jni, "java/lang/Throwable");
+		jmethodID pstid = (*jni)->GetMethodID(jni, clazz, "printStackTrace",
+				"()V");
+		(*jni)->CallObjectMethod(jni, ex, pstid);
 	}
 
 	_TLOG("EXCEPTION");
@@ -179,12 +179,12 @@ static void JNICALL VMDeathEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 }
 
 static void ParseOptions(const char* options) {
-	extern InstrFunc InstrClassEmpty;
-	extern InstrFunc InstrClassDump;
+	//extern InstrFunc InstrClassEmpty;
+	//extern InstrFunc InstrClassDump;
 	extern InstrFunc InstrClassPrint;
 	extern InstrFunc InstrClassIdentity;
 	extern InstrFunc InstrClassCompute;
-	extern InstrFunc InstrClassComputeApp;
+	//extern InstrFunc InstrClassComputeApp;
 	extern InstrFunc InstrClassObjectInit;
 	extern InstrFunc InstrClassNewArray;
 	extern InstrFunc InstrClassANewArray;
@@ -199,17 +199,11 @@ static void ParseOptions(const char* options) {
 
 	InstrFuncEntry instrFuncTable[] = {
 
-	{ &InstrClassEmpty, "Empty" },
-
-	{ &InstrClassDump, "Dump" },
-
 	{ &InstrClassPrint, "Print" },
 
 	{ &InstrClassIdentity, "Identity" },
 
 	{ &InstrClassCompute, "Compute" },
-
-	{ &InstrClassComputeApp, "ComputeApp" },
 
 	{ &InstrClassObjectInit, "ObjectInit" },
 
@@ -223,7 +217,7 @@ static void ParseOptions(const char* options) {
 
 	};
 
-	const char* instrFuncName = options != NULL ? options : "Empty";
+	const char* instrFuncName = options != NULL ? options : "Print";
 
 	NOTICE("func index: %s", instrFuncName);
 

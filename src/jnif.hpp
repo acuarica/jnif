@@ -1,10 +1,6 @@
 #ifndef JNIF_HPP
 #define JNIF_HPP
 
-#include <stdio.h>
-#include <execinfo.h>
-#include <unistd.h>
-
 #include <string>
 #include <vector>
 #include <list>
@@ -62,13 +58,7 @@ public:
 		_raise(os, args...);
 		os << std::endl;
 
-		void *array[20];
-		size_t size;
-
-		size = backtrace(array, 20);
-
-		fprintf(stderr, "Error: exception on jnif:\n");
-		backtrace_symbols_fd(array, size, STDERR_FILENO);
+		_backtrace();
 
 		throw "Error!!!";
 	}
@@ -88,6 +78,8 @@ public:
 	}
 
 private:
+
+	static void _backtrace();
 
 	static inline void _raise(std::ostream&) {
 	}
@@ -2067,11 +2059,19 @@ public:
 		return bb;
 	}
 
-	inline std::vector<BasicBlock*>::iterator begin() {
+	std::vector<BasicBlock*>::iterator begin() {
 		return basicBlocks.begin();
 	}
 
-	inline std::vector<BasicBlock*>::iterator end() {
+	std::vector<BasicBlock*>::iterator end() {
+		return basicBlocks.end();
+	}
+
+	std::vector<BasicBlock*>::const_iterator begin() const {
+		return basicBlocks.begin();
+	}
+
+	std::vector<BasicBlock*>::const_iterator end() const {
 		return basicBlocks.end();
 	}
 
@@ -2363,7 +2363,7 @@ public:
 			Member(accessFlags, nameIndex, descIndex) {
 	}
 
-	bool hasCode() {
+	bool hasCode() const {
 		for (Attr* attr : attrs) {
 			if (attr->kind == ATTR_CODE) {
 				return true;
@@ -2373,7 +2373,7 @@ public:
 		return false;
 	}
 
-	CodeAttr* codeAttr() {
+	CodeAttr* codeAttr() const {
 		for (Attr* attr : attrs) {
 			if (attr->kind == ATTR_CODE) {
 				return (CodeAttr*) attr;

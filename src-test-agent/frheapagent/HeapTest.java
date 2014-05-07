@@ -24,7 +24,7 @@ public class HeapTest {
 		o.method();
 	}
 
-	private static boolean for0(ArrayList<String> arr) {
+	private static boolean generic0(ArrayList<String> arr) {
 		boolean res;
 
 		if (arr.size() == 0) {
@@ -36,20 +36,27 @@ public class HeapTest {
 		return res;
 	}
 
-	// private static Object for1(int arg) {
-	// HashMap<String, String> map = new HashMap<String, String>();
-	//
-	// Object obj = null;
-	// for (Map.Entry<String, String> entry : map.entrySet()) {
-	// obj = entry;
-	// }
-	//
-	// if (obj == null) {
-	// obj = new Object();
-	// }
-	//
-	// return obj;
-	// }
+	private static int for0(int n) {
+		int sum = 0;
+		for (int i = 0; i < 1; i++) {
+			sum += i;
+		}
+
+		return sum;
+	}
+
+	private static Object for1() {
+		Object obj = null;
+		for (int i = 0; i < 4; i++) {
+			obj = new HeapTest();
+		}
+
+		if (obj == null) {
+			obj = new HeapTest();
+		}
+
+		return obj;
+	}
 
 	private static void scope0(int arg) {
 		// HeapTest o = null;
@@ -554,19 +561,19 @@ public class HeapTest {
 
 	public static void useFloat0() {
 		float f = 14;
-		
+
 		System.err.println(f);
 	}
-	
+
 	public static void main(String[] args) throws IOException {
 		use(new Chapter3Snippets());
 		use(new Chapter3Snippets().new Far());
 		use(new Chapter3Snippets.TestExc1());
 		use(new Chapter3Snippets.Example());
-		
-		useFloat0();
 
-	//	use(java.util.regex.Pattern.compile(""));
+		// useFloat0();
+
+		// use(java.util.regex.Pattern.compile(""));
 
 		// HeapTest ht = new HeapTest();
 		// System.out.println("Is course text?: " + ht.isCourseText());
