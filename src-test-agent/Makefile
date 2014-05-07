@@ -29,14 +29,6 @@ all: $(BUILD)/$(MAINCLASSFILE) $(BUILD)/$(LIB)
 #	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=ANewArray $(MAINCLASS)
 #	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=Main $(MAINCLASS)
 
-.PHONY: instr-empty
-instr-empty: instr
-	$(RUNINSTR)=Empty $(MAINCLASS)
-
-.PHONY: instr-dump
-instr-dump: instr
-	$(RUNINSTR)=Dump $(MAINCLASS)
-
 .PHONY: instr-print
 instr-print: instr
 	$(RUNINSTR)=Print $(MAINCLASS)
@@ -48,10 +40,6 @@ instr-identity: instr
 .PHONY: instr-compute
 instr-compute: instr
 	$(RUNINSTR)=Compute $(MAINCLASS)
-
-.PHONY: instr-computeapp
-instr-computeapp: instr
-	$(RUNINSTR)=ComputeApp $(MAINCLASS)
 
 .PHONY: instr
 instr: $(CLASSES) $(BUILD)/$(LIB)

@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+//#include <stdbool.h>
 #include <errno.h>
 
 #include <jvmti.h>
@@ -224,24 +224,15 @@ static string outFileName(const char* className, const char* ext,
 
 extern "C" {
 
-void InstrClassEmpty(jvmtiEnv*, u1*, int, const char*, int*, u1**, JNIEnv*,
-		InstrArgs*) {
-
-}
-
-void InstrClassDump(jvmtiEnv*, u1* data, int len, const char* className, int*,
-		u1**, JNIEnv*, InstrArgs* args) {
-
-	ofstream os(outFileName(className, "class").c_str(), ios::binary);
-	os.write((char*) data, len);
-}
-
 void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
 		u1**, JNIEnv*, InstrArgs* args) {
 	ClassFile cf(data, len);
 
 	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
+
+//	ofstream os(outFileName(className, "class").c_str(), ios::binary);
+//	os.write((char*) data, len);
 }
 
 void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
@@ -259,24 +250,55 @@ extern int isMainLoaded;
 extern int inStartPhase;
 extern int inLivePhase;
 
-void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
-		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
-		InstrArgs* args) {
-	ClassFile cf(data, len);
+void dot(ostream& os, const ControlFlowGraph& cfg) {
+	auto dotframe = [&](const Frame& frame) -> ostream& {
+		os << " LVA: ";
+		for (u4 i = 0; i < frame.lva.size(); i++) {
+			os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i];
+		}
 
-	//if (inLivePhase) {
-	if (isMainLoaded) {
-		ClassPath cp(jni, args->loader);
-		cf.computeFrames(&cp);
+		os << " STACK: ";
+		int i = 0;
+		for (auto t : frame.stack) {
+			os << (i == 0 ? "" : "  ") << t;
+			i++;
+		}
+		return os << " ";
+	};
+
+	os << "digraph G {" << endl;
+	//os << "  graph [ rankdir = \"LR\" ]" << endl;
+	os << "  node [ shape = \"record\" ]" << endl;
+
+	for (BasicBlock* bb : cfg) {
+		//os << "in frame: " << bb->in << ", out frame: " << bb->out;
+		//os << endl;
+
+		os << "  " << bb->name << " [ label = \"<port0> " << bb->name;
+		os << " | ";
+		dotframe(bb->in);
+		os << " | ";
+		dotframe(bb->out);
+		os << "\" ]" << endl;
+
+		//os << " @Out { ";
+		for (BasicBlock* bbt : *bb) {
+			os << bb->name << " -> " << bbt->name << "" << endl;
+		}
+
+		//os << "} ";
+
+//		for (auto it = bb->start; it != bb->exit; it++) {
+//			Inst* inst = *it;
+//			printInst(*inst);
+//			os << endl;
+//		}
 	}
 
-	ofstream os(outFileName(className, "disasm").c_str());
-	os << cf;
-
-	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+	os << "}" << endl;
 }
 
-void InstrClassComputeApp(jvmtiEnv* jvmti, u1* data, int len,
+void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args) {
 
@@ -284,16 +306,25 @@ void InstrClassComputeApp(jvmtiEnv* jvmti, u1* data, int len,
 		return;
 	}
 
-//	if (string(className) != "frheapagent/HeapTest") {
-//		return;
-//	}
-
 	ClassFile cf(data, len);
 	ClassPath cp(jni, args->loader);
 	cf.computeFrames(&cp);
 
 	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
+
+	for (const Method* method : cf.methods) {
+		if (method->hasCode() && method->codeAttr()->cfg != nullptr) {
+			const string& methodName = cf.getUtf8(method->nameIndex);
+
+			cerr << "Dot for method: " << methodName << endl;
+
+			stringstream ss;
+			ss << methodName << ".dot";
+			ofstream dos(outFileName(className, ss.str().c_str()).c_str());
+			dot(dos, *method->codeAttr()->cfg);
+		}
+	}
 
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
