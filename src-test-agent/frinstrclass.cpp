@@ -126,12 +126,10 @@ private:
 
 			string binaryName = toBinaryName(className);
 			jstring targetName = jni->NewStringUTF(binaryName.c_str());
-			//		jstring targetName = (*jni)->NewStringUTF(jni, "java.util.regex.Pattern");
 			ASSERT(targetName != NULL, "");
 
 			jclass targetClass = (jclass) jni->CallObjectMethod(loader,
 					loadClassId, targetName);
-//			ASSERT(targetClass != NULL, "target class is null with loader");
 
 			return targetClass;
 		} else {
@@ -209,7 +207,7 @@ static unsigned char* Allocate(jvmtiEnv* jvmti, jlong size) {
 }
 
 static string outFileName(const char* className, const char* ext,
-		const char* prefix = "$") {
+		const char* prefix = "./instr/") {
 	string fileName = className;
 
 	for (u4 i = 0; i < fileName.length(); i++) {
@@ -250,57 +248,13 @@ extern int isMainLoaded;
 extern int inStartPhase;
 extern int inLivePhase;
 
-void dot(ostream& os, const ControlFlowGraph& cfg) {
-	auto dotframe = [&](const Frame& frame) -> ostream& {
-		os << " LVA: ";
-		for (u4 i = 0; i < frame.lva.size(); i++) {
-			os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i];
-		}
-
-		os << " STACK: ";
-		int i = 0;
-		for (auto t : frame.stack) {
-			os << (i == 0 ? "" : "  ") << t;
-			i++;
-		}
-		return os << " ";
-	};
-
-	os << "digraph G {" << endl;
-	//os << "  graph [ rankdir = \"LR\" ]" << endl;
-	os << "  node [ shape = \"record\" ]" << endl;
-
-	for (BasicBlock* bb : cfg) {
-		//os << "in frame: " << bb->in << ", out frame: " << bb->out;
-		//os << endl;
-
-		os << "  " << bb->name << " [ label = \"<port0> " << bb->name;
-		os << " | ";
-		dotframe(bb->in);
-		os << " | ";
-		dotframe(bb->out);
-		os << "\" ]" << endl;
-
-		//os << " @Out { ";
-		for (BasicBlock* bbt : *bb) {
-			os << bb->name << " -> " << bbt->name << "" << endl;
-		}
-
-		//os << "} ";
-
-//		for (auto it = bb->start; it != bb->exit; it++) {
-//			Inst* inst = *it;
-//			printInst(*inst);
-//			os << endl;
-//		}
-	}
-
-	os << "}" << endl;
-}
-
 void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args) {
+
+	if (!inStartPhase) {
+		return;
+	}
 
 	if (isMainLoaded == 0 || inException) {
 		return;
@@ -313,18 +267,8 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
 
-	for (const Method* method : cf.methods) {
-		if (method->hasCode() && method->codeAttr()->cfg != nullptr) {
-			const string& methodName = cf.getUtf8(method->nameIndex);
-
-			cerr << "Dot for method: " << methodName << endl;
-
-			stringstream ss;
-			ss << methodName << ".dot";
-			ofstream dos(outFileName(className, ss.str().c_str()).c_str());
-			dot(dos, *method->codeAttr()->cfg);
-		}
-	}
+	ofstream dos(outFileName(className, "dot").c_str());
+	cf.dot(dos);
 
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }

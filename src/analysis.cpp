@@ -10,147 +10,6 @@ using namespace std;
 
 namespace jnif {
 
-class ControlFlowGraphBuilder: private Error {
-public:
-
-	static void setBranchTargets(InstList& instList) {
-		for (Inst* inst : instList) {
-			if (inst->isJump()) {
-				inst->jump.label2->label.isBranchTarget = true;
-			} else if (inst->isTableSwitch()) {
-				inst->ts.def->label.isBranchTarget = true;
-				for (Inst* target : inst->ts.targets) {
-					target->label.isBranchTarget = true;
-				}
-			} else if (inst->isLookupSwitch()) {
-				inst->ls.defbyte->label.isBranchTarget = true;
-				for (Inst* target : inst->ls.targets) {
-					target->label.isBranchTarget = true;
-				}
-			}
-		}
-	}
-
-	static void buildBasicBlocks(InstList& instList, ControlFlowGraph& cfg) {
-		setBranchTargets(instList);
-
-		int bbid = 0;
-		auto beginBb = instList.begin();
-
-		auto getBasicBlockName = [&](int bbid) {
-			stringstream ss;
-			ss << "BB" << bbid;
-
-			return ss.str();
-		};
-
-		auto addBasicBlock2 = [&](InstList::iterator eit) {
-			if (beginBb != eit) {
-				string name = getBasicBlockName(bbid);
-				cfg.addBasicBlock(beginBb, eit, name);
-
-				beginBb = eit;
-				bbid++;
-			}
-		};
-
-		for (auto it = instList.begin(); it != instList.end(); it++) {
-			Inst* inst = *it;
-
-			if (inst->isLabel()
-					&& (inst->label.isBranchTarget || inst->label.isTryStart)) {
-				addBasicBlock2(it);
-			}
-
-			if (inst->isBranch()) {
-				auto eit = it;
-				eit++;
-				addBasicBlock2(eit);
-			}
-
-			if (inst->isExit()) {
-				auto eit = it;
-				eit++;
-				addBasicBlock2(eit);
-			}
-		}
-	}
-
-	static BasicBlock* findBasicBlockOfLabel(int labelId, InstList& instList,
-			ControlFlowGraph& cfg) {
-		for (BasicBlock* bb : cfg) {
-			if (bb->start == instList.end()) {
-				assert(bb->name == "Entry" || bb->name == "Exit", "");
-				assert(bb->exit == instList.end(), "");
-				continue;
-			}
-
-			Inst* inst = *bb->start;
-			if (inst->kind == KIND_LABEL && inst->label.id == labelId) {
-				return bb;
-			}
-		}
-
-		raise("se pudrio el chorran");
-	}
-
-	static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
-		buildBasicBlocks(instList, cfg);
-
-		auto addTarget2 = [&] (BasicBlock* bb, Inst* inst) {
-			assert(inst->isLabel(), "Expected label instruction");
-			int labelId = inst->label.id;
-			BasicBlock* tbbid = findBasicBlockOfLabel(labelId, instList,
-					cfg);
-			bb->addTarget(tbbid);
-		};
-
-		for (BasicBlock* bb : cfg) {
-			if (bb->start == instList.end()) {
-				assert(bb->name == "Entry" || bb->name == "Exit", "");
-				assert(bb->exit == instList.end(), "");
-				continue;
-			}
-
-			auto e = bb->exit;
-			e--;
-			assert(e != instList.end(), "");
-
-			Inst* last = *e;
-
-			if (bb->start == instList.begin()) {
-				cfg.entry->addTarget(bb);
-			}
-
-			if (last->isJump()) {
-				addTarget2(bb, last->jump.label2);
-
-				if (last->opcode != OPCODE_goto) {
-					assert(bb->next != nullptr, "next bb is null");
-					bb->addTarget(bb->next);
-				}
-			} else if (last->isTableSwitch()) {
-				addTarget2(bb, last->ts.def);
-
-				for (Inst* target : last->ts.targets) {
-					addTarget2(bb, target);
-				}
-			} else if (last->isLookupSwitch()) {
-				addTarget2(bb, last->ls.defbyte);
-
-				for (Inst* target : last->ls.targets) {
-					addTarget2(bb, target);
-				}
-			} else if (last->isExit()) {
-				bb->addTarget(cfg.exit);
-			} else {
-				assert(bb->next != nullptr, "next bb is null");
-				bb->addTarget(bb->next);
-			}
-		}
-	}
-};
-
 struct DescParser: protected Error {
 
 	static Type parseConstClass(const std::string& className) {
@@ -364,9 +223,8 @@ public:
 		if ((*bb.start)->isLabel()) {
 			for (auto ex : code->exceptions) {
 				if (ex.startpc->label.id == (*bb.start)->label.id) {
-					BasicBlock* handlerBb =
-							ControlFlowGraphBuilder::findBasicBlockOfLabel(
-									ex.handlerpc->label.id, instList, *bb.cfg);
+					BasicBlock* handlerBb = bb.cfg->findBasicBlockOfLabel(
+							ex.handlerpc->label.id);
 
 					Type exType = [&]() {
 						if (ex.catchtype != ConstPool::NULLENTRY) {
@@ -1441,11 +1299,6 @@ public:
 		code->attrs.add(smt);
 	}
 };
-
-ControlFlowGraph::ControlFlowGraph(InstList& instList) :
-		entry(addConstBb(instList, "Entry")), exit(addConstBb(instList, "Exit")) {
-	ControlFlowGraphBuilder::buildCfg(instList, *this);
-}
 
 void ClassFile::computeFrames(IClassPath* classPath) {
 

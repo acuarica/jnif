@@ -31,3 +31,5 @@ clean:
 
 $(BUILD):
 	mkdir -p $(BUILD)
+	mkdir -p $(BUILD)/instr
+	

@@ -2037,6 +2037,8 @@ public:
 
 	BasicBlock* const exit;
 
+	const InstList& instList;
+
 	ControlFlowGraph(InstList& instList);
 
 	~ControlFlowGraph() {
@@ -2045,19 +2047,24 @@ public:
 		}
 	}
 
+	/**
+	 * Adds a basic block to this control flow graph.
+	 *
+	 * @param start the start of the basic block.
+	 * @param end the end of the basic block.
+	 * @returns the newly created basic block added to this control flow graph.
+	 */
 	BasicBlock* addBasicBlock(InstList::iterator start, InstList::iterator end,
-			std::string name) {
-		BasicBlock* bb = new BasicBlock(start, end, name, this);
+			std::string name);
 
-		if (basicBlocks.size() > 0) {
-			BasicBlock* prevbb = basicBlocks.back();
-			prevbb->next = bb;
-		}
-
-		basicBlocks.push_back(bb);
-
-		return bb;
-	}
+	/**
+	 * Finds the basic block associated with the given labelId.
+	 *
+	 * @param labelId the label id to search in the basic blocks.
+	 * @returns the basic block that starts at label with labelId. If the label
+	 * id is not found throws an exception.
+	 */
+	BasicBlock* findBasicBlockOfLabel(int labelId) const;
 
 	std::vector<BasicBlock*>::iterator begin() {
 		return basicBlocks.begin();
@@ -2520,6 +2527,13 @@ public:
 		*classFileData = allocFunc(*classFileSize);
 		write(*classFileData, *classFileSize);
 	}
+
+	/**
+	 * Export this class file to dot format.
+	 *
+	 * @see www.graphviz.org
+	 */
+	void dot(std::ostream& os) const;
 
 	u2 majorVersion;
 	u2 minorVersion;

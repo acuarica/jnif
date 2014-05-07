@@ -15,6 +15,9 @@ OBJS=$(SRCS:%=$(BUILD)/%.o)
 JAVAS=$(wildcard frheapagent/*.java)
 CLASSES=$(JAVAS:%.java=$(BUILD)/%.class)
 
+DOTS=$(wildcard $(BUILD)/instr/*.dot)
+PNGS=$(DOTS:%.dot=$(BUILD)/%.png)
+
 CFLAGS= -W -Wall -Wextra -O0 -g -Wno-unused-parameter -I$(JAVA_HOME)/include
 MAINCLASS=frheapagent.HeapTest
 MAINCLASSFILE=$(subst .,/,$(MAINCLASS)).class
@@ -63,3 +66,9 @@ $(BUILD)/%.cpp.o: %.cpp $(INCS) $(HPPS)
 
 $(BUILD)/libjnif.a:
 	$(MAKE) -C ../src
+
+.PHONY: pngs
+pngs: $(PNGS)
+
+$(BUILD)/%.png: $(BUILD)/%.dot
+	dot -Tpng $^ > $@
