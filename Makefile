@@ -32,7 +32,8 @@ unit: | $(BUILD)
 	$(MAKE) -C src; $(MAKE) -C src-test-unit run
 
 docs:
-	doxygen
+	/usr/local/bin/doxygen
+#doxygen
 
 clean:
 	rm -rf $(BUILD)

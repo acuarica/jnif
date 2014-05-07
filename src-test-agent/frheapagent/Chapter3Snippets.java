@@ -293,6 +293,12 @@ public class Chapter3Snippets {
 	public static void handleExc(Exception e) {
 	}
 
+	public static void handleExc1(Exception e) {
+	}
+
+	public static void handleExc2(Exception e) {
+	}
+
 	void catchOne() throws TestExc1, TestExc2 {
 		try {
 			tryItOut();
@@ -301,45 +307,62 @@ public class Chapter3Snippets {
 		}
 	}
 
-	// void nestedCatch() {
-	// try {
-	// try {
-	// tryItOut();
-	// } catch (TestExc1 e) {
-	// handleExc1(e);
-	// }
-	// } catch (TestExc2 e) {
-	// handleExc2(e);
-	// }
-	// }
+	void catchTwo() throws TestExc {
+		try {
+			tryItOut();
+		} catch (TestExc1 e) {
+			handleExc(e);
+		} catch (TestExc2 e) {
+			handleExc(e);
+		}
+	}
+
+	void nestedCatch() throws TestExc {
+		try {
+			try {
+				tryItOut();
+			} catch (TestExc1 e) {
+				handleExc1(e);
+			}
+		} catch (TestExc2 e) {
+			handleExc2(e);
+		}
+	}
 
 	// 3.13. Compiling finally
 
-	//
-	// void tryFinally() {
-	// try {
-	// tryItOut();
-	// } finally {
-	// wrapItUp();
-	// }
-	// }
-	//
-	// void tryCatchFinally() {
-	// try {
-	// tryItOut();
-	// } catch (TestExc e) {
-	// handleExc(e);
-	// } finally {
-	// wrapItUp();
-	// }
-	// }
-	//
-	// //3.14. Synchronization
-	//
-	//
-	// void onlyMe(Foo f) {
-	// synchronized(f) {
-	// doSomething();
-	// }
-	// }
+	void wrapItUp() {
+	}
+
+	void tryFinally() throws TestExc, TestExc1, TestExc2 {
+		try {
+			tryItOut();
+		} finally {
+			wrapItUp();
+		}
+	}
+
+	void tryCatchFinally() throws TestExc, TestExc1, TestExc2 {
+		try {
+			tryItOut();
+		} catch (TestExc e) {
+			handleExc(e);
+		} finally {
+			wrapItUp();
+		}
+	}
+
+	// 3.14. Synchronization
+
+	static class Foo {
+	}
+
+	void doSomething() {
+	}
+
+	void onlyMe(Foo f) {
+		synchronized (f) {
+			doSomething();
+		}
+	}
 }

@@ -15,7 +15,7 @@
 
 typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni);
+		JNIEnv* jni, InstrArgs* args);
 
 InstrFunc* instrFunc;
 
@@ -35,8 +35,11 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 	}
 
 	if (!FrIsProxyClassName(name)) {
+		InstrArgs args;
+		args.loader = loader;
+
 		(*instrFunc)(jvmti, (unsigned char*) class_data, class_data_len, name,
-				new_class_data_len, new_class_data, jni);
+				new_class_data_len, new_class_data, jni, &args);
 	}
 }
 

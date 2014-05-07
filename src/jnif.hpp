@@ -15,10 +15,15 @@
  * The jnif namespace contains all type definitions, constants, enumerations
  * and structs of the jnif framework.
  *
- * These implementations is based on the Java Virtual Machine Specification
- * chapter 4, class file format.
+ * This implementation is based on Chapter 4 (The class File Format) and
+ * Chapter 6 (Chapter 6. The Java Virtual Machine Instruction Set) of the
+ * Java Virtual Machine Specification version 7.
+ *
+ * For more information refer to:
  *
  * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html
+ *
+ * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-6.html
  *
  * @see ClassFile
  *
@@ -44,11 +49,55 @@ typedef unsigned short u2;
 typedef unsigned int u4;
 
 /**
- * The magic number signature that must appear at the beginning of each
- * class file.
+ * This class contains static method to facilitate error handling mechanism.
  */
-enum Magic {
-	CLASSFILE_MAGIC = 0xcafebabe
+class Error {
+public:
+
+	template<typename ... TArgs>
+	static inline void raise(TArgs ... args) __attribute__((noreturn)) {
+		std::ostream& os = std::cerr;
+
+		os << "JNIF Exception: ";
+		_raise(os, args...);
+		os << std::endl;
+
+		void *array[20];
+		size_t size;
+
+		size = backtrace(array, 20);
+
+		fprintf(stderr, "Error: exception on jnif:\n");
+		backtrace_symbols_fd(array, size, STDERR_FILENO);
+
+		throw "Error!!!";
+	}
+
+	template<typename ... TArgs>
+	static inline void assert(bool cond, TArgs ... args) {
+		if (!cond) {
+			raise(args...);
+		}
+	}
+
+	template<typename ... TArgs>
+	static inline void check(bool cond, TArgs ... args) {
+		if (!cond) {
+			raise(args...);
+		}
+	}
+
+private:
+
+	static inline void _raise(std::ostream&) {
+	}
+
+	template<typename TArg, typename ... TArgs>
+	static inline void _raise(std::ostream& os, TArg arg, TArgs ... args) {
+		os << arg;
+		_raise(os, args...);
+	}
+
 };
 
 /**
@@ -56,6 +105,12 @@ enum Magic {
  * inside the constant pool.
  */
 enum ConstTag {
+
+	/**
+	 * Represents the null entry which cannot be addressed. This is used for
+	 * the NULLENTRY (position zero) and for long and double entries.
+	 */
+	CONST_NULLENTRY,
 
 	/**
 	 * Represents a class or an interface.
@@ -130,6 +185,723 @@ enum ConstTag {
 	 * arguments to the bootstrap method.
 	 */
 	CONST_INVOKEDYNAMIC = 18
+};
+
+/**
+ * The ConstIndex type represents how each item within the constant pool can
+ * be addressed. The specification indicates that this is an u2 value.
+ */
+typedef u2 ConstIndex;
+
+/**
+ * Represents a class, interface or array type.
+ *
+ * @see CONST_CLASS
+ */
+class ConstClass {
+public:
+
+	/**
+	 * The name of the class of this type.
+	 *
+	 * @see CONST_UTF8
+	 * @see ConstUtf8
+	 */
+	ConstIndex nameIndex;
+};
+
+/**
+ * Represents a symbolic reference to a member
+ * (field, method or interface method) of a class.
+ *
+ * @see ConstFieldRef
+ * @see ConstMethodRef
+ * @see ConstInterMethodRef
+ */
+class ConstMemberRef {
+public:
+
+	/**
+	 * Index to the class of this member reference.
+	 *
+	 * @see ConstClass
+	 */
+	ConstIndex classIndex;
+
+	/**
+	 * Index to the name and type of this member reference.
+	 *
+	 * @see ConstNameAndType
+	 */
+	ConstIndex nameAndTypeIndex;
+};
+
+/**
+ * Represents a string constant value.
+ *
+ * @see CONST_STRING
+ */
+class ConstString {
+public:
+
+	/**
+	 * The index of the utf8 entry containing this string value.
+	 *
+	 * @see ConstUtf8
+	 */
+	ConstIndex stringIndex;
+};
+
+/**
+ * Represents an integer constant value.
+ *
+ * @see CONST_INTEGER
+ */
+class ConstInteger {
+public:
+
+	/**
+	 * The integer value of this entry.
+	 */
+	int value;
+};
+
+/**
+ * Represent a float constant value.
+ */
+class ConstFloat {
+public:
+
+	/**
+	 * The float value of this entry.
+	 */
+	float value;
+};
+
+/**
+ * Represents a long constant value.
+ *
+ * @see CONST_LONG
+ */
+class ConstLong {
+public:
+
+	/**
+	 * The long value of this entry.
+	 */
+	long value;
+};
+
+/**
+ * Represents a double constant value.
+ *
+ * @see CONST_DOUBLE
+ */
+class ConstDouble {
+public:
+
+	/**
+	 * The double value of this entry.
+	 */
+	double value;
+};
+
+/**
+ * Represents a tuple of name and descriptor.
+ */
+class ConstNameAndType {
+public:
+
+	/**
+	 * The index of the utf8 entry containing the name of this entry.
+	 */
+	ConstIndex nameIndex;
+
+	/**
+	 * The index of the utf8 entry containing the type descriptor of this entry.
+	 */
+	ConstIndex descriptorIndex;
+};
+
+/**
+ * Contains a modified UTF-8 string.
+ *
+ * @see CONST_UTF8
+ */
+class ConstUtf8 {
+public:
+
+	/**
+	 * The string data.
+	 */
+	std::string str;
+};
+
+/**
+ * Represents a method handle entry.
+ *
+ * @see CONST_METHODHANDLE
+ */
+class ConstMethodHandle {
+public:
+
+	/**
+	 * The reference kind of this entry.
+	 */
+	u1 referenceKind;
+
+	/**
+	 * The reference index of this entry.
+	 */
+	u2 referenceIndex;
+};
+
+/**
+ * Represents the type of a method.
+ *
+ * @see CONST_METHODTYPE
+ */
+class ConstMethodType {
+public:
+
+	/**
+	 * The utf8 index containing the descriptor of this entry.
+	 */
+	ConstIndex descriptorIndex;
+};
+
+/**
+ * Represents an invoke dynamic call site.
+ *
+ * @see CONST_INVOKEDYNAMIC
+ */
+class ConstInvokeDynamic {
+public:
+
+	/**
+	 * The bootstrap method attribute idnex.
+	 */
+	ConstIndex bootstrapMethodAttrIndex;
+
+	/**
+	 * The name and type index of this entry.
+	 *
+	 * @see ConstNameAndType
+	 */
+	ConstIndex nameAndTypeIndex;
+};
+
+/**
+ * The const item.
+ */
+class ConstItem {
+
+	friend class ConstPool;
+
+public:
+
+	const ConstTag tag;
+
+	union {
+		ConstClass clazz;
+		ConstMemberRef memberRef;
+		ConstString s;
+		ConstInteger i;
+		ConstFloat f;
+		ConstLong l;
+		ConstDouble d;
+		ConstNameAndType nameandtype;
+		ConstMethodHandle methodhandle;
+		ConstMethodType methodtype;
+		ConstInvokeDynamic invokedynamic;
+	};
+
+	ConstUtf8 utf8;
+
+private:
+
+	ConstItem(ConstTag tag) :
+			tag(tag) {
+	}
+
+	ConstItem(ConstTag tag, ConstIndex classIndex, ConstIndex nameAndTypeIndex) :
+			tag(tag), memberRef( { classIndex, nameAndTypeIndex }) {
+	}
+
+	ConstItem(ConstTag tag, int value) :
+			tag(tag), i( { value }) {
+	}
+
+	ConstItem(ConstTag tag, float value) :
+			tag(tag), f( { value }) {
+	}
+
+	ConstItem(ConstTag tag, long value) :
+			tag(tag), l( { value }) {
+	}
+
+	ConstItem(ConstTag tag, double value) :
+			tag(tag), d( { value }) {
+	}
+
+	ConstItem(ConstTag tag, const std::string& value) :
+			tag(tag), utf8( { value }) {
+	}
+
+};
+
+/**
+ * Represents the Java class file's constant pool. Provides the base services
+ * to manage the constant pool. The constant pool is a table which holds
+ * different kinds of items depending on their use. It can
+ * hold references for classes, fields, methods, interface methods, strings,
+ * integers, floats, longs, doubles, name and type, utf8 arrays,
+ * method handles, method types and invoke dynamic bootstrap methods.
+ *
+ * This class works by adding these kinds of entries in an array-like
+ * structure. When an entry is removed, all entries after the one removed will
+ * be invalidated, for this reason, no removed operations are allowed.
+ */
+class ConstPool {
+public:
+
+	/**
+	 * Defines how to iterate the constant pool.
+	 */
+	class Iterator {
+		friend class ConstPool;
+	public:
+
+		bool hasNext() const {
+			return index < cp.size();
+		}
+
+		ConstIndex operator*() const {
+			return index;
+		}
+
+		Iterator& operator++(int) {
+			index += cp._isDoubleEntry(index) ? 2 : 1;
+
+			return *this;
+		}
+
+	private:
+		Iterator(const ConstPool& cp, ConstIndex index) :
+				cp(cp), index(index) {
+		}
+
+		const ConstPool& cp;
+		ConstIndex index;
+	};
+
+	/**
+	 * Represents the invalid (null) item, which must not be asked for.
+	 */
+	static const ConstIndex NULLENTRY = 0;
+
+	/**
+	 * Initializes an empty constant pool. The valid indices start from 1
+	 * inclusive, because the null entry (index 0) is added by default.
+	 */
+	ConstPool() {
+		ConstItem nullEntry(CONST_NULLENTRY);
+		entries.push_back(nullEntry);
+	}
+
+	/**
+	 * Returns the number of elements in this constant pool.
+	 *
+	 * @returns number of elements in this constant pool.
+	 */
+	u4 size() const {
+		return entries.size();
+	}
+
+	/**
+	 *
+	 */
+	Iterator iterator() const {
+		return Iterator(*this, 1);
+	}
+
+	/**
+	 * Adds a class reference to the constant pool.
+	 *
+	 * @param classNameIndex the utf8 index that represents the name of this
+	 * class item.
+	 * @returns the index of the newly created reference to a class item.
+	 */
+	ConstIndex addClass(ConstIndex classNameIndex) {
+		ConstItem e(CONST_CLASS);
+		e.clazz.nameIndex = classNameIndex;
+
+		return _addSingle(e);
+	}
+
+	/**
+	 * Adds a class reference to the constant pool by class name. This method
+	 * adds also the utf8 entry corresponding the class name itself.
+	 *
+	 * @param className name of the class to reference.
+	 * @returns the index of the newly created reference to a class item.
+	 */
+	ConstIndex addClass(const char* className) {
+		ConstIndex classNameIndex = addUtf8(className);
+		return addClass(classNameIndex);
+	}
+
+	/**
+	 * Adds a field reference.
+	 *
+	 * @returns the index of the newly created entry.
+	 */
+	ConstIndex addFieldRef(ConstIndex classIndex, ConstIndex nameAndTypeIndex) {
+		ConstItem e(CONST_FIELDREF, classIndex, nameAndTypeIndex);
+		return _addSingle(e);
+	}
+
+	/**
+	 * Adds a class method reference.
+	 *
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addMethodRef(ConstIndex classIndex,
+			ConstIndex nameAndTypeIndex) {
+		ConstItem e(CONST_METHODREF, classIndex, nameAndTypeIndex);
+		return _addSingle(e);
+	}
+
+	/**
+	 * Adds a non-interface methods by method name and descriptor.
+	 *
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addMethodRef(ConstIndex classIndex, const char* name,
+			const char* desc) {
+		ConstIndex methodNameIndex = addUtf8(name);
+		ConstIndex methodDescIndex = addUtf8(desc);
+		ConstIndex nameAndTypeIndex = addNameAndType(methodNameIndex,
+				methodDescIndex);
+		ConstIndex methodRefIndex = addMethodRef(classIndex, nameAndTypeIndex);
+
+		return methodRefIndex;
+	}
+
+	/**
+	 * Adds an interface method reference.
+	 *
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addInterMethodRef(ConstIndex classIndex,
+			ConstIndex nameAndTypeIndex) {
+		ConstItem e(CONST_INTERMETHODREF, classIndex, nameAndTypeIndex);
+		return _addSingle(e);
+	}
+
+	/**
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addString(ConstIndex utf8Index) {
+		ConstItem e(CONST_STRING);
+		e.s.stringIndex = utf8Index;
+
+		return _addSingle(e);
+	}
+
+	/**
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addStringFromClass(ConstIndex classIndex) {
+		ConstIndex classNameIndex = getClassNameIndex(classIndex);
+		ConstIndex classNameStringIndex = addString(classNameIndex);
+
+		return classNameStringIndex;
+	}
+
+	/**
+	 * Adds an integer constant value.
+	 *
+	 * @param value the integer value.
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addInteger(int value) {
+		ConstItem e(CONST_INTEGER, value);
+		return _addSingle(e);
+	}
+
+	/**
+	 * Adds a float constant value.
+	 *
+	 * @param value the float value.
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addFloat(float value) {
+		ConstItem e(CONST_FLOAT, value);
+		return _addSingle(e);
+	}
+
+	/**
+	 * Adds a long constant value.
+	 *
+	 * @param value the long value.
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addLong(long value) {
+		ConstItem e(CONST_LONG, value);
+		return _addDoubleEntry(e);
+	}
+
+	/**
+	 * Adds a double constant value.
+	 *
+	 * @param value the double value.
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addDouble(double value) {
+		ConstItem entry(CONST_DOUBLE, value);
+		return _addDoubleEntry(entry);
+	}
+
+	/**
+	 * Adds a name and type descriptor pair.
+	 *
+	 * @param nameIndex the index of the UTF8 entry with the name.
+	 * @param descIndex the index of the UTF8 entry with the type descriptor.
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addNameAndType(ConstIndex nameIndex, ConstIndex descIndex) {
+		ConstItem e(CONST_NAMEANDTYPE);
+		e.nameandtype.nameIndex = nameIndex;
+		e.nameandtype.descriptorIndex = descIndex;
+
+		return _addSingle(e);
+	}
+
+	/**
+	 * Adds a modified UTF8 string given the char array and its len.
+	 *
+	 * @param utf8 the char array containing the modified UTF8 string.
+	 * @param len the len in bytes of utf8.
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addUtf8(const char* utf8, int len) {
+		std::string str(utf8, len);
+		ConstItem e(CONST_UTF8, str);
+		return _addSingle(e);
+	}
+
+	/**
+	 * Adds a modified UTF8 string given an null-terminated char array.
+	 *
+	 * @param str the null-terminated char array containing the modified
+	 * UTF8 string.
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addUtf8(const char* str) {
+		ConstItem e(CONST_UTF8, str);
+		return _addSingle(e);
+	}
+
+	/**
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addMethodHandle(u1 refKind, u2 refIndex) {
+		ConstItem e(CONST_METHODHANDLE);
+		e.methodhandle.referenceKind = refKind;
+		e.methodhandle.referenceIndex = refIndex;
+		return _addSingle(e);
+	}
+
+	/**
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addMethodType(u2 descIndex) {
+		ConstItem e(CONST_METHODTYPE);
+		e.methodtype.descriptorIndex = descIndex;
+		return _addSingle(e);
+
+	}
+
+	/**
+	 * @returns the ConstIndex of the newly created entry.
+	 */
+	ConstIndex addInvokeDynamic(u2 bootstrapMethodAttrIndex,
+			u2 nameAndTypeIndex) {
+		ConstItem e(CONST_INVOKEDYNAMIC);
+		e.invokedynamic.bootstrapMethodAttrIndex = bootstrapMethodAttrIndex;
+		e.invokedynamic.nameAndTypeIndex = nameAndTypeIndex;
+		return _addSingle(e);
+	}
+
+	/**
+	 *
+	 */
+	ConstTag getTag(ConstIndex index) const {
+		const ConstItem* entry = _getEntry(index);
+
+		return entry->tag;
+	}
+
+	/**
+	 * Checks whether the requested index holds a class reference.
+	 */
+	bool isClass(ConstIndex index) const {
+		return _getEntry(index)->tag == CONST_CLASS;
+	}
+
+	bool isUtf8(ConstIndex index) const {
+		return _getEntry(index)->tag == CONST_UTF8;
+	}
+
+	ConstIndex getClassNameIndex(ConstIndex classIndex) const {
+		const ConstItem* e = _getEntry(classIndex, CONST_CLASS,
+				"CONSTANT_Class");
+
+		ConstIndex ni = e->clazz.nameIndex;
+
+		return ni;
+	}
+
+	void getFieldRef(ConstIndex index, std::string* className,
+			std::string* name, std::string* desc) const {
+		const ConstItem* e = _getEntry(index, CONST_FIELDREF, "FieldRef");
+		const ConstMemberRef& mr = e->memberRef;
+		_getMemberRef(className, name, desc, mr);
+	}
+
+	void getMethodRef(ConstIndex index, std::string* clazzName,
+			std::string* name, std::string* desc) const {
+		const ConstItem* e = _getEntry(index, CONST_METHODREF, "MethodRef");
+		const ConstMemberRef& mr = e->memberRef;
+		_getMemberRef(clazzName, name, desc, mr);
+	}
+
+	void getInterMethodRef(ConstIndex index, std::string* clazzName,
+			std::string* name, std::string* desc) const {
+		const ConstItem* e = _getEntry(index, CONST_INTERMETHODREF, "imr");
+		const ConstMemberRef& mr = e->memberRef;
+		_getMemberRef(clazzName, name, desc, mr);
+	}
+
+	long getLong(ConstIndex index) const {
+		return _getEntry(index, CONST_LONG, "CONSTANT_Long")->l.value;
+	}
+
+	double getDouble(ConstIndex index) const {
+		return _getEntry(index, CONST_DOUBLE, "CONSTANT_Double")->d.value;
+	}
+
+	const char* getUtf8(ConstIndex utf8Index) const {
+		const ConstItem* entry = _getEntry(utf8Index, CONST_UTF8, "Utf8");
+
+		return entry->utf8.str.c_str();
+	}
+
+	const char* getClassName(ConstIndex classIndex) const {
+		ConstIndex classNameIndex = getClassNameIndex(classIndex);
+
+		return getUtf8(classNameIndex);
+	}
+
+	void getNameAndType(ConstIndex index, std::string* name,
+			std::string* desc) const {
+		const ConstItem* e = _getEntry(index, CONST_NAMEANDTYPE, "NameAndType");
+
+		u2 nameIndex = e->nameandtype.nameIndex;
+		u2 descIndex = e->nameandtype.descriptorIndex;
+
+		*name = getUtf8(nameIndex);
+		*desc = getUtf8(descIndex);
+	}
+
+	ConstIndex getIndexOfUtf8(const char* utf8) {
+
+		ConstPool& cp = *this;
+		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
+			ConstIndex i = *it;
+			//ConstPool::Tag tag = cp.getTag(i);
+
+			//const Entry* entry = &cp.entries[i];
+
+			if (isUtf8(i) && getUtf8(i) == std::string(utf8)) {
+				return i;
+			}
+		}
+
+		return NULLENTRY;
+	}
+
+	ConstIndex putUtf8(const char* utf8) {
+		ConstIndex i = getIndexOfUtf8(utf8);
+		if (i == NULLENTRY) {
+			return addUtf8(utf8);
+		} else {
+			return i;
+		}
+	}
+
+	std::vector<ConstItem> entries;
+
+private:
+
+	ConstIndex _addSingle(const ConstItem& entry) {
+		ConstIndex index = entries.size();
+		entries.push_back(entry);
+
+		return index;
+	}
+
+	ConstIndex _addDoubleEntry(const ConstItem& entry) {
+		ConstIndex index = entries.size();
+		entries.push_back(entry);
+
+		ConstItem nullEntry(CONST_NULLENTRY);
+		entries.push_back(nullEntry);
+
+		return index;
+	}
+
+	const ConstItem* _getEntry(ConstIndex i) const {
+		Error::check(i > NULLENTRY, "Null access to constant pool: index = ",
+				i);
+		Error::check(i < entries.size(), "Index out of bounds: index = ", i);
+
+		const ConstItem* entry = &entries[i];
+
+		return entry;
+	}
+
+	const ConstItem* _getEntry(ConstIndex index, u1 tag,
+			const char* message) const {
+		const ConstItem* entry = _getEntry(index);
+
+		Error::check(entry->tag == tag, "Invalid constant ", message,
+				", expected: ", (int) tag, ", actual: ", (int) entry->tag);
+
+		return entry;
+	}
+
+	bool _isDoubleEntry(ConstIndex index) const {
+		const ConstItem* e = _getEntry(index);
+
+		switch (e->tag) {
+			case CONST_LONG:
+			case CONST_DOUBLE:
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	void _getMemberRef(std::string* clazzName, std::string* name,
+			std::string* desc, const ConstMemberRef& memberRef) const {
+		ConstIndex classIndex = memberRef.classIndex;
+		ConstIndex nameAndTypeIndex = memberRef.nameAndTypeIndex;
+
+		*clazzName = getClassName(classIndex);
+		getNameAndType(nameAndTypeIndex, name, desc);
+	}
 };
 
 /**
@@ -576,58 +1348,6 @@ enum TypeTag {
 	TYPE_BYTE,
 	TYPE_CHAR,
 	TYPE_SHORT,
-};
-
-/**
- * This class contains static method to facilitate error handling mechanism.
- */
-class Error {
-public:
-
-	template<typename ... TArgs>
-	static inline void raise(TArgs ... args) __attribute__((noreturn)) {
-		std::ostream& os = std::cerr;
-
-		os << "JNIF Exception: ";
-		_raise(os, args...);
-		os << std::endl;
-
-		void *array[20];
-		size_t size;
-
-		size = backtrace(array, 20);
-
-		fprintf(stderr, "Error: exception on jnif:\n");
-		backtrace_symbols_fd(array, size, STDERR_FILENO);
-
-		throw "Error!!!";
-	}
-
-	template<typename ... TArgs>
-	static inline void assert(bool cond, TArgs ... args) {
-		if (!cond) {
-			raise(args...);
-		}
-	}
-
-	template<typename ... TArgs>
-	static inline void check(bool cond, TArgs ... args) {
-		if (!cond) {
-			raise(args...);
-		}
-	}
-
-private:
-
-	static inline void _raise(std::ostream&) {
-	}
-
-	template<typename TArg, typename ... TArgs>
-	static inline void _raise(std::ostream& os, TArg arg, TArgs ... args) {
-		os << arg;
-		_raise(os, args...);
-	}
-
 };
 
 struct Inst;
@@ -1266,520 +1986,13 @@ public:
 	}
 };
 
-struct Class {
-	u2 nameIndex;
-};
-
-struct MemberRef {
-	u2 classIndex;
-	u2 nameAndTypeIndex;
-};
-
-struct FieldRef: MemberRef {
-};
-
-struct MethodRef: MemberRef {
-};
-
-struct InterMethodRef: MemberRef {
-};
-
-struct String {
-	u2 stringIndex;
-};
-
-struct Integer {
-	u4 value;
-};
-
-struct Float {
-	u4 value;
-};
-
-struct Long {
-	long value;
-};
-
-struct Double {
-	double value;
-};
-
-struct NameAndType {
-	u2 nameIndex;
-	u2 descriptorIndex;
-};
-
-struct MethodHandle {
-	u1 referenceKind;
-	u2 referenceIndex;
-};
-
-struct MethodType {
-	u2 descriptorIndex;
-};
-
-struct InvokeDynamic {
-	u2 bootstrapMethodAttrIndex;
-	u2 nameAndTypeIndex;
-};
-
-/**
- *
- */
-class ConstItem {
-public:
-
-	ConstItem(ConstTag tag) :
-			tag(tag) {
-	}
-
-	ConstTag tag;
-
-	union {
-		Class clazz;
-		FieldRef fieldRef;
-		MethodRef methodRef;
-		InterMethodRef interMethodRef;
-		String s;
-		Integer i;
-		Float f;
-		Long l;
-		Double d;
-		NameAndType nameandtype;
-		MethodHandle methodhandle;
-		MethodType methodtype;
-		InvokeDynamic invokedynamic;
-	};
-	struct {
-		std::string str;
-	} utf8;
-};
-
-/**
- * Represents the Java class file's constant pool. Provides the base services
- * to manage the constant pool. The constant pool is a table which holds
- * different kinds of items depending on their use. It can
- * hold references for classes, fields, methods, interface methods, strings,
- * integers, floats, longs, doubles, name and type, utf8 arrays,
- * method handles, method types and invoke dynamic bootstrap methods.
- */
-class ConstPool: private Error {
-public:
-
-	/**
-	 * The Index type represents how each item within the constant pool can
-	 * be addressed.
-	 */
-	typedef u2 Index;
-
-	/**
-	 * Defines how to iterate the constant pool.
-	 */
-	class Iterator {
-		friend class ConstPool;
-	public:
-
-		bool hasNext() const {
-			return index < cp.size();
-		}
-
-		Index operator*() const {
-			return index;
-		}
-
-		Iterator& operator++(int) {
-			index += cp._isDoubleEntry(index) ? 2 : 1;
-
-			return *this;
-		}
-
-	private:
-		Iterator(const ConstPool& cp, Index index) :
-				cp(cp), index(index) {
-		}
-
-		const ConstPool& cp;
-		Index index;
-	};
-
-	/**
-	 * Represents the invalid (null) item, which must not be asked for.
-	 */
-	static const u2 NULLENTRY = 0;
-
-	/**
-	 * Initializes an empty constant pool. The valid indices start from 1
-	 * inclusive, because the null entry (index 0) is added by default.
-	 */
-	ConstPool() {
-		// TODO: This is plain wrong!!!
-		ConstItem nullEntry(CONST_INVOKEDYNAMIC);
-
-		entries.push_back(nullEntry);
-	}
-
-	/**
-	 *
-	 */
-	u4 size() const {
-		return entries.size();
-	}
-
-	/**
-	 *
-	 */
-	Iterator iterator() const {
-		return Iterator(*this, 1);
-	}
-
-	/**
-	 * Adds a class reference to the constant pool.
-	 *
-	 * @param classNameIndex the utf8 index that represents the name of this
-	 * class item.
-	 * @returns the index of the newly created reference to a class item.
-	 */
-	Index addClass(u2 classNameIndex) {
-		ConstItem e(CONST_CLASS);
-		e.clazz.nameIndex = classNameIndex;
-
-		return _addSingle(e);
-	}
-
-	/**
-	 * Adds a class reference to the constant pool by class name. This method
-	 * adds also the utf8 entry corresponding the class name itself.
-	 *
-	 * @param className name of the class to reference.
-	 * @returns the index of the newly created reference to a class item.
-	 */
-	Index addClass(const char* className) {
-		Index classNameIndex = addUtf8(className);
-		return addClass(classNameIndex);
-	}
-
-	/**
-	 * Adds a field reference.
-	 */
-	Index addFieldRef(Index classIndex, Index nameAndTypeIndex) {
-		ConstItem e(CONST_FIELDREF);
-		e.fieldRef.classIndex = classIndex;
-		e.fieldRef.nameAndTypeIndex = nameAndTypeIndex;
-
-		return _addSingle(e);
-	}
-
-	/**
-	 * Adds a class method reference.
-	 */
-	Index addMethodRef(Index classIndex, Index nameAndTypeIndex) {
-		ConstItem e(CONST_METHODREF);
-		e.methodRef.classIndex = classIndex;
-		e.methodRef.nameAndTypeIndex = nameAndTypeIndex;
-
-		return _addSingle(e);
-	}
-
-	/**
-	 * Adds a non-interface methods by method name and descriptor.
-	 */
-	Index addMethodRef(u2 classIndex, const char* name, const char* desc) {
-		Index methodNameIndex = addUtf8(name);
-		Index methodDescIndex = addUtf8(desc);
-		Index nameAndTypeIndex = addNameAndType(methodNameIndex,
-				methodDescIndex);
-		Index methodRefIndex = addMethodRef(classIndex, nameAndTypeIndex);
-
-		return methodRefIndex;
-	}
-
-	/**
-	 * Adds an interface method reference.
-	 */
-	Index addInterMethodRef(Index classIndex, Index nameAndTypeIndex) {
-		ConstItem e(CONST_INTERMETHODREF);
-		e.interMethodRef.classIndex = classIndex;
-		e.interMethodRef.nameAndTypeIndex = nameAndTypeIndex;
-
-		return _addSingle(e);
-	}
-
-	/**
-	 *
-	 */
-	Index addString(Index utf8Index) {
-		ConstItem e(CONST_STRING);
-		e.s.stringIndex = utf8Index;
-
-		return _addSingle(e);
-	}
-
-	/**
-	 *
-	 */
-	Index addStringFromClass(u2 classIndex) {
-		Index classNameIndex = getClassNameIndex(classIndex);
-		Index classNameStringIndex = addString(classNameIndex);
-
-		return classNameStringIndex;
-	}
-
-	/**
-	 * Adds an integer.
-	 *
-	 * @param value the integer value.
-	 */
-	Index addInteger(u4 value) {
-		ConstItem e(CONST_INTEGER);
-		e.i.value = value;
-
-		return _addSingle(e);
-	}
-
-	/**
-	 * Adds a float.
-	 *
-	 * @param value the float value.
-	 */
-	Index addFloat(u4 value) {
-		ConstItem e(CONST_FLOAT);
-		e.f.value = value;
-
-		return _addSingle(e);
-	}
-
-	Index addLong(long value) {
-		ConstItem e(CONST_LONG);
-		e.l.value = value;
-
-		return _addDoubleEntry(e);
-	}
-
-	Index addDouble(double value) {
-		ConstItem entry(CONST_DOUBLE);
-		entry.d.value = value;
-
-		return _addDoubleEntry(entry);
-	}
-
-	Index addNameAndType(Index nameIndex, Index descIndex) {
-		ConstItem e(CONST_NAMEANDTYPE);
-		e.nameandtype.nameIndex = nameIndex;
-		e.nameandtype.descriptorIndex = descIndex;
-
-		return _addSingle(e);
-	}
-
-	Index addUtf8(const char* utf8, int len) {
-		ConstItem e(CONST_UTF8);
-		std::string str(utf8, len);
-		e.utf8.str = str;
-
-		return _addSingle(e);
-	}
-
-	Index addUtf8(const char* str) {
-		ConstItem e(CONST_UTF8);
-		e.utf8.str = str;
-
-		return _addSingle(e);
-	}
-
-	Index addMethodHandle(u1 refKind, u2 refIndex) {
-		ConstItem e(CONST_METHODHANDLE);
-		e.methodhandle.referenceKind = refKind;
-		e.methodhandle.referenceIndex = refIndex;
-		return _addSingle(e);
-	}
-
-	Index addMethodType(u2 descIndex) {
-		ConstItem e(CONST_METHODTYPE);
-		e.methodtype.descriptorIndex = descIndex;
-		return _addSingle(e);
-
-	}
-
-	Index addInvokeDynamic(u2 bootstrapMethodAttrIndex, u2 nameAndTypeIndex) {
-		ConstItem e(CONST_INVOKEDYNAMIC);
-		e.invokedynamic.bootstrapMethodAttrIndex = bootstrapMethodAttrIndex;
-		e.invokedynamic.nameAndTypeIndex = nameAndTypeIndex;
-		return _addSingle(e);
-	}
-
-	/**
-	 *
-	 */
-	ConstTag getTag(Index index) const {
-		const ConstItem* entry = _getEntry(index);
-
-		return entry->tag;
-	}
-
-	/**
-	 * Checks whether the requested index holds a class reference.
-	 */
-	bool isClass(Index index) const {
-		return _getEntry(index)->tag == CONST_CLASS;
-	}
-
-	bool isUtf8(Index index) const {
-		return _getEntry(index)->tag == CONST_UTF8;
-	}
-
-	Index getClassNameIndex(Index classIndex) const {
-		const ConstItem* e = _getEntry(classIndex, CONST_CLASS,
-				"CONSTANT_Class");
-
-		u2 ni = e->clazz.nameIndex;
-
-		return Index(ni);
-	}
-
-	void getFieldRef(Index index, std::string* className, std::string* name,
-			std::string* desc) const {
-		const ConstItem* e = _getEntry(index, CONST_FIELDREF, "FieldRef");
-		const MemberRef& mr = e->fieldRef;
-		_getMemberRef(className, name, desc, mr);
-	}
-
-	void getMethodRef(Index index, std::string* clazzName, std::string* name,
-			std::string* desc) const {
-		const ConstItem* e = _getEntry(index, CONST_METHODREF, "MethodRef");
-		const MemberRef& mr = e->methodRef;
-		_getMemberRef(clazzName, name, desc, mr);
-	}
-
-	void getInterMethodRef(Index index, std::string* clazzName,
-			std::string* name, std::string* desc) const {
-		const ConstItem* e = _getEntry(index, CONST_INTERMETHODREF, "imr");
-		const MemberRef& mr = e->interMethodRef;
-		_getMemberRef(clazzName, name, desc, mr);
-	}
-
-	long getLong(Index index) const {
-		return _getEntry(index, CONST_LONG, "CONSTANT_Long")->l.value;
-	}
-
-	double getDouble(Index index) const {
-		return _getEntry(index, CONST_DOUBLE, "CONSTANT_Double")->d.value;
-	}
-
-	const char* getUtf8(Index utf8Index) const {
-		const ConstItem* entry = _getEntry(utf8Index, CONST_UTF8, "Utf8");
-
-		return entry->utf8.str.c_str();
-	}
-
-	const char* getClassName(Index classIndex) const {
-		Index classNameIndex = getClassNameIndex(classIndex);
-
-		return getUtf8(classNameIndex);
-	}
-
-	void getNameAndType(Index index, std::string* name,
-			std::string* desc) const {
-		const ConstItem* e = _getEntry(index, CONST_NAMEANDTYPE, "NameAndType");
-
-		u2 nameIndex = e->nameandtype.nameIndex;
-		u2 descIndex = e->nameandtype.descriptorIndex;
-
-		*name = getUtf8(Index(nameIndex));
-		*desc = getUtf8(Index(descIndex));
-	}
-
-	Index getIndexOfUtf8(const char* utf8) {
-
-		ConstPool& cp = *this;
-		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
-			ConstPool::Index i = *it;
-			//ConstPool::Tag tag = cp.getTag(i);
-
-			//const Entry* entry = &cp.entries[i];
-
-			if (isUtf8(i) && getUtf8(i) == std::string(utf8)) {
-				return i;
-			}
-		}
-
-		return NULLENTRY;
-	}
-
-	Index putUtf8(const char* utf8) {
-		Index i = getIndexOfUtf8(utf8);
-		if (i == NULLENTRY) {
-			return addUtf8(utf8);
-		} else {
-			return i;
-		}
-	}
-
-	std::vector<ConstItem> entries;
-
-private:
-
-	Index _addSingle(const ConstItem& entry) {
-		Index index = Index(entries.size());
-		entries.push_back(entry);
-
-		return index;
-	}
-
-	Index _addDoubleEntry(const ConstItem& entry) {
-		Index index = Index(entries.size());
-
-		entries.push_back(entry);
-
-		// TODO: This is plain wrong!!!
-		ConstItem nullEntry(CONST_INVOKEDYNAMIC);
-		entries.push_back(nullEntry);
-
-		return index;
-	}
-
-	const ConstItem* _getEntry(Index i) const {
-		Error::check(i > NULLENTRY, "Null access to constant pool: index = ",
-				i);
-		check(i < entries.size(), "Index out of bounds: index = ", i);
-
-		const ConstItem* entry = &entries[i];
-
-		return entry;
-	}
-
-	const ConstItem* _getEntry(Index index, u1 tag, const char* message) const {
-		const ConstItem* entry = _getEntry(index);
-
-		check(entry->tag == tag, "Invalid constant ", message, ", expected: ",
-				(int) tag, ", actual: ", (int) entry->tag);
-
-		return entry;
-	}
-
-	bool _isDoubleEntry(Index index) const {
-		const ConstItem* e = _getEntry(index);
-
-		switch (e->tag) {
-			case CONST_LONG:
-			case CONST_DOUBLE:
-				return true;
-			default:
-				return false;
-		}
-	}
-
-	void _getMemberRef(std::string* clazzName, std::string* name,
-			std::string* desc, const MemberRef& memberRef) const {
-		Index classIndex = Index(memberRef.classIndex);
-		Index nameAndTypeIndex = Index(memberRef.nameAndTypeIndex);
-
-		*clazzName = getClassName(classIndex);
-		getNameAndType(nameAndTypeIndex, name, desc);
-	}
-
-};
-
 class ControlFlowGraph;
 
+/**
+ * Represents a basic block of instructions.
+ *
+ * @see Inst
+ */
 class BasicBlock {
 public:
 	BasicBlock(const BasicBlock&) = delete;
@@ -1820,7 +2033,10 @@ private:
 	std::vector<BasicBlock*> targets;
 };
 
-class ControlFlowGraph: private Error {
+/**
+ * Represents a control flow graph of instructions.
+ */
+class ControlFlowGraph {
 private:
 	std::vector<BasicBlock*> basicBlocks;
 
@@ -1929,7 +2145,7 @@ struct Attrs {
 };
 
 /**
- * Represents an unknown, and hence opaque, attribute to jnif.
+ * Represents an unknown opaque attribute to jnif.
  */
 struct UnknownAttr: public Attr {
 
@@ -2050,7 +2266,7 @@ struct CodeExceptionEntry {
 	Inst* startpc;
 	Inst* endpc;
 	Inst* handlerpc;
-	ConstPool::Index catchtype;
+	ConstIndex catchtype;
 };
 
 /**
@@ -2095,9 +2311,13 @@ struct SourceFileAttr: Attr {
 };
 
 /**
+ * Represent a member of a class. This the base class for Field and
+ * Method classes.
  *
+ * @see Field
+ * @see Method
  */
-class Member: public Attrs, private Error {
+class Member: public Attrs {
 public:
 
 	friend class Field;
@@ -2106,8 +2326,8 @@ public:
 	Member(Member&&) = default;
 
 	u2 accessFlags;
-	ConstPool::Index nameIndex;
-	ConstPool::Index descIndex;
+	ConstIndex nameIndex;
+	ConstIndex descIndex;
 
 //	const char* getName() const {
 //		string name = cf.getUtf8(m->nameIndex);
@@ -2116,8 +2336,7 @@ public:
 
 private:
 
-	Member(u2 accessFlags, ConstPool::Index nameIndex,
-			ConstPool::Index descIndex) :
+	Member(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex) :
 			accessFlags(accessFlags), nameIndex(nameIndex), descIndex(descIndex) {
 	}
 };
@@ -2128,8 +2347,7 @@ private:
 class Field: public Member {
 public:
 
-	inline Field(u2 accessFlags, ConstPool::Index nameIndex,
-			ConstPool::Index descIndex) :
+	inline Field(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex) :
 			Member(accessFlags, nameIndex, descIndex) {
 	}
 
@@ -2141,8 +2359,7 @@ public:
 class Method: public Member {
 public:
 
-	Method(u2 accessFlags, ConstPool::Index nameIndex,
-			ConstPool::Index descIndex) :
+	Method(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex) :
 			Member(accessFlags, nameIndex, descIndex) {
 	}
 
@@ -2173,7 +2390,7 @@ public:
 			}
 		}
 
-		raise("ERROR! get inst list");
+		Error::raise("ERROR! get inst list");
 	}
 
 	void instList(const InstList& newcode) {
@@ -2184,7 +2401,7 @@ public:
 			}
 		}
 
-		raise("ERROR! setting inst list");
+		Error::raise("ERROR! setting inst list");
 	}
 
 	inline bool isStatic() const {
@@ -2195,6 +2412,7 @@ public:
 
 class IClassPath {
 public:
+
 	virtual ~IClassPath() {
 	}
 
@@ -2237,8 +2455,8 @@ public:
 	/**
 	 *
 	 */
-	Field* addField(ConstPool::Index nameIndex, ConstPool::Index descIndex,
-			u2 accessFlags = FIELD_PUBLIC) {
+	Field* addField(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags =
+			FIELD_PUBLIC) {
 		Field* field = new Field(accessFlags, nameIndex, descIndex);
 		fields.push_back(field);
 		return field;
@@ -2249,8 +2467,8 @@ public:
 	 */
 	Field* addField(const char* fieldName, const char* fieldDesc,
 			u2 accessFlags = FIELD_PUBLIC) {
-		ConstPool::Index nameIndex = addUtf8(fieldName);
-		ConstPool::Index descIndex = addUtf8(fieldDesc);
+		ConstIndex nameIndex = addUtf8(fieldName);
+		ConstIndex descIndex = addUtf8(fieldDesc);
 
 		return addField(nameIndex, descIndex, accessFlags);
 	}
@@ -2258,7 +2476,7 @@ public:
 	/**
 	 *
 	 */
-	Method* addMethod(ConstPool::Index nameIndex, ConstPool::Index descIndex,
+	Method* addMethod(ConstIndex nameIndex, ConstIndex descIndex,
 			u2 accessFlags = METHOD_PUBLIC) {
 		Method* method = new Method(accessFlags, nameIndex, descIndex);
 		methods.push_back(method);
@@ -2270,8 +2488,8 @@ public:
 	 */
 	Method* addMethod(const char* methodName, const char* methodDesc,
 			u2 accessFlags = METHOD_PUBLIC) {
-		ConstPool::Index nameIndex = addUtf8(methodName);
-		ConstPool::Index descIndex = addUtf8(methodDesc);
+		ConstIndex nameIndex = addUtf8(methodName);
+		ConstIndex descIndex = addUtf8(methodDesc);
 
 		return addMethod(nameIndex, descIndex, accessFlags);
 	}
@@ -2306,8 +2524,8 @@ public:
 	u2 majorVersion;
 	u2 minorVersion;
 	u2 accessFlags;
-	ConstPool::Index thisClassIndex;
-	ConstPool::Index superClassIndex;
+	ConstIndex thisClassIndex;
+	ConstIndex superClassIndex;
 	std::vector<u2> interfaces;
 	std::vector<Field*> fields;
 	std::vector<Method*> methods;

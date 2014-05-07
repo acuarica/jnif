@@ -11,6 +11,7 @@
 
 #include "frlog.h"
 #include "frexception.h"
+#include "frinstr.h"
 
 #include <iostream>
 #include <string>
@@ -22,11 +23,13 @@
 using namespace std;
 using namespace jnif;
 
+bool inException = false;
+
 class ClassPath: public IClassPath {
 public:
 
-	ClassPath(JNIEnv* jni) :
-			jni(jni) {
+	ClassPath(JNIEnv* jni, jobject loader) :
+			jni(jni), loader(loader) {
 		javaLangClass = jni->FindClass("java/lang/Class");
 		ASSERT(javaLangClass != NULL, "javaLangClass is null!");
 
@@ -38,22 +41,65 @@ public:
 	const std::string getCommonSuperClass(const std::string& className1,
 			const std::string& className2) {
 		cerr << "arg clazz1: " << className1 << ", arg clazz2: " << className2
+				<< ", loader is: " << (loader != NULL ? "object" : "(null)")
 				<< endl;
 
-		jclass clazz1 = jni->FindClass(className1.c_str());
+		jclass clazz1 = getAndPrintClass(className1);
+		jclass clazz2 = getAndPrintClass(className2);
 
-		if (clazz1 == NULL) {
-//			jni->ExceptionDescribe();
-//
+		while (!jni->IsAssignableFrom(clazz2, clazz1)) {
+			clazz1 = jni->GetSuperclass(clazz1);
+			//ASSERT(clazz1 != NULL, "superclass is null!");
+			if (clazz1 == NULL) {
+				cerr << "Common class is java/lang/Object!!!";
+				return "java/lang/Object";
+			}
+
+			cerr << "super clazz: " << getClassName(clazz1) << endl;
+		}
+
+		string common = fromBinaryName(getClassName(clazz1));
+		cerr << "Common super class found: " << common << endl;
+
+		return common;
+	}
+
+private:
+
+	jclass getAndPrintClass(const string& className) {
+		cerr << "Class name for class: " << className;
+
+		jclass clazz = getAndCheckClass(className);
+		string binaryName = getClassName(clazz);
+
+		cerr << " is: " << binaryName << endl;
+
+		return clazz;
+	}
+
+	jclass getAndCheckClass(const string& className) {
+		jclass clazz = getClass(className);
+		checkClassException(clazz);
+
+		return clazz;
+	}
+
+	void checkClassException(jclass clazz) {
+		if (clazz == NULL) {
+			inException = true;
+			INFO("ENTER EXCEPTION!!!");
+
+			jni->ExceptionDescribe();
+
 			jthrowable ex = jni->ExceptionOccurred();
 			ASSERT(ex != NULL, "invalid ex");
-//
-//			jni->ExceptionClear();
-//
-//			jclass clazzT = jni->FindClass("java/lang/Throwable");
-//			jmethodID pstid = jni->GetMethodID(clazzT, "printStackTrace",
-//					"()V");
-//			jni->CallObjectMethod(ex, pstid);
+
+			jni->ExceptionClear();
+
+			jclass clazzT = jni->FindClass("java/lang/Throwable");
+			jmethodID pstid = jni->GetMethodID(clazzT, "printStackTrace",
+					"()V");
+			jni->CallObjectMethod(ex, pstid);
 
 			jni->ExceptionDescribe();
 			jclass exClass = jni->GetObjectClass(ex);
@@ -66,38 +112,52 @@ public:
 
 			INFO("Exception message: %s", msg);
 			jni->ReleaseStringUTFChars(errMsg, msg);
-
 		}
-
-		ASSERT(clazz1 != NULL, "clazz1 is null for class: %s",
-				className1.c_str());
-
-		jclass clazz2 = jni->FindClass(className2.c_str());
-		ASSERT(clazz2 != NULL, "clazz2 is null!");
-
-		cerr << "clazz1: " << getClassName(clazz1) << ", clazz2: "
-				<< getClassName(clazz2) << endl;
-
-		while (!jni->IsAssignableFrom(clazz2, clazz1)) {
-			clazz1 = jni->GetSuperclass(clazz1);
-			ASSERT(clazz1 != NULL, "superclass is null!");
-
-			cerr << "super clazz: " << getClassName(clazz1) << endl;
-		}
-
-		string common = fromBinaryName(getClassName(clazz1));
-		cerr << common << endl;
-
-		return common;
 	}
 
-private:
+	jclass getClass(const string& className) {
+		if (loader != NULL) {
+			jclass classLoaderClass = jni->FindClass("java/lang/ClassLoader");
+			ASSERT(classLoaderClass != NULL, "");
 
-	string fromBinaryName(const string& className) {
+			jmethodID loadClassId = jni->GetMethodID(classLoaderClass,
+					"loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+			ASSERT(loadClassId != NULL, "");
+
+			string binaryName = toBinaryName(className);
+			jstring targetName = jni->NewStringUTF(binaryName.c_str());
+			//		jstring targetName = (*jni)->NewStringUTF(jni, "java.util.regex.Pattern");
+			ASSERT(targetName != NULL, "");
+
+			jclass targetClass = (jclass) jni->CallObjectMethod(loader,
+					loadClassId, targetName);
+//			ASSERT(targetClass != NULL, "target class is null with loader");
+
+			return targetClass;
+		} else {
+			jclass clazz = jni->FindClass(className.c_str());
+//			ASSERT(clazz != NULL, "FindClass clazz is null for class: %s",
+//					className.c_str());
+
+			return clazz;
+		}
+	}
+
+	static string fromBinaryName(const string& className) {
 		string newName = className;
 
 		for (u4 i = 0; i < newName.length(); i++) {
 			newName[i] = className[i] == '.' ? '/' : className[i];
+		}
+
+		return newName;
+	}
+
+	static string toBinaryName(const string& className) {
+		string newName = className;
+
+		for (u4 i = 0; i < newName.length(); i++) {
+			newName[i] = className[i] == '/' ? '.' : className[i];
 		}
 
 		return newName;
@@ -126,6 +186,7 @@ private:
 	JNIEnv* jni;
 	jclass javaLangClass;
 	jmethodID getNameMethodId;
+	jobject loader;
 };
 
 static unsigned char* Allocate(jvmtiEnv* jvmti, jlong size) {
@@ -163,19 +224,20 @@ static string outFileName(const char* className, const char* ext,
 
 extern "C" {
 
-void InstrClassEmpty(jvmtiEnv*, u1*, int, const char*, int*, u1**, JNIEnv*) {
+void InstrClassEmpty(jvmtiEnv*, u1*, int, const char*, int*, u1**, JNIEnv*,
+		InstrArgs*) {
 
 }
 
 void InstrClassDump(jvmtiEnv*, u1* data, int len, const char* className, int*,
-		u1**, JNIEnv*) {
+		u1**, JNIEnv*, InstrArgs* args) {
 
 	ofstream os(outFileName(className, "class").c_str(), ios::binary);
 	os.write((char*) data, len);
 }
 
 void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
-		u1**, JNIEnv*) {
+		u1**, JNIEnv*, InstrArgs* args) {
 	ClassFile cf(data, len);
 
 	ofstream os(outFileName(className, "disasm").c_str());
@@ -183,23 +245,28 @@ void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
 }
 
 void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
-		const char* className, int* newlen, u1** newdata, JNIEnv*) {
+		const char* className, int* newlen, u1** newdata, JNIEnv*,
+		InstrArgs* args) {
 	ClassFile cf(data, len);
+
+	ofstream os(outFileName(className, "disasm").c_str());
+	os << cf;
+
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
 
 extern int isMainLoaded;
-
 extern int inStartPhase;
 extern int inLivePhase;
 
 void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
-		const char* className, int* newlen, u1** newdata, JNIEnv* jni) {
+		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
+		InstrArgs* args) {
 	ClassFile cf(data, len);
 
 	//if (inLivePhase) {
 	if (isMainLoaded) {
-		ClassPath cp(jni);
+		ClassPath cp(jni, args->loader);
 		cf.computeFrames(&cp);
 	}
 
@@ -210,9 +277,10 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 }
 
 void InstrClassComputeApp(jvmtiEnv* jvmti, u1* data, int len,
-		const char* className, int* newlen, u1** newdata, JNIEnv* jni) {
+		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
+		InstrArgs* args) {
 
-	if (isMainLoaded == 0) {
+	if (isMainLoaded == 0 || inException) {
 		return;
 	}
 
@@ -221,7 +289,7 @@ void InstrClassComputeApp(jvmtiEnv* jvmti, u1* data, int len,
 //	}
 
 	ClassFile cf(data, len);
-	ClassPath cp(jni);
+	ClassPath cp(jni, args->loader);
 	cf.computeFrames(&cp);
 
 	ofstream os(outFileName(className, "disasm").c_str());
@@ -232,7 +300,7 @@ void InstrClassComputeApp(jvmtiEnv* jvmti, u1* data, int len,
 
 void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni) {
+		JNIEnv* jni, InstrArgs* args) {
 
 	if (string(className) != "java/lang/Object") {
 		return;
@@ -271,7 +339,7 @@ void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 void InstrClassNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni) {
+		JNIEnv* jni, InstrArgs* args) {
 	ClassFile cf(data, len);
 
 	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
@@ -347,7 +415,7 @@ void InstrClassNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni) {
+		JNIEnv* jni, InstrArgs* args) {
 
 //	if (string(className) != "frheapagent/HeapTest") {
 //		return;
@@ -357,9 +425,9 @@ void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 //	Version v = cf.getVersion();
 	//fprintf(stderr, "%d.%d ", v.getMajor(), v.getMinor());
 
-	ConstPool::Index classIndex = cf.addClass("frproxy/FrInstrProxy");
-	ConstPool::Index aNewArrayEventRef = cf.addMethodRef(classIndex,
-			"aNewArrayEvent", "(ILjava/lang/Object;Ljava/lang/String;)V");
+	ConstIndex classIndex = cf.addClass("frproxy/FrInstrProxy");
+	ConstIndex aNewArrayEventRef = cf.addMethodRef(classIndex, "aNewArrayEvent",
+			"(ILjava/lang/Object;Ljava/lang/String;)V");
 
 	auto invoke = [&] (Opcode opcode, u2 index) {
 		Inst* inst = new Inst(opcode, KIND_INVOKE);
@@ -406,7 +474,7 @@ void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 					code.insert(instp, new Inst(OPCODE_dup_x1));
 					// STACK: ... | arrayref | count | arrayref
 
-					ConstPool::Index strIndex = cf.addStringFromClass(
+					ConstIndex strIndex = cf.addStringFromClass(
 							inst.type.classIndex);
 
 					code.insert(instp, ldc(OPCODE_ldc_w, strIndex));
@@ -432,7 +500,7 @@ void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 void InstrClassMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni) {
+		JNIEnv* jni, InstrArgs* args) {
 
 	ClassFile cf(data, len);
 
@@ -474,17 +542,17 @@ void InstrClassMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni) {
+		JNIEnv* jni, InstrArgs* args) {
 
 	ClassFile cf(data, len);
 
-	ConstPool::Index classIndex = cf.addClass("frproxy/FrInstrProxy");
-	ConstPool::Index aNewArrayEventRef = cf.addMethodRef(classIndex,
-			"aNewArrayEvent", "(ILjava/lang/Object;Ljava/lang/String;)V");
-	ConstPool::Index enterMainMethodRef = cf.addMethodRef(classIndex,
+	ConstIndex classIndex = cf.addClass("frproxy/FrInstrProxy");
+	ConstIndex aNewArrayEventRef = cf.addMethodRef(classIndex, "aNewArrayEvent",
+			"(ILjava/lang/Object;Ljava/lang/String;)V");
+	ConstIndex enterMainMethodRef = cf.addMethodRef(classIndex,
 			"enterMainMethod", "()V");
-	ConstPool::Index exitMainMethodRef = cf.addMethodRef(classIndex,
-			"exitMainMethod", "()V");
+	ConstIndex exitMainMethodRef = cf.addMethodRef(classIndex, "exitMainMethod",
+			"()V");
 
 	auto invoke = [&] (Opcode opcode, u2 index) {
 		Inst* inst = new Inst(opcode, KIND_INVOKE);
@@ -545,7 +613,7 @@ void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 					code.insert(instp, new Inst(OPCODE_dup_x1));
 					// STACK: ... | arrayref | count | arrayref
 
-					ConstPool::Index strIndex = cf.addStringFromClass(
+					ConstIndex strIndex = cf.addStringFromClass(
 							inst.type.classIndex);
 
 					code.insert(instp, ldc(OPCODE_ldc_w, strIndex));

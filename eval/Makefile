@@ -22,7 +22,7 @@ dargs=avrora
 
 .PHONY: run all scala show clean
 
-run: $(LIB)
+run: $(BUILD)/$(LIB)
 	$(RUNDACAPO) $(dargs)
 
 all: $(LIB)
@@ -31,8 +31,10 @@ all: $(LIB)
 scala: $(LIB)
 	$(RUNSCALA) actors
 
-$(LIB): ../jnif/build/$(LIB)
-	cp ../jnif/build/$(LIB) .
+$(BUILD)/$(LIB):
+	$(MAKE) -C ../src-test-agent
+
+#cp ../jnif/build/$(LIB) .
 
 show:
 	$(RUNDACAPO) -l
