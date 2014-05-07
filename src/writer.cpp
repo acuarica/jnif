@@ -5,6 +5,7 @@
  *      Author: luigi
  */
 #include "jnif.hpp"
+#include "jnifex.hpp"
 
 using namespace std;
 
@@ -159,7 +160,7 @@ public:
 		bw.writeu2(count);
 
 		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
-			ConstPool::Index i = *it;
+			ConstIndex i = *it;
 			const ConstItem* entry = &cp.entries[i];
 
 			bw.writeu1(entry->tag);
@@ -169,16 +170,16 @@ public:
 					bw.writeu2(entry->clazz.nameIndex);
 					break;
 				case CONST_FIELDREF:
-					bw.writeu2(entry->fieldRef.classIndex);
-					bw.writeu2(entry->fieldRef.nameAndTypeIndex);
+					bw.writeu2(entry->memberRef.classIndex);
+					bw.writeu2(entry->memberRef.nameAndTypeIndex);
 					break;
 				case CONST_METHODREF:
-					bw.writeu2(entry->methodRef.classIndex);
-					bw.writeu2(entry->methodRef.nameAndTypeIndex);
+					bw.writeu2(entry->memberRef.classIndex);
+					bw.writeu2(entry->memberRef.nameAndTypeIndex);
 					break;
 				case CONST_INTERMETHODREF:
-					bw.writeu2(entry->interMethodRef.classIndex);
-					bw.writeu2(entry->interMethodRef.nameAndTypeIndex);
+					bw.writeu2(entry->memberRef.classIndex);
+					bw.writeu2(entry->memberRef.nameAndTypeIndex);
 					break;
 				case CONST_STRING:
 					bw.writeu2(entry->s.stringIndex);
@@ -186,9 +187,12 @@ public:
 				case CONST_INTEGER:
 					bw.writeu4(entry->i.value);
 					break;
-				case CONST_FLOAT:
-					bw.writeu4(entry->f.value);
+				case CONST_FLOAT: {
+					float fvalue = entry->f.value;
+					float value = *(u4*) &fvalue;
+					bw.writeu4(value);
 					break;
+				}
 				case CONST_LONG: {
 					long value = cp.getLong(i);
 					bw.writeu4(value >> 32);
@@ -226,6 +230,8 @@ public:
 					bw.writeu2(entry->invokedynamic.bootstrapMethodAttrIndex);
 					bw.writeu2(entry->invokedynamic.nameAndTypeIndex);
 					break;
+				default:
+					Error::raise("invalid tag!");
 			}
 		}
 	}

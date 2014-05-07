@@ -24,6 +24,33 @@ public class HeapTest {
 		o.method();
 	}
 
+	private static boolean for0(ArrayList<String> arr) {
+		boolean res;
+
+		if (arr.size() == 0) {
+			res = true;
+		} else {
+			res = false;
+		}
+
+		return res;
+	}
+
+	// private static Object for1(int arg) {
+	// HashMap<String, String> map = new HashMap<String, String>();
+	//
+	// Object obj = null;
+	// for (Map.Entry<String, String> entry : map.entrySet()) {
+	// obj = entry;
+	// }
+	//
+	// if (obj == null) {
+	// obj = new Object();
+	// }
+	//
+	// return obj;
+	// }
+
 	private static void scope0(int arg) {
 		// HeapTest o = null;
 
@@ -469,27 +496,78 @@ public class HeapTest {
 		}
 	}
 
-	private static Object inner0(int arg) {
-		HashMap<String, String> map = new HashMap<String, String>();
+	// private static Object inner0(int arg) {
+	// HashMap<String, String> map = new HashMap<String, String>();
+	//
+	// Object obj = null;
+	// for (Map.Entry<String, String> entry : map.entrySet()) {
+	// obj = entry;
+	// }
+	//
+	// if (obj == null) {
+	// obj = new Object();
+	// }
+	//
+	// return obj;
+	// }
 
-		Object obj = null;
-		for (Map.Entry<String, String> entry : map.entrySet()) {
-			obj = entry;
+	public static Base getObject(int arg) {
+		Base res;
+		if (arg == 0) {
+			res = new Derived1();
+		} else {
+			// if (arg == 1) {
+			res = new Derived2();
+			// } else {
+			// res = null;
 		}
 
-		if (obj == null) {
-			obj = new Object();
-
-		}
-
-		return obj;
+		return res;
 	}
 
+	public static class TestExc1 extends Exception {
+	}
+
+	public static class TestExc2 extends Exception {
+	}
+
+	public static void tryItOut() throws TestExc1, TestExc2 {
+	}
+
+	public static void handleExc1(Exception e) {
+	}
+
+	public static void handleExc2(Exception e) {
+	}
+
+	public static void nestedCatch0() {
+		try {
+			try {
+				tryItOut();
+			} catch (TestExc1 e) {
+				handleExc1(e);
+			}
+		} catch (TestExc2 e) {
+			handleExc2(e);
+		}
+	}
+
+	public static void useFloat0() {
+		float f = 14;
+		
+		System.err.println(f);
+	}
+	
 	public static void main(String[] args) throws IOException {
-		// use(new Chapter3Snippets());
-		// use(new Chapter3Snippets().new Far());
-		// use(new Chapter3Snippets.TestExc1());
-		// use(new Chapter3Snippets.Example());
+		use(new Chapter3Snippets());
+		use(new Chapter3Snippets().new Far());
+		use(new Chapter3Snippets.TestExc1());
+		use(new Chapter3Snippets.Example());
+		
+		useFloat0();
+
+	//	use(java.util.regex.Pattern.compile(""));
+
 		// HeapTest ht = new HeapTest();
 		// System.out.println("Is course text?: " + ht.isCourseText());
 		// System.out.println("Really?: " + ht.isCourseText);

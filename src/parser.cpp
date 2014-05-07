@@ -1,4 +1,5 @@
 #include "jnif.hpp"
+#include "jnifex.hpp"
 
 using namespace std;
 
@@ -249,7 +250,8 @@ private:
 				}
 				case CONST_FLOAT: {
 					u4 value = br.readu4();
-					cp.addFloat(value);
+					float fvalue = *(float*) &value;
+					cp.addFloat(fvalue);
 					break;
 				}
 				case CONST_LONG: {
@@ -660,7 +662,7 @@ private:
 			u2 startPc = br.readu2();
 			u2 endPc = br.readu2();
 			u2 handlerPc = br.readu2();
-			ConstPool::Index catchType = br.readu2();
+			ConstIndex catchType = br.readu2();
 
 			check(startPc < endPc, "");
 			check(endPc <= ca->codeLen, "");

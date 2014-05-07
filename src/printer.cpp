@@ -236,7 +236,7 @@ private:
 		line() << "#0 [null entry]: -" << endl;
 
 		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
-			ConstPool::Index i = *it;
+			ConstIndex i = *it;
 			ConstTag tag = cp.getTag(i);
 
 			line() << "#" << i << " [" << ConstNames[tag] << "]: ";
@@ -251,9 +251,9 @@ private:
 					string clazzName, name, desc;
 					cp.getFieldRef(i, &clazzName, &name, &desc);
 
-					os << clazzName << "#" << entry->fieldRef.classIndex << "."
+					os << clazzName << "#" << entry->memberRef.classIndex << "."
 							<< name << ":" << desc << "#"
-							<< entry->fieldRef.nameAndTypeIndex;
+							<< entry->memberRef.nameAndTypeIndex;
 					break;
 				}
 
@@ -261,9 +261,9 @@ private:
 					string clazzName, name, desc;
 					cp.getMethodRef(i, &clazzName, &name, &desc);
 
-					os << clazzName << "#" << entry->methodRef.classIndex << "."
+					os << clazzName << "#" << entry->memberRef.classIndex << "."
 							<< name << ":" << desc << "#"
-							<< entry->methodRef.nameAndTypeIndex;
+							<< entry->memberRef.nameAndTypeIndex;
 					break;
 				}
 
@@ -271,9 +271,9 @@ private:
 					string clazzName, name, desc;
 					cp.getInterMethodRef(i, &clazzName, &name, &desc);
 
-					os << clazzName << "#" << entry->interMethodRef.classIndex
-							<< "." << name << ":" << desc << "#"
-							<< entry->interMethodRef.nameAndTypeIndex;
+					os << clazzName << "#" << entry->memberRef.classIndex << "."
+							<< name << ":" << desc << "#"
+							<< entry->memberRef.nameAndTypeIndex;
 					break;
 				}
 				case CONST_STRING:
@@ -312,6 +312,8 @@ private:
 					os << "#" << entry->invokedynamic.bootstrapMethodAttrIndex
 							<< ".#" << entry->invokedynamic.nameAndTypeIndex;
 					break;
+				default:
+					Error::raise("invalid tag in printer!");
 			}
 
 			os << endl;

@@ -358,8 +358,9 @@ public:
 		return change;
 	}
 
-	static void visitCatch(BasicBlock& bb, InstList& instList, ClassFile& cf,
-			CodeAttr* code, IClassPath* classPath, bool useIn) {
+	static void visitCatch(const BasicBlock& bb, InstList& instList,
+			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
+			bool useIn) {
 		if ((*bb.start)->isLabel()) {
 			for (auto ex : code->exceptions) {
 				if (ex.startpc->label.id == (*bb.start)->label.id) {
@@ -387,11 +388,10 @@ public:
 				}
 			}
 		}
-
 	}
 
 	static void computeState(BasicBlock& bb, Frame& how, InstList& instList,
-			ClassFile& cf, CodeAttr* code, IClassPath* classPath) {
+			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath) {
 		if (bb.start == instList.end()) {
 			assert(bb.name == "Exit" && bb.exit == instList.end(), "");
 			return;
@@ -400,17 +400,18 @@ public:
 		assert(how.valid, "how valid");
 		assert(bb.in.valid == bb.out.valid, "");
 
-		bool change;
-		if (!bb.in.valid) {
-			bb.in = how;
-			bb.out = bb.in;
-			change = true;
-		} else {
-			change = join(bb.in, how, classPath);
-		}
+		bool change = [&]() {
+			if (!bb.in.valid) {
+				bb.in = how;
+				//bb.out = bb.in;
+				return true;
+			} else {
+				return join(bb.in, how, classPath);
+			}
+		}();
 
 		if (change) {
-			visitCatch(bb, instList, cf, code, classPath, true);
+			bb.out = bb.in;
 
 			for (auto it = bb.start; it != bb.exit; it++) {
 				Inst* inst = *it;
@@ -419,11 +420,12 @@ public:
 
 			Frame h = bb.out;
 
-			visitCatch(bb, instList, cf, code, classPath, false);
-
 			for (BasicBlock* nid : bb) {
 				computeState(*nid, h, instList, cf, code, classPath);
 			}
+
+			visitCatch(bb, instList, cf, code, classPath, true);
+			visitCatch(bb, instList, cf, code, classPath, false);
 		}
 	}
 
@@ -1221,8 +1223,8 @@ public:
 //				ss << className;
 //			}
 
-			ConstPool::Index utf8index = cp.putUtf8(className.c_str());
-			ConstPool::Index index = cp.addClass(utf8index);
+			ConstIndex utf8index = cp.putUtf8(className.c_str());
+			ConstIndex index = cp.addClass(utf8index);
 			type.setCpIndex(index);
 		}
 	}
@@ -1238,7 +1240,7 @@ public:
 	}
 
 	static void computeFramesMethod(CodeAttr* code, Method* method,
-			ClassFile* cf, ConstPool::Index* attrIndex, IClassPath* classPath) {
+			ClassFile* cf, ConstIndex* attrIndex, IClassPath* classPath) {
 
 		for (auto it = code->attrs.begin(); it != code->attrs.end(); it++) {
 			auto attr = *it;

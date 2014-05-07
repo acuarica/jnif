@@ -38,7 +38,7 @@ PROJECT_NAME = JNIF
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER = 0.1
+PROJECT_NUMBER = 0.2
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -90,7 +90,7 @@ OUTPUT_LANGUAGE = English
 # documentation (similar to Javadoc). Set to NO to disable this.
 # The default value is: YES.
 
-BRIEF_MEMBER_DESC = YES
+BRIEF_MEMBER_DESC = NO
 
 # If the REPEAT_BRIEF tag is set to YES doxygen will prepend the brief
 # description of a member or function before the detailed description
@@ -127,7 +127,7 @@ ABBREVIATE_BRIEF = "The $name class" \
 # description.
 # The default value is: NO.
 
-ALWAYS_DETAILED_SEC = NO
+ALWAYS_DETAILED_SEC = YES
 
 # If the INLINE_INHERITED_MEMB tag is set to YES, doxygen will show all
 # inherited members of a class in the documentation of that class as if those
@@ -200,6 +200,8 @@ QT_AUTOBRIEF = NO
 # The default value is: NO.
 
 MULTILINE_CPP_IS_BRIEF = NO
+
+#DETAILS_AT_TOP       = YES
 
 # If the INHERIT_DOCS tag is set to YES then an undocumented member inherits the
 # documentation from any documented member that it re-implements.
@@ -911,7 +913,7 @@ SOURCE_BROWSER = YES
 # classes and enums directly into the documentation.
 # The default value is: NO.
 
-INLINE_SOURCES = YES
+INLINE_SOURCES = NO
 
 # Setting the STRIP_CODE_COMMENTS tag to YES will instruct doxygen to hide any
 # special comment blocks from generated source code fragments. Normal C, C++ and
@@ -924,13 +926,13 @@ STRIP_CODE_COMMENTS = YES
 # function all documented functions referencing it will be listed.
 # The default value is: NO.
 
-REFERENCED_BY_RELATION = YES
+REFERENCED_BY_RELATION = NO
 
 # If the REFERENCES_RELATION tag is set to YES then for each documented function
 # all documented entities called/used by that function will be listed.
 # The default value is: NO.
 
-REFERENCES_RELATION = YES
+REFERENCES_RELATION = NO
 
 # If the REFERENCES_LINK_SOURCE tag is set to YES and SOURCE_BROWSER tag is set
 # to YES, then the hyperlinks from functions in REFERENCES_RELATION and
@@ -938,7 +940,7 @@ REFERENCES_RELATION = YES
 # link to the documentation.
 # The default value is: YES.
 
-REFERENCES_LINK_SOURCE = YES
+REFERENCES_LINK_SOURCE = NO
 
 # If SOURCE_TOOLTIPS is enabled (the default) then hovering a hyperlink in the
 # source code will show a tooltip with additional information such as prototype,
@@ -1156,7 +1158,7 @@ HTML_TIMESTAMP = YES
 # The default value is: NO.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_DYNAMIC_SECTIONS = NO
+HTML_DYNAMIC_SECTIONS = YES
 
 # With HTML_INDEX_NUM_ENTRIES one can control the preferred number of entries
 # shown in the various tree structured indices initially; the user can expand
@@ -1384,7 +1386,7 @@ DISABLE_INDEX = NO
 # The default value is: NO.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-GENERATE_TREEVIEW = YES
+GENERATE_TREEVIEW = NO
 
 # The ENUM_VALUES_PER_LINE tag can be used to set the number of enum values that
 # doxygen will group on one line in the generated HTML documentation.
