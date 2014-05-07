@@ -42,7 +42,7 @@ public:
 			const std::string& className2) {
 		cerr << "arg clazz1: " << className1 << ", arg clazz2: " << className2
 				<< ", loader is: " << (loader != NULL ? "object" : "(null)")
-				<< endl;
+				<< "@ method: " << "" << endl;
 
 		jclass clazz1 = getAndPrintClass(className1);
 		jclass clazz2 = getAndPrintClass(className2);
@@ -92,7 +92,7 @@ private:
 			jni->ExceptionDescribe();
 
 			jthrowable ex = jni->ExceptionOccurred();
-			ASSERT(ex != NULL, "invalid ex");
+			ASSERT(ex != NULL, "Expected an exception");
 
 			jni->ExceptionClear();
 
@@ -252,11 +252,15 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args) {
 
-	if (!inStartPhase) {
+	if (!inLivePhase) {
 		return;
 	}
 
 	if (isMainLoaded == 0 || inException) {
+		//return;
+	}
+
+	if (args->loader == NULL) {
 		return;
 	}
 
