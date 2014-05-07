@@ -23,12 +23,22 @@ char* javaCommand;
 
 int isMainLoaded = 0;
 
+int inStartPhase = 0;
+int inLivePhase = 0;
+
 static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jclass class_being_redefined, jobject loader, const char* name,
 		jobject protection_domain, jint class_data_len,
 		const unsigned char* class_data, jint* new_class_data_len,
 		unsigned char** new_class_data) {
+	ASSERT(!inLivePhase || inStartPhase, "");
+//	ASSERT((!inStartPhase && inLivePhase) || (loader == NULL), "");
+//	ASSERT(inLivePhase == (loader != NULL), "");
+
 	_TLOG("CLASSFILELOAD:%s", name);
+
+	TRACE("CLASSFILELOAD:%s, loader: %s", name,
+			loader != NULL? "object" : "(null)");
 
 	if (strcmp(name, javaCommand) == 0) {
 		isMainLoaded = 1;
@@ -77,9 +87,6 @@ static void JNICALL ClassPrepareEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 
 extern signed char frproxy_FrInstrProxy_class[];
 extern int frproxy_FrInstrProxy_class_len;
-
-int inStartPhase = 0;
-int inLivePhase = 0;
 
 /**
  * Changes from JVMTI_PHASE_PRIMORDIAL to JVMTI_PHASE_START phase.

@@ -10,125 +10,11 @@ using namespace std;
 
 namespace jnif {
 
-struct DescParser: protected Error {
+class JsrRetNotSupported {
 
-	static Type parseConstClass(const std::string& className) {
-		Error::assert(!className.empty(), "Invalid string class");
-
-		if (className[0] == '[') {
-			const char* classNamePtr = className.c_str();
-			Type arrayType = parseFieldDesc(classNamePtr);
-			Error::assert(arrayType.isArray(), "Not an array: ", arrayType);
-			return arrayType;
-		} else {
-			return Type::objectType(className);
-		}
-	}
-
-	static Type parseFieldDesc(const char*& fieldDesc) {
-		const char* originalFieldDesc = fieldDesc;
-
-		int dims = 0;
-		while (*fieldDesc == '[') {
-			check(*fieldDesc != '\0',
-					"Reach end of string while searching for array. Field descriptor: ",
-					originalFieldDesc);
-			fieldDesc++;
-			dims++;
-		}
-
-		check(*fieldDesc != '\0', "");
-
-		auto parseBaseType = [&] () {
-			switch (*fieldDesc) {
-				case 'Z':
-				return Type::booleanType();
-				case 'B':
-				return Type::byteType();
-				case 'C':
-				return Type::charType();
-				case 'S':
-				return Type::shortType();
-				case 'I':
-				return Type::intType();
-				case 'D':
-				return Type::doubleType();
-				case 'F':
-				return Type::floatType();
-				case 'J':
-				return Type::longType();
-				case 'L': {
-					fieldDesc++;
-
-					const char* classNameStart = fieldDesc;
-					int len = 0;
-					while (*fieldDesc != ';') {
-						check(*fieldDesc != '\0', "");
-						fieldDesc++;
-						len++;
-					}
-
-					string className (classNameStart, len);
-					return Type::objectType(className);
-				}
-				default:
-				raise("Invalid field desc ", originalFieldDesc);
-			}};
-
-		Type t = [&]() {
-			Type baseType = parseBaseType();
-			if (dims == 0) {
-				return baseType;
-			} else {
-				return Type::arrayType(baseType, dims);
-			}
-		}();
-
-		fieldDesc++;
-
-		return t;
-	}
-
-	static Type parseMethodDesc(const char* methodDesc,
-			vector<Type>* argsType) {
-		const char* originalMethodDesc = methodDesc;
-
-		check(*methodDesc == '(', "Invalid beginning of method descriptor: ",
-				originalMethodDesc);
-		methodDesc++;
-
-		while (*methodDesc != ')') {
-			check(*methodDesc != '\0', "Reached end of string: ",
-					originalMethodDesc);
-
-			Type t = parseFieldDesc(methodDesc);
-			argsType->push_back(t);
-		}
-
-		check(*methodDesc == ')', "Expected ')' in method descriptor: ",
-				originalMethodDesc);
-		methodDesc++;
-
-		check(*methodDesc != '\0', "Reached end of string: ",
-				originalMethodDesc);
-
-		Type returnType = [&]() {
-			if (*methodDesc == 'V') {
-				methodDesc++;
-				return Type::voidType();
-			} else {
-				return parseFieldDesc(methodDesc);
-			}
-		}();
-
-		check(*methodDesc == '\0', "Expected end of string: %s",
-				originalMethodDesc);
-
-		return returnType;
-	}
 };
 
-class SmtBuilder: private DescParser {
+class SmtBuilder {
 public:
 
 	SmtBuilder(Frame& frame, const ConstPool& cp) :
@@ -169,6 +55,22 @@ public:
 				return true;
 			}
 
+			if (t.isArray() && o.isArray()) {
+				if (t.getDims() != o.getDims()) {
+					t = Type::objectType("java/lang/Object");
+					return true;
+				}
+
+				Type st = t.stripArrayType();
+				Type so = o.stripArrayType();
+				//Type tres ;
+				bool change = assign(st, so, classPath);
+				Error::assert(change, "Invalid value for change");
+
+				t = Type::arrayType(st, t.getDims());
+				return true;
+			}
+
 			t = Type::topType();
 			return true;
 		}
@@ -182,15 +84,16 @@ public:
 			return true;
 		}
 
-		assert(isAssignable(o, t), "Invalid assign type: ", t, " <> ", o);
+		Error::assert(isAssignable(o, t), "Invalid assign type: ", t, " <> ",
+				o);
 
 		return false;
 	}
 
 	static bool join(Frame& frame, Frame& how, IClassPath* classPath) {
-		check(frame.stack.size() == how.stack.size(), "Different stack sizes: ",
-				frame.stack.size(), " != ", how.stack.size(), ": #", frame,
-				" != #", how);
+		Error::check(frame.stack.size() == how.stack.size(),
+				"Different stack sizes: ", frame.stack.size(), " != ",
+				how.stack.size(), ": #", frame, " != #", how);
 
 		if (frame.lva.size() < how.lva.size()) {
 			frame.lva.resize(how.lva.size(), Type::topType());
@@ -198,7 +101,7 @@ public:
 			how.lva.resize(frame.lva.size(), Type::topType());
 		}
 
-		assert(frame.lva.size() == how.lva.size(), "%ld != %ld",
+		Error::assert(frame.lva.size() == how.lva.size(), "%ld != %ld",
 				frame.lva.size(), how.lva.size());
 
 		bool change = false;
@@ -230,7 +133,7 @@ public:
 						if (ex.catchtype != ConstPool::NULLENTRY) {
 							const string& className = cf.getClassName(
 									ex.catchtype);
-							return parseConstClass(className);
+							return Type::fromConstClass(className);
 						} else {
 							return Type::objectType("java/lang/Throwable");
 						}
@@ -251,12 +154,12 @@ public:
 	static void computeState(BasicBlock& bb, Frame& how, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath) {
 		if (bb.start == instList.end()) {
-			assert(bb.name == "Exit" && bb.exit == instList.end(), "");
+			Error::assert(bb.name == "Exit" && bb.exit == instList.end(), "");
 			return;
 		}
 
-		assert(how.valid, "how valid");
-		assert(bb.in.valid == bb.out.valid, "");
+		Error::assert(how.valid, "how valid");
+		Error::assert(bb.in.valid == bb.out.valid, "");
 
 		bool change = [&]() {
 			if (!bb.in.valid) {
@@ -792,10 +695,12 @@ public:
 			case OPCODE_goto:
 				break;
 			case OPCODE_jsr:
-				Error::assert(false, "jsr not implemented");
+				throw JsrRetNotSupported();
+				//Error::assert(false, "jsr not implemented");
 				break;
 			case OPCODE_ret:
-				Error::assert(false, "jsr not implemented");
+				throw JsrRetNotSupported();
+				//Error::assert(false, "jsr not implemented");
 				break;
 			case OPCODE_tableswitch:
 			case OPCODE_lookupswitch:
@@ -853,12 +758,12 @@ public:
 				invokeInterface(inst.invokeinterface.interMethodRefIndex);
 				break;
 			case OPCODE_invokedynamic:
-				raise("invoke dynamic instances not implemented");
+				Error::raise("invoke dynamic instances not implemented");
 				break;
 			case OPCODE_new: {
 				//h.pushRef();
 				const string& className = cp.getClassName(inst.type.classIndex);
-				Type t = parseConstClass(className);
+				Type t = Type::fromConstClass(className);
 				Error::check(!t.isArray(), "New with array: ", t);
 				frame.push(t);
 				break;
@@ -871,7 +776,7 @@ public:
 				frame.popInt();
 //				string className = cp.getClassName(inst.type.classIndex);
 				const string& className = cp.getClassName(inst.type.classIndex);
-				Type t = parseConstClass(className);
+				Type t = Type::fromConstClass(className);
 				//			h.push(parseConstClass(className));
 				//Type refType = Type::objectType(className);
 				frame.pushArray(t, t.getDims() + 1);
@@ -890,7 +795,7 @@ public:
 			case OPCODE_checkcast: {
 				frame.popRef();
 				const string& className = cp.getClassName(inst.type.classIndex);
-				frame.push(parseConstClass(className));
+				frame.push(Type::fromConstClass(className));
 //				if (className[0] == '[') {
 //					const char* clsname = className.c_str();
 //					Type arrayType = parseFieldDesc(clsname);
@@ -993,7 +898,7 @@ private:
 
 	void aload(u4 lvindex) {
 		const Type& type = frame.getVar(lvindex);
-		check(type.isObject() || type.isNull(), "Bad ref var at index[",
+		Error::check(type.isObject() || type.isNull(), "Bad ref var at index[",
 				lvindex, "]: ", type, " @ frame: ", frame);
 		frame.pushType(type);
 	}
@@ -1022,11 +927,12 @@ private:
 	void invoke(const string& desc, bool popThis) {
 		const char* d = desc.c_str();
 		vector<Type> argsType;
-		Type returnType = parseMethodDesc(d, &argsType);
+		Type returnType = Type::fromMethodDesc(d, &argsType);
 
 		for (int i = argsType.size() - 1; i >= 0; i--) {
 			const Type& argType = argsType[i];
-			assert(argType.isOneOrTwoWord(), "Invalid arg type in method");
+			Error::assert(argType.isOneOrTwoWord(),
+					"Invalid arg type in method");
 //				if (argType.isOneWord()) {
 //					h.popOneWord();
 //				} else {
@@ -1040,7 +946,8 @@ private:
 		}
 
 		if (!returnType.isVoid()) {
-			assert(returnType.isOneOrTwoWord(), "Ret type: ", returnType);
+			Error::assert(returnType.isOneOrTwoWord(), "Ret type: ",
+					returnType);
 			//assert(!returnType.isTwoWord(), "Two word in return type");
 			frame.pushType(returnType);
 			//h.push(returnType);
@@ -1052,7 +959,7 @@ private:
 		cp.getFieldRef(inst.field.fieldRefIndex, &className, &name, &desc);
 
 		const char* d = desc.c_str();
-		auto t = parseFieldDesc(d);
+		auto t = Type::fromFieldDesc(d);
 
 		//assert(!t.isTwoWord(), "Two word in field");
 		return t;
@@ -1060,7 +967,7 @@ private:
 
 	void multianewarray(const Inst& inst) {
 		u1 dims = inst.multiarray.dims;
-		check(dims >= 1, "invalid dims: ", dims);
+		Error::check(dims >= 1, "invalid dims: ", dims);
 
 		for (int i = 0; i < dims; i++) {
 			frame.popInt();
@@ -1068,7 +975,7 @@ private:
 
 		string arrayClassName = cp.getClassName(inst.multiarray.classIndex);
 		const char* d = arrayClassName.c_str();
-		Type arrayType = parseFieldDesc(d);
+		Type arrayType = Type::fromFieldDesc(d);
 
 		frame.pushType(arrayType);
 	}
@@ -1178,7 +1085,7 @@ public:
 
 		const char* methodDesc = cf->getUtf8(method->descIndex);
 		vector<Type> argsType;
-		DescParser::parseMethodDesc(methodDesc, &argsType);
+		Type::fromMethodDesc(methodDesc, &argsType);
 
 		for (Type t : argsType) {
 			initFrame.setVar(&lvindex, t);
@@ -1311,8 +1218,12 @@ void ClassFile::computeFrames(IClassPath* classPath) {
 		CodeAttr* code = method->codeAttr();
 
 		if (code != nullptr) {
-			Compute::computeFramesMethod(code, method, this, &attrIndex,
-					classPath);
+			try {
+				Compute::computeFramesMethod(code, method, this, &attrIndex,
+						classPath);
+			} catch (const JsrRetNotSupported& e) {
+				cerr << "JSR/RET found" << endl;
+			}
 		}
 	}
 }

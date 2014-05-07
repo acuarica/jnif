@@ -1537,20 +1537,59 @@ public:
 		return classIndex;
 	}
 
-	inline void setCpIndex(u2 index) {
+	void setCpIndex(u2 index) {
 		//check(isObject(), "Type is not object type to get cp index: ", *this);
 		classIndex = index;
 	}
 
-	inline u4 getDims() const {
+	u4 getDims() const {
 		return dims;
 	}
 
-	inline Type elementType() const {
+	Type elementType() const {
 		Error::check(isArray(), "Type is not array: ", *this);
 
 		return Type(*this, dims - 1);
 	}
+
+	/**
+	 * Removes the any dimension on this type. This type has to be an array
+	 * type.
+	 *
+	 * @returns the base type of this type. The result ensures that is not an
+	 * array type.
+	 */
+	Type stripArrayType() const {
+		Error::check(isArray(), "Type is not array: ", *this);
+
+		return Type(*this, 0);
+	}
+
+	/**
+	 * Parses the const class name.
+	 *
+	 * @param className the class name to parse.
+	 * @returns the type that represents the class name.
+	 */
+	static Type fromConstClass(const std::string& className);
+
+	/**
+	 * Parses a field descriptor.
+	 *
+	 * @param fieldDesc the field descriptor to parse.
+	 * @returns the type that represents the field descriptor.
+	 */
+	static Type fromFieldDesc(const char*& fieldDesc);
+
+	/**
+	 * Parses a method descriptor.
+	 *
+	 * @param methodDesc the method descriptor to parse.
+	 * @param argsType collection of method arguments of methodDesc.
+	 * @returns the type that represents the return type of methodDesc.
+	 */
+	static Type fromMethodDesc(const char* methodDesc,
+			std::vector<Type>* argsType);
 
 private:
 

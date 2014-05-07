@@ -10,6 +10,10 @@ public class HeapTest {
 
 	private boolean isCourseText;
 
+	private static boolean eq(Object o1, Object o2) {
+		return o1 == null ? o2 == null : o1.equals(o2);
+	}
+
 	public void method() {
 		System.out.println("HeapTest.method");
 	}
@@ -369,6 +373,17 @@ public class HeapTest {
 		}
 	}
 
+	private static HeapTest tryCatch7() {
+		HeapTest o = null;
+		try {
+			o = new HeapTest();
+			return o;
+		} catch (Throwable e) {
+			e.printStackTrace();
+			return o;
+		}
+	}
+
 	private static HeapTest tryCatchFinally(HeapTest arg, int size)
 			throws CloneNotSupportedException {
 		HeapTest obj0;
@@ -403,7 +418,21 @@ public class HeapTest {
 		return obj;
 	}
 
-	public int covariant(int arg, int size) {
+	public int covariant0(int arg, int size) {
+		Object[] arr;
+
+		if (arg == 0) {
+			arr = new ArrayList[size];
+		} else if (arg == 1) {
+			arr = new Vector[arg];
+		} else {
+			throw new RuntimeException("Invalid args!");
+		}
+
+		return arr.length;
+	}
+
+	public int covariant1(int arg, int size) {
 		Object[] arr;
 
 		if (arg == 0) {
@@ -603,6 +632,8 @@ public class HeapTest {
 		use(new Chapter3Snippets().new Far());
 		use(new Chapter3Snippets.TestExc1());
 		use(new Chapter3Snippets.Example());
+
+		tryCatch7();
 
 		// useFloat0();
 

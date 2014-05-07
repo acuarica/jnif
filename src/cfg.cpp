@@ -137,7 +137,7 @@ ControlFlowGraph::ControlFlowGraph(InstList& instList) :
 
 BasicBlock* ControlFlowGraph::addBasicBlock(InstList::iterator start,
 		InstList::iterator end, std::string name) {
-	BasicBlock* bb = new BasicBlock(start, end, name, this);
+	BasicBlock * const bb = new BasicBlock(start, end, name, this);
 
 	if (basicBlocks.size() > 0) {
 		BasicBlock* prevbb = basicBlocks.back();
