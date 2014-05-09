@@ -23,4 +23,85 @@ void Error::_backtrace() {
 	backtrace_symbols_fd(array, size, STDERR_FILENO);
 }
 
+void ClassHierarchy::addClass(const ClassFile& classFile) {
+
+	ClassEntry e;
+	e.className = classFile.getThisClassName();
+
+	if (classFile.superClassIndex == ConstPool::NULLENTRY) {
+		Error::check(e.className == "java/lang/Object", "invalid super class");
+		e.superClassName = "0";
+	} else {
+		e.superClassName = classFile.getClassName(classFile.superClassIndex);
+	}
+
+	for (ConstIndex interIndex : classFile.interfaces) {
+		const string& interName = classFile.getClassName(interIndex);
+		e.interfaces.push_back(interName);
+	}
+
+	classes.push_front(e);
+}
+
+const string& ClassHierarchy::getSuperClass(const string& className) const {
+	const ClassHierarchy::ClassEntry& e = getEntry(className);
+	return e.superClassName;
+}
+
+bool ClassHierarchy::isAssignableFrom(const string& sub,
+		const string& sup) const {
+
+	string cls = sub;
+	while (cls != "0") {
+		if (cls == sup) {
+			return true;
+		}
+
+		cls = getSuperClass(cls);
+	}
+
+	return false;
+}
+
+bool ClassHierarchy::isDefined(const String& className) const {
+	try {
+		getEntry(className);
+		return true;
+	} catch (...) {
+		cerr << "Class " << className << " is not defined" << endl;
+		return false;
+	}
+}
+
+const ClassHierarchy::ClassEntry& ClassHierarchy::getEntry(
+		const string& className) const {
+	for (const ClassHierarchy::ClassEntry& e : *this) {
+		if (e.className == className) {
+			return e;
+		}
+	}
+
+//	ClassFile* cf = finder->findClass(className);
+//	if (cf != nullptr) {
+//		addClass(*cf);
+//	}
+
+	Error::raise("Class not found: ", className);
+}
+
+std::ostream& operator<<(std::ostream& os, const ClassHierarchy& ch) {
+	for (const ClassHierarchy::ClassEntry& e : ch) {
+		os << "Class: " << e.className << ", ";
+		os << "Super: " << e.superClassName << ", ";
+		os << "Interfaces: { ";
+		for (const string& interName : e.interfaces) {
+			os << interName << " ";
+		}
+
+		os << " }" << endl;
+	}
+
+	return os;
+}
+
 }

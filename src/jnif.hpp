@@ -26,6 +26,8 @@
  */
 namespace jnif {
 
+using namespace std;
+
 /**
  * Represents a byte inside the Java Class File.
  * The sizeof(u1) must be equal to 1.
@@ -45,6 +47,11 @@ typedef unsigned short u2;
 typedef unsigned int u4;
 
 /**
+ *
+ */
+typedef std::string String;
+
+/**
  * This class contains static method to facilitate error handling mechanism.
  */
 class Error {
@@ -52,11 +59,11 @@ public:
 
 	template<typename ... TArgs>
 	static inline void raise(TArgs ... args) __attribute__((noreturn)) {
-		std::ostream& os = std::cerr;
+		ostream& os = cerr;
 
 		os << "JNIF Exception: ";
 		_raise(os, args...);
-		os << std::endl;
+		os << endl;
 
 		_backtrace();
 
@@ -81,11 +88,11 @@ private:
 
 	static void _backtrace();
 
-	static inline void _raise(std::ostream&) {
+	static inline void _raise(ostream&) {
 	}
 
 	template<typename TArg, typename ... TArgs>
-	static inline void _raise(std::ostream& os, TArg arg, TArgs ... args) {
+	static inline void _raise(ostream& os, TArg arg, TArgs ... args) {
 		os << arg;
 		_raise(os, args...);
 	}
@@ -326,7 +333,7 @@ public:
 	/**
 	 * The string data.
 	 */
-	std::string str;
+	string str;
 };
 
 /**
@@ -436,7 +443,7 @@ private:
 			tag(tag), d( { value }) {
 	}
 
-	ConstItem(ConstTag tag, const std::string& value) :
+	ConstItem(ConstTag tag, const string& value) :
 			tag(tag), utf8( { value }) {
 	}
 
@@ -678,7 +685,7 @@ public:
 	 * @returns the ConstIndex of the newly created entry.
 	 */
 	ConstIndex addUtf8(const char* utf8, int len) {
-		std::string str(utf8, len);
+		string str(utf8, len);
 		ConstItem e(CONST_UTF8, str);
 		return _addSingle(e);
 	}
@@ -755,22 +762,22 @@ public:
 		return ni;
 	}
 
-	void getFieldRef(ConstIndex index, std::string* className,
-			std::string* name, std::string* desc) const {
+	void getFieldRef(ConstIndex index, string* className, string* name,
+			string* desc) const {
 		const ConstItem* e = _getEntry(index, CONST_FIELDREF, "FieldRef");
 		const ConstMemberRef& mr = e->memberRef;
 		_getMemberRef(className, name, desc, mr);
 	}
 
-	void getMethodRef(ConstIndex index, std::string* clazzName,
-			std::string* name, std::string* desc) const {
+	void getMethodRef(ConstIndex index, string* clazzName, string* name,
+			string* desc) const {
 		const ConstItem* e = _getEntry(index, CONST_METHODREF, "MethodRef");
 		const ConstMemberRef& mr = e->memberRef;
 		_getMemberRef(clazzName, name, desc, mr);
 	}
 
-	void getInterMethodRef(ConstIndex index, std::string* clazzName,
-			std::string* name, std::string* desc) const {
+	void getInterMethodRef(ConstIndex index, string* clazzName, string* name,
+			string* desc) const {
 		const ConstItem* e = _getEntry(index, CONST_INTERMETHODREF, "imr");
 		const ConstMemberRef& mr = e->memberRef;
 		_getMemberRef(clazzName, name, desc, mr);
@@ -796,8 +803,7 @@ public:
 		return getUtf8(classNameIndex);
 	}
 
-	void getNameAndType(ConstIndex index, std::string* name,
-			std::string* desc) const {
+	void getNameAndType(ConstIndex index, string* name, string* desc) const {
 		const ConstItem* e = _getEntry(index, CONST_NAMEANDTYPE, "NameAndType");
 
 		u2 nameIndex = e->nameandtype.nameIndex;
@@ -816,7 +822,7 @@ public:
 
 			//const Entry* entry = &cp.entries[i];
 
-			if (isUtf8(i) && getUtf8(i) == std::string(utf8)) {
+			if (isUtf8(i) && getUtf8(i) == string(utf8)) {
 				return i;
 			}
 		}
@@ -833,7 +839,7 @@ public:
 		}
 	}
 
-	std::vector<ConstItem> entries;
+	vector<ConstItem> entries;
 
 private:
 
@@ -886,8 +892,8 @@ private:
 		}
 	}
 
-	void _getMemberRef(std::string* clazzName, std::string* name,
-			std::string* desc, const ConstMemberRef& memberRef) const {
+	void _getMemberRef(string* clazzName, string* name, string* desc,
+			const ConstMemberRef& memberRef) const {
 		ConstIndex classIndex = memberRef.classIndex;
 		ConstIndex nameAndTypeIndex = memberRef.nameAndTypeIndex;
 
@@ -1398,12 +1404,11 @@ public:
 		return Type(TYPE_UNINITTHIS);
 	}
 
-	static inline Type objectType(const std::string& className,
-			u2 cpindex = 0) {
+	static inline Type objectType(const string& className, u2 cpindex = 0) {
 		Error::check(!className.empty(),
 				"Expected non-empty class name for object type");
 
-//		std::stringstream ss;
+//		stringstream ss;
 		//	ss << "L" << className << ";";
 		return Type(TYPE_OBJECT, className, cpindex);
 		//return Type(TYPE_OBJECT, ss.str(), cpindex);
@@ -1509,12 +1514,12 @@ public:
 		return isObject() && !isArray();
 	}
 
-	inline std::string getClassName() const {
+	inline string getClassName() const {
 		Error::check(isObject(), "Type is not object type to get class name: ",
 				*this);
 
 		if (isArray()) {
-			std::stringstream ss;
+			stringstream ss;
 			for (u4 i = 0; i < dims; i++) {
 				ss << "[";
 			}
@@ -1571,7 +1576,7 @@ public:
 	 * @param className the class name to parse.
 	 * @returns the type that represents the class name.
 	 */
-	static Type fromConstClass(const std::string& className);
+	static Type fromConstClass(const string& className);
 
 	/**
 	 * Parses a field descriptor.
@@ -1588,15 +1593,14 @@ public:
 	 * @param argsType collection of method arguments of methodDesc.
 	 * @returns the type that represents the return type of methodDesc.
 	 */
-	static Type fromMethodDesc(const char* methodDesc,
-			std::vector<Type>* argsType);
+	static Type fromMethodDesc(const char* methodDesc, vector<Type>* argsType);
 
 private:
 
 	TypeTag tag;
 	u4 dims;
 	u2 classIndex;
-	std::string className;
+	string className;
 
 	inline Type(TypeTag tag) :
 			tag(tag), dims(0), classIndex(0) {
@@ -1608,7 +1612,7 @@ private:
 		uninit.label = label;
 	}
 
-	inline Type(TypeTag tag, const std::string& className, u2 classIndex = 0) :
+	inline Type(TypeTag tag, const string& className, u2 classIndex = 0) :
 			tag(tag), dims(0), classIndex(classIndex), className(className) {
 	}
 
@@ -1736,7 +1740,7 @@ public:
 		push(Type::doubleType());
 	}
 
-	void pushRef(const std::string& className) {
+	void pushRef(const string& className) {
 		push(Type::objectType(className));
 	}
 
@@ -1791,7 +1795,7 @@ public:
 		setVar(&lvindex, Type::doubleType());
 	}
 
-	void setRefVar(u4 lvindex, const std::string& className) {
+	void setRefVar(u4 lvindex, const string& className) {
 		setVar(&lvindex, Type::objectType(className));
 	}
 
@@ -1826,8 +1830,8 @@ public:
 		}
 	}
 
-	std::vector<Type> lva;
-	std::list<Type> stack;
+	vector<Type> lva;
+	list<Type> stack;
 	bool valid;
 };
 
@@ -1968,14 +1972,14 @@ public:
 		Inst* def;
 		int low;
 		int high;
-		std::vector<Inst*> targets;
+		vector<Inst*> targets;
 	} ts;
 
 	struct {
 		Inst* defbyte;
 		u4 npairs;
-		std::vector<u4> keys;
-		std::vector<Inst*> targets;
+		vector<u4> keys;
+		vector<Inst*> targets;
 	} ls;
 
 	struct {
@@ -1987,8 +1991,8 @@ public:
 /**
  * Represents the bytecode of a method.
  */
-//typedef std::list<Inst*> InstList;
-class InstList: public std::list<Inst*> {
+//typedef list<Inst*> InstList;
+class InstList: public list<Inst*> {
 public:
 	~InstList() {
 		for (Inst* inst : *this) {
@@ -2039,15 +2043,15 @@ public:
 
 	InstList::iterator start;
 	InstList::iterator exit;
-	std::string name;
+	string name;
 	Frame in;
 	Frame out;
 
-	std::vector<BasicBlock*>::iterator begin() {
+	vector<BasicBlock*>::iterator begin() {
 		return targets.begin();
 	}
 
-	std::vector<BasicBlock*>::iterator end() {
+	vector<BasicBlock*>::iterator end() {
 		return targets.end();
 	}
 
@@ -2056,12 +2060,12 @@ public:
 
 private:
 
-	BasicBlock(InstList::iterator start, InstList::iterator exit,
-			std::string name, ControlFlowGraph* cfg) :
+	BasicBlock(InstList::iterator start, InstList::iterator exit, string name,
+			ControlFlowGraph* cfg) :
 			start(start), exit(exit), name(name), next(nullptr), cfg(cfg) {
 	}
 
-	std::vector<BasicBlock*> targets;
+	vector<BasicBlock*> targets;
 };
 
 /**
@@ -2069,7 +2073,7 @@ private:
  */
 class ControlFlowGraph {
 private:
-	std::vector<BasicBlock*> basicBlocks;
+	vector<BasicBlock*> basicBlocks;
 
 public:
 	BasicBlock* const entry;
@@ -2094,7 +2098,7 @@ public:
 	 * @returns the newly created basic block added to this control flow graph.
 	 */
 	BasicBlock* addBasicBlock(InstList::iterator start, InstList::iterator end,
-			std::string name);
+			string name);
 
 	/**
 	 * Finds the basic block associated with the given labelId.
@@ -2105,19 +2109,19 @@ public:
 	 */
 	BasicBlock* findBasicBlockOfLabel(int labelId) const;
 
-	std::vector<BasicBlock*>::iterator begin() {
+	vector<BasicBlock*>::iterator begin() {
 		return basicBlocks.begin();
 	}
 
-	std::vector<BasicBlock*>::iterator end() {
+	vector<BasicBlock*>::iterator end() {
 		return basicBlocks.end();
 	}
 
-	std::vector<BasicBlock*>::const_iterator begin() const {
+	vector<BasicBlock*>::const_iterator begin() const {
 		return basicBlocks.begin();
 	}
 
-	std::vector<BasicBlock*>::const_iterator end() const {
+	vector<BasicBlock*>::const_iterator end() const {
 		return basicBlocks.end();
 	}
 
@@ -2179,15 +2183,15 @@ struct Attrs {
 		return *attrs[index];
 	}
 
-	std::vector<Attr*>::iterator begin() {
+	vector<Attr*>::iterator begin() {
 		return attrs.begin();
 	}
 
-	std::vector<Attr*>::iterator end() {
+	vector<Attr*>::iterator end() {
 		return attrs.end();
 	}
 
-	std::vector<Attr*> attrs;
+	vector<Attr*> attrs;
 };
 
 /**
@@ -2221,7 +2225,7 @@ struct LvtAttr: Attr {
 		u2 index;
 	};
 
-	std::vector<LvEntry> lvt;
+	vector<LvEntry> lvt;
 
 	LvtAttr(AttrKind kind, u2 nameIndex) :
 			Attr(kind, nameIndex) {
@@ -2244,7 +2248,7 @@ struct LntAttr: Attr {
 		u2 lineno;
 	};
 
-	std::vector<LnEntry> lnt;
+	vector<LnEntry> lnt;
 
 };
 
@@ -2267,11 +2271,11 @@ public:
 		struct {
 		} sameFrame;
 		struct {
-			std::vector<Type> stack; // [1]
+			vector<Type> stack; // [1]
 		} sameLocals_1_stack_item_frame;
 		struct {
 			short offset_delta;
-			std::vector<Type> stack; // [1]
+			vector<Type> stack; // [1]
 		} same_locals_1_stack_item_frame_extended;
 		struct {
 			short offset_delta;
@@ -2281,16 +2285,16 @@ public:
 		} same_frame_extended;
 		struct {
 			short offset_delta;
-			std::vector<Type> locals; // frameType - 251
+			vector<Type> locals; // frameType - 251
 		} append_frame;
 		struct {
 			short offset_delta;
-			std::vector<Type> locals;
-			std::vector<Type> stack;
+			vector<Type> locals;
+			vector<Type> stack;
 		} full_frame;
 	};
 
-	std::vector<Entry> entries;
+	vector<Entry> entries;
 };
 
 /**
@@ -2298,11 +2302,11 @@ public:
  */
 struct ExceptionsAttr: Attr {
 
-	ExceptionsAttr(u2 nameIndex, u4 len, const std::vector<u2>& es) :
+	ExceptionsAttr(u2 nameIndex, u4 len, const vector<u2>& es) :
 			Attr(ATTR_EXCEPTIONS, nameIndex, len), es(es) {
 	}
 
-	std::vector<u2> es;
+	vector<u2> es;
 };
 
 /**
@@ -2335,7 +2339,7 @@ struct CodeAttr: Attr {
 		return exceptions.size() > 0;
 	}
 
-	std::vector<CodeExceptionEntry> exceptions;
+	vector<CodeExceptionEntry> exceptions;
 
 	ControlFlowGraph* cfg;
 
@@ -2462,13 +2466,13 @@ public:
 	virtual ~IClassPath() {
 	}
 
-	virtual const std::string getCommonSuperClass(const std::string& className1,
-			const std::string& className2) = 0;
+	virtual string getCommonSuperClass(const string& className1,
+			const string& className2) = 0;
 
 };
 
 /**
- * Models a Java Class File following the specification from version 7.
+ * Models a Java Class File following the specification of the JVM version 7.
  */
 class ClassFile: public ConstPool, public Attrs {
 public:
@@ -2572,23 +2576,97 @@ public:
 	 *
 	 * @see www.graphviz.org
 	 */
-	void dot(std::ostream& os) const;
+	void dot(ostream& os) const;
 
 	u2 majorVersion;
 	u2 minorVersion;
 	u2 accessFlags;
 	ConstIndex thisClassIndex;
 	ConstIndex superClassIndex;
-	std::vector<u2> interfaces;
-	std::vector<Field*> fields;
-	std::vector<Method*> methods;
+	vector<ConstIndex> interfaces;
+	vector<Field*> fields;
+	vector<Method*> methods;
 };
 
-std::ostream& operator<<(std::ostream& os, const ConstTag& tag);
-std::ostream& operator<<(std::ostream& os, const Frame& frame);
-std::ostream& operator<<(std::ostream& os, const Type& type);
-//std::ostream& operator<<(std::ostream& os, const Inst& inst);
-std::ostream& operator<<(std::ostream& os, ClassFile& cf);
+/**
+ *
+ */
+class IClassFinder {
+public:
+
+	virtual ~IClassFinder() {
+	}
+
+	virtual ClassFile* findClass(const string& className) = 0;
+
+};
+
+/**
+ *
+ */
+class ClassHierarchy {
+public:
+
+//	IClassFinder* finder;
+//
+//	ClassHierarchy(IClassFinder* finder) :
+//			finder(finder) {
+//	}
+
+	/**
+	 *
+	 */
+	class ClassEntry {
+	public:
+		string className;
+		string superClassName;
+		vector<string> interfaces;
+	};
+
+	/**
+	 *
+	 */
+	//ClassFile* defineClass(const ClassFile& classFile);
+	/**
+	 *
+	 */
+	void addClass(const ClassFile& classFile);
+
+	const string& getSuperClass(const string& className) const;
+
+	bool isAssignableFrom(const string& sub, const string& sup) const;
+
+	bool isDefined(const String& className) const;
+
+	list<ClassEntry>::iterator begin() {
+		return classes.begin();
+	}
+
+	list<ClassEntry>::iterator end() {
+		return classes.end();
+	}
+
+	list<ClassEntry>::const_iterator begin() const {
+		return classes.begin();
+	}
+
+	list<ClassEntry>::const_iterator end() const {
+		return classes.end();
+	}
+
+private:
+
+	list<ClassEntry> classes;
+
+	const ClassEntry& getEntry(const string& className) const;
+};
+
+ostream& operator<<(ostream& os, const ConstTag& tag);
+ostream& operator<<(ostream& os, const Frame& frame);
+ostream& operator<<(ostream& os, const Type& type);
+//ostream& operator<<(ostream& os, const Inst& inst);
+ostream& operator<<(ostream& os, ClassFile& cf);
+ostream& operator<<(ostream& os, const ClassHierarchy& ch);
 
 }
 

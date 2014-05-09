@@ -21,9 +21,6 @@ InstrFunc* instrFunc;
 
 char* javaCommand;
 
-int isMainLoaded = 0;
-
-int inStartPhase = 0;
 int inLivePhase = 0;
 
 static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
@@ -31,17 +28,12 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jobject protection_domain, jint class_data_len,
 		const unsigned char* class_data, jint* new_class_data_len,
 		unsigned char** new_class_data) {
-	ASSERT(!inLivePhase || inStartPhase, "");
-//	ASSERT((!inStartPhase && inLivePhase) || (loader == NULL), "");
-//	ASSERT(inLivePhase == (loader != NULL), "");
-
 	_TLOG("CLASSFILELOAD:%s", name);
 
-	TRACE("CLASSFILELOAD:%s, loader: %s", name,
-			loader != NULL? "object" : "(null)");
+	NOTICE("Class: %s, loader: %s", name, loader != NULL? "object" : "(null)");
 
-	if (strcmp(name, javaCommand) == 0) {
-		isMainLoaded = 1;
+	if (loader != NULL) {
+		inLivePhase = true;
 	}
 
 	if (!FrIsProxyClassName(name)) {
@@ -98,8 +90,6 @@ extern int frproxy_FrInstrProxy_class_len;
  * like primitive classes and Finalizer (why?)
  */
 static void JNICALL VMStartEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
-	inStartPhase = 1;
-
 	NOTICE("VM started");
 
 	_TLOG("VMSTART");
@@ -113,8 +103,6 @@ static void JNICALL VMStartEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 }
 
 static void JNICALL VMInitEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread) {
-	inLivePhase = 1;
-
 	NOTICE("VM init");
 
 	_TLOG("VMINIT");
@@ -338,8 +326,12 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options, void* reserved) 
 	return JNI_OK;
 }
 
+void InstrUnload();
+
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
 	NOTICE("Agent unloaded");
+
+	InstrUnload();
 
 	//FrCloseTransactionLog();
 }

@@ -52,11 +52,11 @@ public class HeapTest {
 	private static Object for1() {
 		Object obj = null;
 		for (int i = 0; i < 4; i++) {
-			obj = new Base();
+			obj = new Float(4f);
 		}
 
 		if (obj == null) {
-			obj = new Base();
+			obj = new Integer(0);
 		}
 
 		return obj;
@@ -92,15 +92,6 @@ public class HeapTest {
 
 		return obj;
 	}
-
-	// private static Object self1(int arg) {
-	// Object obj = new Object();
-	// if (arg == 0) {
-	// obj = new HeapTest();
-	// }
-	//
-	// return obj;
-	// }
 
 	private static void scope0(int arg) {
 		{
@@ -501,20 +492,17 @@ public class HeapTest {
 		return isCourseText;
 	}
 
-	public static int hola2(int a, int b) {
-		Pattern p = Pattern.compile("a*b");
-
+	int sum2(int a, int b) {
 		int c = a + b;
 		return c;
 	}
 
-	double dhola(double a) {
-		double b = 2;
+	double dsum2(double a, double b) {
 		double c = a + b;
 		return c;
 	}
 
-	public static void ts(String[] args) {
+	void ts(String[] args) {
 		switch (args.length) {
 		case 0:
 			HeapTest[] arr0 = new HeapTest[0];
@@ -538,7 +526,7 @@ public class HeapTest {
 		}
 	}
 
-	public static void ls(String[] args) {
+	void ls(String[] args) {
 		switch (args.length) {
 		case 0:
 			HeapTest[] arr0 = new HeapTest[0];
@@ -565,6 +553,7 @@ public class HeapTest {
 		}
 	}
 
+	//
 	// private static Object inner0(int arg) {
 	// HashMap<String, String> map = new HashMap<String, String>();
 	//
@@ -580,19 +569,29 @@ public class HeapTest {
 	// return obj;
 	// }
 
-	public static Base getObject(int arg) {
-		Base res;
-		if (arg == 0) {
-			res = new Derived1();
-		} else {
-			// if (arg == 1) {
-			res = new Derived2();
-			// } else {
-			// res = null;
-		}
+	// public static Object interface0(int arg) {
+	// List res;
+	// if (arg == 0) {
+	// res = new ArrayList();
+	// } else if (arg == 1) {
+	// res = new Vector();
+	// } else {
+	// res = null;
+	// }
+	//
+	// return res;
+	// }
 
-		return res;
-	}
+	// public static Object getObject0(int arg) {
+	// Object res;
+	// if (arg == 0) {
+	// res = new Derived1();
+	// } else {
+	// res = new Derived2();
+	// }
+	//
+	// return res;
+	// }
 
 	public static class TestExc1 extends Exception {
 	}
@@ -624,57 +623,57 @@ public class HeapTest {
 	public static void useFloat0() {
 		float f = 14;
 
-		System.err.println(f);
+		use(f);
 	}
 
 	public static void main(String[] args) throws IOException {
+		System.err.println("Siamo arrivati al main!!!");
+
+		new Throwable().printStackTrace();
+
+		use(Self.get0());
+		use(Self.get1());
 		use(new Chapter3Snippets());
 		use(new Chapter3Snippets().new Far());
 		use(new Chapter3Snippets.TestExc1());
 		use(new Chapter3Snippets.Example());
 
 		tryCatch7();
-
-		// useFloat0();
-
+		useFloat0();
 		// use(java.util.regex.Pattern.compile(""));
+		int[] as = new int[34];
+		int[] as1 = new int[34];
+		int[] as2 = new int[34];
+		use(as.length);
+		use(as[as.length - 1]);
 
-		// HeapTest ht = new HeapTest();
-		// System.out.println("Is course text?: " + ht.isCourseText());
-		// System.out.println("Really?: " + ht.isCourseText);
-		//
-		// int[] as = new int[34];
-		// int[] as1 = new int[34];
-		// int[] as2 = new int[34];
-		//
-		// System.out.println("HeapTest: " + as.length);
-		//
-		// try {
-		// for (int i = 0; i < as.length; i++) {
-		// int[] arr = new int[i];
-		// }
-		//
-		// for (int i = 0; i < 27; i++) {
-		// HeapTest[] arr = new HeapTest[i];
-		// }
-		//
-		// for (int i = 0; i < 27; i++) {
-		// HeapTest[] arr = new HeapTest[i];
-		// System.out.println("elem: " + arr[i]);
-		// System.out.println("HeapTest array len: " + arr.length);
-		// }
-		//
-		// } catch (Exception e) {
-		// System.out.println(e);
-		// }
-		//
-		// System.out.println("HeapTest: " + as.length);
-		//
-		// ts(args);
-		// ls(args);
-		//
-		// hola2(1, 2);
-		// System.out.println("HeapTest: " + as[as.length - 1]);
+		HeapTest ht = new HeapTest();
+		use(ht.isCourseText());
+		use(ht.isCourseText);
+		ht.ts(args);
+		ht.ls(args);
+		ht.sum2(5, 7);
+		ht.dsum2(3d, 4d);
+
+		try {
+			for (int i = 0; i < as.length; i++) {
+				int[] arr = new int[i];
+			}
+
+			for (int i = 0; i < 27; i++) {
+				HeapTest[] arr = new HeapTest[i];
+			}
+
+			for (int i = 0; i < 27; i++) {
+				HeapTest[] arr = new HeapTest[i];
+				use(arr[i]);
+				use(arr.length);
+			}
+		} catch (Exception e) {
+			use(e);
+		}
+
+		System.err.println("Siamo finito dal main!!!");
 	}
 
 }
