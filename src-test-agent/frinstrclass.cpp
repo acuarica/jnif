@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <stdbool.h>
 #include <errno.h>
 
 #include <jvmti.h>
@@ -20,10 +19,13 @@
 
 #include "jnif.hpp"
 
-using namespace std;
+//using namespace std;
 using namespace jnif;
 
-bool inException = false;
+//list<string> loadedClasses;
+
+//ClassFinder
+ClassHierarchy classHierarchy;
 
 class ClassPath: public IClassPath {
 public:
@@ -38,8 +40,35 @@ public:
 		ASSERT(getNameMethodId != NULL, "getNameMethodId is null!");
 	}
 
-	const std::string getCommonSuperClass(const std::string& className1,
-			const std::string& className2) {
+	string getCommonSuperClass(const string& className1,
+			const string& className2) {
+		cerr << "arg clazz1: " << className1 << ", arg clazz2: " << className2
+				<< ", loader is: " << (loader != NULL ? "object" : "(null)")
+				<< "@ method: " << "" << endl;
+
+		//loadClassAsResource("frheapagent/Derived1.class");
+		loadClassAsResource(className1);
+		loadClassAsResource(className2);
+
+		string sup = className1;
+		const string& sub = className2;
+
+		while (!classHierarchy.isAssignableFrom(sub, sup)) {
+			sup = classHierarchy.getSuperClass(sup);
+			if (sup == "0") {
+				cerr << "Common class is java/lang/Object!!!";
+				return "java/lang/Object";
+			}
+
+			cerr << "super clazz: " << sup << endl;
+		}
+
+		cerr << "Common super class found: " << sup << endl;
+		return sup;
+	}
+
+	string getCommonSuperClass0(const string& className1,
+			const string& className2) {
 		cerr << "arg clazz1: " << className1 << ", arg clazz2: " << className2
 				<< ", loader is: " << (loader != NULL ? "object" : "(null)")
 				<< "@ method: " << "" << endl;
@@ -66,8 +95,37 @@ public:
 
 private:
 
+	void loadClassAsResource(const string& className) {
+		if (classHierarchy.isDefined(className)) {
+			return;
+		}
+
+		getAndPrintClass(className);
+		return;
+
+		//ASSERT(loader != NULL, "A loader is needed");
+
+		jclass proxyClass = jni->FindClass("frproxy/FrInstrProxy");
+		ASSERT(proxyClass != NULL, "");
+
+		jmethodID getResourceId = jni->GetStaticMethodID(proxyClass,
+				"getResource", "(Ljava/lang/String;Ljava/lang/ClassLoader;)[B");
+		ASSERT(getResourceId != NULL, "");
+
+		jstring targetName = jni->NewStringUTF(className.c_str());
+		ASSERT(targetName != NULL, "");
+
+		jobject res = jni->CallStaticObjectMethod(proxyClass, getResourceId,
+				targetName, loader);
+		ASSERT(res != NULL, "");
+
+//		return targetClass;
+
+	}
+
 	jclass getAndPrintClass(const string& className) {
-		cerr << "Class name for class: " << className;
+		cerr << "Trying to FindClass/LoadClass class name for class: "
+				<< className;
 
 		jclass clazz = getAndCheckClass(className);
 		string binaryName = getClassName(clazz);
@@ -86,7 +144,6 @@ private:
 
 	void checkClassException(jclass clazz) {
 		if (clazz == NULL) {
-			inException = true;
 			INFO("ENTER EXCEPTION!!!");
 
 			jni->ExceptionDescribe();
@@ -222,9 +279,16 @@ static string outFileName(const char* className, const char* ext,
 
 extern "C" {
 
+void InstrUnload() {
+	//cerr << "Class Hierarchy: " << endl;
+	//cerr << classHierarchy;
+}
+
 void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
 		u1**, JNIEnv*, InstrArgs* args) {
 	ClassFile cf(data, len);
+
+	classHierarchy.addClass(cf);
 
 	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
@@ -244,27 +308,51 @@ void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
 
-extern int isMainLoaded;
-extern int inStartPhase;
 extern int inLivePhase;
 
 void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args) {
 
+	ClassFile cf(data, len);
+	classHierarchy.addClass(cf);
+
+	//if (args->loader == NULL)
 	if (!inLivePhase) {
 		return;
 	}
 
-	if (isMainLoaded == 0 || inException) {
-		//return;
-	}
-
-	if (args->loader == NULL) {
+	if (string(className) == "java/lang/Throwable") {
+		NOTICE("throwable");
 		return;
 	}
+	if (string(className) == "java/lang/Throwable$WrappedPrintStream") {
+		NOTICE("throwable$wrapped");
+		return;
+	}
+	if (string(className) == "java/lang/Throwable$PrintStreamOrWriter") {
+		NOTICE("throwable$print");
+		return;
+	}
+	if (string(className) == "java/lang/VerifyError") {
+		NOTICE("Skipping java/lang/VerifyError");
+		WARN("java/lang/VerifyError loaded!!!");
+		return;
+	}
+	if (string(className) == "java/util/IdentityHashMap") {
+		NOTICE("Skipping java/util/IdentityHashMap");
+		return;
+	}
+	if (string(className) == "java/lang/Shutdown") {
+		NOTICE("Skipping java/lang/Shutdown");
+		return;
+	}
+	if (string(className) == "java/io/ByteArrayOutputStream")
+		return;
 
-	ClassFile cf(data, len);
+	//string realClassName = cf.getThisClassName();
+	//loadedClasses.push_front(realClassName);
+
 	ClassPath cp(jni, args->loader);
 	cf.computeFrames(&cp);
 
@@ -275,6 +363,9 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 	cf.dot(dos);
 
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+
+	//ASSERT(loadedClasses.front() == realClassName, "");
+	//loadedClasses.pop_front();
 }
 
 void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
