@@ -19,12 +19,11 @@ void Error::_backtrace() {
 
 	size = backtrace(array, 20);
 
-	fprintf(stderr, "Error: exception on jnif:\n");
+	fprintf(stderr, "Error: exception on jnif: (backtrace)\n");
 	backtrace_symbols_fd(array, size, STDERR_FILENO);
 }
 
 void ClassHierarchy::addClass(const ClassFile& classFile) {
-
 	ClassEntry e;
 	e.className = classFile.getThisClassName();
 
@@ -44,8 +43,8 @@ void ClassHierarchy::addClass(const ClassFile& classFile) {
 }
 
 const string& ClassHierarchy::getSuperClass(const string& className) const {
-	const ClassHierarchy::ClassEntry& e = getEntry(className);
-	return e.superClassName;
+	const ClassHierarchy::ClassEntry* e = getEntry(className);
+	return e->superClassName;
 }
 
 bool ClassHierarchy::isAssignableFrom(const string& sub,
@@ -64,29 +63,19 @@ bool ClassHierarchy::isAssignableFrom(const string& sub,
 }
 
 bool ClassHierarchy::isDefined(const String& className) const {
-	try {
-		getEntry(className);
-		return true;
-	} catch (...) {
-		cerr << "Class " << className << " is not defined" << endl;
-		return false;
-	}
+	const ClassHierarchy::ClassEntry* e = getEntry(className);
+	return e != nullptr;
 }
 
-const ClassHierarchy::ClassEntry& ClassHierarchy::getEntry(
+const ClassHierarchy::ClassEntry* ClassHierarchy::getEntry(
 		const string& className) const {
 	for (const ClassHierarchy::ClassEntry& e : *this) {
 		if (e.className == className) {
-			return e;
+			return &e;
 		}
 	}
 
-//	ClassFile* cf = finder->findClass(className);
-//	if (cf != nullptr) {
-//		addClass(*cf);
-//	}
-
-	Error::raise("Class not found: ", className);
+	return nullptr;
 }
 
 std::ostream& operator<<(std::ostream& os, const ClassHierarchy& ch) {

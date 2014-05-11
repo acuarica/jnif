@@ -6,21 +6,22 @@ INSTRS=Print Identity ObjectInit NewArray ANewArray Main ClientServer
 
 LIB=libfrheapagent.jnilib
 
+INSTR=Empty
 INSTR=Compute
 #INSTR=Heap
 #INSTR=ANewArray
 #INSTR=Print
 #INSTR=Identity
-RUNDACAPO=cd $(BUILD)/ && java -agentpath:$(LIB)=$(INSTR) -jar ../eval/dacapo-9.12-bach.jar
+RUNDACAPO=cd $(BUILD)/ && time java -agentpath:$(LIB)=$(INSTR) -jar ../eval/dacapo-9.12-bach.jar
 RUNSCALA=java -Xverify:all -agentpath:$(LIB)=$(INSTR) -jar ../eval/scala-benchmark-suite-0.1.0-20120216.103539-3.jar
 
 #RUNSCALA=java -Xverify:all -jar scala-benchmark-suite-0.1.0-20120216.103539-3.jar
 
-dargs=avrora
+args=avrora
 
 .PHONY: run
 run: $(BUILD)/$(LIB)
-	$(RUNDACAPO) $(dargs)
+	$(RUNDACAPO) $(args)
 
 .PHONY: all
 all: $(LIB)

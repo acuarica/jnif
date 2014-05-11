@@ -19,8 +19,6 @@ typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 InstrFunc* instrFunc;
 
-char* javaCommand;
-
 int inLivePhase = 0;
 
 static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
@@ -30,7 +28,7 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		unsigned char** new_class_data) {
 	_TLOG("CLASSFILELOAD:%s", name);
 
-	NOTICE("Class: %s, loader: %s", name, loader != NULL? "object" : "(null)");
+	//NOTICE("Class: %s, loader: %s", name, loader != NULL? "object" : "(null)");
 
 	if (loader != NULL) {
 		inLivePhase = true;
@@ -90,8 +88,6 @@ extern int frproxy_FrInstrProxy_class_len;
  * like primitive classes and Finalizer (why?)
  */
 static void JNICALL VMStartEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
-	NOTICE("VM started");
-
 	_TLOG("VMSTART");
 
 	jclass proxyClass = (*jni)->DefineClass(jni, FR_PROXY_CLASS, NULL,
@@ -103,8 +99,6 @@ static void JNICALL VMStartEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 }
 
 static void JNICALL VMInitEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread) {
-	NOTICE("VM init");
-
 	_TLOG("VMINIT");
 
 	StampThread(jvmti, thread);
@@ -128,12 +122,12 @@ static void JNICALL ExceptionEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
 //	INFO("nameutf8:%.*s", namelen, nameutf8);
 //	(*jni)->ReleaseStringUTFChars(jni, name, nameutf8);
 
-	if (inLivePhase) {
+//	if (inLivePhase) {
 //		jclass clazz = (*jni)->FindClass(jni, "java/lang/Throwable");
 //		jmethodID pstid = (*jni)->GetMethodID(jni, clazz, "printStackTrace",
 //				"()V");
 //		(*jni)->CallObjectMethod(jni, ex, pstid);
-	}
+	//}
 
 	_TLOG("EXCEPTION");
 }
@@ -143,14 +137,10 @@ static void JNICALL ObjectFreeEvent(jvmtiEnv *jvmti, jlong tag) {
 }
 
 static void JNICALL GarbageCollectionStartEvent(jvmtiEnv *jvmti) {
-	NOTICE("Garbage Collection started");
-
 	_TLOG("GARBAGECOLLECTIONSTART");
 }
 
 static void JNICALL GarbageCollectionFinishEvent(jvmtiEnv *jvmti) {
-	NOTICE("Garbage Collection finished");
-
 	_TLOG("GARBAGECOLLECTIONFINISH");
 }
 
@@ -158,28 +148,24 @@ static void JNICALL ThreadStartEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jthread thread) {
 	StampThread(jvmti, thread);
 
-	NOTICE("Thread start: Thread id: %d, tag: %ld", tldget()->threadId,
+	_TLOG("Thread start: Thread id: %d, tag: %ld", tldget()->threadId,
 			tldget()->threadTag);
 }
 
 static void JNICALL ThreadEndEvent(jvmtiEnv* jvmti, JNIEnv* jni, jthread thread) {
-	NOTICE("Thread end: Thread id: %d, tag: %ld", tldget()->threadId,
+	_TLOG("Thread end: Thread id: %d, tag: %ld", tldget()->threadId,
 			tldget()->threadTag);
 }
 
 static void JNICALL VMDeathEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
-	NOTICE("VM end");
-
 	_TLOG("VMDEATH");
 }
 
 static void ParseOptions(const char* options) {
-	//extern InstrFunc InstrClassEmpty;
-	//extern InstrFunc InstrClassDump;
+	extern InstrFunc InstrClassEmpty;
 	extern InstrFunc InstrClassPrint;
 	extern InstrFunc InstrClassIdentity;
 	extern InstrFunc InstrClassCompute;
-	//extern InstrFunc InstrClassComputeApp;
 	extern InstrFunc InstrClassObjectInit;
 	extern InstrFunc InstrClassNewArray;
 	extern InstrFunc InstrClassANewArray;
@@ -193,6 +179,8 @@ static void ParseOptions(const char* options) {
 	} InstrFuncEntry;
 
 	InstrFuncEntry instrFuncTable[] = {
+
+	{ &InstrClassEmpty, "Empty" },
 
 	{ &InstrClassPrint, "Print" },
 
@@ -212,9 +200,9 @@ static void ParseOptions(const char* options) {
 
 	};
 
-	const char* instrFuncName = options != NULL ? options : "Print";
+	const char* instrFuncName = options != NULL ? options : "Empty";
 
-	NOTICE("func index: %s", instrFuncName);
+	_TLOG("func index: %s", instrFuncName);
 
 	const int instrFuncTableSize = sizeof(instrFuncTable)
 			/ sizeof(instrFuncTable[0]);
@@ -245,7 +233,7 @@ void PrintProperties(jvmtiEnv* jvmti) {
 }
 
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options, void* reserved) {
-	NOTICE("Agent loaded. options: %s", options);
+	_TLOG("Agent loaded. options: %s", options);
 
 	ParseOptions(options);
 
@@ -258,15 +246,6 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options, void* reserved) 
 	}
 
 	PrintProperties(jvmti);
-
-	(*jvmti)->GetSystemProperty(jvmti, "sun.java.command", &javaCommand);
-	for (int i = 0; javaCommand[i] != '\0'; i++) {
-		if (javaCommand[i] == '.') {
-			javaCommand[i] = '/';
-		}
-	}
-
-	_TLOG("sun.java.command: %s", javaCommand);
 
 	jvmtiCapabilities cap;
 	memset(&cap, 0, sizeof(cap));
@@ -329,7 +308,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options, void* reserved) 
 void InstrUnload();
 
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
-	NOTICE("Agent unloaded");
+	_TLOG("Agent unloaded");
 
 	InstrUnload();
 

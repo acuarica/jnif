@@ -9,6 +9,7 @@
 #include <jvmti.h>
 
 #include "frlog.h"
+#include "frtlog.h"
 #include "frexception.h"
 #include "frinstr.h"
 
@@ -42,29 +43,44 @@ public:
 
 	string getCommonSuperClass(const string& className1,
 			const string& className2) {
-		cerr << "arg clazz1: " << className1 << ", arg clazz2: " << className2
-				<< ", loader is: " << (loader != NULL ? "object" : "(null)")
-				<< "@ method: " << "" << endl;
+		_TLOG("Common super class: left: %s, right: %s, loader: %s",
+				className1.c_str(), className2.c_str(),
+				(loader != NULL ? "object" : "(null)"));
 
-		//loadClassAsResource("frheapagent/Derived1.class");
 		loadClassAsResource(className1);
 		loadClassAsResource(className2);
 
 		string sup = className1;
 		const string& sub = className2;
 
-		while (!classHierarchy.isAssignableFrom(sub, sup)) {
+		while (!isAssignableFrom(sub, sup)) {
+			loadClassAsResource(sup);
 			sup = classHierarchy.getSuperClass(sup);
 			if (sup == "0") {
-				cerr << "Common class is java/lang/Object!!!";
+				_TLOG("Common class is java/lang/Object!!!");
 				return "java/lang/Object";
 			}
 
-			cerr << "super clazz: " << sup << endl;
+			_TLOG("Intermediate super class is %s", sup.c_str());
 		}
 
-		cerr << "Common super class found: " << sup << endl;
+		_TLOG("Common super class found: %s", sup.c_str());
+
 		return sup;
+	}
+
+	bool isAssignableFrom(const string& sub, const string& sup) {
+		string cls = sub;
+		while (cls != "0") {
+			if (cls == sup) {
+				return true;
+			}
+
+			loadClassAsResource(cls);
+			cls = classHierarchy.getSuperClass(cls);
+		}
+
+		return false;
 	}
 
 	string getCommonSuperClass0(const string& className1,
@@ -100,8 +116,8 @@ private:
 			return;
 		}
 
-		getAndPrintClass(className);
-		return;
+//		getAndPrintClass(className);
+		//	return;
 
 		//ASSERT(loader != NULL, "A loader is needed");
 
@@ -119,7 +135,14 @@ private:
 				targetName, loader);
 		ASSERT(res != NULL, "");
 
-//		return targetClass;
+		jsize len = jni->GetArrayLength((jarray) res);
+		_TLOG("Array len: %d", len);
+
+		u1* bytes = (u1*) jni->GetByteArrayElements((jbyteArray) res, NULL);
+		ASSERT(bytes != NULL, "");
+
+		ClassFile cf(bytes, len);
+		classHierarchy.addClass(cf);
 
 	}
 
@@ -284,11 +307,15 @@ void InstrUnload() {
 	//cerr << classHierarchy;
 }
 
+void InstrClassEmpty(jvmtiEnv*, u1* data, int len, const char* className, int*,
+		u1**, JNIEnv*, InstrArgs*) {
+}
+
 void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
 		u1**, JNIEnv*, InstrArgs* args) {
 	ClassFile cf(data, len);
 
-	classHierarchy.addClass(cf);
+//	classHierarchy.addClass(cf);
 
 	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
@@ -302,8 +329,8 @@ void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 		InstrArgs* args) {
 	ClassFile cf(data, len);
 
-	ofstream os(outFileName(className, "disasm").c_str());
-	os << cf;
+//	ofstream os(outFileName(className, "disasm").c_str());
+//	os << cf;
 
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
@@ -314,6 +341,11 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args) {
 
+	auto isPrefix = [&](const string& prefix, const string& text) {
+		auto res = std::mismatch(prefix.begin(), prefix.end(), text.begin());
+		return res.first == prefix.end();
+	};
+
 	ClassFile cf(data, len);
 	classHierarchy.addClass(cf);
 
@@ -322,36 +354,10 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		return;
 	}
 
-	if (string(className) == "java/lang/Throwable") {
-		NOTICE("throwable");
+	if (isPrefix("java", className) || isPrefix("sun", className)) {
+		_TLOG("Skipping compute on class: %s", className);
 		return;
 	}
-	if (string(className) == "java/lang/Throwable$WrappedPrintStream") {
-		NOTICE("throwable$wrapped");
-		return;
-	}
-	if (string(className) == "java/lang/Throwable$PrintStreamOrWriter") {
-		NOTICE("throwable$print");
-		return;
-	}
-	if (string(className) == "java/lang/VerifyError") {
-		NOTICE("Skipping java/lang/VerifyError");
-		WARN("java/lang/VerifyError loaded!!!");
-		return;
-	}
-	if (string(className) == "java/util/IdentityHashMap") {
-		NOTICE("Skipping java/util/IdentityHashMap");
-		return;
-	}
-	if (string(className) == "java/lang/Shutdown") {
-		NOTICE("Skipping java/lang/Shutdown");
-		return;
-	}
-	if (string(className) == "java/io/ByteArrayOutputStream")
-		return;
-
-	//string realClassName = cf.getThisClassName();
-	//loadedClasses.push_front(realClassName);
 
 	ClassPath cp(jni, args->loader);
 	cf.computeFrames(&cp);
@@ -359,13 +365,10 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
 
-	ofstream dos(outFileName(className, "dot").c_str());
-	cf.dot(dos);
+//	ofstream dos(outFileName(className, "dot").c_str());
+//	cf.dot(dos);
 
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
-
-	//ASSERT(loadedClasses.front() == realClassName, "");
-	//loadedClasses.pop_front();
 }
 
 void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
