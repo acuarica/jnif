@@ -1067,9 +1067,9 @@ public:
 
 		code->instList.setLabelIds();
 
-		const string& methodName = cf->getUtf8(method->nameIndex);
-		cerr << "computeFramesMethod: " << cf->getThisClassName() << "."
-				<< methodName << cf->getUtf8(method->descIndex) << endl;
+		//const string& methodName = cf->getUtf8(method->nameIndex);
+		//cerr << "computeFramesMethod: " << cf->getThisClassName() << "."
+		//	<< methodName << cf->getUtf8(method->descIndex) << endl;
 
 		Frame initFrame;
 
@@ -1208,11 +1208,9 @@ public:
 };
 
 void ClassFile::computeFrames(IClassPath* classPath) {
-
-// To compute label offsets.
 	computeSize();
 
-	u2 attrIndex = ConstPool::NULLENTRY;
+	ConstIndex attrIndex = ConstPool::NULLENTRY;
 
 	for (Method* method : methods) {
 		CodeAttr* code = method->codeAttr();
@@ -1222,7 +1220,6 @@ void ClassFile::computeFrames(IClassPath* classPath) {
 				Compute::computeFramesMethod(code, method, this, &attrIndex,
 						classPath);
 			} catch (const JsrRetNotSupported& e) {
-				cerr << "JSR/RET found" << endl;
 			}
 		}
 	}

@@ -2658,7 +2658,7 @@ private:
 
 	list<ClassEntry> classes;
 
-	const ClassEntry& getEntry(const string& className) const;
+	const ClassEntry* getEntry(const string& className) const;
 };
 
 ostream& operator<<(ostream& os, const ConstTag& tag);
