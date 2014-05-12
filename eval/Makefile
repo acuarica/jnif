@@ -17,15 +17,28 @@ RUNSCALA=java -Xverify:all -agentpath:$(LIB)=$(INSTR) -jar ../eval/scala-benchma
 
 #RUNSCALA=java -Xverify:all -jar scala-benchmark-suite-0.1.0-20120216.103539-3.jar
 
-args=avrora
+#BENCH=avrora
 
-.PHONY: run
-run: $(BUILD)/$(LIB)
-	$(RUNDACAPO) $(args)
+.PHONY: dacapo-avrora
+dacapo-avrora: BENCH=avrora
+dacapo-avrora: dacapo
+
+.PHONY: dacapo-batik
+dacapo-batik: BENCH=batik
+dacapo-batik: dacapo
+
+.PHONY: dacapo-eclipse
+dacapo-eclipse: BENCH=eclipse
+dacapo-eclipse: dacapo
+
+.PHONY: dacapo
+dacapo: $(BUILD)/$(LIB)
+	$(RUNDACAPO) $(BENCH)
 
 .PHONY: all
-all: $(LIB)
-	$(foreach b,$(shell $(RUNDACAPO) -l),$(RUNDACAPO) $(b) &&) :
+all: $(BUILD)/$(LIB)
+	$(foreach b,$(BENCHS),$(RUNDACAPO) $(b) ;)
+#$(foreach b,$(BENCHS),$(RUNDACAPO) $(b) &&) :
 
 .PHONY: scala
 scala: $(LIB)

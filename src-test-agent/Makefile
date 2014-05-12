@@ -26,7 +26,8 @@ RUNINSTR=cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)
 
 .PHONY: all
 all: $(BUILD)/$(MAINCLASSFILE) $(BUILD)/$(LIB)
-
+	echo in makefile
+	
 #	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=ObjectInit $(MAINCLASS)
 #	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=NewArray $(MAINCLASS)
 #	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=ANewArray $(MAINCLASS)

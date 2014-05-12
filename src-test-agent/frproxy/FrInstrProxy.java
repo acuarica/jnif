@@ -3,8 +3,8 @@ package frproxy;
 public class FrInstrProxy {
 
 	public static byte[] getResource(String className, ClassLoader loader) {
-//		System.err.print("Siamo arrivati a getResource0: ");
-//		System.err.println(className);
+		//System.err.print("FrInstrProxy.getResource for ");
+		//System.err.println(className);
 
 		ClassLoader cl;
 		if (loader != null) {
@@ -13,11 +13,19 @@ public class FrInstrProxy {
 			cl = ClassLoader.getSystemClassLoader();
 		}
 
-		java.io.InputStream is = loader.getResourceAsStream(className
-				+ ".class");
+		//System.err.print("cl: ");
+		//System.err.println(cl);
 
-//		System.err.print("is: ");
-//		System.err.println(is);
+		java.io.InputStream is;
+		try {
+			is = cl.getResourceAsStream(className + ".class");
+		} catch (Throwable e) {
+			e.printStackTrace();
+			return null;
+		}
+
+		//System.err.print("is: ");
+		//System.err.println(is);
 		try (java.io.ByteArrayOutputStream os = new java.io.ByteArrayOutputStream();) {
 			byte[] buffer = new byte[0xFFFF];
 
@@ -27,12 +35,12 @@ public class FrInstrProxy {
 
 			os.flush();
 
-			//System.err.println("Siamo finito getResource!!!");
+			// System.err.println("Siamo finito getResource!!!");
 
 			return os.toByteArray();
 		} catch (Exception e) {
-			//System.err.println("Errore in getResource");
-			//e.printStackTrace();
+			// System.err.println("Errore in getResource");
+			// e.printStackTrace();
 			return null;
 		}
 	}
