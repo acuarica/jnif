@@ -30,12 +30,6 @@ public:
 
 	ClassPath(JNIEnv* jni, jobject loader) :
 			jni(jni), loader(loader) {
-		javaLangClass = jni->FindClass("java/lang/Class");
-		ASSERT(javaLangClass != NULL, "javaLangClass is null!");
-
-		getNameMethodId = jni->GetMethodID(javaLangClass, "getName",
-				"()Ljava/lang/String;");
-		ASSERT(getNameMethodId != NULL, "getNameMethodId is null!");
 	}
 
 	string getCommonSuperClass(const string& className1,
@@ -44,14 +38,14 @@ public:
 				className1.c_str(), className2.c_str(),
 				(loader != NULL ? "object" : "(null)"));
 
-		loadClassAsResource(className1);
-		loadClassAsResource(className2);
+		loadClassIfNotLoaded(className1);
+		loadClassIfNotLoaded(className2);
 
 		string sup = className1;
 		const string& sub = className2;
 
 		while (!isAssignableFrom(sub, sup)) {
-			loadClassAsResource(sup);
+			loadClassIfNotLoaded(sup);
 			sup = classHierarchy.getSuperClass(sup);
 			if (sup == "0") {
 				_TLOG("Common class is java/lang/Object!!!");
@@ -73,7 +67,7 @@ public:
 				return true;
 			}
 
-			loadClassAsResource(cls);
+			loadClassIfNotLoaded(cls);
 			cls = classHierarchy.getSuperClass(cls);
 		}
 
@@ -82,12 +76,15 @@ public:
 
 private:
 
-	void loadClassAsResource(const string& className) {
-		if (classHierarchy.isDefined(className)) {
-			return;
+	void loadClassIfNotLoaded(const string& className) {
+		if (!classHierarchy.isDefined(className)) {
+			loadClassAsResource(className);
 		}
+	}
 
-		_TLOG("Trying to load class %s as a resource...", className.c_str());
+	void loadClassAsResource(const string& className) {
+		_TLOG("loadClassAsResource: Trying to load class %s as a resource...",
+				className.c_str());
 
 		jclass proxyClass = jni->FindClass("frproxy/FrInstrProxy");
 		ASSERT(proxyClass != NULL, "");
@@ -97,141 +94,22 @@ private:
 		ASSERT(getResourceId != NULL, "");
 
 		jstring targetName = jni->NewStringUTF(className.c_str());
-		ASSERT(targetName != NULL, "");
+		ASSERT(targetName != NULL, "loadClassAsResource: ");
 
 		jobject res = jni->CallStaticObjectMethod(proxyClass, getResourceId,
 				targetName, loader);
-		ASSERT(res != NULL, "");
+		ASSERT(res != NULL, "loadClassAsResource: getResource returned null");
 
 		jsize len = jni->GetArrayLength((jarray) res);
-		_TLOG("Array len: %d", len);
+		_TLOG("loadClassAsResource: resource len: %d", len);
 
 		u1* bytes = (u1*) jni->GetByteArrayElements((jbyteArray) res, NULL);
-		ASSERT(bytes != NULL, "");
+		ASSERT(bytes != NULL, "loadClassAsResource: ");
 
 		ClassFile cf(bytes, len);
 		classHierarchy.addClass(cf);
-
 	}
-
-	jclass getAndPrintClass(const string& className) {
-		cerr << "Trying to FindClass/LoadClass class name for class: "
-				<< className;
-
-		jclass clazz = getAndCheckClass(className);
-		string binaryName = getClassName(clazz);
-
-		cerr << " is: " << binaryName << endl;
-
-		return clazz;
-	}
-
-	jclass getAndCheckClass(const string& className) {
-		jclass clazz = getClass(className);
-		checkClassException(clazz);
-
-		return clazz;
-	}
-
-	void checkClassException(jclass clazz) {
-		if (clazz == NULL) {
-			INFO("ENTER EXCEPTION!!!");
-
-			jni->ExceptionDescribe();
-
-			jthrowable ex = jni->ExceptionOccurred();
-			ASSERT(ex != NULL, "Expected an exception");
-
-			jni->ExceptionClear();
-
-			jclass clazzT = jni->FindClass("java/lang/Throwable");
-			jmethodID pstid = jni->GetMethodID(clazzT, "printStackTrace",
-					"()V");
-			jni->CallObjectMethod(ex, pstid);
-
-			jni->ExceptionDescribe();
-			jclass exClass = jni->GetObjectClass(ex);
-			jmethodID mid = jni->GetMethodID(exClass, "toString",
-					"()Ljava/lang/String;");
-			jni->ExceptionClear();
-			jstring errMsg = (jstring) jni->CallObjectMethod(ex, mid);
-			jboolean isCopy = JNI_FALSE;
-			const char* msg = jni->GetStringUTFChars(errMsg, &isCopy);
-
-			INFO("Exception message: %s", msg);
-			jni->ReleaseStringUTFChars(errMsg, msg);
-		}
-	}
-
-	jclass getClass(const string& className) {
-		if (loader != NULL) {
-			jclass classLoaderClass = jni->FindClass("java/lang/ClassLoader");
-			ASSERT(classLoaderClass != NULL, "");
-
-			jmethodID loadClassId = jni->GetMethodID(classLoaderClass,
-					"loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
-			ASSERT(loadClassId != NULL, "");
-
-			string binaryName = toBinaryName(className);
-			jstring targetName = jni->NewStringUTF(binaryName.c_str());
-			ASSERT(targetName != NULL, "");
-
-			jclass targetClass = (jclass) jni->CallObjectMethod(loader,
-					loadClassId, targetName);
-
-			return targetClass;
-		} else {
-			jclass clazz = jni->FindClass(className.c_str());
-//			ASSERT(clazz != NULL, "FindClass clazz is null for class: %s",
-//					className.c_str());
-
-			return clazz;
-		}
-	}
-
-	static string fromBinaryName(const string& className) {
-		string newName = className;
-
-		for (u4 i = 0; i < newName.length(); i++) {
-			newName[i] = className[i] == '.' ? '/' : className[i];
-		}
-
-		return newName;
-	}
-
-	static string toBinaryName(const string& className) {
-		string newName = className;
-
-		for (u4 i = 0; i < newName.length(); i++) {
-			newName[i] = className[i] == '/' ? '.' : className[i];
-		}
-
-		return newName;
-	}
-
-	string getString(jstring str) {
-		jsize len = jni->GetStringUTFLength(str);
-		ASSERT(len > 0, "len is zero!");
-
-		const char* strUtf8 = jni->GetStringUTFChars(str, NULL);
-		ASSERT(strUtf8 != NULL, "strUtf8 is zero!");
-
-		string res(strUtf8, len);
-		jni->ReleaseStringUTFChars(str, strUtf8);
-
-		return res;
-	}
-
-	string getClassName(jclass clazz) {
-		jstring name = (jstring) jni->CallObjectMethod(clazz, getNameMethodId);
-		ASSERT(name != NULL, "name is null!");
-
-		return getString(name);
-	}
-
 	JNIEnv* jni;
-	jclass javaLangClass;
-	jmethodID getNameMethodId;
 	jobject loader;
 };
 

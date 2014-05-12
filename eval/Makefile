@@ -31,6 +31,10 @@ dacapo-batik: dacapo
 dacapo-eclipse: BENCH=eclipse
 dacapo-eclipse: dacapo
 
+.PHONY: dacapo-fop
+dacapo-fop: BENCH=fop
+dacapo-fop: dacapo
+
 .PHONY: dacapo
 dacapo: $(BUILD)/$(LIB)
 	$(RUNDACAPO) $(BENCH)
