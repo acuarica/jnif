@@ -23,9 +23,6 @@
 //using namespace std;
 using namespace jnif;
 
-//list<string> loadedClasses;
-
-//ClassFinder
 ClassHierarchy classHierarchy;
 
 class ClassPath: public IClassPath {
@@ -83,32 +80,6 @@ public:
 		return false;
 	}
 
-	string getCommonSuperClass0(const string& className1,
-			const string& className2) {
-		cerr << "arg clazz1: " << className1 << ", arg clazz2: " << className2
-				<< ", loader is: " << (loader != NULL ? "object" : "(null)")
-				<< "@ method: " << "" << endl;
-
-		jclass clazz1 = getAndPrintClass(className1);
-		jclass clazz2 = getAndPrintClass(className2);
-
-		while (!jni->IsAssignableFrom(clazz2, clazz1)) {
-			clazz1 = jni->GetSuperclass(clazz1);
-			//ASSERT(clazz1 != NULL, "superclass is null!");
-			if (clazz1 == NULL) {
-				cerr << "Common class is java/lang/Object!!!";
-				return "java/lang/Object";
-			}
-
-			cerr << "super clazz: " << getClassName(clazz1) << endl;
-		}
-
-		string common = fromBinaryName(getClassName(clazz1));
-		cerr << "Common super class found: " << common << endl;
-
-		return common;
-	}
-
 private:
 
 	void loadClassAsResource(const string& className) {
@@ -116,10 +87,7 @@ private:
 			return;
 		}
 
-//		getAndPrintClass(className);
-		//	return;
-
-		//ASSERT(loader != NULL, "A loader is needed");
+		_TLOG("Trying to load class %s as a resource...", className.c_str());
 
 		jclass proxyClass = jni->FindClass("frproxy/FrInstrProxy");
 		ASSERT(proxyClass != NULL, "");
@@ -341,11 +309,6 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args) {
 
-	auto isPrefix = [&](const string& prefix, const string& text) {
-		auto res = std::mismatch(prefix.begin(), prefix.end(), text.begin());
-		return res.first == prefix.end();
-	};
-
 	ClassFile cf(data, len);
 	classHierarchy.addClass(cf);
 
@@ -353,6 +316,11 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 	if (!inLivePhase) {
 		return;
 	}
+
+	auto isPrefix = [&](const string& prefix, const string& text) {
+		auto res = std::mismatch(prefix.begin(), prefix.end(), text.begin());
+		return res.first == prefix.end();
+	};
 
 	if (isPrefix("java", className) || isPrefix("sun", className)) {
 		_TLOG("Skipping compute on class: %s", className);

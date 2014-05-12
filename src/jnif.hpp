@@ -1639,18 +1639,22 @@ public:
 
 	Type popOneWord() {
 		Type t = pop();
-		assert(t.isOneWord(), "Type is not one word type: ", t);
+		Error::check(t.isOneWord() || t.isTop(), "Type is not one word type: ",
+				t, ", frame: ", *this);
 		return t;
 	}
 
 	Type popTwoWord() {
-		Type t = pop();
-		Type top = pop();
+		Type t1 = pop();
+		Type t2 = pop();
 
-		assert(t.isTwoWord(), "Type is two word type");
-		assert(top.isTop(), "Type is not Top type");
+		Error::check(
+				(t1.isOneWord() && t2.isOneWord())
+						|| (t1.isTwoWord() && t2.isTop()),
+				"Invalid types on top of the stack for pop2: ", t1, t2, *this);
+		//Error::check(t2.isTop(), "Type is not Top type: ", t2, t1, *this);
 
-		return t;
+		return t1;
 	}
 
 	Type popArray() {
@@ -1671,13 +1675,15 @@ public:
 
 	Type popLong() {
 		Type t = popTwoWord();
-		assert(t.isLong(), "invalid long type on top of the stack");
+		Error::check(t.isLong(), "invalid long type on top of the stack");
 		return t;
 	}
 
 	Type popDouble() {
 		Type t = popTwoWord();
-		assert(t.isDouble(), "Invalid double type on top of the stack: ", t);
+		Error::check(t.isDouble(), "Invalid double type on top of the stack: ",
+				t);
+
 		return t;
 	}
 
@@ -2095,6 +2101,7 @@ public:
 	 *
 	 * @param start the start of the basic block.
 	 * @param end the end of the basic block.
+	 * @param name the name of the basic block to add.
 	 * @returns the newly created basic block added to this control flow graph.
 	 */
 	BasicBlock* addBasicBlock(InstList::iterator start, InstList::iterator end,

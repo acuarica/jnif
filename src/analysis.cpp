@@ -931,13 +931,8 @@ private:
 
 		for (int i = argsType.size() - 1; i >= 0; i--) {
 			const Type& argType = argsType[i];
-			Error::assert(argType.isOneOrTwoWord(),
+			Error::check(argType.isOneOrTwoWord(),
 					"Invalid arg type in method");
-//				if (argType.isOneWord()) {
-//					h.popOneWord();
-//				} else {
-//					h.popTwoWord();
-//				}
 			frame.popType(argType);
 		}
 
