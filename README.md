@@ -1,4 +1,4 @@
-(Low Level) Java Native Instrumentation Framework
+Java Native Instrumentation Framework
 =================================================
 
 # Introduction
@@ -7,6 +7,12 @@ Why instrument?
 *  Better control
 *  Aspect programming
 *  and?
+
+# Documentation
+
+The JNIF documentation is hosted on:
+
+http://acuarica.bitbucket.org/jnif/docs/
 
 # Related work
 
@@ -78,7 +84,3 @@ i.e., all allocations (by bytecode, reflection and native).
 
 TODO:
 Implement the agent in several JVMs, at least Oracle, Jikes and IBM.
-
-> ## To be published in PPPJ'14.
-> Why PPPJ is the best fit for this article?
-> They allow tool papers, and that is exacty what it is.
