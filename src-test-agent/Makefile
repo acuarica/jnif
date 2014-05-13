@@ -25,9 +25,7 @@ MAINJAVAFILE=$(subst .,/,$(MAINCLASS)).java
 RUNINSTR=cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)
 
 .PHONY: all
-all: $(BUILD)/$(MAINCLASSFILE) $(BUILD)/$(LIB)
-	echo in makefile
-	
+all: $(BUILD)/$(MAINCLASSFILE) $(BUILD)/$(LIB)	
 #	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=ObjectInit $(MAINCLASS)
 #	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=NewArray $(MAINCLASS)
 #	cd $(BUILD) && time java $(JVMARGS) -agentpath:$(LIB)=ANewArray $(MAINCLASS)
@@ -65,8 +63,11 @@ $(BUILD)/%.c.o: %.c $(INCS)
 $(BUILD)/%.cpp.o: %.cpp $(INCS) $(HPPS)
 	$(LINK.c) -std=c++11 -stdlib=libc++ -I../src -c -o $@ $<
 
-$(BUILD)/libjnif.a:
+$(BUILD)/libjnif.a: force
 	$(MAKE) -C ../src
+
+.PHONY: force
+force:
 
 .PHONY: pngs
 pngs: $(PNGS)

@@ -166,8 +166,8 @@ public:
 		check(magic == CLASSFILE_MAGIC,
 				"Invalid magic number. Expected 0xcafebabe, found: ", magic);
 
-		cf.minorVersion = br.readu2();
-		cf.majorVersion = br.readu2();
+		cf.version.minor = br.readu2();
+		cf.version.major = br.readu2();
 
 		parseConstPool(br, cf);
 
@@ -943,8 +943,7 @@ private:
 };
 
 ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
-		majorVersion(0), minorVersion(0), accessFlags(0), thisClassIndex(0), superClassIndex(
-				0) {
+		version(0, 0), accessFlags(0), thisClassIndex(0), superClassIndex(0) {
 	ClassParser::parseClassFile(classFileData, classFileLen, *this);
 }
 

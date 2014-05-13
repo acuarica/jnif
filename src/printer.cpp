@@ -166,8 +166,7 @@ public:
 				<< cf.getThisClassName() << "#" << cf.thisClassIndex << endl;
 
 		inc();
-		line() << "* Version: " << cf.majorVersion << "." << cf.minorVersion
-				<< endl;
+		line() << "* Version: " << cf.version << endl;
 
 		line() << "* Constant Pool [" << ((ConstPool) cf).size() << "]" << endl;
 		inc();
@@ -698,6 +697,12 @@ const char* ClassPrinter::OPCODES[] = { "nop", "aconst_null", "iconst_m1",
 		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
 		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "impdep1",
 		"impdep2" };
+
+ostream& operator<<(ostream& os, const Version& version) {
+	os << version.major << "." << version.minor;
+	os << " (supported by JDK " << version.supportedByJdk() << ")";
+	return os;
+}
 
 ostream& operator<<(ostream& os, ClassFile& cf) {
 	ClassPrinter cp(cf, os, 0);

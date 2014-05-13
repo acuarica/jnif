@@ -41,15 +41,26 @@ public:
 		return false;
 	}
 
+	static String getCommonSuperClass(const String& classLeft,
+			const String& classRight, IClassPath* classPath) {
+		if (classLeft == "java/lang/Object"
+				|| classRight == "java/lang/Object") {
+			return "java/lang/Object";
+		}
+
+		return classPath->getCommonSuperClass(classLeft, classRight);
+	}
+
 	static bool assign(Type& t, Type o, IClassPath* classPath) {
 //		check(isAssignable(t, o) || isAssignable(o, t), "Invalid assign type: ",
 //				t, " <> ", o, " @ frame: ", *this);
 
 		if (!isAssignable(t, o) && !isAssignable(o, t)) {
 			if (t.isClass() && o.isClass()) {
-				string clazz1 = t.getClassName();
-				string clazz2 = o.getClassName();
-				string res = classPath->getCommonSuperClass(clazz1, clazz2);
+				String clazz1 = t.getClassName();
+				String clazz2 = o.getClassName();
+
+				String res = getCommonSuperClass(clazz1, clazz2, classPath);
 
 				t = Type::objectType(res);
 				return true;
@@ -1062,10 +1073,6 @@ public:
 
 		code->instList.setLabelIds();
 
-		//const string& methodName = cf->getUtf8(method->nameIndex);
-		//cerr << "computeFramesMethod: " << cf->getThisClassName() << "."
-		//	<< methodName << cf->getUtf8(method->descIndex) << endl;
-
 		Frame initFrame;
 
 		u4 lvindex = [&]() {
@@ -1203,6 +1210,10 @@ public:
 };
 
 void ClassFile::computeFrames(IClassPath* classPath) {
+	if (version < Version(50, 0)) {
+		//return;
+	}
+
 	computeSize();
 
 	ConstIndex attrIndex = ConstPool::NULLENTRY;
@@ -1215,6 +1226,15 @@ void ClassFile::computeFrames(IClassPath* classPath) {
 				Compute::computeFramesMethod(code, method, this, &attrIndex,
 						classPath);
 			} catch (const JsrRetNotSupported& e) {
+				ClassFile* cf = this;
+
+				const string& methodName = cf->getUtf8(method->nameIndex);
+				cerr << "computeFramesMethod: " << cf->getThisClassName() << "."
+						<< methodName << cf->getUtf8(method->descIndex) << endl;
+
+				cerr << "JSR/RET found, version: " << version << endl;
+
+				//Error::assert(version == Version(49, 0));
 			}
 		}
 	}

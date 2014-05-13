@@ -50,6 +50,8 @@ typedef unsigned int u4;
  *
  */
 typedef std::string String;
+//typedef vector Vector;
+//typedef std::list List;
 
 /**
  * This class contains static method to facilitate error handling mechanism.
@@ -2479,6 +2481,79 @@ public:
 };
 
 /**
+ * The Version class is a tuple containing a major and minor
+ * version numbers fields.
+ *
+ * The values of the major and minor fields are the minor
+ * and major version numbers of this class file.
+ * Together, a major and a minor version number determine the version of the
+ * class file format.
+ * If a class file has major version number M and minor version number m,
+ * we denote the version of its class file format as M.m.
+ * Thus, class file format versions may be ordered lexicographically,
+ * for example, 1.5 < 2.0 < 2.1.
+ *
+ * A Java Virtual Machine implementation can support a class file format of
+ * version v if and only if v lies in some contiguous range Mi.0 <= v <= Mj.m.
+ * The release level of the Java SE platform to which a Java Virtual Machine
+ * implementation conforms is responsible for determining the range.
+ */
+class Version {
+public:
+
+	/**
+	 * Using default 51, which is supported by JDK 1.7.
+	 */
+	Version(u2 major = 51, u2 minor = 0) :
+			major(major), minor(minor) {
+	}
+
+	/**
+	 * The major version number.
+	 */
+	u2 major;
+
+	/**
+	 * The minor version number.
+	 */
+	u2 minor;
+
+	/**
+	 *
+	 */
+	friend bool operator==(const Version& left, const Version& right) {
+		return left.major == right.major && left.major == right.major;
+	}
+
+	/**
+	 *
+	 */
+	friend bool operator<(const Version& left, const Version& right) {
+		return left.major < right.major
+				|| (left.major == right.major && left.minor < right.minor);
+	}
+
+	/**
+	 *
+	 */
+	friend bool operator<=(const Version& left, const Version& right) {
+		return left < right || left == right;
+	}
+
+	/**
+	 * Taken from the oficial JVM specification.
+	 *
+	 * Oracle's Java Virtual Machine implementation in JDK release 1.0.2
+	 * supports class file format versions 45.0 through 45.3 inclusive.
+	 * JDK releases 1.1.* support class file format versions in the
+	 * range 45.0 through 45.65535 inclusive.
+	 * For k >= 2, JDK release 1.k supports class file format versions in
+	 * the range 45.0 through 44+k.0 inclusive.
+	 */
+	string supportedByJdk() const;
+};
+
+/**
  * Models a Java Class File following the specification of the JVM version 7.
  */
 class ClassFile: public ConstPool, public Attrs {
@@ -2491,8 +2566,8 @@ public:
 	ClassFile(const char* className, const char* superClassName =
 			"java/lang/Object", u2 accessFlags = CLASS_PUBLIC, u2 majorVersion =
 			51, u2 minorVersion = 0) :
-			majorVersion(majorVersion), minorVersion(minorVersion), accessFlags(
-					accessFlags), thisClassIndex(addClass(className)), superClassIndex(
+			version(majorVersion, minorVersion), accessFlags(accessFlags), thisClassIndex(
+					addClass(className)), superClassIndex(
 					addClass(superClassName)) {
 	}
 
@@ -2585,8 +2660,7 @@ public:
 	 */
 	void dot(ostream& os) const;
 
-	u2 majorVersion;
-	u2 minorVersion;
+	Version version;
 	u2 accessFlags;
 	ConstIndex thisClassIndex;
 	ConstIndex superClassIndex;
@@ -2641,7 +2715,7 @@ public:
 
 	const string& getSuperClass(const string& className) const;
 
-	bool isAssignableFrom(const string& sub, const string& sup) const;
+	bool isAssignableFrom(const String& sub, const String& sup) const;
 
 	bool isDefined(const String& className) const;
 
@@ -2665,15 +2739,16 @@ private:
 
 	list<ClassEntry> classes;
 
-	const ClassEntry* getEntry(const string& className) const;
+	const ClassEntry* getEntry(const String& className) const;
 };
 
 ostream& operator<<(ostream& os, const ConstTag& tag);
 ostream& operator<<(ostream& os, const Frame& frame);
 ostream& operator<<(ostream& os, const Type& type);
 //ostream& operator<<(ostream& os, const Inst& inst);
-ostream& operator<<(ostream& os, ClassFile& cf);
-ostream& operator<<(ostream& os, const ClassHierarchy& ch);
+ostream& operator<<(ostream& os, const Version& version);
+ostream& operator<<(ostream& os, ClassFile& classFile);
+ostream& operator<<(ostream& os, const ClassHierarchy& classHierarchy);
 
 }
 

@@ -25,6 +25,10 @@ using namespace jnif;
 
 ClassHierarchy classHierarchy;
 
+class ClassNotLoadedException {
+
+};
+
 class ClassPath: public IClassPath {
 public:
 
@@ -38,26 +42,34 @@ public:
 				className1.c_str(), className2.c_str(),
 				(loader != NULL ? "object" : "(null)"));
 
-		loadClassIfNotLoaded(className1);
-		loadClassIfNotLoaded(className2);
+		try {
+			loadClassIfNotLoaded(className1);
+			loadClassIfNotLoaded(className2);
 
-		string sup = className1;
-		const string& sub = className2;
+			string sup = className1;
+			const string& sub = className2;
 
-		while (!isAssignableFrom(sub, sup)) {
-			loadClassIfNotLoaded(sup);
-			sup = classHierarchy.getSuperClass(sup);
-			if (sup == "0") {
-				_TLOG("Common class is java/lang/Object!!!");
-				return "java/lang/Object";
+			while (!isAssignableFrom(sub, sup)) {
+				loadClassIfNotLoaded(sup);
+				sup = classHierarchy.getSuperClass(sup);
+				if (sup == "0") {
+					_TLOG("Common class is java/lang/Object!!!");
+					return "java/lang/Object";
+				}
+
+				_TLOG("Intermediate super class is %s", sup.c_str());
 			}
 
-			_TLOG("Intermediate super class is %s", sup.c_str());
+			_TLOG("Common super class found: %s", sup.c_str());
+
+			return sup;
+		} catch (const ClassNotLoadedException& e) {
+			string res = "java/lang/Object";
+			_TLOG(
+					"Class not loaded while looking the common super class between %s and %s, returning %s",
+					className1.c_str(), className2.c_str(), res.c_str());
+			return res;
 		}
-
-		_TLOG("Common super class found: %s", sup.c_str());
-
-		return sup;
 	}
 
 	bool isAssignableFrom(const string& sub, const string& sup) {
@@ -98,17 +110,24 @@ private:
 
 		jobject res = jni->CallStaticObjectMethod(proxyClass, getResourceId,
 				targetName, loader);
-		ASSERT(res != NULL, "loadClassAsResource: getResource returned null");
+		if (res != NULL) {
+			ASSERT(res != NULL,
+					"loadClassAsResource: getResource returned null");
 
-		jsize len = jni->GetArrayLength((jarray) res);
-		_TLOG("loadClassAsResource: resource len: %d", len);
+			jsize len = jni->GetArrayLength((jarray) res);
+			_TLOG("loadClassAsResource: resource len: %d", len);
 
-		u1* bytes = (u1*) jni->GetByteArrayElements((jbyteArray) res, NULL);
-		ASSERT(bytes != NULL, "loadClassAsResource: ");
+			u1* bytes = (u1*) jni->GetByteArrayElements((jbyteArray) res, NULL);
+			ASSERT(bytes != NULL, "loadClassAsResource: ");
 
-		ClassFile cf(bytes, len);
-		classHierarchy.addClass(cf);
+			ClassFile cf(bytes, len);
+			classHierarchy.addClass(cf);
+		} else {
+			WARN("Class not found: %s", className.c_str());
+			throw ClassNotLoadedException();
+		}
 	}
+
 	JNIEnv* jni;
 	jobject loader;
 };
