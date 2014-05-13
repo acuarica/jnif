@@ -117,8 +117,8 @@ public:
 	void writeClassFile(ClassFile& cf) {
 		bw.writeu4(CLASSFILE_MAGIC);
 
-		bw.writeu2(cf.minorVersion);
-		bw.writeu2(cf.majorVersion);
+		bw.writeu2(cf.version.minor);
+		bw.writeu2(cf.version.major);
 
 		writeConstPool(cf);
 

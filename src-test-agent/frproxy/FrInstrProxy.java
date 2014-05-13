@@ -6,11 +6,11 @@ public class FrInstrProxy {
 		java.io.InputStream is;
 
 		try {
-			is = cl.getResourceAsStream(className + ".class");
+			is = loader.getResourceAsStream(className + ".class");
 		} catch (Throwable e) {
-			System.err.println("Error: getResource for " + className);
-			System.err.println("Error: cl: " + cl);
-			e.printStackTrace();
+			//System.err.println("Error: getResource for " + className);
+			//System.err.println("Error: loader: " + loader);
+			//e.printStackTrace();
 			return null;
 		}
 
@@ -25,17 +25,17 @@ public class FrInstrProxy {
 
 			return os.toByteArray();
 		} catch (Throwable e) {
-			System.err.println("Error: getResource for " + className);
-			System.err.println("Error: cl: " + cl);
-			System.err.println("Error: is: " + is);
-			e.printStackTrace();
+			//System.err.println("Error: getResource for " + className);
+			//System.err.println("Error: loader: " + loader);
+			//System.err.println("Error: is: " + is);
+			//e.printStackTrace();
 			return null;
 		}
 	}
 
 	public static byte[] getResource(String className, ClassLoader loader) {
 		byte[] res = null;
-
+		
 		if (loader != null) {
 			res = getResourceEx(className, loader);
 		}
@@ -45,8 +45,19 @@ public class FrInstrProxy {
 			res = getResourceEx(className, cl);
 		}
 
-		return res;
+//		if (res == null) {
+//			String binaryName = className.replace('/', '.');
+//			try {
+//				Class<?> cls = loader.loadClass(binaryName);
+//			} catch (Throwable e) {
+//				System.err
+//						.println("Class not found even with loadClass for class: "
+//								+ className + "(" + binaryName + ")");
+//				e.printStackTrace();
+//			}
+//		}
 
+		return res;
 	}
 
 	public static native void alloc(Object thisObject);

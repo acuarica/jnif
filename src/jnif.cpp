@@ -78,6 +78,19 @@ const ClassHierarchy::ClassEntry* ClassHierarchy::getEntry(
 	return nullptr;
 }
 
+string Version::supportedByJdk() const {
+	if (Version(45, 3) <= *this && *this < Version(45, 0)) {
+		return "1.0.2";
+	} else if (Version(45, 0) <= *this && *this <= Version(45, 65535)) {
+		return "1.1.*";
+	} else {
+		u2 k = major - 44;
+		stringstream ss;
+		ss << "1." << k;
+		return ss.str();
+	}
+}
+
 std::ostream& operator<<(std::ostream& os, const ClassHierarchy& ch) {
 	for (const ClassHierarchy::ClassEntry& e : ch) {
 		os << "Class: " << e.className << ", ";
