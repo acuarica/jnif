@@ -163,7 +163,43 @@ BasicBlock* ControlFlowGraph::findBasicBlockOfLabel(int labelId) const {
 		}
 	}
 
-	Error::raise("Invalid label id: ", labelId);
+	Error::raise("Invalid label id: ", labelId, " for cfg: ", *this);
+}
+
+std::ostream& operator<<(std::ostream& os, const ControlFlowGraph& cfg) {
+	for (BasicBlock* bb : cfg) {
+		os << "* " << bb->name;
+
+		os << " @Out { ";
+		for (BasicBlock* bbt : *bb) {
+			os << "->" << bbt->name << ", ";
+		}
+		os << "} ";
+
+		os << "in frame: " << bb->in << ", out frame: " << bb->out;
+		os << endl;
+
+		if (bb->start == cfg.instList.end()) {
+			Error::assert(bb->name == "Entry" || bb->name == "Exit", "");
+			Error::assert(bb->exit == cfg.instList.end(), "");
+			continue;
+		}
+
+		Inst* inst = *bb->start;
+		if (inst->kind == KIND_LABEL) {
+			os << "Label id: " << inst->label.id << endl;
+		}
+
+		for (auto it = bb->start; it != bb->exit; it++) {
+			//Inst* inst = *it;
+			//printInst(*inst);
+			//os << endl;
+		}
+	}
+
+	os << endl;
+
+	return os;
 }
 
 }

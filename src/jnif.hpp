@@ -13,7 +13,8 @@
  *
  * This implementation is based on Chapter 4 (The class File Format) and
  * Chapter 6 (Chapter 6. The Java Virtual Machine Instruction Set) of the
- * Java Virtual Machine Specification version 7.
+ * Java Virtual Machine Specification version 7. Portions of this
+ * documentation are taken from this specification.
  *
  * For more information refer to:
  *
@@ -445,7 +446,7 @@ private:
 			tag(tag), d( { value }) {
 	}
 
-	ConstItem(ConstTag tag, const string& value) :
+	ConstItem(ConstTag tag, const String& value) :
 			tag(tag), utf8( { value }) {
 	}
 
@@ -721,7 +722,6 @@ public:
 		ConstItem e(CONST_METHODTYPE);
 		e.methodtype.descriptorIndex = descIndex;
 		return _addSingle(e);
-
 	}
 
 	/**
@@ -1428,6 +1428,9 @@ public:
 		//u4 d = baseType.dims + dims;
 		Error::check(dims > 0, "Invalid dims: ", dims);
 		Error::check(dims <= 255, "Invalid dims: ", dims);
+		Error::check(!baseType.isTop(), "Cannot construct an array type of ",
+				dims, " dimension(s) using as a base type Top (", baseType,
+				")");
 //		Error::check(!baseType.isArray(), "base type is already an array: ",
 //				baseType);
 
@@ -1553,6 +1556,16 @@ public:
 		return dims;
 	}
 
+	/**
+	 * Returns the element type of this array type. Requires that this type
+	 * is an array type. The return type is the same base type but with a less
+	 * dimension.
+	 *
+	 * For example, assuming that this type represents [[[I, then the result
+	 * value is [[I.
+	 *
+	 * @returns the element type of this array.
+	 */
 	Type elementType() const {
 		Error::check(isArray(), "Type is not array: ", *this);
 
@@ -1562,6 +1575,9 @@ public:
 	/**
 	 * Removes the any dimension on this type. This type has to be an array
 	 * type.
+	 *
+	 * For example, assuming that this type represents [[[I, then the result
+	 * value is I.
 	 *
 	 * @returns the base type of this type. The result ensures that is not an
 	 * array type.
@@ -1838,8 +1854,8 @@ public:
 		}
 	}
 
-	vector<Type> lva;
-	list<Type> stack;
+	std::vector<Type> lva;
+	std::list<Type> stack;
 	bool valid;
 };
 
@@ -1999,13 +2015,14 @@ public:
 /**
  * Represents the bytecode of a method.
  */
-//typedef list<Inst*> InstList;
-class InstList: public list<Inst*> {
+class InstList: public std::list<Inst*> {
+	friend class CodeAttr;
+
 public:
-	~InstList() {
-		for (Inst* inst : *this) {
-			delete inst;
-		}
+
+	void addZero(Opcode opcode) {
+		Inst* inst = new Inst(opcode);
+		addInst(inst);
 	}
 
 	void setLabelIds() {
@@ -2026,6 +2043,24 @@ public:
 		}
 
 		return false;
+	}
+
+	ConstPool* const constPool;
+
+private:
+
+	InstList(ConstPool* constPool) :
+			constPool(constPool) {
+	}
+
+	~InstList() {
+		for (Inst* inst : *this) {
+			delete inst;
+		}
+	}
+
+	void addInst(Inst* inst) {
+		push_back(inst);
 	}
 };
 
@@ -2118,19 +2153,19 @@ public:
 	 */
 	BasicBlock* findBasicBlockOfLabel(int labelId) const;
 
-	vector<BasicBlock*>::iterator begin() {
+	std::vector<BasicBlock*>::iterator begin() {
 		return basicBlocks.begin();
 	}
 
-	vector<BasicBlock*>::iterator end() {
+	std::vector<BasicBlock*>::iterator end() {
 		return basicBlocks.end();
 	}
 
-	vector<BasicBlock*>::const_iterator begin() const {
+	std::vector<BasicBlock*>::const_iterator begin() const {
 		return basicBlocks.begin();
 	}
 
-	vector<BasicBlock*>::const_iterator end() const {
+	std::vector<BasicBlock*>::const_iterator end() const {
 		return basicBlocks.end();
 	}
 
@@ -2144,20 +2179,23 @@ private:
 /**
  * Defines the base class for all attributes in the class file.
  */
-struct Attr {
+class Attr {
+
 	Attr(const Attr&) = delete;
+public:
 
 	AttrKind kind;
 
 	u2 nameIndex;
 	u4 len;
+	ConstPool* const constPool;
 
 //	virtual void accept(Visitor* v) = 0;
 
 protected:
 
-	Attr(AttrKind kind, u2 nameIndex, u4 len = 0) :
-			kind(kind), nameIndex(nameIndex), len(len) {
+	Attr(AttrKind kind, u2 nameIndex, u4 len, ConstPool* constPool) :
+			kind(kind), nameIndex(nameIndex), len(len), constPool(constPool) {
 	}
 };
 
@@ -2206,12 +2244,13 @@ struct Attrs {
 /**
  * Represents an unknown opaque attribute to jnif.
  */
-struct UnknownAttr: public Attr {
+class UnknownAttr: public Attr {
+public:
 
 	const u1 * const data;
 
-	UnknownAttr(u2 nameIndex, u4 len, const u1* data) :
-			Attr(ATTR_UNKNOWN, nameIndex, len), data(data) {
+	UnknownAttr(u2 nameIndex, u4 len, const u1* data, ConstPool* constPool) :
+			Attr(ATTR_UNKNOWN, nameIndex, len, constPool), data(data) {
 	}
 
 //	void accept(Visitor* v) {
@@ -2222,7 +2261,8 @@ struct UnknownAttr: public Attr {
 /**
  * Represents the LineNumberTable attribute within the Code attribute.
  */
-struct LvtAttr: Attr {
+class LvtAttr: public Attr {
+public:
 
 	struct LvEntry {
 		u2 startPc;
@@ -2234,20 +2274,21 @@ struct LvtAttr: Attr {
 		u2 index;
 	};
 
-	vector<LvEntry> lvt;
+	std::vector<LvEntry> lvt;
 
-	LvtAttr(AttrKind kind, u2 nameIndex) :
-			Attr(kind, nameIndex) {
+	LvtAttr(AttrKind kind, u2 nameIndex, ConstPool* constPool) :
+			Attr(kind, nameIndex, 0, constPool) {
 	}
 };
 
 /**
  * Represents the LineNumberTable attribute within the Code attribute.
  */
-struct LntAttr: Attr {
+class LntAttr: public Attr {
+public:
 
-	LntAttr(u2 nameIndex) :
-			Attr(ATTR_LNT, nameIndex) {
+	LntAttr(u2 nameIndex, ConstPool* constPool) :
+			Attr(ATTR_LNT, nameIndex, 0, constPool) {
 	}
 
 	struct LnEntry {
@@ -2267,8 +2308,8 @@ struct LntAttr: Attr {
 class SmtAttr: public Attr {
 public:
 
-	SmtAttr(u2 nameIndex) :
-			Attr(ATTR_SMT, nameIndex) {
+	SmtAttr(u2 nameIndex, ConstPool* constPool) :
+			Attr(ATTR_SMT, nameIndex, 0, constPool) {
 	}
 
 	class Entry {
@@ -2280,11 +2321,11 @@ public:
 		struct {
 		} sameFrame;
 		struct {
-			vector<Type> stack; // [1]
+			std::vector<Type> stack; // [1]
 		} sameLocals_1_stack_item_frame;
 		struct {
 			short offset_delta;
-			vector<Type> stack; // [1]
+			std::vector<Type> stack; // [1]
 		} same_locals_1_stack_item_frame_extended;
 		struct {
 			short offset_delta;
@@ -2294,28 +2335,31 @@ public:
 		} same_frame_extended;
 		struct {
 			short offset_delta;
-			vector<Type> locals; // frameType - 251
+			std::vector<Type> locals; // frameType - 251
 		} append_frame;
 		struct {
 			short offset_delta;
-			vector<Type> locals;
-			vector<Type> stack;
+			std::vector<Type> locals;
+			std::vector<Type> stack;
 		} full_frame;
 	};
 
-	vector<Entry> entries;
+	std::vector<Entry> entries;
 };
 
 /**
  * Represents the Exceptions attribute.
  */
-struct ExceptionsAttr: Attr {
+class ExceptionsAttr: public Attr {
+public:
 
-	ExceptionsAttr(u2 nameIndex, u4 len, const vector<u2>& es) :
-			Attr(ATTR_EXCEPTIONS, nameIndex, len), es(es) {
+	ExceptionsAttr(u2 nameIndex, ConstPool* constPool,
+			const std::vector<u2>& es) :
+			Attr(ATTR_EXCEPTIONS, nameIndex, es.size() * 2 + 2, constPool), es(
+					es) {
 	}
 
-	vector<u2> es;
+	std::vector<ConstIndex> es;
 };
 
 /**
@@ -2331,11 +2375,12 @@ struct CodeExceptionEntry {
 /**
  * Represent the Code attribute of a method.
  */
-struct CodeAttr: Attr {
+class CodeAttr: public Attr {
+public:
 
-	CodeAttr(u2 nameIndex) :
-			Attr(ATTR_CODE, nameIndex), maxStack(0), maxLocals(0), codeLen(0), cfg(
-					nullptr) {
+	CodeAttr(u2 nameIndex, ConstPool* constPool) :
+			Attr(ATTR_CODE, nameIndex, 0, constPool), maxStack(0), maxLocals(0), codeLen(
+					0), instList(constPool), cfg(nullptr) {
 	}
 
 	u2 maxStack;
@@ -2348,7 +2393,7 @@ struct CodeAttr: Attr {
 		return exceptions.size() > 0;
 	}
 
-	vector<CodeExceptionEntry> exceptions;
+	std::vector<CodeExceptionEntry> exceptions;
 
 	ControlFlowGraph* cfg;
 
@@ -2358,12 +2403,14 @@ struct CodeAttr: Attr {
 /**
  *
  */
-struct SourceFileAttr: Attr {
+class SourceFileAttr: public Attr {
+public:
 
-	const u2 sourceFileIndex;
+	const ConstIndex sourceFileIndex;
 
-	SourceFileAttr(u2 nameIndex, u4 len, u2 sourceFileIndex) :
-			Attr(ATTR_SOURCEFILE, nameIndex, len), sourceFileIndex(
+	SourceFileAttr(ConstIndex nameIndex, ConstIndex sourceFileIndex,
+			ConstPool* constPool) :
+			Attr(ATTR_SOURCEFILE, nameIndex, 2, constPool), sourceFileIndex(
 					sourceFileIndex) {
 	}
 
@@ -2387,16 +2434,19 @@ public:
 	u2 accessFlags;
 	ConstIndex nameIndex;
 	ConstIndex descIndex;
+	ConstPool* const constPool;
 
-//	const char* getName() const {
-//		string name = cf.getUtf8(m->nameIndex);
-//
-//	}
+	std::string getName() const {
+		std::string name = constPool->getUtf8(nameIndex);
+		return name;
+	}
 
 private:
 
-	Member(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex) :
-			accessFlags(accessFlags), nameIndex(nameIndex), descIndex(descIndex) {
+	Member(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex,
+			ConstPool* constPool) :
+			accessFlags(accessFlags), nameIndex(nameIndex), descIndex(
+					descIndex), constPool(constPool) {
 	}
 };
 
@@ -2404,10 +2454,13 @@ private:
  *
  */
 class Field: public Member {
+	friend class ClassFile;
+
 public:
 
-	inline Field(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex) :
-			Member(accessFlags, nameIndex, descIndex) {
+	inline Field(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex,
+			ConstPool* constPool) :
+			Member(accessFlags, nameIndex, descIndex, constPool) {
 	}
 
 };
@@ -2416,11 +2469,9 @@ public:
  *
  */
 class Method: public Member {
-public:
+	friend class ClassFile;
 
-	Method(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex) :
-			Member(accessFlags, nameIndex, descIndex) {
-	}
+public:
 
 	bool hasCode() const {
 		for (Attr* attr : attrs) {
@@ -2452,19 +2503,26 @@ public:
 		Error::raise("ERROR! get inst list");
 	}
 
-	void instList(const InstList& newcode) {
-		for (Attr* attr : attrs) {
-			if (attr->kind == ATTR_CODE) {
-				((CodeAttr*) attr)->instList = newcode;
-				return;
-			}
-		}
-
-		Error::raise("ERROR! setting inst list");
-	}
+//	void instList(const InstList& newcode) {
+//		for (Attr* attr : attrs) {
+//			if (attr->kind == ATTR_CODE) {
+//				((CodeAttr*) attr)->instList = newcode;
+//				return;
+//			}
+//		}
+//
+//		Error::raise("ERROR! setting inst list");
+//	}
 
 	inline bool isStatic() const {
 		return accessFlags & METHOD_STATIC;
+	}
+
+private:
+
+	Method(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex,
+			ConstPool* constPool) :
+			Member(accessFlags, nameIndex, descIndex, constPool) {
 	}
 
 };
@@ -2589,7 +2647,7 @@ public:
 	 */
 	Field* addField(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags =
 			FIELD_PUBLIC) {
-		Field* field = new Field(accessFlags, nameIndex, descIndex);
+		Field* field = new Field(accessFlags, nameIndex, descIndex, this);
 		fields.push_back(field);
 		return field;
 	}
@@ -2610,7 +2668,7 @@ public:
 	 */
 	Method* addMethod(ConstIndex nameIndex, ConstIndex descIndex,
 			u2 accessFlags = METHOD_PUBLIC) {
-		Method* method = new Method(accessFlags, nameIndex, descIndex);
+		Method* method = new Method(accessFlags, nameIndex, descIndex, this);
 		methods.push_back(method);
 		return method;
 	}
@@ -2664,9 +2722,9 @@ public:
 	u2 accessFlags;
 	ConstIndex thisClassIndex;
 	ConstIndex superClassIndex;
-	vector<ConstIndex> interfaces;
-	vector<Field*> fields;
-	vector<Method*> methods;
+	std::vector<ConstIndex> interfaces;
+	std::vector<Field*> fields;
+	std::vector<Method*> methods;
 };
 
 /**
@@ -2742,13 +2800,18 @@ private:
 	const ClassEntry* getEntry(const String& className) const;
 };
 
-ostream& operator<<(ostream& os, const ConstTag& tag);
-ostream& operator<<(ostream& os, const Frame& frame);
-ostream& operator<<(ostream& os, const Type& type);
+std::ostream& operator<<(std::ostream& os, const ConstTag& tag);
+std::ostream& operator<<(std::ostream& os, const Frame& frame);
+std::ostream& operator<<(std::ostream& os, const Type& type);
+
 //ostream& operator<<(ostream& os, const Inst& inst);
-ostream& operator<<(ostream& os, const Version& version);
-ostream& operator<<(ostream& os, ClassFile& classFile);
-ostream& operator<<(ostream& os, const ClassHierarchy& classHierarchy);
+std::ostream& printInst(std::ostream& os, const Inst& inst,
+		const ConstPool& cf);
+
+std::ostream& operator<<(std::ostream& os, const ControlFlowGraph& cfg);
+std::ostream& operator<<(std::ostream& os, const Version& version);
+std::ostream& operator<<(std::ostream& os, ClassFile& classFile);
+std::ostream& operator<<(std::ostream& os, const ClassHierarchy& classHierarch);
 
 }
 

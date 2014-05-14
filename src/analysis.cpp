@@ -74,13 +74,32 @@ public:
 
 				Type st = t.stripArrayType();
 				Type so = o.stripArrayType();
-				//Type tres ;
+
 				bool change = assign(st, so, classPath);
-				Error::assert(change, "Invalid value for change");
+				Error::assert(change, "Assigning types between ", t,
+						" (with stripped array type ", st, ") and ", o,
+						" (with stripped array type ", so,
+						") should have change the assign result.");
+
+//				Error::assert(!st.isTop(), "Assigning types between ", t,
+//						" and ", o,
+//						" should have not change assign result to Top.");
+				if (st.isTop()) {
+					t = Type::objectType("java/lang/Object");
+					return true;
+				}
 
 				t = Type::arrayType(st, t.getDims());
 				return true;
 			}
+
+			if ((t.isClass() && o.isArray()) || (t.isArray() && o.isClass())) {
+				t = Type::objectType("java/lang/Object");
+				return true;
+			}
+
+//			Error::raise("We arrived here, and we returning top: ", t, " and ",
+//					o);
 
 			t = Type::topType();
 			return true;
@@ -904,6 +923,9 @@ private:
 
 	void astore(int lvindex) {
 		Type refType = frame.popRef();
+		Error::check(!refType.isTop(), "astore: Setting variable index ",
+				lvindex, " to Top", refType, " in frame ", frame);
+
 		frame.setRefVar(lvindex, refType);
 	}
 
@@ -1106,7 +1128,7 @@ public:
 		SmtBuilder::computeState(*to, initFrame, code->instList, *cf, code,
 				classPath);
 
-		SmtAttr* smt = new SmtAttr(*attrIndex);
+		SmtAttr* smt = new SmtAttr(*attrIndex, cf);
 
 		int totalOffset = -1;
 
@@ -1219,6 +1241,11 @@ void ClassFile::computeFrames(IClassPath* classPath) {
 	ConstIndex attrIndex = ConstPool::NULLENTRY;
 
 	for (Method* method : methods) {
+		ClassFile* cf = this;
+		const string& methodName = cf->getUtf8(method->nameIndex);
+		cerr << "Computing frames for method: " << cf->getThisClassName() << "."
+				<< methodName << cf->getUtf8(method->descIndex) << endl;
+
 		CodeAttr* code = method->codeAttr();
 
 		if (code != nullptr) {
@@ -1226,8 +1253,6 @@ void ClassFile::computeFrames(IClassPath* classPath) {
 				Compute::computeFramesMethod(code, method, this, &attrIndex,
 						classPath);
 			} catch (const JsrRetNotSupported& e) {
-				ClassFile* cf = this;
-
 				const string& methodName = cf->getUtf8(method->nameIndex);
 				cerr << "computeFramesMethod: " << cf->getThisClassName() << "."
 						<< methodName << cf->getUtf8(method->descIndex) << endl;
