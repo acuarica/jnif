@@ -306,45 +306,45 @@ void InstrClassNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 	for (Method* m : cf.methods) {
 		if (m->hasCode()) {
-			InstList& instList = m->instList();
+			//InstList& instList = m->instList();
 
-			InstList code;
-
-			for (Inst* instp : instList) {
-				Inst& inst = *instp;
-
-				if (inst.opcode == OPCODE_newarray) {
-					// FORMAT: newarray atype
-					// OPERAND STACK: ... | count: int -> ... | arrayref
-
-					// STACK: ... | count
-
-					code.push_back(new Inst(OPCODE_dup));
-					// STACK: ... | count | count
-
-					code.push_back(&inst); // newarray
-					// STACK: ... | count | arrayref
-
-					code.push_back(new Inst(OPCODE_dup_x1));
-					// STACK: ... | arrayref | count | arrayref
-
-					code.push_back(bipush(inst.newarray.atype));
-					//u2 typeindex = instr.cp->addInteger(atype);
-
-					//bv.visitLdc(offset, OPCODE_ldc_w, typeindex);
-					// STACK: ... | arrayref | count | arrayref | atype
-
-					code.push_back(
-							invoke(OPCODE_invokestatic, newArrayEventRef));
-					// STACK: ... | arrayref
-
-				} else {
-					code.push_back(&inst);
-				}
-			}
-
-			m->instList(code);
-			m->codeAttr()->maxStack += 3;
+//			InstList code;
+//
+//			for (Inst* instp : instList) {
+//				Inst& inst = *instp;
+//
+//				if (inst.opcode == OPCODE_newarray) {
+//					// FORMAT: newarray atype
+//					// OPERAND STACK: ... | count: int -> ... | arrayref
+//
+//					// STACK: ... | count
+//
+//					code.push_back(new Inst(OPCODE_dup));
+//					// STACK: ... | count | count
+//
+//					code.push_back(&inst); // newarray
+//					// STACK: ... | count | arrayref
+//
+//					code.push_back(new Inst(OPCODE_dup_x1));
+//					// STACK: ... | arrayref | count | arrayref
+//
+//					code.push_back(bipush(inst.newarray.atype));
+//					//u2 typeindex = instr.cp->addInteger(atype);
+//
+//					//bv.visitLdc(offset, OPCODE_ldc_w, typeindex);
+//					// STACK: ... | arrayref | count | arrayref | atype
+//
+//					code.push_back(
+//							invoke(OPCODE_invokestatic, newArrayEventRef));
+//					// STACK: ... | arrayref
+//
+//				} else {
+//					code.push_back(&inst);
+//				}
+//			}
+//
+//			m->instList(code);
+//			m->codeAttr()->maxStack += 3;
 		}
 	}
 
