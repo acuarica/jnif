@@ -14,16 +14,16 @@ namespace jnif {
 static void setBranchTargets(InstList& instList) {
 	for (Inst* inst : instList) {
 		if (inst->isJump()) {
-			inst->jump.label2->label.isBranchTarget = true;
+			inst->jump()->label2->label()->isBranchTarget = true;
 		} else if (inst->isTableSwitch()) {
-			inst->ts.def->label.isBranchTarget = true;
-			for (Inst* target : inst->ts.targets) {
-				target->label.isBranchTarget = true;
+			inst->ts()->def->label()->isBranchTarget = true;
+			for (Inst* target : inst->ts()->targets) {
+				target->label()->isBranchTarget = true;
 			}
 		} else if (inst->isLookupSwitch()) {
-			inst->ls.defbyte->label.isBranchTarget = true;
-			for (Inst* target : inst->ls.targets) {
-				target->label.isBranchTarget = true;
+			inst->ls()->defbyte->label()->isBranchTarget = true;
+			for (Inst* target : inst->ls()->targets) {
+				target->label()->isBranchTarget = true;
 			}
 		}
 	}
@@ -42,7 +42,7 @@ static void buildBasicBlocks(InstList& instList, ControlFlowGraph& cfg) {
 		return ss.str();
 	};
 
-	auto addBasicBlock2 = [&](InstList::iterator eit) {
+	auto addBasicBlock2 = [&](InstList::Iterator eit) {
 		if (beginBb != eit) {
 			string name = getBasicBlockName(bbid);
 			cfg.addBasicBlock(beginBb, eit, name);
@@ -52,23 +52,23 @@ static void buildBasicBlocks(InstList& instList, ControlFlowGraph& cfg) {
 		}
 	};
 
-	for (auto it = instList.begin(); it != instList.end(); it++) {
+	for (auto it = instList.begin(); it != instList.end(); ++it) {
 		Inst* inst = *it;
 
 		if (inst->isLabel()
-				&& (inst->label.isBranchTarget || inst->label.isTryStart)) {
+				&& (inst->label()->isBranchTarget || inst->label()->isTryStart)) {
 			addBasicBlock2(it);
 		}
 
 		if (inst->isBranch()) {
 			auto eit = it;
-			eit++;
+			++eit;
 			addBasicBlock2(eit);
 		}
 
 		if (inst->isExit()) {
 			auto eit = it;
-			eit++;
+			++eit;
 			addBasicBlock2(eit);
 		}
 	}
@@ -79,7 +79,7 @@ static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
 
 	auto addTarget2 = [&] (BasicBlock* bb, Inst* inst) {
 		Error::assert(inst->isLabel(), "Expected label instruction");
-		int labelId = inst->label.id;
+		int labelId = inst->label()->id;
 		BasicBlock* tbbid = cfg.findBasicBlockOfLabel(labelId);
 		bb->addTarget(tbbid);
 	};
@@ -91,8 +91,8 @@ static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
 			continue;
 		}
 
-		auto e = bb->exit;
-		e--;
+		InstList::Iterator e = bb->exit;
+		--e;
 		Error::assert(e != instList.end(), "");
 
 		Inst* last = *e;
@@ -102,22 +102,22 @@ static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
 		}
 
 		if (last->isJump()) {
-			addTarget2(bb, last->jump.label2);
+			addTarget2(bb, last->jump()->label2);
 
 			if (last->opcode != OPCODE_goto) {
 				Error::assert(bb->next != nullptr, "next bb is null");
 				bb->addTarget(bb->next);
 			}
 		} else if (last->isTableSwitch()) {
-			addTarget2(bb, last->ts.def);
+			addTarget2(bb, last->ts()->def);
 
-			for (Inst* target : last->ts.targets) {
+			for (Inst* target : last->ts()->targets) {
 				addTarget2(bb, target);
 			}
 		} else if (last->isLookupSwitch()) {
-			addTarget2(bb, last->ls.defbyte);
+			addTarget2(bb, last->ls()->defbyte);
 
-			for (Inst* target : last->ls.targets) {
+			for (Inst* target : last->ls()->targets) {
 				addTarget2(bb, target);
 			}
 		} else if (last->isExit()) {
@@ -135,8 +135,8 @@ ControlFlowGraph::ControlFlowGraph(InstList& instList) :
 	buildCfg(instList, *this);
 }
 
-BasicBlock* ControlFlowGraph::addBasicBlock(InstList::iterator start,
-		InstList::iterator end, std::string name) {
+BasicBlock* ControlFlowGraph::addBasicBlock(InstList::Iterator start,
+		InstList::Iterator end, const String& name) {
 	BasicBlock * const bb = new BasicBlock(start, end, name, this);
 
 	if (basicBlocks.size() > 0) {
@@ -158,43 +158,40 @@ BasicBlock* ControlFlowGraph::findBasicBlockOfLabel(int labelId) const {
 		}
 
 		Inst* inst = *bb->start;
-		if (inst->kind == KIND_LABEL && inst->label.id == labelId) {
+		if (inst->isLabel() && inst->label()->id == labelId) {
 			return bb;
 		}
 	}
 
-	Error::raise("Invalid label id: ", labelId, " for cfg: ", *this);
+	InstList& il = (InstList&) instList;
+
+	Error::raise("Invalid label id: ", labelId, " for the instruction list: ",
+			", in cfg: ", *this);
+}
+
+std::ostream& operator<<(std::ostream& os, BasicBlock& bb) {
+	os << "* " << bb.name;
+
+	os << " @Out { ";
+	for (BasicBlock* bbt : bb) {
+		os << "->" << bbt->name << ", ";
+	}
+	os << "} ";
+
+	os << "in frame: " << bb.in << ", out frame: " << bb.out;
+	os << endl;
+
+	for (auto it = bb.start; it != bb.exit; ++it) {
+		Inst* inst = *it;
+		os << *inst << endl;
+	}
+
+	return os;
 }
 
 std::ostream& operator<<(std::ostream& os, const ControlFlowGraph& cfg) {
 	for (BasicBlock* bb : cfg) {
-		os << "* " << bb->name;
-
-		os << " @Out { ";
-		for (BasicBlock* bbt : *bb) {
-			os << "->" << bbt->name << ", ";
-		}
-		os << "} ";
-
-		os << "in frame: " << bb->in << ", out frame: " << bb->out;
-		os << endl;
-
-		if (bb->start == cfg.instList.end()) {
-			Error::assert(bb->name == "Entry" || bb->name == "Exit", "");
-			Error::assert(bb->exit == cfg.instList.end(), "");
-			continue;
-		}
-
-		Inst* inst = *bb->start;
-		if (inst->kind == KIND_LABEL) {
-			os << "Label id: " << inst->label.id << endl;
-		}
-
-		for (auto it = bb->start; it != bb->exit; it++) {
-			//Inst* inst = *it;
-			//printInst(*inst);
-			//os << endl;
-		}
+		os << *bb;
 	}
 
 	os << endl;

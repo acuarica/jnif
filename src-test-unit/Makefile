@@ -37,5 +37,8 @@ $(BUILD)/filelist.cpp.o: $(BUILD)/filelist.cpp | $(BUILD)
 $(BUILD)/%.cpp.o: %.cpp $(HPPS) | $(BUILD)
 	$(LINK.c) -std=c++11 -stdlib=libc++ -c -o $@ $<
 
-$(BUILD)/libjnif.a:
+$(BUILD)/libjnif.a: FORCE
 	$(MAKE) -C ../src
+
+.PHONY: FORCE
+FORCE:

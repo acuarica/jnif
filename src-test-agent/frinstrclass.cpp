@@ -189,6 +189,8 @@ void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
 //	os.write((char*) data, len);
 }
 
+extern int inLivePhase;
+
 void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv*,
 		InstrArgs* args) {
@@ -199,8 +201,6 @@ void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
-
-extern int inLivePhase;
 
 void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
@@ -251,24 +251,15 @@ void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
 	u2 allocMethodRef = cf.addMethodRef(classIndex, "alloc",
 			"(Ljava/lang/Object;)V");
 
-	auto invoke = [&] (Opcode opcode, u2 index) {
-		Inst* inst = new Inst(opcode, KIND_INVOKE);
-		//inst->kind = KIND_INVOKE;
-		//inst->opcode = opcode;
-			inst->invoke.methodRefIndex = index;
-
-			return inst;
-		};
-
 	for (Method* m : cf.methods) {
-
-		string name = cf.getUtf8(m->nameIndex);
+		String name = cf.getUtf8(m->nameIndex);
 
 		if (m->hasCode() && name == "<init>") {
 			InstList& instList = m->instList();
 
-			instList.push_front(invoke(OPCODE_invokestatic, allocMethodRef));
-			instList.push_front(new Inst(OPCODE_aload_0));
+			Inst* first = *instList.begin();
+			instList.addInvoke(OPCODE_invokestatic, allocMethodRef, first);
+			instList.addZero(OPCODE_aload_0, first);
 		}
 	}
 
@@ -284,25 +275,6 @@ void InstrClassNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 	u2 newArrayEventRef = cf.addMethodRef(classIndex, "newArrayEvent",
 			"(ILjava/lang/Object;I)V");
-
-	auto bipush = [&](u1 value) {
-		Inst* inst = new Inst(OPCODE_bipush, KIND_BIPUSH);
-
-		//inst->kind = KIND_BIPUSH;
-		//inst->opcode = OPCODE_bipush;
-			inst->push.value = value;
-
-			return inst;
-		};
-
-	auto invoke = [&] (Opcode opcode, u2 index) {
-		Inst* inst = new Inst(opcode, KIND_INVOKE);
-		//inst->kind = KIND_INVOKE;
-		//inst->opcode = opcode;
-			inst->invoke.methodRefIndex = index;
-
-			return inst;
-		};
 
 	for (Method* m : cf.methods) {
 		if (m->hasCode()) {
@@ -355,79 +327,55 @@ void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
 		JNIEnv* jni, InstrArgs* args) {
 
-//	if (string(className) != "frheapagent/HeapTest") {
-//		return;
-//	}
-
 	ClassFile cf(data, len);
-//	Version v = cf.getVersion();
-	//fprintf(stderr, "%d.%d ", v.getMajor(), v.getMinor());
 
 	ConstIndex classIndex = cf.addClass("frproxy/FrInstrProxy");
 	ConstIndex aNewArrayEventRef = cf.addMethodRef(classIndex, "aNewArrayEvent",
 			"(ILjava/lang/Object;Ljava/lang/String;)V");
 
-	auto invoke = [&] (Opcode opcode, u2 index) {
-		Inst* inst = new Inst(opcode, KIND_INVOKE);
-		//inst->kind = KIND_INVOKE;
-		//inst->opcode = opcode;
-			inst->invoke.methodRefIndex = index;
-
-			return inst;
-		};
-
-	auto ldc = [&] (Opcode opcode, u2 valueIndex) {
-		Inst* inst = new Inst(opcode, KIND_LDC);
-		//inst->kind = KIND_LDC;
-		//inst->opcode = opcode;
-			inst->ldc.valueIndex = valueIndex;
-
-			return inst;
-		};
-
 	for (Method* m : cf.methods) {
 		if (m->hasCode()) {
-			InstList& instList = m->instList();
-
-			InstList& code = instList;
-
-//			for (Inst* instp : instList) {
-			for (auto instp = instList.begin(); instp != instList.end();
-					instp++) {
-				Inst& inst = **instp;
-
-				if (inst.opcode == OPCODE_anewarray) {
-					// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
-					// OPERAND STACK: ... | count: int -> ... | arrayref
-
-					// STACK: ... | count
-
-					code.insert(instp, new Inst(OPCODE_dup));
-					// STACK: ... | count | count
-
-					instp++;
-					//code.push_back(&inst); // anewarray
-					// STACK: ... | count | arrayref
-
-					code.insert(instp, new Inst(OPCODE_dup_x1));
-					// STACK: ... | arrayref | count | arrayref
-
-					ConstIndex strIndex = cf.addStringFromClass(
-							inst.type.classIndex);
-
-					code.insert(instp, ldc(OPCODE_ldc_w, strIndex));
-					// STACK: ... | arrayref | count | arrayref | classname
-
-					instp = code.insert(instp,
-							invoke(OPCODE_invokestatic, aNewArrayEventRef));
-					// STACK: ... | arrayref
-
-				} else {
-					//code.push_back(&inst);
-				}
-			}
-
-			m->codeAttr()->maxStack += 3;
+//			InstList& instList = m->instList();
+//
+//			InstList& code = instList;
+//
+////			for (Inst* instp : instList) {
+//			for (auto instp = instList.begin(); instp != instList.end();
+//					++instp) {
+//				Inst& inst = **instp;
+//
+//				if (inst.opcode == OPCODE_anewarray) {
+//					// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
+//					// OPERAND STACK: ... | count: int -> ... | arrayref
+//
+//					// STACK: ... | count
+//
+//					code.insert(instp, new Inst(OPCODE_dup));
+//					// STACK: ... | count | count
+//
+//					instp++;
+//					//code.push_back(&inst); // anewarray
+//					// STACK: ... | count | arrayref
+//
+//					code.insert(instp, new Inst(OPCODE_dup_x1));
+//					// STACK: ... | arrayref | count | arrayref
+//
+//					ConstIndex strIndex = cf.addStringFromClass(
+//							inst.type.classIndex);
+//
+//					code.insert(instp, ldc(OPCODE_ldc_w, strIndex));
+//					// STACK: ... | arrayref | count | arrayref | classname
+//
+//					instp = code.insert(instp,
+//							invoke(OPCODE_invokestatic, aNewArrayEventRef));
+//					// STACK: ... | arrayref
+//
+//				} else {
+//					//code.push_back(&inst);
+//				}
+//			}
+//
+//			m->codeAttr()->maxStack += 3;
 
 			//	m.instList(code);
 		}
@@ -446,27 +394,18 @@ void InstrClassMain(jvmtiEnv* jvmti, unsigned char* data, int len,
 	u2 enterMainMethodRef = cf.addMethodRef(classIndex, "enterMainMethod",
 			"()V");
 
-	auto invoke = [&] (Opcode opcode, u2 index) {
-		Inst* inst = new Inst(opcode, KIND_INVOKE);
-		//inst->kind = KIND_INVOKE;
-		//inst->opcode = opcode;
-			inst->invoke.methodRefIndex = index;
-
-			return inst;
-		};
-
 	for (Method* m : cf.methods) {
 
-		string name = cf.getUtf8(m->nameIndex);
-		string desc = cf.getUtf8(m->descIndex);
+		String name = cf.getUtf8(m->nameIndex);
+		String desc = cf.getUtf8(m->descIndex);
 
 		if (m->hasCode() && name == "main" && (m->accessFlags & METHOD_STATIC)
 				&& (m->accessFlags & METHOD_PUBLIC)
 				&& desc == "([Ljava/lang/String;)V") {
 			InstList& instList = m->instList();
 
-			instList.push_front(
-					invoke(OPCODE_invokestatic, enterMainMethodRef));
+			instList.addInvoke(OPCODE_invokestatic, enterMainMethodRef,
+					*instList.begin());
 
 //			if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) || opcode == Opcodes.ATHROW) {
 //				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass, "exitMainMethod", "()V");
@@ -492,20 +431,6 @@ void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 	ConstIndex exitMainMethodRef = cf.addMethodRef(classIndex, "exitMainMethod",
 			"()V");
 
-	auto invoke = [&] (Opcode opcode, u2 index) {
-		Inst* inst = new Inst(opcode, KIND_INVOKE);
-		inst->invoke.methodRefIndex = index;
-
-		return inst;
-	};
-
-	auto ldc = [&] (Opcode opcode, u2 valueIndex) {
-		Inst* inst = new Inst(opcode, KIND_LDC);
-		inst->ldc.valueIndex = valueIndex;
-
-		return inst;
-	};
-
 	if (string(className) == "java/lang/Object") {
 		u2 allocMethodRef = cf.addMethodRef(classIndex, "alloc",
 				"(Ljava/lang/Object;)V");
@@ -516,9 +441,9 @@ void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 			if (m->hasCode() && name == "<init>") {
 				InstList& instList = m->instList();
 
-				instList.push_front(
-						invoke(OPCODE_invokestatic, allocMethodRef));
-				instList.push_front(new Inst(OPCODE_aload_0));
+//				instList.push_front(
+//						invoke(OPCODE_invokestatic, allocMethodRef));
+//				instList.push_front(new Inst(OPCODE_aload_0));
 			}
 		}
 	}
@@ -532,7 +457,7 @@ void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 			InstList& code = instList;
 
 			for (auto instp = instList.begin(); instp != instList.end();
-					instp++) {
+					++instp) {
 				Inst& inst = **instp;
 
 				if (inst.opcode == OPCODE_anewarray) {
@@ -541,24 +466,24 @@ void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 					// STACK: ... | count
 
-					code.insert(instp, new Inst(OPCODE_dup));
-					// STACK: ... | count | count
-
-					instp++;
-					//code.push_back(&inst); // anewarray
-					// STACK: ... | count | arrayref
-
-					code.insert(instp, new Inst(OPCODE_dup_x1));
-					// STACK: ... | arrayref | count | arrayref
-
-					ConstIndex strIndex = cf.addStringFromClass(
-							inst.type.classIndex);
-
-					code.insert(instp, ldc(OPCODE_ldc_w, strIndex));
-					// STACK: ... | arrayref | count | arrayref | classname
-
-					instp = code.insert(instp,
-							invoke(OPCODE_invokestatic, aNewArrayEventRef));
+//					code.insert(instp, new Inst(OPCODE_dup));
+//					// STACK: ... | count | count
+//
+//					instp++;
+//					//code.push_back(&inst); // anewarray
+//					// STACK: ... | count | arrayref
+//
+//					code.insert(instp, new Inst(OPCODE_dup_x1));
+//					// STACK: ... | arrayref | count | arrayref
+//
+//					ConstIndex strIndex = cf.addStringFromClass(
+//							inst.type.classIndex);
+//
+//					code.insert(instp, ldc(OPCODE_ldc_w, strIndex));
+//					// STACK: ... | arrayref | count | arrayref | classname
+//
+//					instp = code.insert(instp,
+//							invoke(OPCODE_invokestatic, aNewArrayEventRef));
 					// STACK: ... | arrayref
 
 				} else {
@@ -571,18 +496,18 @@ void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 			if (methodName == "main" && (m->accessFlags & METHOD_STATIC)
 					&& (m->accessFlags & METHOD_PUBLIC)
 					&& methodDesc == "([Ljava/lang/String;)V") {
-				instList.push_front(
-						invoke(OPCODE_invokestatic, enterMainMethodRef));
+//				instList.push_front(
+//						invoke(OPCODE_invokestatic, enterMainMethodRef));
 
 				for (auto instp = instList.begin(); instp != instList.end();
-						instp++) {
+						++instp) {
 					Inst& inst = **instp;
 
 					if ((inst.opcode >= OPCODE_ireturn
 							&& inst.opcode <= OPCODE_return)
 							|| inst.opcode == OPCODE_athrow) {
-						instList.insert(instp,
-								invoke(OPCODE_invokestatic, exitMainMethodRef));
+//						instList.insert(instp,
+//								invoke(OPCODE_invokestatic, exitMainMethodRef));
 					}
 				}
 			}

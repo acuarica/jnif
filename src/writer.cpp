@@ -259,7 +259,7 @@ public:
 			LntAttr::LnEntry& lne = attr.lnt[i];
 
 			//bw.writeu2(lne.startpc);
-			bw.writeu2(lne.startPcLabel->label.offset);
+			bw.writeu2(lne.startPcLabel->label()->offset);
 			bw.writeu2(lne.lineno);
 		}
 	}
@@ -273,7 +273,7 @@ public:
 			LvtAttr::LvEntry& lve = attr.lvt[i];
 
 			//bw.writeu2(lve.startPc);
-			bw.writeu2(lve.startPcLabel->label.offset);
+			bw.writeu2(lve.startPcLabel->label()->offset);
 
 			bw.writeu2(lve.len);
 			bw.writeu2(lve.varNameIndex);
@@ -294,7 +294,7 @@ public:
 		for (u2 i = 0; i < attr.entries.size(); i++) {
 			SmtAttr::Entry& e = attr.entries[i];
 
-			u2 offset = e.label->label.offset;
+			u2 offset = e.label->label()->offset;
 
 			toff += 1;
 
@@ -379,7 +379,7 @@ public:
 			} else if (type.isUninit()) {
 				bw.writeu1(TYPE_UNINIT);
 				u2 offset = type.uninit.offset;
-				offset = type.uninit.label->label.offset;
+				offset = type.uninit.label->label()->offset;
 				bw.writeu2(offset);
 			} else {
 				raise("Invalid type on write: ", type);
@@ -426,7 +426,7 @@ public:
 			Inst& inst = *instp;
 
 			if (inst.kind == KIND_LABEL) {
-				inst.label.offset = pos();
+				inst.label()->offset = pos();
 
 				//fprintf(stderr, "label pos @ write: %d\n", inst.label.offset);
 				continue;
@@ -437,38 +437,40 @@ public:
 			switch (inst.kind) {
 				case KIND_ZERO:
 					if (inst.opcode == OPCODE_wide) {
-						bw.writeu1(inst.wide.opcode);
-						if (inst.wide.opcode == OPCODE_iinc) {
-							bw.writeu2(inst.wide.iinc.index);
-							bw.writeu2(inst.wide.iinc.value);
+						bw.writeu1(inst.wide()->subOpcode);
+						if (inst.wide()->subOpcode == OPCODE_iinc) {
+							bw.writeu2(inst.wide()->iinc.index);
+							bw.writeu2(inst.wide()->iinc.value);
 						} else {
-							bw.writeu2(inst.wide.var.lvindex);
+							bw.writeu2(inst.wide()->var.lvindex);
 						}
 					}
 					break;
 				case KIND_BIPUSH:
-					bw.writeu1(inst.push.value);
+					bw.writeu1(inst.push()->value);
 					break;
 				case KIND_SIPUSH:
-					bw.writeu2(inst.push.value);
+					bw.writeu2(inst.push()->value);
 					break;
 				case KIND_LDC:
 					if (inst.opcode == OPCODE_ldc) {
-						assert(inst.ldc.valueIndex == (u1) inst.ldc.valueIndex,
+						Error::assert(
+								inst.ldc()->valueIndex
+										== (u1) inst.ldc()->valueIndex,
 								"invalid value for ldc: %d",
-								inst.ldc.valueIndex);
+								inst.ldc()->valueIndex);
 
-						bw.writeu1(inst.ldc.valueIndex);
+						bw.writeu1(inst.ldc()->valueIndex);
 					} else {
-						bw.writeu2(inst.ldc.valueIndex);
+						bw.writeu2(inst.ldc()->valueIndex);
 					}
 					break;
 				case KIND_VAR:
-					bw.writeu1(inst.var.lvindex);
+					bw.writeu1(inst.var()->lvindex);
 					break;
 				case KIND_IINC:
-					bw.writeu1(inst.iinc.index);
-					bw.writeu1(inst.iinc.value);
+					bw.writeu1(inst.iinc()->index);
+					bw.writeu1(inst.iinc()->value);
 					break;
 				case KIND_JUMP: {
 					//bw.writeu2(inst.jump.label);
@@ -476,7 +478,7 @@ public:
 
 					int jumppos = pos() - 1;
 
-					bw.writeu2(inst.jump.label2->label.offset - jumppos);
+					bw.writeu2(inst.jump()->label2->label()->offset - jumppos);
 					break;
 				}
 				case KIND_TABLESWITCH: {
@@ -490,15 +492,17 @@ public:
 					}
 
 					bool check = pos() % 4 == 0;
-					assert(check, "Padding offset must be mod 4: %d", pos());
+					Error::assert(check, "Padding offset must be mod 4: %d",
+							pos());
 
-					bw.writeu4(inst.ts.def->label.offset - tspos);
-					bw.writeu4(inst.ts.low);
-					bw.writeu4(inst.ts.high);
+					bw.writeu4(inst.ts()->def->label()->offset - tspos);
+					bw.writeu4(inst.ts()->low);
+					bw.writeu4(inst.ts()->high);
 
-					for (int i = 0; i < inst.ts.high - inst.ts.low + 1; i++) {
-						Inst* t = inst.ts.targets[i];
-						bw.writeu4(t->label.offset - tspos);
+					for (int i = 0; i < inst.ts()->high - inst.ts()->low + 1;
+							i++) {
+						Inst* t = inst.ts()->targets[i];
+						bw.writeu4(t->label()->offset - tspos);
 					}
 
 					//	fprintf(stderr, "writer ts: offset: %d\n", pos());
@@ -514,51 +518,52 @@ public:
 					}
 
 					bool check = pos() % 4 == 0;
-					assert(check, "Padding offset must be mod 4: %d", pos());
+					Error::assert(check, "Padding offset must be mod 4: %d",
+							pos());
 
-					bw.writeu4(inst.ls.defbyte->label.offset - lspos);
-					bw.writeu4(inst.ls.npairs);
+					bw.writeu4(inst.ls()->defbyte->label()->offset - lspos);
+					bw.writeu4(inst.ls()->npairs);
 
-					for (u4 i = 0; i < inst.ls.npairs; i++) {
-						u4 k = inst.ls.keys[i];
+					for (u4 i = 0; i < inst.ls()->npairs; i++) {
+						u4 k = inst.ls()->keys[i];
 						bw.writeu4(k);
 
-						Inst* t = inst.ls.targets[i];
-						bw.writeu4(t->label.offset - lspos);
+						Inst* t = inst.ls()->targets[i];
+						bw.writeu4(t->label()->offset - lspos);
 					}
 					break;
 				}
 				case KIND_FIELD:
-					bw.writeu2(inst.field.fieldRefIndex);
+					bw.writeu2(inst.field()->fieldRefIndex);
 					break;
 				case KIND_INVOKE:
-					bw.writeu2(inst.invoke.methodRefIndex);
+					bw.writeu2(inst.invoke()->methodRefIndex);
 					break;
 				case KIND_INVOKEINTERFACE:
-					bw.writeu2(inst.invokeinterface.interMethodRefIndex);
-					bw.writeu1(inst.invokeinterface.count);
+					bw.writeu2(inst.invokeinterface()->interMethodRefIndex);
+					bw.writeu1(inst.invokeinterface()->count);
 					bw.writeu1(0);
 					break;
 				case KIND_INVOKEDYNAMIC:
 					break;
 				case KIND_TYPE:
-					bw.writeu2(inst.type.classIndex);
+					bw.writeu2(inst.type()->classIndex);
 					break;
 				case KIND_NEWARRAY:
-					bw.writeu1(inst.newarray.atype);
+					bw.writeu1(inst.newarray()->atype);
 					break;
 				case KIND_MULTIARRAY:
-					bw.writeu2(inst.multiarray.classIndex);
-					bw.writeu1(inst.multiarray.dims);
+					bw.writeu2(inst.multiarray()->classIndex);
+					bw.writeu1(inst.multiarray()->dims);
 					break;
 				case KIND_PARSE4TODO:
-					raise("not implemetd");
+					Error::raise("not implemetd");
 					break;
 				case KIND_RESERVED:
-					raise("not implemetd");
+					Error::raise("not implemetd");
 					break;
 				default:
-					raise("default kind in instlist: ", inst.kind);
+					Error::raise("default kind in instlist: ", inst.kind);
 			}
 		}
 	}
@@ -569,6 +574,7 @@ public:
 		bw.writeu4(attr.codeLen);
 
 		u4 offset = bw.getOffset();
+
 		writeInstList(attr.instList);
 
 		attr.codeLen = bw.getOffset() - offset;
@@ -577,9 +583,9 @@ public:
 		bw.writeu2(esize);
 		for (u4 i = 0; i < esize; i++) {
 			CodeExceptionEntry& e = attr.exceptions[i];
-			bw.writeu2(e.startpc->label.offset);
-			bw.writeu2(e.endpc->label.offset);
-			bw.writeu2(e.handlerpc->label.offset);
+			bw.writeu2(e.startpc->label()->offset);
+			bw.writeu2(e.endpc->label()->offset);
+			bw.writeu2(e.handlerpc->label()->offset);
 			bw.writeu2(e.catchtype);
 		}
 

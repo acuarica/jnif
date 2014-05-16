@@ -1350,12 +1350,6 @@ enum TypeTag {
 	TYPE_SHORT,
 };
 
-struct Inst;
-
-typedef u2 ClassIndex;
-
-typedef u2 Label;
-
 /**
  * Verification type class
  */
@@ -1416,7 +1410,7 @@ public:
 		//return Type(TYPE_OBJECT, ss.str(), cpindex);
 	}
 
-	static inline Type uninitType(short offset, Inst* label) {
+	static inline Type uninitType(short offset, class Inst* label) {
 		return Type(TYPE_UNINIT, offset, label);
 	}
 
@@ -1611,14 +1605,15 @@ public:
 	 * @param argsType collection of method arguments of methodDesc.
 	 * @returns the type that represents the return type of methodDesc.
 	 */
-	static Type fromMethodDesc(const char* methodDesc, vector<Type>* argsType);
+	static Type fromMethodDesc(const char* methodDesc,
+			std::vector<Type>* argsType);
 
 private:
 
 	TypeTag tag;
 	u4 dims;
 	u2 classIndex;
-	string className;
+	String className;
 
 	inline Type(TypeTag tag) :
 			tag(tag), dims(0), classIndex(0) {
@@ -1859,31 +1854,101 @@ public:
 	bool valid;
 };
 
+//class InstVisitor {
+//
+//	void
+//};
+
 /**
  * Represent a bytecode instruction.
  */
-struct Inst {
+class Inst {
+	friend class LabelInst;
+	friend class ZeroInst;
+	friend class PushInst;
+	friend class LdcInst;
+	friend class VarInst;
+	friend class IincInst;
+	friend class WideInst;
+	friend class JumpInst;
+	friend class FieldInst;
+	friend class InvokeInst;
+	friend class InvokeInterfaceInst;
+	friend class TypeInst;
+	friend class NewArrayInst;
+	friend class MultiArrayInst;
+	friend class TableSwitchInst;
+	friend class LookupSwitchInst;
+	friend class InstList;
+
 public:
 
-	Inst(OpKind kind) :
-			opcode(OPCODE_nop), kind(kind), _offset(0) {
-		label.isBranchTarget = false;
-		label.isTryStart = false;
-		label.isCatchHandler = false;
+	bool isJump() const {
+		return kind == KIND_JUMP;
 	}
 
-	Inst(Opcode opcode) :
-			opcode(opcode), kind(KIND_ZERO), _offset(0) {
-		label.isBranchTarget = false;
-		label.isTryStart = false;
-		label.isCatchHandler = false;
+	bool isTableSwitch() const {
+		return kind == KIND_TABLESWITCH;
 	}
 
-	Inst(Opcode opcode, OpKind kind) :
-			opcode(opcode), kind(kind), _offset(0) {
-		label.isBranchTarget = false;
-		label.isTryStart = false;
-		label.isCatchHandler = false;
+	bool isLookupSwitch() const {
+		return kind == KIND_LOOKUPSWITCH;
+	}
+
+	bool isBranch() const {
+		return isJump() || isTableSwitch() || isLookupSwitch();
+	}
+
+	bool isExit() const {
+		return (opcode >= OPCODE_ireturn && opcode <= OPCODE_return)
+				|| opcode == OPCODE_athrow;
+	}
+
+	bool isLabel() const {
+		return kind == KIND_LABEL;
+	}
+
+	bool isPush() const {
+		return kind == KIND_BIPUSH || kind == KIND_SIPUSH;
+	}
+
+	bool isLdc() const {
+		return kind == KIND_LDC;
+	}
+
+	bool isVar() const {
+		return kind == KIND_VAR;
+	}
+
+	bool isIinc() const {
+		return kind == KIND_IINC;
+	}
+
+	bool isInvoke() const {
+		return kind == KIND_INVOKE;
+	}
+	bool isInvokeInterface() const {
+		return kind == KIND_INVOKEINTERFACE;
+	}
+	bool isType() const {
+		return kind == KIND_TYPE;
+	}
+	bool isNewArray() const {
+		return kind == KIND_NEWARRAY;
+	}
+	bool isWide() const {
+		return opcode == OPCODE_wide && kind == KIND_ZERO;
+	}
+	bool isField() const {
+		return kind == KIND_FIELD;
+	}
+	bool isMultiArray() const {
+		return kind == KIND_MULTIARRAY;
+	}
+
+	bool isJsrOrRet() const {
+		return opcode == OPCODE_jsr || opcode == OPCODE_jsr_w
+				|| opcode == OPCODE_ret;
 	}
 
 	/**
@@ -1896,147 +1961,597 @@ public:
 	 */
 	OpKind kind;
 
-	inline bool isJump() const {
-		return kind == KIND_JUMP;
-	}
-
-	inline bool isTableSwitch() const {
-		return kind == KIND_TABLESWITCH;
-	}
-
-	inline bool isLookupSwitch() const {
-		return kind == KIND_LOOKUPSWITCH;
-	}
-
-	inline bool isBranch() const {
-		return isJump() || isTableSwitch() || isLookupSwitch();
-	}
-
-	inline bool isExit() const {
-		return (opcode >= OPCODE_ireturn && opcode <= OPCODE_return)
-				|| opcode == OPCODE_athrow;
-	}
-
-	inline bool isLabel() const {
-		return kind == KIND_LABEL;
-	}
-
 	int _offset;
 
-//	friend Inst InvokeInst(Opcode opcode, u2 index) {
-//		Inst inst();
-//		inst.kind = KIND_INVOKE;
-//		inst.opcode = opcode;
-//		inst.invoke.methodRefIndex = index;
-//
-//		return inst;
-//	}
+	ConstPool* const constPool;
+	Inst* prev;
+	Inst* next;
+
+	/**
+	 *
+	 */
+	class LabelInst* label() {
+		Error::assert(isLabel(), "Inst is not a label: ", *this);
+		return (LabelInst*) this;
+	}
+
+	class PushInst* push() {
+		return cast<PushInst>(isPush(), "push");
+	}
+
+	class LdcInst* ldc() {
+		Error::assert(isLdc(), "Inst is not a ldc: ", *this);
+		return (LdcInst*) this;
+	}
+
+	class VarInst* var() {
+		Error::assert(isVar(), "Inst is not a var: ", *this);
+		return (VarInst*) this;
+	}
+
+	class IincInst* iinc() {
+		Error::assert(isIinc(), "Inst is not a iinc: ", *this);
+		return (IincInst*) this;
+	}
+
+	class InvokeInst* invoke() {
+		Error::assert(isInvoke(), "Inst is not a invoke: ", *this);
+		return (InvokeInst*) this;
+	}
+
+	class JumpInst* jump() {
+		Error::assert(isJump(), "Inst is not a jump: ", *this);
+		return (JumpInst*) this;
+	}
+
+	class TableSwitchInst* ts() {
+		Error::assert(isTableSwitch(), "Inst is not a ts: ", *this);
+		return (TableSwitchInst*) this;
+	}
+
+	class LookupSwitchInst* ls() {
+		Error::assert(isLookupSwitch(), "Inst is not a ls: ", *this);
+		return (LookupSwitchInst*) this;
+	}
+
+	class InvokeInterfaceInst* invokeinterface() {
+		Error::assert(isInvokeInterface(), "Inst is not a invokeinterface: ",
+				*this);
+		return (InvokeInterfaceInst*) this;
+	}
+
+	class TypeInst* type() {
+		Error::assert(isType(), "Inst is not a typ: ", *this);
+		return (TypeInst*) this;
+	}
+
+	class NewArrayInst* newarray() {
+		Error::assert(isNewArray(), "Inst is not a newarray: ", *this);
+		return (NewArrayInst*) this;
+	}
+
+	class WideInst* wide() {
+		Error::assert(isWide(), "Inst is not a wide: ", *this);
+		return (WideInst*) this;
+	}
+
+	class FieldInst* field() {
+		return cast<FieldInst>(isField(), "field");
+	}
+
+	class MultiArrayInst* multiarray() {
+		return cast<MultiArrayInst>(isMultiArray(), "multiarray");
+	}
+
+private:
+
+	Inst() :
+			opcode(OPCODE_nop), kind(KIND_ZERO), _offset(0), constPool(nullptr), prev(
+					nullptr), next(nullptr) {
+	}
+
+	Inst(Opcode opcode, OpKind kind, ConstPool* constPool, Inst* prev = nullptr,
+			Inst* next = nullptr) :
+			opcode(opcode), kind(kind), _offset(0), constPool(constPool), prev(
+					prev), next(next) {
+	}
+
+	template<typename TKind>
+	TKind* cast(bool cond, const char* kindName) {
+		Error::assert(cond, "Inst is not a ", kindName, ": ", *this);
+		return (TKind*) this;
+	}
+};
+
+/**
+ *
+ */
+class LabelInst: public Inst {
+	friend class InstList;
+public:
+
+	u2 offset;
+	u2 deltaOffset;
+	int id;
+	bool isBranchTarget;
+	bool isTryStart;
+	bool isCatchHandler;
+
+private:
+
+	LabelInst(ConstPool* constPool) :
+			Inst(OPCODE_nop, KIND_LABEL, constPool), offset(0), deltaOffset(0), id(
+					0), isBranchTarget(false), isTryStart(false), isCatchHandler(
+					false) {
+	}
+
+};
+
+/**
+ *
+ */
+class ZeroInst: public Inst {
+	friend class InstList;
+
+private:
+
+	ZeroInst(Opcode opcode, ConstPool* constPool) :
+			Inst(opcode, KIND_ZERO, constPool) {
+	}
+};
+
+/**
+ *
+ */
+class PushInst: public Inst {
+	friend class InstList;
+
+public:
+	int value;
+
+private:
+
+	PushInst(Opcode opcode, OpKind kind, int value, ConstPool* constPool) :
+			Inst(opcode, kind, constPool), value(value) {
+	}
+};
+
+/**
+ *
+ */
+class LdcInst: public Inst {
+	friend class InstList;
+
+public:
+	ConstIndex valueIndex;
+
+private:
+
+	LdcInst(Opcode opcode, ConstIndex valueIndex, ConstPool* constPool) :
+			Inst(opcode, KIND_LDC, constPool), valueIndex(valueIndex) {
+	}
+};
+
+/**
+ *
+ */
+class VarInst: public Inst {
+	friend class InstList;
+
+public:
+	u1 lvindex;
+
+private:
+
+	VarInst(Opcode opcode, u1 lvindex, ConstPool* constPool) :
+			Inst(opcode, KIND_VAR, constPool), lvindex(lvindex) {
+	}
+};
+
+/**
+ *
+ */
+class IincInst: public Inst {
+	friend class InstList;
+
+public:
+	u1 index;
+	u1 value;
+
+private:
+
+	IincInst(u1 index, u1 value, ConstPool* constPool) :
+			Inst(OPCODE_iinc, KIND_IINC, constPool), index(index), value(value) {
+	}
+
+};
+
+/**
+ *
+ */
+class WideInst: public Inst {
+	friend class InstList;
+
+public:
+	Opcode subOpcode;
 
 	union {
 		struct {
-			u2 offset;
-			u2 deltaOffset;
-			int id;
-			bool isBranchTarget;
-			bool isTryStart;
-			bool isCatchHandler;
-		} label;
-		struct {
-			int value;
-		} push;
-		struct {
-			u2 valueIndex;
-		} ldc;
-		struct {
-			u1 lvindex;
+			u2 lvindex;
 		} var;
 		struct {
-			u1 index;
-			u1 value;
+			u2 index;
+			u2 value;
 		} iinc;
-		struct {
-			Opcode opcode;
-			union {
-				struct {
-					u2 lvindex;
-				} var;
-				struct {
-					u2 index;
-					u2 value;
-				} iinc;
-			};
-		} wide;
-		struct {
-			//Label label;
-			Inst* label2;
-		} jump;
-		struct {
-			u2 fieldRefIndex;
-		} field;
-		struct {
-			u2 methodRefIndex;
-		} invoke;
-		struct {
-			u2 interMethodRefIndex;
-			u1 count;
-		} invokeinterface;
-		struct {
-			ClassIndex classIndex;
-		} type;
-		struct {
-			u1 atype;
-		} newarray;
-		struct {
-			ClassIndex classIndex;
-			u1 dims;
-		} multiarray;
 	};
 
-	struct {
-		Inst* def;
-		int low;
-		int high;
-		vector<Inst*> targets;
-	} ts;
+private:
 
-	struct {
-		Inst* defbyte;
-		u4 npairs;
-		vector<u4> keys;
-		vector<Inst*> targets;
-	} ls;
+	WideInst(Opcode subOpcode, u2 lvindex, ConstPool* constPool) :
+			Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(subOpcode), var(
+					{ lvindex }) {
+	}
 
-	struct {
-		Frame frame;
-	} frame;
+	WideInst(u2 index, u2 value, ConstPool* constPool) :
+			Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(OPCODE_iinc), iinc(
+					{ index, value }) {
+	}
 
+};
+
+/**
+ *
+ */
+class JumpInst: public Inst {
+	friend class InstList;
+
+public:
+
+	Inst* label2;
+
+private:
+
+	JumpInst(Opcode opcode, LabelInst* targetLabel, ConstPool* constPool) :
+			Inst(opcode, KIND_JUMP, constPool), label2(targetLabel) {
+	}
+};
+
+/**
+ *
+ */
+class FieldInst: public Inst {
+	friend class InstList;
+
+public:
+	ConstIndex fieldRefIndex;
+
+private:
+
+	FieldInst(Opcode opcode, ConstIndex fieldRefIndex, ConstPool* constPool) :
+			Inst(opcode, KIND_FIELD, constPool), fieldRefIndex(fieldRefIndex) {
+	}
+};
+
+/**
+ *
+ */
+class InvokeInst: public Inst {
+	friend class InstList;
+
+public:
+	ConstIndex methodRefIndex;
+
+private:
+
+	InvokeInst(Opcode opcode, ConstIndex methodRefIndex, ConstPool* constPool) :
+			Inst(opcode, KIND_INVOKE, constPool), methodRefIndex(methodRefIndex) {
+	}
+};
+
+/**
+ *
+ */
+class InvokeInterfaceInst: public Inst {
+	friend class InstList;
+
+public:
+	u2 interMethodRefIndex;
+	u1 count;
+
+private:
+
+	InvokeInterfaceInst(ConstIndex interMethodRefIndex, u1 count,
+			ConstPool* constPool) :
+			Inst(OPCODE_invokeinterface, KIND_INVOKEINTERFACE, constPool), interMethodRefIndex(
+					interMethodRefIndex), count(count) {
+	}
+};
+
+/**
+ *
+ */
+class TypeInst: public Inst {
+	friend class InstList;
+
+public:
+
+	/**
+	 * Index in the constant pool of a class entry.
+	 */
+	ConstIndex classIndex;
+
+private:
+
+	TypeInst(Opcode opcode, ConstIndex classIndex, ConstPool* constPool) :
+			Inst(opcode, KIND_TYPE, constPool), classIndex(classIndex) {
+	}
+
+};
+
+/**
+ *
+ */
+class NewArrayInst: public Inst {
+	friend class InstList;
+
+public:
+	u1 atype;
+
+private:
+
+	NewArrayInst(Opcode opcode, u1 atype, ConstPool* constPool) :
+			Inst(opcode, KIND_NEWARRAY, constPool), atype(atype) {
+	}
+
+};
+
+/**
+ *
+ */
+class MultiArrayInst: public Inst {
+	friend class InstList;
+
+public:
+	ConstIndex classIndex;
+	u1 dims;
+
+private:
+
+	MultiArrayInst(Opcode opcode, ConstIndex classIndex, u1 dims,
+			ConstPool* constPool) :
+			Inst(opcode, KIND_MULTIARRAY, constPool), classIndex(classIndex), dims(
+					dims) {
+	}
+
+};
+
+/**
+ *
+ */
+class TableSwitchInst: public Inst {
+	friend class InstList;
+
+public:
+
+	Inst* def;
+	int low;
+	int high;
+	std::vector<Inst*> targets;
+
+private:
+
+	TableSwitchInst(LabelInst* def, int low, int high, ConstPool* constPool) :
+			Inst(OPCODE_tableswitch, KIND_TABLESWITCH, constPool), def(def), low(
+					low), high(high) {
+	}
+
+};
+
+/**
+ *
+ */
+class LookupSwitchInst: public Inst {
+	friend class InstList;
+
+public:
+	Inst* defbyte;
+	u4 npairs;
+	std::vector<u4> keys;
+	std::vector<Inst*> targets;
+
+private:
+
+	LookupSwitchInst(LabelInst* def, u4 npairs, ConstPool* constPool) :
+			Inst(OPCODE_lookupswitch, KIND_LOOKUPSWITCH, constPool), defbyte(
+					def), npairs(npairs) {
+	}
 };
 
 /**
  * Represents the bytecode of a method.
  */
-class InstList: public std::list<Inst*> {
+//
+class InstList {
 	friend class CodeAttr;
 
 public:
 
-	void addZero(Opcode opcode) {
-		Inst* inst = new Inst(opcode);
-		addInst(inst);
+	class Iterator {
+		friend InstList;
+	public:
+
+		Inst* operator*() {
+			Error::assert(position != nullptr, "Dereferencing * on nullptr");
+			return position;
+		}
+
+		Inst* operator->() const {
+			Error::assert(position != nullptr, "Dereferencing -> on nullptr");
+
+			return position;
+		}
+
+		bool friend operator==(const Iterator& lhs, const Iterator& rhs) {
+			return lhs.position == rhs.position;
+		}
+
+		bool friend operator!=(const Iterator& lhs, const Iterator& rhs) {
+			return lhs.position != rhs.position;
+		}
+
+		Iterator& operator++() {
+			Error::assert(position != nullptr, "Doing ++ at nullptr");
+			position = position->next;
+
+			return *this;
+		}
+
+		Iterator& operator--() {
+			if (position == nullptr) {
+				position = last;
+			} else {
+				position = position->prev;
+			}
+
+			Error::assert(position != nullptr,
+					"Doing -- at nullptr after last");
+
+			return *this;
+		}
+
+	private:
+
+		Iterator(Inst* position, Inst* last) :
+				position(position), last(last) {
+		}
+
+		Inst* position;
+		Inst* last;
+	};
+
+	LabelInst* createLabel() const {
+		auto inst = new LabelInst(constPool);
+		return inst;
+	}
+
+	void addLabel(LabelInst* inst, Inst* pos = nullptr) {
+		//auto inst = new LabelInst(constPool);
+		addInst(inst, pos);
+	}
+
+	void addLabel(Inst* pos = nullptr) {
+		auto inst = createLabel();
+		addInst(inst, pos);
+	}
+
+	void addZero(Opcode opcode, Inst* pos = nullptr) {
+		auto inst = new ZeroInst(opcode, constPool);
+		addInst(inst, pos);
+	}
+
+	void addBiPush(u1 value, Inst* pos = nullptr) {
+		auto inst = new PushInst(OPCODE_bipush, KIND_BIPUSH, value, constPool);
+		addInst(inst, pos);
+	}
+
+	void addSiPush(u2 value, Inst* pos = nullptr) {
+		auto inst = new PushInst(OPCODE_sipush, KIND_SIPUSH, value, constPool);
+		addInst(inst, pos);
+	}
+
+	void addLdc(Opcode opcode, ConstIndex valueIndex, Inst* pos = nullptr) {
+		auto inst = new LdcInst(opcode, valueIndex, constPool);
+		addInst(inst, pos);
+	}
+
+	void addVar(Opcode opcode, u1 lvindex, Inst* pos = nullptr) {
+		auto inst = new VarInst(opcode, lvindex, constPool);
+		addInst(inst, pos);
+	}
+
+	void addIinc(u1 index, u1 value, Inst* pos = nullptr) {
+		auto inst = new IincInst(index, value, constPool);
+		addInst(inst, pos);
+	}
+
+	void addWideVar(Opcode varOpcode, u2 lvindex, Inst* pos = nullptr) {
+		auto inst = new WideInst(varOpcode, lvindex, constPool);
+		addInst(inst, pos);
+	}
+
+	void addWideIinc(u1 index, u1 value, Inst* pos = nullptr) {
+		auto inst = new WideInst(index, value, constPool);
+		addInst(inst, pos);
+	}
+
+	void addJump(Opcode opcode, LabelInst* targetLabel, Inst* pos = nullptr) {
+		auto inst = new JumpInst(opcode, targetLabel, constPool);
+		addInst(inst, pos);
+	}
+
+	void addField(Opcode opcode, ConstIndex fieldRefIndex,
+			Inst* pos = nullptr) {
+		auto inst = new FieldInst(opcode, fieldRefIndex, constPool);
+		addInst(inst, pos);
+	}
+
+	void addInvoke(Opcode opcode, ConstIndex methodRefIndex,
+			Inst* pos = nullptr) {
+		auto inst = new InvokeInst(opcode, methodRefIndex, constPool);
+		addInst(inst, pos);
+	}
+
+	void addInvokeInterface(ConstIndex interMethodRefIndex, u1 count,
+			Inst* pos = nullptr) {
+		auto inst = new InvokeInterfaceInst(interMethodRefIndex, count,
+				constPool);
+		addInst(inst, pos);
+	}
+
+	void addType(Opcode opcode, ConstIndex classIndex, Inst* pos = nullptr) {
+		auto inst = new TypeInst(opcode, classIndex, constPool);
+		addInst(inst, pos);
+	}
+
+	void addNewArray(u1 atype, Inst* pos = nullptr) {
+		auto inst = new NewArrayInst(OPCODE_newarray, atype, constPool);
+		addInst(inst, pos);
+	}
+
+	void addMultiArray(ConstIndex classIndex, u1 dims, Inst* pos = nullptr) {
+		auto inst = new MultiArrayInst(OPCODE_multianewarray, classIndex, dims,
+				constPool);
+		addInst(inst, pos);
+	}
+
+	TableSwitchInst* addTableSwitch(LabelInst* def, int low, int high,
+			Inst* pos = nullptr) {
+		auto inst = new TableSwitchInst(def, low, high, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	LookupSwitchInst* addLookupSwitch(LabelInst* def, u4 npairs, Inst* pos =
+			nullptr) {
+		auto inst = new LookupSwitchInst(def, npairs, constPool);
+		addInst(inst, pos);
+
+		return inst;
 	}
 
 	void setLabelIds() {
 		int id = 1;
 		for (Inst* inst : *this) {
-			if (inst->kind == KIND_LABEL) {
-				inst->label.id = id;
+			if (inst->isLabel()) {
+				inst->label()->id = id;
 				id++;
 			}
 		}
 	}
 
 	bool hasBranches() const {
-		for (Inst* inst : *this) {
+		for (const Inst* inst : *this) {
 			if (inst->isBranch()) {
 				return true;
 			}
@@ -2045,12 +2560,20 @@ public:
 		return false;
 	}
 
+	Iterator begin() const {
+		return Iterator(first, last);
+	}
+
+	Iterator end() const {
+		return Iterator(nullptr, last);
+	}
+
 	ConstPool* const constPool;
 
 private:
 
 	InstList(ConstPool* constPool) :
-			constPool(constPool) {
+			constPool(constPool), first(nullptr), last(nullptr), size(0) {
 	}
 
 	~InstList() {
@@ -2059,9 +2582,12 @@ private:
 		}
 	}
 
-	void addInst(Inst* inst) {
-		push_back(inst);
-	}
+	void addInst(Inst* inst, Inst* pos);
+
+	Inst* first;
+	Inst* last;
+
+	int size;
 };
 
 class ControlFlowGraph;
@@ -2084,17 +2610,17 @@ public:
 		targets.push_back(target);
 	}
 
-	InstList::iterator start;
-	InstList::iterator exit;
-	string name;
+	InstList::Iterator start;
+	InstList::Iterator exit;
+	String name;
 	Frame in;
 	Frame out;
 
-	vector<BasicBlock*>::iterator begin() {
+	std::vector<BasicBlock*>::iterator begin() {
 		return targets.begin();
 	}
 
-	vector<BasicBlock*>::iterator end() {
+	std::vector<BasicBlock*>::iterator end() {
 		return targets.end();
 	}
 
@@ -2103,12 +2629,12 @@ public:
 
 private:
 
-	BasicBlock(InstList::iterator start, InstList::iterator exit, string name,
-			ControlFlowGraph* cfg) :
+	BasicBlock(InstList::Iterator& start, InstList::Iterator& exit,
+			const String& name, ControlFlowGraph* cfg) :
 			start(start), exit(exit), name(name), next(nullptr), cfg(cfg) {
 	}
 
-	vector<BasicBlock*> targets;
+	std::vector<BasicBlock*> targets;
 };
 
 /**
@@ -2116,7 +2642,7 @@ private:
  */
 class ControlFlowGraph {
 private:
-	vector<BasicBlock*> basicBlocks;
+	std::vector<BasicBlock*> basicBlocks;
 
 public:
 	BasicBlock* const entry;
@@ -2141,8 +2667,8 @@ public:
 	 * @param name the name of the basic block to add.
 	 * @returns the newly created basic block added to this control flow graph.
 	 */
-	BasicBlock* addBasicBlock(InstList::iterator start, InstList::iterator end,
-			string name);
+	BasicBlock* addBasicBlock(InstList::Iterator start, InstList::Iterator end,
+			const String& name);
 
 	/**
 	 * Finds the basic block associated with the given labelId.
@@ -2803,15 +3329,13 @@ private:
 std::ostream& operator<<(std::ostream& os, const ConstTag& tag);
 std::ostream& operator<<(std::ostream& os, const Frame& frame);
 std::ostream& operator<<(std::ostream& os, const Type& type);
-
-//ostream& operator<<(ostream& os, const Inst& inst);
-std::ostream& printInst(std::ostream& os, const Inst& inst,
-		const ConstPool& cf);
-
+std::ostream& operator<<(std::ostream& os, Inst& inst);
+std::ostream& operator<<(std::ostream& os, InstList& instList);
+std::ostream& operator<<(std::ostream& os, BasicBlock& bb);
 std::ostream& operator<<(std::ostream& os, const ControlFlowGraph& cfg);
 std::ostream& operator<<(std::ostream& os, const Version& version);
 std::ostream& operator<<(std::ostream& os, ClassFile& classFile);
-std::ostream& operator<<(std::ostream& os, const ClassHierarchy& classHierarch);
+std::ostream& operator<<(std::ostream& os, const ClassHierarchy& ch);
 
 }
 

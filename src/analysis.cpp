@@ -153,11 +153,11 @@ public:
 	static void visitCatch(const BasicBlock& bb, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
 			bool useIn) {
-		if ((*bb.start)->isLabel()) {
+		if (bb.start->isLabel()) {
 			for (auto ex : code->exceptions) {
-				if (ex.startpc->label.id == (*bb.start)->label.id) {
+				if (ex.startpc->label()->id == bb.start->label()->id) {
 					BasicBlock* handlerBb = bb.cfg->findBasicBlockOfLabel(
-							ex.handlerpc->label.id);
+							ex.handlerpc->label()->id);
 
 					Type exType = [&]() {
 						if (ex.catchtype != ConstPool::NULLENTRY) {
@@ -184,7 +184,8 @@ public:
 	static void computeState(BasicBlock& bb, Frame& how, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath) {
 		if (bb.start == instList.end()) {
-			Error::assert(bb.name == "Exit" && bb.exit == instList.end(), "");
+			Error::assert(bb.name == "Exit" && bb.exit == instList.end(),
+					"exit bb");
 			return;
 		}
 
@@ -205,7 +206,7 @@ public:
 			bb.out = bb.in;
 
 			SmtBuilder builder(bb.out, cf);
-			for (auto it = bb.start; it != bb.exit; it++) {
+			for (auto it = bb.start; it != bb.exit; ++it) {
 				Inst* inst = *it;
 				builder.processInst(*inst);
 			}
@@ -254,7 +255,7 @@ public:
 				break;
 			case OPCODE_ldc:
 			case OPCODE_ldc_w: {
-				ConstTag tag = cp.getTag(inst.ldc.valueIndex);
+				ConstTag tag = cp.getTag(inst.ldc()->valueIndex);
 				switch (tag) {
 					case CONST_INTEGER:
 						frame.pushInt();
@@ -263,7 +264,7 @@ public:
 						frame.pushFloat();
 						break;
 					case CONST_CLASS:
-						frame.pushRef(cp.getClassName(inst.ldc.valueIndex));
+						frame.pushRef(cp.getClassName(inst.ldc()->valueIndex));
 						break;
 					case CONST_STRING:
 						frame.pushRef("java/lang/String");
@@ -274,7 +275,7 @@ public:
 				break;
 			}
 			case OPCODE_ldc2_w: {
-				ConstTag tag = cp.getTag(inst.ldc.valueIndex);
+				ConstTag tag = cp.getTag(inst.ldc()->valueIndex);
 				switch (tag) {
 					case CONST_LONG:
 						frame.pushLong();
@@ -316,7 +317,7 @@ public:
 				frame.pushDouble();
 				break;
 			case OPCODE_aload:
-				aload(inst.var.lvindex);
+				aload(inst.var()->lvindex);
 				break;
 			case OPCODE_aload_0:
 				aload(0);
@@ -371,19 +372,19 @@ public:
 				break;
 			}
 			case OPCODE_istore:
-				istore(inst.var.lvindex);
+				istore(inst.var()->lvindex);
 				break;
 			case OPCODE_lstore:
-				lstore(inst.var.lvindex);
+				lstore(inst.var()->lvindex);
 				break;
 			case OPCODE_fstore:
-				fstore(inst.var.lvindex);
+				fstore(inst.var()->lvindex);
 				break;
 			case OPCODE_dstore:
-				dstore(inst.var.lvindex);
+				dstore(inst.var()->lvindex);
 				break;
 			case OPCODE_astore:
-				astore(inst.var.lvindex);
+				astore(inst.var()->lvindex);
 				break;
 			case OPCODE_istore_0:
 				istore(0);
@@ -611,7 +612,7 @@ public:
 				break;
 			}
 			case OPCODE_iinc:
-				iinc(inst.iinc.index);
+				iinc(inst.iinc()->index);
 				break;
 			case OPCODE_i2l:
 				frame.popInt();
@@ -779,20 +780,21 @@ public:
 			}
 			case OPCODE_invokevirtual:
 			case OPCODE_invokespecial:
-				invokeMethod(inst.invoke.methodRefIndex, true);
+				invokeMethod(inst.invoke()->methodRefIndex, true);
 				break;
 			case OPCODE_invokestatic:
-				invokeMethod(inst.invoke.methodRefIndex, false);
+				invokeMethod(inst.invoke()->methodRefIndex, false);
 				break;
 			case OPCODE_invokeinterface:
-				invokeInterface(inst.invokeinterface.interMethodRefIndex);
+				invokeInterface(inst.invokeinterface()->interMethodRefIndex);
 				break;
 			case OPCODE_invokedynamic:
 				Error::raise("invoke dynamic instances not implemented");
 				break;
 			case OPCODE_new: {
 				//h.pushRef();
-				const string& className = cp.getClassName(inst.type.classIndex);
+				const string& className = cp.getClassName(
+						inst.type()->classIndex);
 				Type t = Type::fromConstClass(className);
 				Error::check(!t.isArray(), "New with array: ", t);
 				frame.push(t);
@@ -800,12 +802,13 @@ public:
 			}
 			case OPCODE_newarray:
 				frame.popInt();
-				frame.pushArray(getArrayBaseType(inst.newarray.atype), 1);
+				frame.pushArray(getArrayBaseType(inst.newarray()->atype), 1);
 				break;
 			case OPCODE_anewarray: {
 				frame.popInt();
 //				string className = cp.getClassName(inst.type.classIndex);
-				const string& className = cp.getClassName(inst.type.classIndex);
+				const string& className = cp.getClassName(
+						inst.type()->classIndex);
 				Type t = Type::fromConstClass(className);
 				//			h.push(parseConstClass(className));
 				//Type refType = Type::objectType(className);
@@ -824,7 +827,8 @@ public:
 			}
 			case OPCODE_checkcast: {
 				frame.popRef();
-				const string& className = cp.getClassName(inst.type.classIndex);
+				const string& className = cp.getClassName(
+						inst.type()->classIndex);
 				frame.push(Type::fromConstClass(className));
 //				if (className[0] == '[') {
 //					const char* clsname = className.c_str();
@@ -846,7 +850,7 @@ public:
 				frame.popRef();
 				break;
 			case OPCODE_wide:
-				switch (inst.wide.opcode) {
+				switch (inst.wide()->subOpcode) {
 					case OPCODE_iload:
 						frame.pushInt();
 						break;
@@ -860,23 +864,23 @@ public:
 						frame.pushDouble();
 						break;
 					case OPCODE_istore:
-						istore(inst.wide.var.lvindex);
+						istore(inst.wide()->var.lvindex);
 						break;
 					case OPCODE_fstore:
-						fstore(inst.wide.var.lvindex);
+						fstore(inst.wide()->var.lvindex);
 						break;
 					case OPCODE_lstore:
-						lstore(inst.wide.var.lvindex);
+						lstore(inst.wide()->var.lvindex);
 						break;
 					case OPCODE_dstore:
-						dstore(inst.wide.var.lvindex);
+						dstore(inst.wide()->var.lvindex);
 						break;
 					case OPCODE_iinc:
-						iinc(inst.wide.iinc.index);
+						iinc(inst.wide()->iinc.index);
 						break;
 					default:
 						Error::raise("Unsupported wide opcode: ",
-								inst.wide.opcode);
+								inst.wide()->subOpcode);
 				}
 
 				break;
@@ -982,9 +986,9 @@ private:
 		}
 	}
 
-	Type fieldType(const Inst& inst) {
+	Type fieldType(Inst& inst) {
 		string className, name, desc;
-		cp.getFieldRef(inst.field.fieldRefIndex, &className, &name, &desc);
+		cp.getFieldRef(inst.field()->fieldRefIndex, &className, &name, &desc);
 
 		const char* d = desc.c_str();
 		auto t = Type::fromFieldDesc(d);
@@ -993,15 +997,15 @@ private:
 		return t;
 	}
 
-	void multianewarray(const Inst& inst) {
-		u1 dims = inst.multiarray.dims;
+	void multianewarray(Inst& inst) {
+		u1 dims = inst.multiarray()->dims;
 		Error::check(dims >= 1, "invalid dims: ", dims);
 
 		for (int i = 0; i < dims; i++) {
 			frame.popInt();
 		}
 
-		string arrayClassName = cp.getClassName(inst.multiarray.classIndex);
+		string arrayClassName = cp.getClassName(inst.multiarray()->classIndex);
 		const char* d = arrayClassName.c_str();
 		Type arrayType = Type::fromFieldDesc(d);
 
@@ -1124,6 +1128,10 @@ public:
 		bbe->in = initFrame;
 		bbe->out = initFrame;
 
+		const String& methodName = cf->getUtf8(method->nameIndex);
+		cerr << "Computing frames for method: " << cf->getThisClassName() << "."
+				<< methodName << cf->getUtf8(method->descIndex) << endl;
+
 		BasicBlock* to = *cfg.entry->begin();
 		SmtBuilder::computeState(*to, initFrame, code->instList, *cf, code,
 				classPath);
@@ -1153,9 +1161,9 @@ public:
 		for (BasicBlock* bb : cfg) {
 			if (bb->start != code->instList.end()) {
 				Inst* start = *bb->start;
-				if (start->kind == KIND_LABEL
-						&& (start->label.isBranchTarget
-								|| start->label.isCatchHandler)) {
+				if (start->isLabel()
+						&& (start->label()->isBranchTarget
+								|| start->label()->isCatchHandler)) {
 					Frame& current = bb->in;
 					current.cleanTops();
 
@@ -1170,7 +1178,7 @@ public:
 					//code->instList.insert(bb->start, fi);
 
 					totalOffset += 1;
-					int offsetDelta = start->label.offset - totalOffset;
+					int offsetDelta = start->label()->offset - totalOffset;
 
 					int diff;
 
@@ -1241,25 +1249,31 @@ void ClassFile::computeFrames(IClassPath* classPath) {
 	ConstIndex attrIndex = ConstPool::NULLENTRY;
 
 	for (Method* method : methods) {
-		ClassFile* cf = this;
-		const string& methodName = cf->getUtf8(method->nameIndex);
-		cerr << "Computing frames for method: " << cf->getThisClassName() << "."
-				<< methodName << cf->getUtf8(method->descIndex) << endl;
-
 		CodeAttr* code = method->codeAttr();
 
 		if (code != nullptr) {
-			try {
+
+			bool hasJsrOrRet = false;
+			for (Inst* inst : code->instList) {
+				if (inst->isJsrOrRet()) {
+					hasJsrOrRet = true;
+				}
+			}
+
+			if (!hasJsrOrRet) {
+				//try {
 				Compute::computeFramesMethod(code, method, this, &attrIndex,
 						classPath);
-			} catch (const JsrRetNotSupported& e) {
-				const string& methodName = cf->getUtf8(method->nameIndex);
-				cerr << "computeFramesMethod: " << cf->getThisClassName() << "."
-						<< methodName << cf->getUtf8(method->descIndex) << endl;
-
-				cerr << "JSR/RET found, version: " << version << endl;
-
-				//Error::assert(version == Version(49, 0));
+//				} catch (const JsrRetNotSupported& e) {
+//					const string& methodName = cf->getUtf8(method->nameIndex);
+//					cerr << "computeFramesMethod: " << cf->getThisClassName()
+//							<< "." << methodName
+//							<< cf->getUtf8(method->descIndex) << endl;
+//
+//					cerr << "JSR/RET found, version: " << version << endl;
+//
+//					//Error::assert(version == Version(49, 0));
+//				}
 			}
 		}
 	}
