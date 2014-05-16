@@ -154,6 +154,65 @@ OpKind OPKIND[256] = { KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO,
 		KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, KIND_RESERVED,
 		KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, KIND_RESERVED, };
 
+class LabelManager {
+public:
+
+	LabelManager(u4 codeLen, InstList& instList) :
+			codeLen(codeLen), instList(instList), labels(
+					new LabelInst*[codeLen]) {
+		for (u4 i = 0; i < codeLen; i++) {
+			labels[i] = nullptr;
+		}
+	}
+
+	~LabelManager() {
+		delete[] labels;
+	}
+
+	LabelInst* createLabel(int labelPos) {
+		Error::assert(0 <= labelPos, "Invalid position for label: ", labelPos);
+		Error::assert((u4) labelPos < codeLen, "Invalid position for label: ",
+				labelPos);
+
+		LabelInst*& lab = labels[labelPos];
+		if (lab == nullptr) {
+			lab = instList.createLabel();
+		}
+
+		return lab;
+	}
+
+	LabelInst* createExceptionLabel(u2 labelPos, bool isTryStart,
+			bool isCatchHandler) {
+		LabelInst* label = createLabel(labelPos);
+		label->isTryStart = label->isTryStart || isTryStart;
+		label->isCatchHandler = label->isCatchHandler || isCatchHandler;
+
+		return label;
+	}
+
+	bool hasLabel(u2 labelPos) const {
+		Error::assert(labelPos < codeLen, "Invalid position for label: ",
+				labelPos);
+
+		return labels[labelPos] != nullptr;
+	}
+
+	LabelInst* operator[](u2 labelPos) const {
+		Error::assert(hasLabel(labelPos), "No label in position: ", labelPos);
+
+		return labels[labelPos];
+	}
+
+private:
+
+	u4 codeLen;
+
+	InstList& instList;
+
+	LabelInst** labels;
+};
+
 class ClassParser: private Error {
 public:
 
@@ -302,7 +361,7 @@ private:
 					break;
 				}
 				default:
-					raise("Error while reading tag: ", tag);
+					Error::raise("Error while reading tag: ", tag);
 			}
 		}
 	}
@@ -332,16 +391,7 @@ private:
 		return attr;
 	}
 
-	static Inst* createLabel(Inst** labels, int labelpos) {
-		Inst*& lab = labels[labelpos];
-		if (lab == nullptr) {
-			lab = new Inst(KIND_LABEL);
-		}
-
-		return lab;
-	}
-
-	static void parseInstTargets(BufferReader& br, Inst** labels) {
+	static void parseInstTargets(BufferReader& br, LabelManager& labelManager) {
 		while (!br.eor()) {
 			int offset = br.offset();
 
@@ -392,12 +442,7 @@ private:
 							"invalid target for jump: must be >= 0");
 					assert(labelpos < br.size(), "invalid target for jump");
 
-					createLabel(labels, labelpos);
-//				Inst*& lab = labels[labelpos];
-//				if (lab == nullptr) {
-//					lab = new Inst(KIND_LABEL);
-//				}
-
+					labelManager.createLabel(labelpos);
 					break;
 				}
 				case KIND_TABLESWITCH: {
@@ -412,18 +457,18 @@ private:
 					}
 
 					int defOffset = br.readu4();
-					createLabel(labels, offset + defOffset);
+					labelManager.createLabel(offset + defOffset);
 
 					int low = br.readu4();
 					int high = br.readu4();
 
-					assert(low <= high,
+					Error::assert(low <= high,
 							"low (%d) must be less or equal than high (%d)",
 							low, high);
 
 					for (int i = 0; i < high - low + 1; i++) {
 						int targetOffset = br.readu4();
-						createLabel(labels, offset + targetOffset);
+						labelManager.createLabel(offset + targetOffset);
 					}
 					break;
 				}
@@ -434,7 +479,7 @@ private:
 					}
 
 					int defOffset = br.readu4();
-					createLabel(labels, offset + defOffset);
+					labelManager.createLabel(offset + defOffset);
 
 					u4 npairs = br.readu4();
 
@@ -442,180 +487,181 @@ private:
 						br.readu4(); // Key
 
 						int targetOffset = br.readu4();
-						createLabel(labels, offset + targetOffset);
+						labelManager.createLabel(offset + targetOffset);
 					}
 					break;
 				}
 //			case KIND_RESERVED:
 					//			break;
 				default:
-					raise(
-							"default kind in parseInstTargets: opcode: %d, kind: %d",
-							opcode, kind);
+					Error::raise("default kind in parseInstTargets: "
+							"opcode: %d, kind: %d", opcode, kind);
 			}
 		}
 	}
 
 	static void parseInstList(BufferReader& br, InstList& instList,
-			Inst** labels) {
+			LabelManager& labelManager) {
 		while (!br.eor()) {
 			int offset = br.offset();
 
-			if (labels[offset] != nullptr) {
-				labels[offset]->_offset = offset;
-				instList.push_back(labels[offset]);
+			if (labelManager.hasLabel(offset)) {
+				LabelInst* label = labelManager[offset];
+				label->_offset = offset;
+				instList.addLabel(label);
 			}
 
 			Opcode opcode = (Opcode) br.readu1();
+			u1 kind = OPKIND[opcode];
 
-			Inst* instp = new Inst(opcode, OPKIND[opcode]);
-			instp->_offset = offset;
-			Inst& inst = *instp;
+			//Inst* instp = new Inst(opcode, kind);
+			//instp->_offset = offset;
+			//Inst& inst = *instp;
 
 			//inst.opcode = (Opcode) br.readu1();
 			//inst.kind = OPKIND[inst.opcode];
 
-			switch (inst.kind) {
-				case KIND_ZERO:
-					if (inst.opcode == OPCODE_wide) {
-						inst.wide.opcode = (Opcode) br.readu1();
-						if (inst.wide.opcode == OPCODE_iinc) {
-							inst.wide.iinc.index = br.readu2();
-							inst.wide.iinc.value = br.readu2();
-						} else {
-							inst.wide.var.lvindex = br.readu2();
-						}
-						//assert(false, "wide not supported yet");
-					}
-					break;
-				case KIND_BIPUSH:
-					inst.push.value = br.readu1();
-					break;
-				case KIND_SIPUSH:
-					inst.push.value = br.readu2();
-					break;
-				case KIND_LDC:
-					if (inst.opcode == OPCODE_ldc) {
-						inst.ldc.valueIndex = br.readu1();
+			if (kind == KIND_ZERO) {
+				if (opcode == OPCODE_wide) {
+					Opcode subOpcode = (Opcode) br.readu1();
+					if (subOpcode == OPCODE_iinc) {
+						u2 index = br.readu2();
+						u2 value = br.readu2();
+
+						instList.addWideIinc(index, value);
 					} else {
-						inst.ldc.valueIndex = br.readu2();
+						u2 lvindex = br.readu2();
+						instList.addWideVar(subOpcode, lvindex);
 					}
-					break;
-				case KIND_VAR:
-					inst.var.lvindex = br.readu1();
-					break;
-				case KIND_IINC:
-					inst.iinc.index = br.readu1();
-					inst.iinc.value = br.readu1();
-					break;
-				case KIND_JUMP: {
-					//
-					short targetOffset = br.readu2();
-					//inst.jump.label = targetOffset;
-
-					short labelpos = offset + targetOffset;
-					check(labelpos >= 0,
-							"invalid target for jump: must be >= 0");
-					check(labelpos < br.size(), "invalid target for jump");
-
-					//	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
-
-					inst.jump.label2 = labels[offset + targetOffset];
-
-					check(inst.jump.label2 != nullptr, "invalid label");
-					break;
+				} else {
+					instList.addZero(opcode);
 				}
-				case KIND_TABLESWITCH: {
-					for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
-						u1 pad = br.readu1();
-						assert(pad == 0, "Padding must be zero");
-					}
-
-					{
-						bool check2 = br.offset() % 4 == 0;
-						assert(check2, "%d", br.offset());
-					}
-
-					int defOffset = br.readu4();
-					inst.ts.def = labels[offset + defOffset];
-					inst.ts.low = br.readu4();
-					inst.ts.high = br.readu4();
-
-					assert(inst.ts.low <= inst.ts.high,
-							"low (%d) must be less or equal than high (%d)",
-							inst.ts.low, inst.ts.high);
-
-					for (int i = 0; i < inst.ts.high - inst.ts.low + 1; i++) {
-						u4 targetOffset = br.readu4();
-						inst.ts.targets.push_back(
-								labels[offset + targetOffset]);
-					}
-
-					//		fprintf(stderr, "parser ts: offset: %d\n", br.offset());
-
-					break;
+			} else if (kind == KIND_BIPUSH) {
+				u1 value = br.readu1();
+				instList.addBiPush(value);
+			} else if (kind == KIND_SIPUSH) {
+				u2 value = br.readu2();
+				instList.addSiPush(value);
+			} else if (kind == KIND_LDC) {
+				u2 valueIndex;
+				if (opcode == OPCODE_ldc) {
+					valueIndex = br.readu1();
+				} else {
+					valueIndex = br.readu2();
 				}
-				case KIND_LOOKUPSWITCH: {
-					for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
-						u1 pad = br.readu1();
-						assert(pad == 0, "Padding must be zero");
-					}
+				instList.addLdc(opcode, valueIndex);
+			} else if (kind == KIND_VAR) {
+				u1 lvindex = br.readu1();
+				instList.addVar(opcode, lvindex);
+			} else if (kind == KIND_IINC) {
+				u1 index = br.readu1();
+				u1 value = br.readu1();
+				instList.addIinc(index, value);
+			} else if (kind == KIND_JUMP) {
+				//
+				short targetOffset = br.readu2();
+				//inst.jump.label = targetOffset;
 
-					int defOffset = br.readu4();
-					inst.ls.defbyte = labels[offset + defOffset];
-					inst.ls.npairs = br.readu4();
+				short labelpos = offset + targetOffset;
+				Error::check(labelpos >= 0,
+						"invalid target for jump: must be >= 0");
+				Error::check(labelpos < br.size(), "invalid target for jump");
 
-					for (u4 i = 0; i < inst.ls.npairs; i++) {
-						u4 key = br.readu4();
-						u4 offsetTarget = br.readu4();
+				//	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
 
-						inst.ls.keys.push_back(key);
-						inst.ls.targets.push_back(
-								labels[offset + offsetTarget]);
-					}
-					break;
+				LabelInst* targetLabel = labelManager[offset + targetOffset];
+				Error::check(targetLabel != nullptr, "invalid label");
+
+				instList.addJump(opcode, targetLabel);
+			} else if (kind == KIND_TABLESWITCH) {
+				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
+					u1 pad = br.readu1();
+					Error::assert(pad == 0, "Padding must be zero");
 				}
-				case KIND_FIELD:
-					inst.field.fieldRefIndex = br.readu2();
-					break;
-				case KIND_INVOKE:
-					inst.invoke.methodRefIndex = br.readu2();
-					break;
-				case KIND_INVOKEINTERFACE:
-					inst.invokeinterface.interMethodRefIndex = br.readu2();
-					inst.invokeinterface.count = br.readu1();
 
-					assert(inst.invokeinterface.count != 0, "Count is zero!");
-					{
-						u1 zero = br.readu1();
-						assert(zero == 0, "Fourth operand must be zero");
-					}
-					break;
-				case KIND_INVOKEDYNAMIC:
-					raise("FrParseInvokeDynamicInstr not implemented");
-					break;
-				case KIND_TYPE:
-					inst.type.classIndex = br.readu2();
-					break;
-				case KIND_NEWARRAY:
-					inst.newarray.atype = br.readu1();
-					break;
-				case KIND_MULTIARRAY:
-					inst.multiarray.classIndex = br.readu2();
-					inst.multiarray.dims = br.readu1();
-					break;
-				case KIND_PARSE4TODO:
-					raise("FrParse4__TODO__Instr not implemented");
-					break;
-				case KIND_RESERVED:
-					raise("FrParseReservedInstr not implemented");
-					break;
-				default:
-					raise("default kind in parseInstList");
+				{
+					bool check2 = br.offset() % 4 == 0;
+					assert(check2, "%d", br.offset());
+				}
 
+				int defOffset = br.readu4();
+				LabelInst* def = labelManager[offset + defOffset];
+				int low = br.readu4();
+				int high = br.readu4();
+
+				Error::assert(low <= high,
+						"low (%d) must be less or equal than high (%d)", low,
+						high);
+
+				TableSwitchInst* ts = instList.addTableSwitch(def, low, high);
+				for (int i = 0; i < high - low + 1; i++) {
+					u4 targetOffset = br.readu4();
+					ts->targets.push_back(labelManager[offset + targetOffset]);
+				}
+
+				//		fprintf(stderr, "parser ts: offset: %d\n", br.offset());
+
+			} else if (kind == KIND_LOOKUPSWITCH) {
+				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
+					u1 pad = br.readu1();
+					assert(pad == 0, "Padding must be zero");
+				}
+
+				int defOffset = br.readu4();
+				LabelInst* defbyte = labelManager[offset + defOffset];
+				u4 npairs = br.readu4();
+
+				LookupSwitchInst* ls = instList.addLookupSwitch(defbyte,
+						npairs);
+				for (u4 i = 0; i < npairs; i++) {
+					u4 key = br.readu4();
+					u4 offsetTarget = br.readu4();
+
+					ls->keys.push_back(key);
+					ls->targets.push_back(labelManager[offset + offsetTarget]);
+				}
+			} else if (kind == KIND_FIELD) {
+				u2 fieldRefIndex = br.readu2();
+
+				instList.addField(opcode, fieldRefIndex);
+			} else if (kind == KIND_INVOKE) {
+				u2 methodRefIndex = br.readu2();
+
+				instList.addInvoke(opcode, methodRefIndex);
+			} else if (kind == KIND_INVOKEINTERFACE) {
+				Error::assert(opcode == OPCODE_invokeinterface, "invalid opcode");
+
+				u2 interMethodRefIndex = br.readu2();
+				u1 count = br.readu1();
+
+				Error::assert(count != 0, "Count is zero!");
+
+				u1 zero = br.readu1();
+				Error::assert(zero == 0, "Fourth operand must be zero");
+
+				instList.addInvokeInterface(interMethodRefIndex, count);
+			} else if (kind == KIND_INVOKEDYNAMIC) {
+				Error::raise("FrParseInvokeDynamicInstr not implemented");
+			} else if (kind == KIND_TYPE) {
+				ConstIndex classIndex = br.readu2();
+
+				instList.addType(opcode, classIndex);
+			} else if (kind == KIND_NEWARRAY) {
+				u1 atype = br.readu1();
+
+				instList.addNewArray(atype);
+			} else if (kind == KIND_MULTIARRAY) {
+				ConstIndex classIndex = br.readu2();
+				u1 dims = br.readu1();
+
+				instList.addMultiArray(classIndex, dims);
+			} else if (kind == KIND_PARSE4TODO) {
+				Error::raise("FrParse4__TODO__Instr not implemented");
+			} else if (kind == KIND_RESERVED) {
+				Error::raise("FrParseReservedInstr not implemented");
+			} else {
+				Error::raise("default kind in parseInstList");
 			}
-
-			instList.push_back(instp);
 		}
 	}
 
@@ -636,28 +682,12 @@ private:
 		const u1* codeBuf = br.pos();
 		br.skip(ca->codeLen);
 
-		Inst** labels = new Inst*[codeLen];
-		for (u4 i = 0; i < codeLen; i++) {
-			labels[i] = nullptr;
-		}
+		LabelManager labelManager(codeLen, ca->instList);
 
 		{
 			BufferReader br(codeBuf, codeLen);
-			parseInstTargets(br, labels);
+			parseInstTargets(br, labelManager);
 		}
-
-		auto getLabel =
-				[&](u2 labelpos, bool isTryStart, bool isCatchHandler) {
-					Inst*& lab = labels[labelpos];
-					if (lab == nullptr) {
-						lab = new Inst(KIND_LABEL);
-					}
-
-					lab->label.isTryStart =lab->label.isTryStart || isTryStart;
-					lab->label.isCatchHandler =lab->label.isCatchHandler || isCatchHandler;
-
-					return lab;
-				};
 
 		u2 exceptionTableCount = br.readu2();
 		for (int i = 0; i < exceptionTableCount; i++) {
@@ -673,29 +703,28 @@ private:
 					"");
 
 			CodeExceptionEntry e;
-			e.startpc = getLabel(startPc, true, false);
-			e.endpc = getLabel(endPc, false, false);
-			e.handlerpc = getLabel(handlerPc, false, true);
+			e.startpc = labelManager.createExceptionLabel(startPc, true, false);
+			e.endpc = labelManager.createExceptionLabel(endPc, false, false);
+			e.handlerpc = labelManager.createExceptionLabel(handlerPc, false,
+					true);
 			e.catchtype = catchType;
 
 			ca->exceptions.push_back(e);
 		}
 
-		parseAttrs(br, cp, ca->attrs, labels);
+		parseAttrs(br, cp, ca->attrs, &labelManager);
 
 		{
 			BufferReader br(codeBuf, codeLen);
-			parseInstList(br, ca->instList, labels);
+			parseInstList(br, ca->instList, labelManager);
 		}
-
-		delete[] labels;
 
 		return ca;
 	}
 
 	static Attr* parseLnt(BufferReader& br, u2 nameIndex, void* args,
 			ConstPool* constPool) {
-		Inst** labels = (Inst**) args;
+		LabelManager& labelManager = *(LabelManager*) args;
 
 		u2 lntlen = br.readu2();
 
@@ -706,7 +735,7 @@ private:
 			u2 startpc = br.readu2();
 			u2 lineno = br.readu2();
 
-			e.startPcLabel = createLabel(labels, startpc);
+			e.startPcLabel = labelManager.createLabel(startpc);
 
 			e.startpc = startpc;
 			e.lineno = lineno;
@@ -719,7 +748,7 @@ private:
 
 	static Attr* parseLvt(BufferReader& br, u2 nameIndex, ConstPool* constPool,
 			void* args) {
-		Inst** labels = (Inst**) args;
+		LabelManager& labelManager = *(LabelManager*) args;
 
 		u2 count = br.readu2();
 
@@ -730,7 +759,7 @@ private:
 
 			u2 startPc = br.readu2();
 
-			e.startPcLabel = createLabel(labels, startPc);
+			e.startPcLabel = labelManager.createLabel(startPc);
 
 			e.startPc = startPc;
 			e.len = br.readu2();
@@ -746,7 +775,7 @@ private:
 
 	static Attr* parseLvtt(BufferReader& br, u2 nameIndex, ConstPool* constPool,
 			void* args) {
-		Inst** labels = (Inst**) args;
+		LabelManager& labelManager = *(LabelManager*) args;
 
 		u2 count = br.readu2();
 
@@ -757,7 +786,7 @@ private:
 
 			u2 startPc = br.readu2();
 
-			e.startPcLabel = createLabel(labels, startPc);
+			e.startPcLabel = labelManager.createLabel(startPc);
 
 			e.startPc = startPc;
 			e.len = br.readu2();
@@ -776,11 +805,11 @@ private:
 	static Attr* parseSmt(BufferReader& br, ConstPool& cp, u2 nameIndex,
 			void* args) {
 
-		Inst** labels = (Inst**) args;
+		LabelManager& labelManager = *(LabelManager*) args;
 
 		SmtAttr* smt = new SmtAttr(nameIndex, &cp);
 
-		auto parseType = [&](BufferReader& br, Inst** labels) {
+		auto parseType = [&](BufferReader& br) {
 			u1 tag = br.readu1();
 
 			switch (tag) {
@@ -807,21 +836,21 @@ private:
 				case TYPE_UNINIT: {
 					u2 offset = br.readu2();
 
-					Inst*& label = labels[offset];
-					if (label == nullptr) {
-						label = new Inst(KIND_LABEL);
-					}
+					LabelInst* label = labelManager.createLabel(offset);
+//					if (label == nullptr) {
+//						label = new Inst(KIND_LABEL);
+//					}
 
-					return Type::uninitType(offset, label);
-				}
+				return Type::uninitType(offset, label);
 			}
+		}
 
-			raise("Error on parse smt");
-		};
+		raise("Error on parse smt");
+	}	;
 
 		auto parseTs = [&](int count, vector<Type>& locs) {
 			for (u1 i = 0; i < count; i++) {
-				Type t = parseType(br, labels);
+				Type t = parseType(br);
 				locs.push_back(t);
 			}
 		};
@@ -882,13 +911,12 @@ private:
 
 			toff += 1;
 
-			Inst*& label = labels[toff];
-
-			if (label == nullptr) {
-				//fprintf(stderr, "WARNING: Label is null in smt at offset %d", toff);
-
-				label = new Inst(KIND_LABEL);
-			}
+//			Inst*& label = labels[toff];
+//			if (label == nullptr) {
+//				//fprintf(stderr, "WARNING: Label is null in smt at offset %d", toff);
+//				label = new Inst(KIND_LABEL);
+//			}
+			LabelInst* label = labelManager.createLabel(toff);
 
 			e.label = label;
 

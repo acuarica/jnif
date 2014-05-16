@@ -28,13 +28,177 @@ const char* ConstNames[] = { "**** 0 ****", // 0
 		"InvokeDynamic",	// 18
 		};
 
+const char* OPCODES[] = { "nop", "aconst_null", "iconst_m1", "iconst_0",
+		"iconst_1", "iconst_2", "iconst_3", "iconst_4", "iconst_5", "lconst_0",
+		"lconst_1", "fconst_0", "fconst_1", "fconst_2", "dconst_0", "dconst_1",
+		"bipush", "sipush", "ldc", "ldc_w", "ldc2_w", "iload", "lload", "fload",
+		"dload", "aload", "iload_0", "iload_1", "iload_2", "iload_3", "lload_0",
+		"lload_1", "lload_2", "lload_3", "fload_0", "fload_1", "fload_2",
+		"fload_3", "dload_0", "dload_1", "dload_2", "dload_3", "aload_0",
+		"aload_1", "aload_2", "aload_3", "iaload", "laload", "faload", "daload",
+		"aaload", "baload", "caload", "saload", "istore", "lstore", "fstore",
+		"dstore", "astore", "istore_0", "istore_1", "istore_2", "istore_3",
+		"lstore_0", "lstore_1", "lstore_2", "lstore_3", "fstore_0", "fstore_1",
+		"fstore_2", "fstore_3", "dstore_0", "dstore_1", "dstore_2", "dstore_3",
+		"astore_0", "astore_1", "astore_2", "astore_3", "iastore", "lastore",
+		"fastore", "dastore", "aastore", "bastore", "castore", "sastore", "pop",
+		"pop2", "dup", "dup_x1", "dup_x2", "dup2", "dup2_x1", "dup2_x2", "swap",
+		"iadd", "ladd", "fadd", "dadd", "isub", "lsub", "fsub", "dsub", "imul",
+		"lmul", "fmul", "dmul", "idiv", "ldiv", "fdiv", "ddiv", "irem", "lrem",
+		"frem", "drem", "ineg", "lneg", "fneg", "dneg", "ishl", "lshl", "ishr",
+		"lshr", "iushr", "lushr", "iand", "land", "ior", "lor", "ixor", "lxor",
+		"iinc", "i2l", "i2f", "i2d", "l2i", "l2f", "l2d", "f2i", "f2l", "f2d",
+		"d2i", "d2l", "d2f", "i2b", "i2c", "i2s", "lcmp", "fcmpl", "fcmpg",
+		"dcmpl", "dcmpg", "ifeq", "ifne", "iflt", "ifge", "ifgt", "ifle",
+		"if_icmpeq", "if_icmpne", "if_icmplt", "if_icmpge", "if_icmpgt",
+		"if_icmple", "if_acmpeq", "if_acmpne", "goto", "jsr", "ret",
+		"tableswitch", "lookupswitch", "ireturn", "lreturn", "freturn",
+		"dreturn", "areturn", "return", "getstatic", "putstatic", "getfield",
+		"putfield", "invokevirtual", "invokespecial", "invokestatic",
+		"invokeinterface", "invokedynamic", "new", "newarray", "anewarray",
+		"arraylength", "athrow", "checkcast", "instanceof", "monitorenter",
+		"monitorexit", "wide", "multianewarray", "ifnull", "ifnonnull",
+		"goto_w", "jsr_w", "breakpoint", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
+		"impdep1", "impdep2" };
+
 std::ostream& operator<<(std::ostream& os, const ConstTag& tag) {
 	return os << ConstNames[tag];
 }
 
-//std::ostream& operator<<(std::ostream& os, const Inst& inst){
+std::ostream& operator<<(std::ostream& os, Inst& inst) {
+	Error::assert(&inst != nullptr, "Invalid reference for inst");
 
-//}
+	int offset = inst._offset;
+
+	auto yesNo = [&](bool value) {
+		return value? "Yes" : "No";
+	};
+
+	if (inst.kind == KIND_LABEL) {
+		os << "label " << inst.label()->id << ", B: "
+				<< yesNo(inst.label()->isBranchTarget) << ", T: "
+				<< yesNo(inst.label()->isTryStart) << ", C: "
+				<< yesNo(inst.label()->isCatchHandler);
+		return os;
+	}
+
+	os << setw(4) << offset << ": (" << setw(3) << (int) inst.opcode << ") "
+			<< OPCODES[inst.opcode] << " ";
+
+	const ConstPool& cf = *inst.constPool;
+
+	switch (inst.kind) {
+		case KIND_ZERO:
+			break;
+		case KIND_BIPUSH:
+			os << int(inst.push()->value);
+			break;
+		case KIND_SIPUSH:
+			os << int(inst.push()->value);
+			break;
+		case KIND_LDC:
+			os << "#" << int(inst.ldc()->valueIndex);
+			break;
+		case KIND_VAR:
+			os << int(inst.var()->lvindex);
+			break;
+		case KIND_IINC:
+			os << int(inst.iinc()->index) << " " << int(inst.iinc()->value);
+			break;
+		case KIND_JUMP:
+			os << "label: " << inst.jump()->label2->label()->id;
+			break;
+		case KIND_TABLESWITCH:
+			os << "default: " << inst.ts()->def->label()->id << ", from: "
+					<< inst.ts()->low << " " << inst.ts()->high << ":";
+
+			for (int i = 0; i < inst.ts()->high - inst.ts()->low + 1; i++) {
+				Inst* l = inst.ts()->targets[i];
+				os << " " << l->label()->id;
+			}
+			break;
+		case KIND_LOOKUPSWITCH:
+			os << inst.ls()->defbyte->label()->id << " " << inst.ls()->npairs
+					<< ":";
+
+			for (u4 i = 0; i < inst.ls()->npairs; i++) {
+				u4 k = inst.ls()->keys[i];
+				Inst* l = inst.ls()->targets[i];
+				os << " " << k << " -> " << l->label()->id;
+			}
+			break;
+		case KIND_FIELD: {
+			string className, name, desc;
+			cf.getFieldRef(inst.field()->fieldRefIndex, &className, &name,
+					&desc);
+
+			os << className << name << desc;
+			break;
+		}
+		case KIND_INVOKE: {
+			string className, name, desc;
+			cf.getMethodRef(inst.invoke()->methodRefIndex, &className, &name,
+					&desc);
+
+			os << className << "." << name << ": " << desc;
+			break;
+		}
+		case KIND_INVOKEINTERFACE: {
+			String className, name, desc;
+			cf.getInterMethodRef(inst.invokeinterface()->interMethodRefIndex,
+					&className, &name, &desc);
+
+			os << className << "." << name << ": " << desc << "("
+					<< int(inst.invokeinterface()->count) << ")";
+			break;
+		}
+		case KIND_INVOKEDYNAMIC:
+			Error::raise("FrParseInvokeDynamicInstr not implemented");
+			break;
+		case KIND_TYPE: {
+			string className = cf.getClassName(inst.type()->classIndex);
+			os << className;
+			break;
+		}
+		case KIND_NEWARRAY:
+			os << int(inst.newarray()->atype);
+			break;
+		case KIND_MULTIARRAY: {
+			string className = cf.getClassName(inst.multiarray()->classIndex);
+			os << className << " " << inst.multiarray()->dims;
+			break;
+		}
+		case KIND_PARSE4TODO:
+			Error::raise("FrParse4__TODO__Instr not implemented");
+			break;
+		case KIND_RESERVED:
+			Error::raise("FrParseReservedInstr not implemented");
+			break;
+		case KIND_FRAME:
+			//	os << "Frame " << inst.frame.frame;
+			break;
+		default:
+			Error::raise("print inst: unknown inst kind!");
+	}
+
+	return os;
+}
+
+std::ostream& operator<<(std::ostream& os, InstList& instList) {
+	for (Inst* inst : instList) {
+		os << *inst << endl;
+	}
+
+	return os;
+}
 
 std::ostream& operator<<(std::ostream& os, const Frame& frame) {
 	os << "{ ";
@@ -72,7 +236,7 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 	} else if (type.isObject()) {
 		os << "Object: #" << type.getClassName() << "#@" << type.getCpIndex();
 	} else if (type.isUninit()) {
-		u2 offset = type.uninit.label->label.offset;
+		u2 offset = type.uninit.label->label()->offset;
 		os << "Uninitialized offset" << type.uninit.offset << " " << offset;
 	} else {
 		os << "UNKNOWN TYPE!!!";
@@ -225,8 +389,6 @@ public:
 		dec();
 	}
 
-	static const char* OPCODES[];
-
 private:
 
 	//static const char* ConstNames[];
@@ -377,49 +539,22 @@ private:
 		c.instList.setLabelIds();
 
 		if (c.cfg != nullptr) {
-			printCfg(*c.cfg);
+			os << *c.cfg;
 		} else {
-			for (Inst* inst : c.instList) {
-				line();
-				printInst(os, *inst, cf);
-				os << endl;
-			}
+			os << c.instList;
+
 		}
 
 		for (CodeExceptionEntry& e : c.exceptions) {
-			line(1) << "exception entry: startpc: " << e.startpc->label.id
-					<< ", endpc: " << e.endpc->label.id << ", handlerpc: "
-					<< e.handlerpc->label.id << ", catchtype: " << e.catchtype
-					<< endl;
+			line(1) << "exception entry: startpc: " << e.startpc->label()->id
+					<< ", endpc: " << e.endpc->label()->id << ", handlerpc: "
+					<< e.handlerpc->label()->id << ", catchtype: "
+					<< e.catchtype << endl;
 		}
 
 		printAttrs(c.attrs);
 
 		dec();
-	}
-
-	void printCfg(const ControlFlowGraph& cfg) {
-		for (BasicBlock* bb : cfg) {
-			os << "* " << bb->name;
-
-			os << " @Out { ";
-			for (BasicBlock* bbt : *bb) {
-				os << "->" << bbt->name << ", ";
-			}
-			os << "} ";
-
-			os << "in frame: " << bb->in << ", out frame: " << bb->out;
-			os << endl;
-
-			for (auto it = bb->start; it != bb->exit; it++) {
-				Inst* inst = *it;
-				line();
-				printInst(os, *inst, cf);
-				os << endl;
-			}
-		}
-
-		os << endl;
 	}
 
 	void printExceptions(ExceptionsAttr& attr) {
@@ -545,162 +680,6 @@ private:
 		return os;
 	}
 };
-
-const char* ClassPrinter::OPCODES[] = { "nop", "aconst_null", "iconst_m1",
-		"iconst_0", "iconst_1", "iconst_2", "iconst_3", "iconst_4", "iconst_5",
-		"lconst_0", "lconst_1", "fconst_0", "fconst_1", "fconst_2", "dconst_0",
-		"dconst_1", "bipush", "sipush", "ldc", "ldc_w", "ldc2_w", "iload",
-		"lload", "fload", "dload", "aload", "iload_0", "iload_1", "iload_2",
-		"iload_3", "lload_0", "lload_1", "lload_2", "lload_3", "fload_0",
-		"fload_1", "fload_2", "fload_3", "dload_0", "dload_1", "dload_2",
-		"dload_3", "aload_0", "aload_1", "aload_2", "aload_3", "iaload",
-		"laload", "faload", "daload", "aaload", "baload", "caload", "saload",
-		"istore", "lstore", "fstore", "dstore", "astore", "istore_0",
-		"istore_1", "istore_2", "istore_3", "lstore_0", "lstore_1", "lstore_2",
-		"lstore_3", "fstore_0", "fstore_1", "fstore_2", "fstore_3", "dstore_0",
-		"dstore_1", "dstore_2", "dstore_3", "astore_0", "astore_1", "astore_2",
-		"astore_3", "iastore", "lastore", "fastore", "dastore", "aastore",
-		"bastore", "castore", "sastore", "pop", "pop2", "dup", "dup_x1",
-		"dup_x2", "dup2", "dup2_x1", "dup2_x2", "swap", "iadd", "ladd", "fadd",
-		"dadd", "isub", "lsub", "fsub", "dsub", "imul", "lmul", "fmul", "dmul",
-		"idiv", "ldiv", "fdiv", "ddiv", "irem", "lrem", "frem", "drem", "ineg",
-		"lneg", "fneg", "dneg", "ishl", "lshl", "ishr", "lshr", "iushr",
-		"lushr", "iand", "land", "ior", "lor", "ixor", "lxor", "iinc", "i2l",
-		"i2f", "i2d", "l2i", "l2f", "l2d", "f2i", "f2l", "f2d", "d2i", "d2l",
-		"d2f", "i2b", "i2c", "i2s", "lcmp", "fcmpl", "fcmpg", "dcmpl", "dcmpg",
-		"ifeq", "ifne", "iflt", "ifge", "ifgt", "ifle", "if_icmpeq",
-		"if_icmpne", "if_icmplt", "if_icmpge", "if_icmpgt", "if_icmple",
-		"if_acmpeq", "if_acmpne", "goto", "jsr", "ret", "tableswitch",
-		"lookupswitch", "ireturn", "lreturn", "freturn", "dreturn", "areturn",
-		"return", "getstatic", "putstatic", "getfield", "putfield",
-		"invokevirtual", "invokespecial", "invokestatic", "invokeinterface",
-		"invokedynamic", "new", "newarray", "anewarray", "arraylength",
-		"athrow", "checkcast", "instanceof", "monitorenter", "monitorexit",
-		"wide", "multianewarray", "ifnull", "ifnonnull", "goto_w", "jsr_w",
-		"breakpoint", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
-		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "impdep1",
-		"impdep2" };
-
-std::ostream& printInst(std::ostream& os, const Inst& inst,
-		const ConstPool& cf) {
-	int offset = inst._offset;
-
-	auto yesNo = [&](bool value) {
-		return value? "Yes" : "No";
-	};
-
-	if (inst.kind == KIND_LABEL) {
-		os << "label " << inst.label.id << ", B: "
-				<< yesNo(inst.label.isBranchTarget) << ", T: "
-				<< yesNo(inst.label.isTryStart) << ", C: "
-				<< yesNo(inst.label.isCatchHandler);
-		return os;
-	}
-
-	os << setw(4) << offset << ": (" << setw(3) << (int) inst.opcode << ") "
-			<< ClassPrinter::OPCODES[inst.opcode] << " ";
-
-	switch (inst.kind) {
-		case KIND_ZERO:
-			break;
-		case KIND_BIPUSH:
-			os << int(inst.push.value);
-			break;
-		case KIND_SIPUSH:
-			os << int(inst.push.value);
-			break;
-		case KIND_LDC:
-			os << "#" << int(inst.ldc.valueIndex);
-			break;
-		case KIND_VAR:
-			os << int(inst.var.lvindex);
-			break;
-		case KIND_IINC:
-			os << int(inst.iinc.index) << " " << int(inst.iinc.value);
-			break;
-		case KIND_JUMP:
-			os << "label: " << inst.jump.label2->label.id;
-			break;
-		case KIND_TABLESWITCH:
-			os << "default: " << inst.ts.def->label.id << ", from: "
-					<< inst.ts.low << " " << inst.ts.high << ":";
-
-			for (int i = 0; i < inst.ts.high - inst.ts.low + 1; i++) {
-				Inst* l = inst.ts.targets[i];
-				os << " " << l->label.id;
-			}
-			break;
-		case KIND_LOOKUPSWITCH:
-			os << inst.ls.defbyte->label.id << " " << inst.ls.npairs << ":";
-
-			for (u4 i = 0; i < inst.ls.npairs; i++) {
-				u4 k = inst.ls.keys[i];
-				Inst* l = inst.ls.targets[i];
-				os << " " << k << " -> " << l->label.id;
-			}
-			break;
-		case KIND_FIELD: {
-			string className, name, desc;
-			cf.getFieldRef(inst.field.fieldRefIndex, &className, &name, &desc);
-
-			os << className << name << desc;
-			break;
-		}
-		case KIND_INVOKE: {
-			string className, name, desc;
-			cf.getMethodRef(inst.invoke.methodRefIndex, &className, &name,
-					&desc);
-
-			os << className << "." << name << ": " << desc;
-			break;
-		}
-		case KIND_INVOKEINTERFACE: {
-			string className, name, desc;
-			cf.getInterMethodRef(inst.invokeinterface.interMethodRefIndex,
-					&className, &name, &desc);
-
-			os << className << "." << name << ": " << desc << "("
-					<< inst.invokeinterface.count << ")";
-			break;
-		}
-		case KIND_INVOKEDYNAMIC:
-			Error::raise("FrParseInvokeDynamicInstr not implemented");
-			break;
-		case KIND_TYPE: {
-			string className = cf.getClassName(inst.type.classIndex);
-			os << className;
-			break;
-		}
-		case KIND_NEWARRAY:
-			os << int(inst.newarray.atype);
-			break;
-		case KIND_MULTIARRAY: {
-			string className = cf.getClassName(inst.multiarray.classIndex);
-			os << className << " " << inst.multiarray.dims;
-			break;
-		}
-		case KIND_PARSE4TODO:
-			Error::raise("FrParse4__TODO__Instr not implemented");
-			break;
-		case KIND_RESERVED:
-			Error::raise("FrParseReservedInstr not implemented");
-			break;
-		case KIND_FRAME:
-			//	os << "Frame " << inst.frame.frame;
-			break;
-		default:
-			Error::raise("print inst: unknown inst kind!");
-	}
-
-	return os;
-}
 
 ostream& operator<<(ostream& os, const Version& version) {
 	os << version.major << "." << version.minor;
