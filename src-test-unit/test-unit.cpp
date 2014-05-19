@@ -41,6 +41,8 @@ JavaFile tests[] = { jnifTestAbs, jnifExceptionClass, jnifBasicClass,
 extern JavaFile tests2[];
 extern int tests2_size;
 
+list<JavaFile> tests4;
+
 template<typename TFunc>
 static void apply(TFunc instr) {
 	auto invokeInstr = [&](const JavaFile& jf) {
@@ -48,13 +50,17 @@ static void apply(TFunc instr) {
 		instr(jf);
 	};
 
-	for (const JavaFile& jf : tests) {
-		invokeInstr(jf);
-	}
+//	for (const JavaFile& jf : tests) {
+//		invokeInstr(jf);
+//	}
+//
+//	for (int i = 0; i < tests2_size; i++) {
+//		const JavaFile& jf = tests2[i];
+//
+//		invokeInstr(jf);
+//	}
 
-	for (int i = 0; i < tests2_size; i++) {
-		const JavaFile& jf = tests2[i];
-
+	for (const JavaFile& jf : tests4) {
 		invokeInstr(jf);
 	}
 }
@@ -291,7 +297,57 @@ static void testNopAdderInstr() {
 });
 }
 
-int main(int, const char*[]) {
+#include <ftw.h>
+
+static int display_info(const char* filePath, const struct stat*, int tflag) {
+
+	auto isSuffix = [&](const string& suffix, const string& text) {
+		auto res = std::mismatch(suffix.rbegin(), suffix.rend(), text.rbegin());
+		return res.first == suffix.rend();
+	};
+
+	auto addJavaFile = [&]() {
+		ifstream is(filePath, ios::in | ios::binary | ios::ate);
+
+		if (!is.is_open()) {
+			int m;
+			is >> m;
+			cerr << "Erro on opening file: " << m << endl;
+			throw "File not opened!";
+		}
+
+		int fileSize = is.tellg();
+
+		cerr << fileSize << endl;
+
+		u1* buffer = new u1[fileSize];
+
+		is.seekg(0, ios::beg);
+		if (!is.read((char*) buffer, fileSize)) {
+			cerr << "fail to read" << endl;
+			throw "File not opened!";
+		}
+
+		JavaFile jf;
+		jf.data = buffer;
+		jf.len = fileSize;
+		jf.name = filePath;
+		tests4.push_back(jf);
+	};
+
+	if (isSuffix(".class", string(filePath))) {
+		cerr << filePath << endl;
+
+		addJavaFile();
+	}
+
+	return 0;
+}
+
+int main(int argc, const char* argv[]) {
+
+	ftw("./", display_info, 50);
+
 	run(testPrinterModel);
 	run(testPrinterParser);
 	run(testPrinterParserWithFrames);

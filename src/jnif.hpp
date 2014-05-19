@@ -66,7 +66,7 @@ public:
 	}
 
 	/**
-	 * Contains information about exceptional situation.
+	 * Contains information about the exceptional situation.
 	 */
 	String message;
 
