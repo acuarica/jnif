@@ -12,12 +12,29 @@ INSTR=Compute
 #INSTR=ANewArray
 #INSTR=Print
 #INSTR=Identity
-RUNDACAPO=cd $(BUILD)/ && time java  -agentpath:$(LIB)=$(INSTR) -jar ../eval/dacapo-9.12-bach.jar
+RUNDACAPO=cd $(BUILD)/ && time java -agentpath:$(LIB)=$(INSTR) -jar ../eval/dacapo-9.12-bach.jar
 RUNSCALA=java -Xverify:all -agentpath:$(LIB)=$(INSTR) -jar ../eval/scala-benchmark-suite-0.1.0-20120216.103539-3.jar
 
 #RUNSCALA=java -Xverify:all -jar scala-benchmark-suite-0.1.0-20120216.103539-3.jar
 
 #BENCH=avrora
+
+.PHONY: dacapo-all
+dacapo-all: 
+	$(MAKE) dacapo-avrora
+	$(MAKE) dacapo-batik
+	$(MAKE) dacapo-eclipse
+	$(MAKE) dacapo-fop
+	$(MAKE) dacapo-h2
+	$(MAKE) dacapo-jython
+	$(MAKE) dacapo-luindex
+	$(MAKE) dacapo-lusearch
+	$(MAKE) dacapo-pmd
+	$(MAKE) dacapo-sunflow
+	$(MAKE) dacapo-tomcat
+	$(MAKE) dacapo-tradebeans
+	$(MAKE) dacapo-tradesoap
+	$(MAKE) dacapo-xalan
 
 .PHONY: dacapo-avrora
 dacapo-avrora: BENCH=avrora
@@ -78,11 +95,6 @@ dacapo-xalan: dacapo
 .PHONY: dacapo
 dacapo: $(BUILD)/$(LIB)
 	$(RUNDACAPO) $(BENCH)
-
-.PHONY: all
-all: $(BUILD)/$(LIB)
-	$(foreach b,$(BENCHS),$(RUNDACAPO) $(b) ;)
-#$(foreach b,$(BENCHS),$(RUNDACAPO) $(b) &&) :
 
 .PHONY: scala
 scala: $(LIB)

@@ -62,7 +62,8 @@ public:
 	}
 
 	void writeu1(u1 value) {
-		Error::check(offset + 1 <= len, "Invalid write");
+		Error::check(offset + 1 <= len, "Invalid write: offset: ", offset + 1,
+				", len: ", len);
 
 		buffer[offset] = value;
 
@@ -70,7 +71,8 @@ public:
 	}
 
 	void writeu2(u2 value) {
-		Error::check(offset + 2 <= len, "Invalid write");
+		Error::check(offset + 2 <= len, "Invalid write: offset: ", offset + 2,
+				", len: ", len, ", value: ", value);
 
 		buffer[offset + 0] = ((u1*) &value)[1];
 		buffer[offset + 1] = ((u1*) &value)[0];
@@ -79,7 +81,8 @@ public:
 	}
 
 	void writeu4(u4 value) {
-		Error::check(offset + 4 <= len, "Invalid write");
+		Error::check(offset + 4 <= len, "Invalid write: offset: ", offset + 4,
+				", len: ", len);
 
 		buffer[offset + 0] = ((u1*) &value)[3];
 		buffer[offset + 1] = ((u1*) &value)[2];
@@ -448,9 +451,13 @@ public:
 						}
 					}
 					break;
-				case KIND_BIPUSH:
+				case KIND_BIPUSH: {
+					u1 value = inst.push()->value;
+					Error::assert(value == inst.push()->value,
+							"push: u1 value != u2 value");
 					bw.writeu1(inst.push()->value);
 					break;
+				}
 				case KIND_SIPUSH:
 					bw.writeu2(inst.push()->value);
 					break;
