@@ -9,7 +9,6 @@ SRCS=$(wildcard jnif/*.java) $(wildcard *.cpp)
 CLSS=$(shell find . -name "*.class")
 
 OBJS=$(SRCS:%=$(BUILD)/%.o) $(CLSS:./classes/%=$(BUILD)/%.o) $(BUILD)/filelist.cpp.o
-#$(BUILD)/java/lang/Object.class.o
 
 LINK=$(OBJS:%='%')
 JVS:=$(CLSS:./classes/%.class=%)
@@ -17,12 +16,14 @@ JVS:=$(subst /,_,$(JVS))
 JVS:=$(subst $$,_,$(JVS))
 CFLAGS += -fPIC -W -O0 -Wall -Wextra -I$(INCLUDE)
 
+
 .PHONY: all run
 
 all: $(BUILD)/$(EXE)
 
 run: $(BUILD)/$(EXE)
-	cd $(BUILD) && ./$(EXE) 
+	cd $(BUILD) && ./$(EXE) "java/lang/Object.class"
+#java/lang/Object.class
 #> $(BUILD)/$(EXE).out
 
 $(BUILD)/$(EXE): $(OBJS) $(BUILD)/libjnif.a
@@ -37,14 +38,11 @@ $(BUILD)/%.java.o: %.java | $(BUILD)
 #	echo "extern u1 $(subst /,_,$*)_class[];" >> $(BUILD)/$*.h
 #	echo "extern int $(subst /,_,$*)_class_len;" >> $(BUILD)/$*.h
 
-#ditto $@
 $(BUILD)/%.class.o: classes/%.class | $(BUILD)
 	mkdir -p $(dir $@)
 	cp -v '$<' $(dir $@)
 	cd $(BUILD) ; xxd -include '$*.class' '$*.c'
 	$(LINK.c) -c -o '$@' '$(BUILD)/$*.c'
-
-#$(BUILD)/$*.class
 
 $(BUILD)/filelist.cpp:
 filelist: 
