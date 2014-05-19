@@ -8,7 +8,7 @@ namespace jnif {
 /**
  * Implements a memory buffer reader in big-endian encoding.
  */
-class BufferReader: private Error {
+class BufferReader {
 public:
 
 	/**
@@ -34,7 +34,7 @@ public:
 	 * must hold.
 	 */
 	~BufferReader() {
-		check(off == _size, "Expected end of buffer");
+		//Error::check(off == _size, "Expected end of buffer");
 	}
 
 	int size() const {
@@ -42,7 +42,7 @@ public:
 	}
 
 	u1 readu1() {
-		check(off + 1 <= _size, "Invalid read");
+		Error::check(off + 1 <= _size, "Invalid read");
 
 		u1 result = buffer[off];
 
@@ -52,7 +52,7 @@ public:
 	}
 
 	u2 readu2() {
-		check(off + 2 <= _size, "Invalid read 2");
+		Error::check(off + 2 <= _size, "Invalid read 2");
 
 		u1 r0 = buffer[off + 0];
 		u1 r1 = buffer[off + 1];
@@ -65,7 +65,8 @@ public:
 	}
 
 	u4 readu4() {
-		check(off + 4 <= _size, "Invalid read 4");
+		Error::check(off + 4 <= _size, "Invalid read 4");
+		//if (off >= 256 ) Error::raise()
 
 		u1 r0 = buffer[off + 0];
 		u1 r1 = buffer[off + 1];
@@ -81,7 +82,7 @@ public:
 
 	void skip(int count) {
 		const char* const m = "Invalid read: %d (offset: %d)";
-		check(off + count <= _size, m, count, off);
+		Error::check(off + count <= _size, m, count, off);
 
 		off += count;
 	}
@@ -310,7 +311,14 @@ private:
 				case CONST_FLOAT: {
 					u4 value = br.readu4();
 					float fvalue = *(float*) &value;
-					cp.addFloat(fvalue);
+					//auto idx =
+							cp.addFloat(fvalue);
+
+					//float v = cp.entries[idx].f.value;
+					//Error::assert(value== *(u4*) &v, "invalid: ", br.offset() );
+//					float fvalue = entry->f.value;
+//					u4 value = *(u4*) &fvalue;
+
 					break;
 				}
 				case CONST_LONG: {
@@ -629,7 +637,8 @@ private:
 
 				instList.addInvoke(opcode, methodRefIndex);
 			} else if (kind == KIND_INVOKEINTERFACE) {
-				Error::assert(opcode == OPCODE_invokeinterface, "invalid opcode");
+				Error::assert(opcode == OPCODE_invokeinterface,
+						"invalid opcode");
 
 				u2 interMethodRefIndex = br.readu2();
 				u1 count = br.readu1();

@@ -4,8 +4,7 @@
 #include <string>
 #include <vector>
 #include <list>
-#include <sstream>
-#include <iostream>
+#include <ostream>
 
 /**
  * The jnif namespace contains all type definitions, constants, enumerations
@@ -27,8 +26,6 @@
  */
 namespace jnif {
 
-using namespace std;
-
 /**
  * Represents a byte inside the Java Class File.
  * The sizeof(u1) must be equal to 1.
@@ -48,57 +45,35 @@ typedef unsigned short u2;
 typedef unsigned int u4;
 
 /**
- *
+ * We use STL string.
  */
 typedef std::string String;
-//typedef vector Vector;
-//typedef std::list List;
 
 /**
- * This class contains static method to facilitate error handling mechanism.
+ * Represents the exception that jnif can throw.
  */
-class Error {
+class JnifException {
 public:
 
-	template<typename ... TArgs>
-	static inline void raise(TArgs ... args) __attribute__((noreturn)) {
-		ostream& os = cerr;
-
-		os << "JNIF Exception: ";
-		_raise(os, args...);
-		os << endl;
-
-		_backtrace();
-
-		throw "Error!!!";
+	/**
+	 * Creates an exception given the message and the stack trace.
+	 *
+	 * @param message contains information about exceptional situation.
+	 * @param stackTrace the stack trace where this exception happened.
+	 */
+	JnifException(const String& message, const String& stackTrace) :
+			message(message), stackTrace(stackTrace) {
 	}
 
-	template<typename ... TArgs>
-	static inline void assert(bool cond, TArgs ... args) {
-		if (!cond) {
-			raise(args...);
-		}
-	}
+	/**
+	 * Contains information about exceptional situation.
+	 */
+	String message;
 
-	template<typename ... TArgs>
-	static inline void check(bool cond, TArgs ... args) {
-		if (!cond) {
-			raise(args...);
-		}
-	}
-
-private:
-
-	static void _backtrace();
-
-	static inline void _raise(ostream&) {
-	}
-
-	template<typename TArg, typename ... TArgs>
-	static inline void _raise(ostream& os, TArg arg, TArgs ... args) {
-		os << arg;
-		_raise(os, args...);
-	}
+	/**
+	 * the stack trace where this exception happened.
+	 */
+	String stackTrace;
 
 };
 
@@ -336,7 +311,7 @@ public:
 	/**
 	 * The string data.
 	 */
-	string str;
+	String str;
 };
 
 /**
@@ -465,6 +440,8 @@ private:
  * be invalidated, for this reason, no removed operations are allowed.
  */
 class ConstPool {
+	friend class ClassFile;
+
 public:
 
 	/**
@@ -501,15 +478,6 @@ public:
 	 * Represents the invalid (null) item, which must not be asked for.
 	 */
 	static const ConstIndex NULLENTRY = 0;
-
-	/**
-	 * Initializes an empty constant pool. The valid indices start from 1
-	 * inclusive, because the null entry (index 0) is added by default.
-	 */
-	ConstPool() {
-		ConstItem nullEntry(CONST_NULLENTRY);
-		entries.push_back(nullEntry);
-	}
 
 	/**
 	 * Returns the number of elements in this constant pool.
@@ -554,8 +522,11 @@ public:
 	}
 
 	/**
-	 * Adds a field reference.
+	 * Adds a field reference to this constant pool.
 	 *
+	 * @param classIndex the symbolic class that this field belongs to.
+	 * @param nameAndTypeIndex the name and type symbolic reference
+	 * describing the name and type of the field to add.
 	 * @returns the index of the newly created entry.
 	 */
 	ConstIndex addFieldRef(ConstIndex classIndex, ConstIndex nameAndTypeIndex) {
@@ -688,7 +659,7 @@ public:
 	 * @returns the ConstIndex of the newly created entry.
 	 */
 	ConstIndex addUtf8(const char* utf8, int len) {
-		string str(utf8, len);
+		String str(utf8, len);
 		ConstItem e(CONST_UTF8, str);
 		return _addSingle(e);
 	}
@@ -740,7 +711,6 @@ public:
 	 */
 	ConstTag getTag(ConstIndex index) const {
 		const ConstItem* entry = _getEntry(index);
-
 		return entry->tag;
 	}
 
@@ -764,22 +734,22 @@ public:
 		return ni;
 	}
 
-	void getFieldRef(ConstIndex index, string* className, string* name,
-			string* desc) const {
+	void getFieldRef(ConstIndex index, String* className, String* name,
+			String* desc) const {
 		const ConstItem* e = _getEntry(index, CONST_FIELDREF, "FieldRef");
 		const ConstMemberRef& mr = e->memberRef;
 		_getMemberRef(className, name, desc, mr);
 	}
 
-	void getMethodRef(ConstIndex index, string* clazzName, string* name,
-			string* desc) const {
+	void getMethodRef(ConstIndex index, String* clazzName, String* name,
+			String* desc) const {
 		const ConstItem* e = _getEntry(index, CONST_METHODREF, "MethodRef");
 		const ConstMemberRef& mr = e->memberRef;
 		_getMemberRef(clazzName, name, desc, mr);
 	}
 
-	void getInterMethodRef(ConstIndex index, string* clazzName, string* name,
-			string* desc) const {
+	void getInterMethodRef(ConstIndex index, String* clazzName, String* name,
+			String* desc) const {
 		const ConstItem* e = _getEntry(index, CONST_INTERMETHODREF, "imr");
 		const ConstMemberRef& mr = e->memberRef;
 		_getMemberRef(clazzName, name, desc, mr);
@@ -805,7 +775,7 @@ public:
 		return getUtf8(classNameIndex);
 	}
 
-	void getNameAndType(ConstIndex index, string* name, string* desc) const {
+	void getNameAndType(ConstIndex index, String* name, String* desc) const {
 		const ConstItem* e = _getEntry(index, CONST_NAMEANDTYPE, "NameAndType");
 
 		u2 nameIndex = e->nameandtype.nameIndex;
@@ -824,7 +794,7 @@ public:
 
 			//const Entry* entry = &cp.entries[i];
 
-			if (isUtf8(i) && getUtf8(i) == string(utf8)) {
+			if (isUtf8(i) && getUtf8(i) == String(utf8)) {
 				return i;
 			}
 		}
@@ -841,9 +811,18 @@ public:
 		}
 	}
 
-	vector<ConstItem> entries;
+	std::vector<ConstItem> entries;
 
 private:
+
+	/**
+	 * Initializes an empty constant pool. The valid indices start from 1
+	 * inclusive, because the null entry (index 0) is added by default.
+	 */
+	ConstPool() {
+		ConstItem nullEntry(CONST_NULLENTRY);
+		entries.push_back(nullEntry);
+	}
 
 	ConstIndex _addSingle(const ConstItem& entry) {
 		ConstIndex index = entries.size();
@@ -862,39 +841,17 @@ private:
 		return index;
 	}
 
-	const ConstItem* _getEntry(ConstIndex i) const {
-		Error::check(i > NULLENTRY, "Null access to constant pool: index = ",
-				i);
-		Error::check(i < entries.size(), "Index out of bounds: index = ", i);
-
-		const ConstItem* entry = &entries[i];
-
-		return entry;
-	}
+	const ConstItem* _getEntry(ConstIndex i) const;
 
 	const ConstItem* _getEntry(ConstIndex index, u1 tag,
-			const char* message) const {
-		const ConstItem* entry = _getEntry(index);
-
-		Error::check(entry->tag == tag, "Invalid constant ", message,
-				", expected: ", (int) tag, ", actual: ", (int) entry->tag);
-
-		return entry;
-	}
+			const char* message) const;
 
 	bool _isDoubleEntry(ConstIndex index) const {
 		const ConstItem* e = _getEntry(index);
-
-		switch (e->tag) {
-			case CONST_LONG:
-			case CONST_DOUBLE:
-				return true;
-			default:
-				return false;
-		}
+		return e->tag == CONST_LONG || e->tag == CONST_DOUBLE;
 	}
 
-	void _getMemberRef(string* clazzName, string* name, string* desc,
+	void _getMemberRef(String* clazzName, String* name, String* desc,
 			const ConstMemberRef& memberRef) const {
 		ConstIndex classIndex = memberRef.classIndex;
 		ConstIndex nameAndTypeIndex = memberRef.nameAndTypeIndex;
@@ -902,7 +859,8 @@ private:
 		*clazzName = getClassName(classIndex);
 		getNameAndType(nameAndTypeIndex, name, desc);
 	}
-};
+}
+;
 
 /**
  * Access flags for the class itself.
@@ -1070,6 +1028,11 @@ enum FieldFlags {
 
 /**
  * OPCODES constants definitions.
+ *
+ * This enumeration type was taken from
+ *
+ * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-6.html
+ * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-7.html
  */
 enum Opcode {
 	OPCODE_nop = 0x00,
@@ -1356,80 +1319,61 @@ enum TypeTag {
 class Type {
 public:
 
-	static inline Type topType() {
+	static Type topType() {
 		return Type(TYPE_TOP);
 	}
 
-	static inline Type intType() {
+	static Type intType() {
 		return Type(TYPE_INTEGER, "I");
 	}
 
-	static inline Type floatType() {
+	static Type floatType() {
 		return Type(TYPE_FLOAT, "F");
 	}
 
-	static inline Type longType() {
+	static Type longType() {
 		return Type(TYPE_LONG, "J");
 	}
 
-	static inline Type doubleType() {
+	static Type doubleType() {
 		return Type(TYPE_DOUBLE, "D");
 	}
 
-	static inline Type booleanType() {
+	static Type booleanType() {
 		return Type(TYPE_BOOLEAN, "Z");
 	}
 
-	static inline Type byteType() {
+	static Type byteType() {
 		return Type(TYPE_BYTE, "B");
 	}
 
-	static inline Type charType() {
+	static Type charType() {
 		return Type(TYPE_CHAR, "C");
 	}
 
-	static inline Type shortType() {
+	static Type shortType() {
 		return Type(TYPE_SHORT, "S");
 	}
 
-	static inline Type nullType() {
+	static Type nullType() {
 		return Type(TYPE_NULL);
 	}
 
-	static inline Type uninitThisType() {
+	static Type uninitThisType() {
 		return Type(TYPE_UNINITTHIS);
 	}
 
-	static inline Type objectType(const string& className, u2 cpindex = 0) {
-		Error::check(!className.empty(),
-				"Expected non-empty class name for object type");
+	static Type objectType(const String& className, u2 cpindex = 0);
 
-//		stringstream ss;
-		//	ss << "L" << className << ";";
-		return Type(TYPE_OBJECT, className, cpindex);
-		//return Type(TYPE_OBJECT, ss.str(), cpindex);
-	}
-
-	static inline Type uninitType(short offset, class Inst* label) {
+	static Type uninitType(short offset, class Inst* label) {
 		return Type(TYPE_UNINIT, offset, label);
 	}
 
-	static inline Type voidType() {
+	static Type voidType() {
 		return Type(TYPE_VOID);
 	}
 
-	static inline Type arrayType(const Type& baseType, u4 dims) {
-		//u4 d = baseType.dims + dims;
-		Error::check(dims > 0, "Invalid dims: ", dims);
-		Error::check(dims <= 255, "Invalid dims: ", dims);
-		Error::check(!baseType.isTop(), "Cannot construct an array type of ",
-				dims, " dimension(s) using as a base type Top (", baseType,
-				")");
-//		Error::check(!baseType.isArray(), "base type is already an array: ",
-//				baseType);
-
-		return Type(baseType, dims);
-	}
+	static Type arrayType(const Type& baseType, u4 dims);
 
 	union {
 		struct {
@@ -1438,17 +1382,17 @@ public:
 		} uninit;
 	};
 
-	inline bool operator==(const Type& other) const {
+	bool operator==(const Type& other) const {
 		return tag == other.tag
 				&& (tag != TYPE_OBJECT || className == other.className)
 				&& dims == other.dims;
 	}
 
-	inline bool isTop() const {
+	bool isTop() const {
 		return tag == TYPE_TOP && !isArray();
 	}
 
-	inline bool isInt() const {
+	bool isInt() const {
 		switch (tag) {
 			case TYPE_INTEGER:
 			case TYPE_BOOLEAN:
@@ -1461,85 +1405,61 @@ public:
 		}
 	}
 
-	inline bool isFloat() const {
+	bool isFloat() const {
 		return tag == TYPE_FLOAT && !isArray();
 	}
 
-	inline bool isLong() const {
+	bool isLong() const {
 		return tag == TYPE_LONG && !isArray();
 	}
 
-	inline bool isDouble() const {
+	bool isDouble() const {
 		return tag == TYPE_DOUBLE && !isArray();
 	}
 
-	inline bool isNull() const {
+	bool isNull() const {
 		return tag == TYPE_NULL;
 	}
 
-	inline bool isUninitThis() const {
+	bool isUninitThis() const {
 		return tag == TYPE_UNINITTHIS;
 	}
 
-	inline bool isUninit() const {
+	bool isUninit() const {
 		return tag == TYPE_UNINIT;
 	}
 
-	inline bool isObject() const {
+	bool isObject() const {
 		return tag == TYPE_OBJECT || isArray();
 	}
 
-	inline bool isArray() const {
+	bool isArray() const {
 		return dims > 0;
 	}
 
-	inline bool isVoid() const {
+	bool isVoid() const {
 		return tag == TYPE_VOID;
 	}
 
-	inline bool isOneWord() const {
+	bool isOneWord() const {
 		return isInt() || isFloat() || isNull() || isObject();
 	}
 
-	inline bool isTwoWord() const {
+	bool isTwoWord() const {
 		return isLong() || isDouble();
 	}
 
-	inline bool isOneOrTwoWord() const {
+	bool isOneOrTwoWord() const {
 		return isOneWord() || isTwoWord();
 	}
 
-	inline bool isClass() const {
+	bool isClass() const {
 		return isObject() && !isArray();
 	}
 
-	inline string getClassName() const {
-		Error::check(isObject(), "Type is not object type to get class name: ",
-				*this);
+	String getClassName() const;
 
-		if (isArray()) {
-			stringstream ss;
-			for (u4 i = 0; i < dims; i++) {
-				ss << "[";
-			}
-
-			if (tag == TYPE_OBJECT) {
-				ss << "L" << className << ";";
-			} else {
-				ss << className;
-			}
-
-			return ss.str();
-		} else {
-			return className;
-		}
-	}
-
-	inline u2 getCpIndex() const {
-		Error::check(isObject(), "Type is not object type to get cp index: ",
-				*this);
-		return classIndex;
-	}
+	u2 getCpIndex() const;
 
 	void setCpIndex(u2 index) {
 		//check(isObject(), "Type is not object type to get cp index: ", *this);
@@ -1560,11 +1480,7 @@ public:
 	 *
 	 * @returns the element type of this array.
 	 */
-	Type elementType() const {
-		Error::check(isArray(), "Type is not array: ", *this);
-
-		return Type(*this, dims - 1);
-	}
+	Type elementType() const;
 
 	/**
 	 * Removes the any dimension on this type. This type has to be an array
@@ -1576,11 +1492,7 @@ public:
 	 * @returns the base type of this type. The result ensures that is not an
 	 * array type.
 	 */
-	Type stripArrayType() const {
-		Error::check(isArray(), "Type is not array: ", *this);
-
-		return Type(*this, 0);
-	}
+	Type stripArrayType() const;
 
 	/**
 	 * Parses the const class name.
@@ -1588,7 +1500,7 @@ public:
 	 * @param className the class name to parse.
 	 * @returns the type that represents the class name.
 	 */
-	static Type fromConstClass(const string& className);
+	static Type fromConstClass(const String& className);
 
 	/**
 	 * Parses a field descriptor.
@@ -1615,90 +1527,49 @@ private:
 	u2 classIndex;
 	String className;
 
-	inline Type(TypeTag tag) :
+	Type(TypeTag tag) :
 			tag(tag), dims(0), classIndex(0) {
 	}
 
-	inline Type(TypeTag tag, short offset, Inst* label) :
+	Type(TypeTag tag, short offset, Inst* label) :
 			tag(tag), dims(0), classIndex(0) {
 		uninit.offset = offset;
 		uninit.label = label;
 	}
 
-	inline Type(TypeTag tag, const string& className, u2 classIndex = 0) :
+	Type(TypeTag tag, const String& className, u2 classIndex = 0) :
 			tag(tag), dims(0), classIndex(classIndex), className(className) {
 	}
 
-	inline Type(const Type& other, u4 dims) :
+	Type(const Type& other, u4 dims) :
 			Type(other) {
 		this->dims = dims;
 	}
 };
 
-class Frame: private Error {
+/**
+ *
+ */
+class Frame {
 public:
 
 	Frame() :
 			valid(false) {
 	}
 
-	Type pop() {
-		check(stack.size() > 0, "Trying to pop in an empty stack.");
+	Type pop();
 
-		Type t = stack.front();
-		stack.pop_front();
-		return t;
-	}
+	Type popOneWord();
 
-	Type popOneWord() {
-		Type t = pop();
-		Error::check(t.isOneWord() || t.isTop(), "Type is not one word type: ",
-				t, ", frame: ", *this);
-		return t;
-	}
+	Type popTwoWord();
 
-	Type popTwoWord() {
-		Type t1 = pop();
-		Type t2 = pop();
+	Type popInt();
 
-		Error::check(
-				(t1.isOneWord() && t2.isOneWord())
-						|| (t1.isTwoWord() && t2.isTop()),
-				"Invalid types on top of the stack for pop2: ", t1, t2, *this);
-		//Error::check(t2.isTop(), "Type is not Top type: ", t2, t1, *this);
+	Type popFloat();
 
-		return t1;
-	}
+	Type popLong();
 
-	Type popArray() {
-		return popOneWord();
-	}
-
-	Type popInt() {
-		Type t = popOneWord();
-		assert(t.isInt(), "invalid int type on top of the stack: ", t);
-		return t;
-	}
-
-	Type popFloat() {
-		Type t = popOneWord();
-		assert(t.isFloat(), "invalid float type on top of the stack");
-		return t;
-	}
-
-	Type popLong() {
-		Type t = popTwoWord();
-		Error::check(t.isLong(), "invalid long type on top of the stack");
-		return t;
-	}
-
-	Type popDouble() {
-		Type t = popTwoWord();
-		Error::check(t.isDouble(), "Invalid double type on top of the stack: ",
-				t);
-
-		return t;
-	}
+	Type popDouble();
 
 	Type popRef() {
 		Type t = popOneWord();
@@ -1706,39 +1577,13 @@ public:
 		return t;
 	}
 
-	void popType(const Type& type) {
-		if (type.isInt()) {
-			popInt();
-		} else if (type.isFloat()) {
-			popFloat();
-		} else if (type.isLong()) {
-			popLong();
-		} else if (type.isDouble()) {
-			popDouble();
-		} else if (type.isObject()) {
-			popRef();
-		} else {
-			raise("invalid pop type: ", type);
-		}
+	Type popArray() {
+		return popOneWord();
 	}
 
-	void pushType(const Type& type) {
-		if (type.isInt()) {
-			pushInt();
-		} else if (type.isFloat()) {
-			pushFloat();
-		} else if (type.isLong()) {
-			pushLong();
-		} else if (type.isDouble()) {
-			pushDouble();
-		} else if (type.isNull()) {
-			pushNull();
-		} else if (type.isObject()) {
-			push(type);
-		} else {
-			raise("invalid push type: ", type);
-		}
-	}
+	void popType(const Type& type);
+
+	void pushType(const Type& type);
 
 	void push(const Type& t) {
 		stack.push_front(t);
@@ -1759,7 +1604,7 @@ public:
 		push(Type::doubleType());
 	}
 
-	void pushRef(const string& className) {
+	void pushRef(const String& className) {
 		push(Type::objectType(className));
 	}
 
@@ -1771,32 +1616,11 @@ public:
 		push(Type::nullType());
 	}
 
-	void _setVar(u4 lvindex, const Type& t) {
-		check(lvindex < 256, "");
-
-		if (lvindex >= lva.size()) {
-			lva.resize(lvindex + 1, Type::topType());
-		}
-
-		lva[lvindex] = t;
-	}
-
 	const Type& getVar(u4 lvindex) {
 		return lva.at(lvindex);
 	}
 
-	void setVar(u4* lvindex, const Type& t) {
-		assert(t.isOneOrTwoWord(), "Setting var on non one-two word ");
-
-		if (t.isOneWord()) {
-			_setVar(*lvindex, t);
-			(*lvindex)++;
-		} else {
-			_setVar(*lvindex, t);
-			_setVar(*lvindex + 1, Type::topType());
-			(*lvindex) += 2;
-		}
-	}
+	void setVar(u4* lvindex, const Type& t);
 
 	void setIntVar(u4 lvindex) {
 		setVar(&lvindex, Type::intType());
@@ -1814,50 +1638,27 @@ public:
 		setVar(&lvindex, Type::doubleType());
 	}
 
-	void setRefVar(u4 lvindex, const string& className) {
+	void setRefVar(u4 lvindex, const String& className) {
 		setVar(&lvindex, Type::objectType(className));
 	}
 
-	void setRefVar(u4 lvindex, const Type& type) {
-		check(type.isObject() || type.isNull(), "Type must be object type: ",
-				type);
-		setVar(&lvindex, type);
-	}
+	void setRefVar(u4 lvindex, const Type& type);
 
 	void clearStack() {
 		stack.clear();
 	}
 
-	void cleanTops() {
-		for (u4 i = 0; i < lva.size(); i++) {
-			Type t = lva[i];
-			if (t.isTwoWord()) {
-				Type top = lva[i + 1];
-				assert(top.isTop(), "Not top for two word: ", top);
-				lva.erase(lva.begin() + i + 1);
-			}
-		}
-
-		for (int i = lva.size() - 1; i >= 0; i--) {
-			Type t = lva[i];
-			if (t.isTop()) {
-
-				lva.erase(lva.begin() + i);
-			} else {
-				return;
-			}
-		}
-	}
+	void cleanTops();
 
 	std::vector<Type> lva;
 	std::list<Type> stack;
 	bool valid;
-};
 
-//class InstVisitor {
-//
-//	void
-//};
+private:
+
+	void _setVar(u4 lvindex, const Type& t);
+
+};
 
 /**
  * Represent a bytecode instruction.
@@ -1954,16 +1755,16 @@ public:
 	/**
 	 * The opcode of this instruction.
 	 */
-	Opcode opcode;
+	const Opcode opcode;
 
 	/**
 	 * The kind of this instruction.
 	 */
-	OpKind kind;
+	const OpKind kind;
 
 	int _offset;
 
-	ConstPool* const constPool;
+	const ConstPool* const constPool;
 	Inst* prev;
 	Inst* next;
 
@@ -1971,8 +1772,7 @@ public:
 	 *
 	 */
 	class LabelInst* label() {
-		Error::assert(isLabel(), "Inst is not a label: ", *this);
-		return (LabelInst*) this;
+		return cast<LabelInst>(isLabel(), "label");
 	}
 
 	class PushInst* push() {
@@ -1980,59 +1780,47 @@ public:
 	}
 
 	class LdcInst* ldc() {
-		Error::assert(isLdc(), "Inst is not a ldc: ", *this);
-		return (LdcInst*) this;
+		return cast<LdcInst>(isLdc(), "ldc");
 	}
 
 	class VarInst* var() {
-		Error::assert(isVar(), "Inst is not a var: ", *this);
-		return (VarInst*) this;
+		return cast<VarInst>(isVar(), "var");
 	}
 
 	class IincInst* iinc() {
-		Error::assert(isIinc(), "Inst is not a iinc: ", *this);
-		return (IincInst*) this;
+		return cast<IincInst>(isIinc(), "iinc");
 	}
 
 	class InvokeInst* invoke() {
-		Error::assert(isInvoke(), "Inst is not a invoke: ", *this);
-		return (InvokeInst*) this;
+		return cast<InvokeInst>(isInvoke(), "invoke");
 	}
 
 	class JumpInst* jump() {
-		Error::assert(isJump(), "Inst is not a jump: ", *this);
-		return (JumpInst*) this;
+		return cast<JumpInst>(isJump(), "jump");
 	}
 
 	class TableSwitchInst* ts() {
-		Error::assert(isTableSwitch(), "Inst is not a ts: ", *this);
-		return (TableSwitchInst*) this;
+		return cast<TableSwitchInst>(isTableSwitch(), "ts");
 	}
 
 	class LookupSwitchInst* ls() {
-		Error::assert(isLookupSwitch(), "Inst is not a ls: ", *this);
-		return (LookupSwitchInst*) this;
+		return cast<LookupSwitchInst>(isLookupSwitch(), "ls");
 	}
 
 	class InvokeInterfaceInst* invokeinterface() {
-		Error::assert(isInvokeInterface(), "Inst is not a invokeinterface: ",
-				*this);
-		return (InvokeInterfaceInst*) this;
+		return cast<InvokeInterfaceInst>(isInvokeInterface(), "invinter");
 	}
 
 	class TypeInst* type() {
-		Error::assert(isType(), "Inst is not a typ: ", *this);
-		return (TypeInst*) this;
+		return cast<TypeInst>(isType(), "type");
 	}
 
 	class NewArrayInst* newarray() {
-		Error::assert(isNewArray(), "Inst is not a newarray: ", *this);
-		return (NewArrayInst*) this;
+		return cast<NewArrayInst>(isNewArray(), "newarray");
 	}
 
 	class WideInst* wide() {
-		Error::assert(isWide(), "Inst is not a wide: ", *this);
-		return (WideInst*) this;
+		return cast<WideInst>(isWide(), "wide");
 	}
 
 	class FieldInst* field() {
@@ -2058,9 +1846,11 @@ private:
 
 	template<typename TKind>
 	TKind* cast(bool cond, const char* kindName) {
-		Error::assert(cond, "Inst is not a ", kindName, ": ", *this);
+		checkCast(cond, kindName);
 		return (TKind*) this;
 	}
+
+	void checkCast(bool cond, const char* kindName) const;
 };
 
 /**
@@ -2380,16 +2170,9 @@ public:
 		friend InstList;
 	public:
 
-		Inst* operator*() {
-			Error::assert(position != nullptr, "Dereferencing * on nullptr");
-			return position;
-		}
+		Inst* operator*();
 
-		Inst* operator->() const {
-			Error::assert(position != nullptr, "Dereferencing -> on nullptr");
-
-			return position;
-		}
+		Inst* operator->() const;
 
 		bool friend operator==(const Iterator& lhs, const Iterator& rhs) {
 			return lhs.position == rhs.position;
@@ -2399,25 +2182,9 @@ public:
 			return lhs.position != rhs.position;
 		}
 
-		Iterator& operator++() {
-			Error::assert(position != nullptr, "Doing ++ at nullptr");
-			position = position->next;
+		Iterator& operator++();
 
-			return *this;
-		}
-
-		Iterator& operator--() {
-			if (position == nullptr) {
-				position = last;
-			} else {
-				position = position->prev;
-			}
-
-			Error::assert(position != nullptr,
-					"Doing -- at nullptr after last");
-
-			return *this;
-		}
+		Iterator& operator--();
 
 	private:
 
@@ -2604,11 +2371,7 @@ public:
 
 	friend ControlFlowGraph;
 
-	void addTarget(BasicBlock* target) {
-		Error::check(cfg == target->cfg, "invalid owner for basic block");
-
-		targets.push_back(target);
-	}
+	void addTarget(BasicBlock* target);
 
 	InstList::Iterator start;
 	InstList::Iterator exit;
@@ -2733,7 +2496,7 @@ struct Attrs {
 	Attrs(const Attrs&) = delete;
 	Attrs(Attrs&&) = default;
 
-	inline Attrs() {
+	Attrs() {
 	}
 
 	~Attrs() {
@@ -2742,29 +2505,29 @@ struct Attrs {
 		}
 	}
 
-	inline Attr* add(Attr* attr) {
+	Attr* add(Attr* attr) {
 		attrs.push_back(attr);
 
 		return attr;
 	}
 
-	inline u2 size() const {
+	u2 size() const {
 		return attrs.size();
 	}
 
-	inline const Attr& operator[](u2 index) const {
+	const Attr& operator[](u2 index) const {
 		return *attrs[index];
 	}
 
-	vector<Attr*>::iterator begin() {
+	std::vector<Attr*>::iterator begin() {
 		return attrs.begin();
 	}
 
-	vector<Attr*>::iterator end() {
+	std::vector<Attr*>::iterator end() {
 		return attrs.end();
 	}
 
-	vector<Attr*> attrs;
+	std::vector<Attr*> attrs;
 };
 
 /**
@@ -2824,7 +2587,7 @@ public:
 		u2 lineno;
 	};
 
-	vector<LnEntry> lnt;
+	std::vector<LnEntry> lnt;
 
 };
 
@@ -2984,7 +2747,7 @@ class Field: public Member {
 
 public:
 
-	inline Field(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex,
+	Field(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex,
 			ConstPool* constPool) :
 			Member(accessFlags, nameIndex, descIndex, constPool) {
 	}
@@ -3019,15 +2782,7 @@ public:
 		return nullptr;
 	}
 
-	InstList& instList() {
-		for (Attr* attr : attrs) {
-			if (attr->kind == ATTR_CODE) {
-				return ((CodeAttr*) attr)->instList;
-			}
-		}
-
-		Error::raise("ERROR! get inst list");
-	}
+	InstList& instList();
 
 //	void instList(const InstList& newcode) {
 //		for (Attr* attr : attrs) {
@@ -3040,7 +2795,7 @@ public:
 //		Error::raise("ERROR! setting inst list");
 //	}
 
-	inline bool isStatic() const {
+	bool isStatic() const {
 		return accessFlags & METHOD_STATIC;
 	}
 
@@ -3059,8 +2814,8 @@ public:
 	virtual ~IClassPath() {
 	}
 
-	virtual string getCommonSuperClass(const string& className1,
-			const string& className2) = 0;
+	virtual String getCommonSuperClass(const String& className1,
+			const String& className2) = 0;
 
 };
 
@@ -3134,7 +2889,7 @@ public:
 	 * For k >= 2, JDK release 1.k supports class file format versions in
 	 * the range 45.0 through 44+k.0 inclusive.
 	 */
-	string supportedByJdk() const;
+	String supportedByJdk() const;
 };
 
 /**
@@ -3242,7 +2997,7 @@ public:
 	 *
 	 * @see www.graphviz.org
 	 */
-	void dot(ostream& os) const;
+	void dot(std::ostream& os) const;
 
 	Version version;
 	u2 accessFlags;
@@ -3262,7 +3017,7 @@ public:
 	virtual ~IClassFinder() {
 	}
 
-	virtual ClassFile* findClass(const string& className) = 0;
+	virtual ClassFile* findClass(const String& className) = 0;
 
 };
 
@@ -3283,9 +3038,9 @@ public:
 	 */
 	class ClassEntry {
 	public:
-		string className;
-		string superClassName;
-		vector<string> interfaces;
+		String className;
+		String superClassName;
+		std::vector<String> interfaces;
 	};
 
 	/**
@@ -3297,35 +3052,36 @@ public:
 	 */
 	void addClass(const ClassFile& classFile);
 
-	const string& getSuperClass(const string& className) const;
+	const String& getSuperClass(const String& className) const;
 
 	bool isAssignableFrom(const String& sub, const String& sup) const;
 
 	bool isDefined(const String& className) const;
 
-	list<ClassEntry>::iterator begin() {
+	std::list<ClassEntry>::iterator begin() {
 		return classes.begin();
 	}
 
-	list<ClassEntry>::iterator end() {
+	std::list<ClassEntry>::iterator end() {
 		return classes.end();
 	}
 
-	list<ClassEntry>::const_iterator begin() const {
+	std::list<ClassEntry>::const_iterator begin() const {
 		return classes.begin();
 	}
 
-	list<ClassEntry>::const_iterator end() const {
+	std::list<ClassEntry>::const_iterator end() const {
 		return classes.end();
 	}
 
 private:
 
-	list<ClassEntry> classes;
+	std::list<ClassEntry> classes;
 
 	const ClassEntry* getEntry(const String& className) const;
 };
 
+std::ostream& operator<<(std::ostream& os, const JnifException& ex);
 std::ostream& operator<<(std::ostream& os, const ConstTag& tag);
 std::ostream& operator<<(std::ostream& os, const Frame& frame);
 std::ostream& operator<<(std::ostream& os, const Type& type);

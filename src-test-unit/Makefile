@@ -5,8 +5,16 @@ BUILD=../build
 EXE=test-unit
 HPPS=$(wildcard $(INCLUDE)/*.hpp)
 SRCS=$(wildcard jnif/*.java) $(wildcard *.cpp)
-OBJS=$(SRCS:%=$(BUILD)/%.o)
 
+CLSS=$(shell find . -name "*.class")
+
+OBJS=$(SRCS:%=$(BUILD)/%.o) $(CLSS:./classes/%=$(BUILD)/%.o) $(BUILD)/filelist.cpp.o
+#$(BUILD)/java/lang/Object.class.o
+
+LINK=$(OBJS:%='%')
+JVS:=$(CLSS:./classes/%.class=%)
+JVS:=$(subst /,_,$(JVS))
+JVS:=$(subst $$,_,$(JVS))
 CFLAGS += -fPIC -W -O0 -Wall -Wextra -I$(INCLUDE)
 
 .PHONY: all run
@@ -14,12 +22,14 @@ CFLAGS += -fPIC -W -O0 -Wall -Wextra -I$(INCLUDE)
 all: $(BUILD)/$(EXE)
 
 run: $(BUILD)/$(EXE)
-	$(BUILD)/$(EXE) > $(BUILD)/$(EXE).out
+	cd $(BUILD) && ./$(EXE) 
+#> $(BUILD)/$(EXE).out
 
 $(BUILD)/$(EXE): $(OBJS) $(BUILD)/libjnif.a
-	clang++ $(CFLAGS) -fsanitize=leak -stdlib=libc++ -o $@ $^
+	clang++ $(CFLAGS) -fsanitize=leak -stdlib=libc++ -o $@ $(LINK) $(BUILD)/libjnif.a
+#$^
 
-$(BUILD)/%.java.o: %.java
+$(BUILD)/%.java.o: %.java | $(BUILD)
 	javac -d $(BUILD)/ $<
 	cd $(BUILD) ; xxd -include $*.class $*.c
 	$(LINK.c) -c -o $@ $(BUILD)/$*.c
@@ -27,9 +37,26 @@ $(BUILD)/%.java.o: %.java
 #	echo "extern u1 $(subst /,_,$*)_class[];" >> $(BUILD)/$*.h
 #	echo "extern int $(subst /,_,$*)_class_len;" >> $(BUILD)/$*.h
 
-#$(BUILD)/filelist.cpp: jnif
-#	echo "// AUTOMATICALLY GENERATED; DO NOT MODIFY" > $(BUILD)/filelist.cpp
-#	$(foreach dir,$(dirs),$(wildcard $(dir)/*))
+#ditto $@
+$(BUILD)/%.class.o: classes/%.class | $(BUILD)
+	mkdir -p $(dir $@)
+	cp -v '$<' $(dir $@)
+	cd $(BUILD) ; xxd -include '$*.class' '$*.c'
+	$(LINK.c) -c -o '$@' '$(BUILD)/$*.c'
+
+#$(BUILD)/$*.class
+
+$(BUILD)/filelist.cpp:
+filelist: 
+	echo "// AUTOMATICALLY GENERATED; DO NOT MODIFY" > $(BUILD)/filelist.cpp
+	for c in $(JVS); do echo "extern unsigned char "$$c"_class[];\nextern int "$$c"_class_len;\n" >> $(BUILD)/filelist.cpp; done
+	echo "struct JavaFile {unsigned char* data;int len;const char* name;};" >> $(BUILD)/filelist.cpp
+	echo "" >> $(BUILD)/filelist.cpp
+	echo "JavaFile tests2[] = { " >> $(BUILD)/filelist.cpp
+	for c in $(JVS); do echo "{ "$$c"_class, "$$c"_class_len, \""$$c"\" } ," >> $(BUILD)/filelist.cpp; done
+	echo "};\n" >> $(BUILD)/filelist.cpp
+	echo "int tests2_size = sizeof(tests2)/sizeof(tests2[0]);\n" >> $(BUILD)/filelist.cpp
+
 
 $(BUILD)/filelist.cpp.o: $(BUILD)/filelist.cpp | $(BUILD)
 	$(LINK.c) -std=c++11 -stdlib=libc++ -c -o $@ $<
@@ -40,5 +67,12 @@ $(BUILD)/%.cpp.o: %.cpp $(HPPS) | $(BUILD)
 $(BUILD)/libjnif.a: FORCE
 	$(MAKE) -C ../src
 
+$(BUILD):
+	mkdir -p $(BUILD)
+	mkdir -p $(BUILD)/instr
+
+show:
+	echo $(CLSS)
+	
 .PHONY: FORCE
 FORCE:

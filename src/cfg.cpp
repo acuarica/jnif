@@ -6,10 +6,19 @@
  */
 
 #include "jnif.hpp"
+#include "jnifex.hpp"
+
+#include <sstream>
 
 using namespace std;
 
 namespace jnif {
+
+void BasicBlock::addTarget(BasicBlock* target) {
+	Error::check(cfg == target->cfg, "invalid owner for basic block");
+
+	targets.push_back(target);
+}
 
 static void setBranchTargets(InstList& instList) {
 	for (Inst* inst : instList) {
