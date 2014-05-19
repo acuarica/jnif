@@ -21,6 +21,10 @@ InstrFunc* instrFunc;
 
 int inLivePhase = 0;
 
+void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, unsigned char* data,
+		int len, const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni, InstrArgs* args);
+
 static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jclass class_being_redefined, jobject loader, const char* name,
 		jobject protection_domain, jint class_data_len,
@@ -38,8 +42,12 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		InstrArgs args;
 		args.loader = loader;
 
-		(*instrFunc)(jvmti, (unsigned char*) class_data, class_data_len, name,
-				new_class_data_len, new_class_data, jni, &args);
+		InvokeInstrFunc(instrFunc, jvmti, (unsigned char*) class_data,
+				class_data_len, name, new_class_data_len, new_class_data, jni,
+				&args);
+
+//		(*instrFunc)(jvmti, (unsigned char*) class_data, class_data_len, name,
+//				new_class_data_len, new_class_data, jni, &args);
 	}
 }
 

@@ -6,65 +6,68 @@
  */
 
 #include "jnif.hpp"
+#include "jnifex.hpp"
 
 #include <stdio.h>
 #include <execinfo.h>
 #include <unistd.h>
+#include <sstream>
+
+using namespace std;
 
 namespace jnif {
 
-void Error::_backtrace() {
-	void *array[20];
+void Error::_backtrace(std::ostream& os) {
+	void* array[20];
 	size_t size;
 
 	size = backtrace(array, 20);
 
-	fprintf(stderr, "Error: exception on jnif: (backtrace)\n");
-	backtrace_symbols_fd(array, size, STDERR_FILENO);
+	char** symbols = backtrace_symbols(array, size);
+	for (size_t i = 0; i < size; i++) {
+		const char* symbol = symbols[i];
+		os << "    " << symbol << endl;
+	}
+
+	free(symbols);
 }
 
-void InstList::addInst(Inst* inst, Inst* pos) {
-	Error::assert((first == nullptr) == (last == nullptr),
-			"Invalid head/tail/size: head: ", first, ", tail: ", last,
-			", size: ", size);
+std::ostream& operator<<(std::ostream& os, const JnifException& ex) {
+	os << "Error: JNIF Exception: " << ex.message << " @ " << endl;
+	os << ex.stackTrace;
 
-	Error::assert((first == nullptr) == (size == 0),
-			"Invalid head/tail/size: head: ", first, ", tail: ", last,
-			", size: ", size);
+	return os;
 
-	Inst* p;
-	Inst* n;
-	if (first == nullptr) {
-		Error::assert(pos == nullptr, "Invalid pos");
+}
+const ConstItem* ConstPool::_getEntry(ConstIndex i) const {
+	Error::check(i > NULLENTRY, "Null access to constant pool: index = ", i);
+	Error::check(i < entries.size(), "Index out of bounds: index = ", i);
 
-		p = nullptr;
-		n = nullptr;
-		first = inst;
-		last = inst;
-	} else {
-		if (pos == nullptr) {
-			p = last;
-			n = nullptr;
-			last = inst;
-		} else {
-			p = pos->prev;
-			n = pos;
+	const ConstItem* entry = &entries[i];
+
+	return entry;
+}
+
+const ConstItem* ConstPool::_getEntry(ConstIndex index, u1 tag,
+		const char* message) const {
+	const ConstItem* entry = _getEntry(index);
+
+	Error::check(entry->tag == tag, "Invalid constant ", message,
+			", expected: ", (int) tag, ", actual: ", (int) entry->tag);
+
+	return entry;
+}
+
+InstList& Method::instList() {
+	for (Attr* attr : attrs) {
+		if (attr->kind == ATTR_CODE) {
+			return ((CodeAttr*) attr)->instList;
 		}
 	}
 
-	inst->prev = p;
-	inst->next = n;
-
-	if (inst->prev != nullptr) {
-		inst->prev->next = inst;
-	}
-
-	if (inst->next != nullptr) {
-		inst->next->prev = inst;
-	}
-
-	size++;
+	Error::raise("ERROR! get inst list");
 }
+
 void ClassHierarchy::addClass(const ClassFile& classFile) {
 	ClassEntry e;
 	e.className = classFile.getThisClassName();

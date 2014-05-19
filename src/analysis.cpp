@@ -5,6 +5,9 @@
  *      Author: luigi
  */
 #include "jnif.hpp"
+#include "jnifex.hpp"
+
+#include <iostream>
 
 using namespace std;
 
@@ -1128,9 +1131,9 @@ public:
 		bbe->in = initFrame;
 		bbe->out = initFrame;
 
-		const String& methodName = cf->getUtf8(method->nameIndex);
-		cerr << "Computing frames for method: " << cf->getThisClassName() << "."
-				<< methodName << cf->getUtf8(method->descIndex) << endl;
+//		const String& methodName = cf->getUtf8(method->nameIndex);
+//		cerr << "Computing frames for method: " << cf->getThisClassName() << "."
+//				<< methodName << cf->getUtf8(method->descIndex) << endl;
 
 		BasicBlock* to = *cfg.entry->begin();
 		SmtBuilder::computeState(*to, initFrame, code->instList, *cf, code,

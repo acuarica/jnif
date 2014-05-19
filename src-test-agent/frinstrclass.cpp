@@ -20,7 +20,7 @@
 
 #include "jnif.hpp"
 
-//using namespace std;
+using namespace std;
 using namespace jnif;
 
 ClassHierarchy classHierarchy;
@@ -165,7 +165,25 @@ static string outFileName(const char* className, const char* ext,
 	return path.str();
 }
 
+typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni, InstrArgs* args);
+
 extern "C" {
+
+void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
+		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
+		InstrArgs* args) {
+	try {
+		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args);
+	} catch (const JnifException& ex) {
+		//cerr << "Error: JNIF Exception: " << ex.message << " @ " << endl;
+		//cerr << "Error: exception on jnif: (stackTrace)" << endl;
+		//cerr << ex.stackTrace << endl;
+		cerr << ex << endl;
+		throw ex;
+	}
+}
 
 void InstrUnload() {
 	//cerr << "Class Hierarchy: " << endl;
@@ -205,6 +223,8 @@ void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args) {
+//	ClassFile f("hola/Clase", "hola/UnaSuperClase");
+	//f.getClassName(0);
 
 	ClassFile cf(data, len);
 	classHierarchy.addClass(cf);

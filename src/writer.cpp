@@ -7,6 +7,8 @@
 #include "jnif.hpp"
 #include "jnifex.hpp"
 
+#include <iostream>
+
 using namespace std;
 
 namespace jnif {
@@ -48,7 +50,7 @@ private:
 /**
  * Implements a memory buffer writer in big-endian encoding.
  */
-class BufferWriter: private Error {
+class BufferWriter {
 public:
 
 	BufferWriter(u1* buffer, int len) :
@@ -56,11 +58,11 @@ public:
 	}
 
 	~BufferWriter() {
-		check(offset == len, "%d != %d. Expected end of buffer", offset, len);
+		//Error::check(offset == len, "Expected end of buffer", offset, len);
 	}
 
 	void writeu1(u1 value) {
-		check(offset + 1 <= len, "Invalid write");
+		Error::check(offset + 1 <= len, "Invalid write");
 
 		buffer[offset] = value;
 
@@ -68,7 +70,7 @@ public:
 	}
 
 	void writeu2(u2 value) {
-		check(offset + 2 <= len, "Invalid write");
+		Error::check(offset + 2 <= len, "Invalid write");
 
 		buffer[offset + 0] = ((u1*) &value)[1];
 		buffer[offset + 1] = ((u1*) &value)[0];
@@ -77,7 +79,7 @@ public:
 	}
 
 	void writeu4(u4 value) {
-		check(offset + 4 <= len, "Invalid write");
+		Error::check(offset + 4 <= len, "Invalid write");
 
 		buffer[offset + 0] = ((u1*) &value)[3];
 		buffer[offset + 1] = ((u1*) &value)[2];
@@ -88,7 +90,7 @@ public:
 	}
 
 	void writecount(const void* source, int count) {
-		check(offset + count <= len, "Invalid write count");
+		Error::check(offset + count <= len, "Invalid write count");
 
 		copy((u1*) source, (u1*) source + count, buffer + offset);
 
@@ -189,7 +191,7 @@ public:
 					break;
 				case CONST_FLOAT: {
 					float fvalue = entry->f.value;
-					float value = *(u4*) &fvalue;
+					u4 value = *(u4*) &fvalue;
 					bw.writeu4(value);
 					break;
 				}

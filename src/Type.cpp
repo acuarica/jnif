@@ -5,10 +5,72 @@
  *      Author: luigi
  */
 #include "jnif.hpp"
+#include "jnifex.hpp"
+
+#include <sstream>
 
 using namespace std;
 
 namespace jnif {
+
+Type Type::objectType(const String& className, u2 cpindex) {
+	Error::check(!className.empty(),
+			"Expected non-empty class name for object type");
+
+	return Type(TYPE_OBJECT, className, cpindex);
+}
+
+Type Type::arrayType(const Type& baseType, u4 dims) {
+	//u4 d = baseType.dims + dims;
+	Error::check(dims > 0, "Invalid dims: ", dims);
+	Error::check(dims <= 255, "Invalid dims: ", dims);
+	Error::check(!baseType.isTop(), "Cannot construct an array type of ", dims,
+			" dimension(s) using as a base type Top (", baseType, ")");
+//		Error::check(!baseType.isArray(), "base type is already an array: ",
+//				baseType);
+
+	return Type(baseType, dims);
+}
+
+String Type::getClassName() const {
+	Error::check(isObject(), "Type is not object type to get class name: ",
+			*this);
+
+	if (isArray()) {
+		stringstream ss;
+		for (u4 i = 0; i < dims; i++) {
+			ss << "[";
+		}
+
+		if (tag == TYPE_OBJECT) {
+			ss << "L" << className << ";";
+		} else {
+			ss << className;
+		}
+
+		return ss.str();
+	} else {
+		return className;
+	}
+}
+
+u2 Type::getCpIndex() const {
+	Error::check(isObject(), "Type is not object type to get cp index: ",
+			*this);
+	return classIndex;
+}
+
+Type Type::elementType() const {
+	Error::check(isArray(), "Type is not array: ", *this);
+
+	return Type(*this, dims - 1);
+}
+
+Type Type::stripArrayType() const {
+	Error::check(isArray(), "Type is not array: ", *this);
+
+	return Type(*this, 0);
+}
 
 Type Type::fromConstClass(const std::string& className) {
 	Error::assert(!className.empty(), "Invalid string class");

@@ -1,4 +1,5 @@
 #include "jnif.hpp"
+#include "jnifex.hpp"
 
 #include <ostream>
 #include <iomanip>
