@@ -4,7 +4,9 @@ OUTPUT=$(BUILD)/libjnif.a
 INCS=$(wildcard *.hpp)
 SRCS=$(wildcard *.cpp)
 OBJS=$(SRCS:%=$(BUILD)/%.o)
-CFLAGS += -fPIC -W -O0 -g -Wall -Wextra
+CFLAGS += -fPIC -W -O0 -g -Wall -Wextra 
+#-pedantic
+#-Weverything
 
 .PHONY: all
 all: $(OUTPUT)

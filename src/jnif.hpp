@@ -2246,7 +2246,7 @@ public:
 		addInst(inst, pos);
 	}
 
-	void addWideIinc(u1 index, u1 value, Inst* pos = nullptr) {
+	void addWideIinc(u2 index, u2 value, Inst* pos = nullptr) {
 		auto inst = new WideInst(index, value, constPool);
 		addInst(inst, pos);
 	}

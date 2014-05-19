@@ -3,9 +3,11 @@
  */
 #include <jnif.hpp>
 #include <stdlib.h>
+#include <ftw.h>
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <thread>
 
 static inline int _exception(int) __attribute__((noreturn));
 
@@ -19,10 +21,12 @@ static inline int _exception(int) {
 using namespace std;
 using namespace jnif;
 
-struct JavaFile {
-	u1* data;
-	int len;
-	const char* name;
+class JavaFile {
+public:
+
+	const u1* const data;
+	const int len;
+	const String name;
 };
 
 #define JAVAFILE(name) extern u1 jnif_##name ## _class[]; \
@@ -38,30 +42,54 @@ JAVAFILE(MainClass);
 JavaFile tests[] = { jnifTestAbs, jnifExceptionClass, jnifBasicClass,
 		jnifTestProxy, jnifMainClass };
 
-extern JavaFile tests2[];
-extern int tests2_size;
-
 list<JavaFile> tests4;
+//
+//void parallelFor(const unsigned int size,
+//		std::function<void(const unsigned int)> func) {
+//	const unsigned int nbThreads = std::thread::hardware_concurrency();
+//	std::vector<std::thread> threads;
+//	for (unsigned int idThread = 0; idThread < nbThreads; idThread++) {
+//		auto threadFunc = [=, &threads]() {
+//			for (unsigned int i=idThread; i<size; i+=nbThreads) {
+//				func(i);
+//			}
+//		};
+//		threads.push_back(std::thread(threadFunc));
+//	}
+//	for (auto & t : threads)
+//		t.join();
+//}
 
 template<typename TFunc>
 static void apply(TFunc instr) {
+
+	//int ratio = tests4.size() / 50;
+	int ratio = 100;
+	int count = 0;
 	auto invokeInstr = [&](const JavaFile& jf) {
-		cerr << ".";
 		instr(jf);
+
+		count++;
+
+		if (count == ratio) {
+			cerr << ".";
+			count = 0;
+		}
 	};
 
 //	for (const JavaFile& jf : tests) {
 //		invokeInstr(jf);
 //	}
-//
-//	for (int i = 0; i < tests2_size; i++) {
-//		const JavaFile& jf = tests2[i];
-//
-//		invokeInstr(jf);
-//	}
 
+	int i = 0;
 	for (const JavaFile& jf : tests4) {
 		invokeInstr(jf);
+
+		i++;
+
+		if (i == 1000) {
+
+		}
 	}
 }
 
@@ -81,13 +109,14 @@ static void _run(TTestFunc test, const char* testName) {
 
 #define run(test) _run(test, #test);
 
-static string outFileName(const char* className, const char* ext,
-		const char* prefix = "./instr/") {
+// ./instr/
+static string outFileName(const String& className, const char* ext,
+		const char* prefix = "") {
 	string fileName = className;
 
-	for (u4 i = 0; i < fileName.length(); i++) {
-		fileName[i] = className[i] == '/' ? '.' : className[i];
-	}
+//	for (u4 i = 0; i < fileName.length(); i++) {
+//		fileName[i] = className[i] == '/' ? '.' : className[i];
+//	}
 
 	stringstream path;
 	path << prefix << fileName << "." << ext;
@@ -96,17 +125,27 @@ static string outFileName(const char* className, const char* ext,
 	return path.str();
 }
 
+class UnitTestClassPath: public IClassPath {
+public:
+
+	String getCommonSuperClass(const String& className1,
+			const String& className2) {
+		return "java/lang/Object";
+	}
+
+};
+
 static void testPrinterModel() {
 	ClassFile emptyCf("jnif/test/generated/Class1");
 	ofstream os(
-			outFileName("jnif/test/generated/Class1", "disasmModel").c_str());
+			outFileName("jnif/test/generated/Class1", "model.disasm").c_str());
 	os << emptyCf;
 
 	ClassFile cf2("jnif/test/generated/Class2", "jnif/test/generated/Class");
 	cf2.addMethod("main", "([Ljava/lang/String;)V",
 			METHOD_FINAL | METHOD_PUBLIC);
 	ofstream os2(
-			outFileName("jnif/test/generated/Class2", "disasmModel").c_str());
+			outFileName("jnif/test/generated/Class2", "model.disasm").c_str());
 	os2 << cf2;
 }
 
@@ -122,11 +161,12 @@ static void testPrinterParserWithFrames() {
 	apply([](const JavaFile& jf) {
 		ClassFile cf(jf.data, jf.len);
 
-		//cf.computeFrames();
+		UnitTestClassPath cp;
+		cf.computeFrames(&cp);
 
-			ofstream os(outFileName(jf.name, "disasmWithFrames").c_str());
-			os << cf;
-		});
+		ofstream os(outFileName(jf.name, "frames.disasm").c_str());
+		os << cf;
+	});
 }
 
 static void testIdentityComputeSize() {
@@ -137,20 +177,22 @@ static void testIdentityComputeSize() {
 
 		ASSERT(newlen == jf.len,
 				"Expected class file len %d, actual was %d, on class %s",
-				jf.len, newlen, jf.name);
+				jf.len, newlen, jf.name.c_str());
 	});
 }
 
-static void testIdentityComputeSizeWithFrames() {
+static void testIdentityComputeFrames() {
 	apply([](const JavaFile& jf) {
 		ClassFile cf(jf.data, jf.len);
 
-		//cf.computeFrames();
-			int newlen = cf.computeSize();
+		UnitTestClassPath cp;
+		cf.computeFrames(&cp);
 
-			ASSERT(newlen == jf.len,
-					"Expected class file len %d, actual was %d, on class %s",
-					jf.len, newlen, jf.name);
+		//int newlen = cf.computeSize();
+
+			//ASSERT(newlen == jf.len,
+			//	"Expected class file len %d, actual was %d, on class %s",
+			//jf.len, newlen, jf.name.c_str());
 		});
 }
 
@@ -162,17 +204,22 @@ static void testIdentityParserWriter() {
 
 		ASSERT(jf.len == newlen, "Expected class file len %d, "
 				"actual was %d, on class %s",
-				jf.len, newlen, jf.name);
+				jf.len, newlen, jf.name.c_str());
 
 		u1* newdata = new u1[newlen];
 
 		cf.write(newdata, newlen);
 
-		for (int i = 0; i < newlen; i++) {
+		for (int i = 1; i < newlen; i++) {
+			if (jf.data[i] != newdata[i]) {
+				cerr << "Validation failed!" << endl;
+				cf.write(newdata, i+1);
+			}
+
 			ASSERT(jf.data[i] == newdata[i], "error on %d: "
-					"%d:%d != %d:%d @ class: %s", i,
-					jf.data[i],jf.data[i+1],
-					newdata[i],newdata[i+1],jf.name
+					"%d:%d:%d != %d:%d:%d @ class: %s", i,
+					jf.data[i-1],jf.data[i],jf.data[i+1],
+					newdata[i-1],newdata[i],newdata[i+1],jf.name.c_str()
 			);
 		}
 
@@ -190,7 +237,7 @@ static void testIdentityParserWriterWithFrames() {
 
 			ASSERT(jf.len == newlen, "Expected class file len %d, "
 					"actual was %d, on class %s",
-					jf.len, newlen, jf.name);
+					jf.len, newlen, jf.name.c_str());
 
 			u1* newdata = new u1[newlen];
 
@@ -200,7 +247,7 @@ static void testIdentityParserWriterWithFrames() {
 				ASSERT(jf.data[i] == newdata[i], "error on %d: "
 						"%d:%d != %d:%d, on class %s", i,
 						jf.data[i],jf.data[i+1],
-						newdata[i],newdata[i+1], jf.name
+						newdata[i],newdata[i+1], jf.name.c_str()
 				);
 			}
 
@@ -237,7 +284,7 @@ static void testNopAdderInstrSize() {
 
 	ASSERT(jf.len + diff == newlen,
 			"Expected class file len %d, actual was %d, on class %s",
-			jf.len+diff, newlen, jf.name);
+			jf.len+diff, newlen, jf.name.c_str());
 
 });
 }
@@ -268,7 +315,7 @@ static void testNopAdderInstr() {
 
 	ASSERT(jf.len + diff == newlen,
 			"Expected class file len %d, actual was %d, on class %s",
-			jf.len, newlen, jf.name);
+			jf.len, newlen, jf.name.c_str());
 
 	u1* newdata = new u1[newlen];
 	cf.write(newdata, newlen);
@@ -279,7 +326,7 @@ static void testNopAdderInstr() {
 
 	ASSERT(newlen2 == newlen,
 			"Expected class file len %d, actual was %d, on class %s",
-			newlen2, newlen, jf.name);
+			newlen2, newlen, jf.name.c_str());
 
 	u1* newdata2 = new u1[newlen2];
 	cf.write(newdata2, newlen2);
@@ -297,9 +344,7 @@ static void testNopAdderInstr() {
 });
 }
 
-#include <ftw.h>
-
-static int display_info(const char* filePath, const struct stat*, int tflag) {
+static int visitFile(const char* filePath, const struct stat*, int) {
 
 	auto isSuffix = [&](const string& suffix, const string& text) {
 		auto res = std::mismatch(suffix.rbegin(), suffix.rend(), text.rbegin());
@@ -317,9 +362,6 @@ static int display_info(const char* filePath, const struct stat*, int tflag) {
 		}
 
 		int fileSize = is.tellg();
-
-		cerr << fileSize << endl;
-
 		u1* buffer = new u1[fileSize];
 
 		is.seekg(0, ios::beg);
@@ -328,31 +370,27 @@ static int display_info(const char* filePath, const struct stat*, int tflag) {
 			throw "File not opened!";
 		}
 
-		JavaFile jf;
-		jf.data = buffer;
-		jf.len = fileSize;
-		jf.name = filePath;
+		JavaFile jf= {buffer,fileSize,filePath};
 		tests4.push_back(jf);
 	};
 
 	if (isSuffix(".class", string(filePath))) {
-		cerr << filePath << endl;
-
 		addJavaFile();
 	}
 
 	return 0;
 }
 
-int main(int argc, const char* argv[]) {
+int main(int, const char*[]) {
+	ftw("./", visitFile, 50);
 
-	ftw("./", display_info, 50);
+	cerr << "[Loaded " << tests4.size() << " classes]" << endl;
 
 	run(testPrinterModel);
-	run(testPrinterParser);
-	run(testPrinterParserWithFrames);
+	//run(testPrinterParser);
+	//run(testPrinterParserWithFrames);
 	run(testIdentityComputeSize);
-	run(testIdentityComputeSizeWithFrames);
+	run(testIdentityComputeFrames);
 	run(testIdentityParserWriter);
 	run(testIdentityParserWriterWithFrames);
 	//run(testNopAdderInstrSize);
