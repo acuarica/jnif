@@ -1,0 +1,97 @@
+<project name="fr-instr" default="compile">
+
+	<!-- To avoid warning: 'includeantruntime' was not set, defaulting to build.sysclasspath=last; set to false for repeatable builds -->
+	<presetdef name="fr-javac">
+		<javac includeantruntime="false" debug="on" source="1.7" target="1.7" />
+	</presetdef>
+
+	<!-- directory definition -->
+
+	<property name="src" value="${basedir}/src" />
+	<property name="src.test" value="${basedir}/src-test" />
+	<property name="src.testinput" value="${basedir}/src-testinput" />
+	<property name="lib" value="${basedir}/lib" />
+	<property name="build" value="${basedir}/build" />
+	<property name="resources" value="${basedir}/resources" />
+
+	<property name="lib.log4j" value="${lib}/log4j-1.2.17.jar" />
+	<property name="lib.asm" value="${lib}/asm-debug-all-4.0.jar" />
+	<property name="lib.junit" value="${lib}/junit-4.11.jar" />
+	<property name="lib.hamcrest" value="${lib}/hamcrest-core-1.3.jar" />
+
+	<!-- Building of a path which contains external jars -->
+
+	<path id="compile-classpath">
+		<fileset dir="${basedir}">
+			<include name="lib/*.jar" />
+		</fileset>
+	</path>
+
+	<path id="runtime-classpath">
+		<pathelement path="${asm.path}" />
+		<pathelement path="${asm.tree.path}" />
+		<pathelement path="${asm.analysis.path}" />
+		<pathelement path="${asm.attrs.path}" />
+		<pathelement path="${asm.util.path}" />
+		<pathelement path="${asm.commons.path}" />
+		<fileset dir="${basedir}">
+			<include name="lib/*.jar" />
+		</fileset>
+		<pathelement location="${build}" />
+	</path>
+
+	<target name="execute" depends="compile">
+		<java classname="${run.classname}" classpathref="runtime-classpath" fork="yes" failonerror="yes">
+			<arg line="${run.parameters}" />
+		</java>
+	</target>
+
+	<target name="compile">
+		<mkdir dir="${build}" />
+		<fr-javac srcdir="${src}" destdir="${build}">
+			<classpath path="${lib.asm}" />
+			<include name="**/*.java" />
+		</fr-javac>
+	</target>
+
+	<target name="compile-testinput">
+		<mkdir dir="${build}" />
+		<fr-javac srcdir="${src.testinput}" destdir="${build}">
+			<include name="**/*.java" />
+		</fr-javac>
+	</target>
+
+	<target name="compile-test" depends="compile,compile-testinput">
+		<mkdir dir="${build}" />
+		<fr-javac srcdir="${src.test}" destdir="${build}">
+			<classpath path="${lib.log4j}" />
+			<classpath path="${lib.junit}" />
+			<include name="**/*.java" />
+		</fr-javac>
+	</target>
+
+	<target name="test-instr" depends="compile-test">
+		<junit printsummary="yes" showoutput="true" haltonerror="true">
+			<classpath>
+				<pathelement path="${lib.log4j}" />
+				<pathelement path="${lib.junit}" />
+				<pathelement path="${lib.hamcrest}" />
+				<pathelement path="${lib.asm}" />
+				<pathelement location="${build}/" />
+				<pathelement location="${resources}" />
+			</classpath>
+			<formatter type="plain" usefile="false" />
+			<test name="ch.usi.inf.sape.frheap.test.ClassInstrumenterTest">
+			</test>
+		</junit>
+	</target>
+
+	<target name="run-testinput" depends="compile-testinput">
+		<java classname="ch.usi.inf.sape.frheap.test.input.SimpleJavaProgram" classpathref="runtime-classpath" fork="yes" failonerror="yes">
+		</java>
+	</target>
+
+	<target name="clean">
+		<delete dir="${build}" />
+	</target>
+</project>
