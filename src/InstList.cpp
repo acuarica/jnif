@@ -39,6 +39,14 @@ InstList::Iterator& InstList::Iterator::operator--() {
 	return *this;
 }
 
+InstList::~InstList() {
+	for (Inst* inst = first; inst != nullptr;) {
+		Inst* next = inst->next;
+		delete inst;
+		inst = next;
+	}
+}
+
 void InstList::addInst(Inst* inst, Inst* pos) {
 	Error::assert((first == nullptr) == (last == nullptr),
 			"Invalid head/tail/size: head: ", first, ", tail: ", last,

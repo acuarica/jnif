@@ -144,6 +144,14 @@ ControlFlowGraph::ControlFlowGraph(InstList& instList) :
 	buildCfg(instList, *this);
 }
 
+ControlFlowGraph::~ControlFlowGraph() {
+	//cerr << "~cfg";
+
+	for (auto bb : *this) {
+		delete bb;
+	}
+}
+
 BasicBlock* ControlFlowGraph::addBasicBlock(InstList::Iterator start,
 		InstList::Iterator end, const String& name) {
 	BasicBlock * const bb = new BasicBlock(start, end, name, this);

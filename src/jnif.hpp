@@ -2160,7 +2160,6 @@ private:
 /**
  * Represents the bytecode of a method.
  */
-//
 class InstList {
 	friend class CodeAttr;
 
@@ -2206,89 +2205,127 @@ public:
 		addInst(inst, pos);
 	}
 
-	void addLabel(Inst* pos = nullptr) {
-		auto inst = createLabel();
+	LabelInst* addLabel(Inst* pos = nullptr) {
+		LabelInst* inst = createLabel();
 		addInst(inst, pos);
+
+		return inst;
 	}
 
-	void addZero(Opcode opcode, Inst* pos = nullptr) {
-		auto inst = new ZeroInst(opcode, constPool);
+	ZeroInst* addZero(Opcode opcode, Inst* pos = nullptr) {
+		ZeroInst* inst = new ZeroInst(opcode, constPool);
 		addInst(inst, pos);
+
+		return inst;
 	}
 
-	void addBiPush(u1 value, Inst* pos = nullptr) {
-		auto inst = new PushInst(OPCODE_bipush, KIND_BIPUSH, value, constPool);
-		addInst(inst, pos);
-	}
-
-	void addSiPush(u2 value, Inst* pos = nullptr) {
-		auto inst = new PushInst(OPCODE_sipush, KIND_SIPUSH, value, constPool);
-		addInst(inst, pos);
-	}
-
-	void addLdc(Opcode opcode, ConstIndex valueIndex, Inst* pos = nullptr) {
-		auto inst = new LdcInst(opcode, valueIndex, constPool);
-		addInst(inst, pos);
-	}
-
-	void addVar(Opcode opcode, u1 lvindex, Inst* pos = nullptr) {
-		auto inst = new VarInst(opcode, lvindex, constPool);
-		addInst(inst, pos);
-	}
-
-	void addIinc(u1 index, u1 value, Inst* pos = nullptr) {
-		auto inst = new IincInst(index, value, constPool);
-		addInst(inst, pos);
-	}
-
-	void addWideVar(Opcode varOpcode, u2 lvindex, Inst* pos = nullptr) {
-		auto inst = new WideInst(varOpcode, lvindex, constPool);
-		addInst(inst, pos);
-	}
-
-	void addWideIinc(u2 index, u2 value, Inst* pos = nullptr) {
-		auto inst = new WideInst(index, value, constPool);
-		addInst(inst, pos);
-	}
-
-	void addJump(Opcode opcode, LabelInst* targetLabel, Inst* pos = nullptr) {
-		auto inst = new JumpInst(opcode, targetLabel, constPool);
-		addInst(inst, pos);
-	}
-
-	void addField(Opcode opcode, ConstIndex fieldRefIndex,
-			Inst* pos = nullptr) {
-		auto inst = new FieldInst(opcode, fieldRefIndex, constPool);
-		addInst(inst, pos);
-	}
-
-	void addInvoke(Opcode opcode, ConstIndex methodRefIndex,
-			Inst* pos = nullptr) {
-		auto inst = new InvokeInst(opcode, methodRefIndex, constPool);
-		addInst(inst, pos);
-	}
-
-	void addInvokeInterface(ConstIndex interMethodRefIndex, u1 count,
-			Inst* pos = nullptr) {
-		auto inst = new InvokeInterfaceInst(interMethodRefIndex, count,
+	PushInst* addBiPush(u1 value, Inst* pos = nullptr) {
+		PushInst* inst = new PushInst(OPCODE_bipush, KIND_BIPUSH, value,
 				constPool);
 		addInst(inst, pos);
+
+		return inst;
 	}
 
-	void addType(Opcode opcode, ConstIndex classIndex, Inst* pos = nullptr) {
-		auto inst = new TypeInst(opcode, classIndex, constPool);
-		addInst(inst, pos);
-	}
-
-	void addNewArray(u1 atype, Inst* pos = nullptr) {
-		auto inst = new NewArrayInst(OPCODE_newarray, atype, constPool);
-		addInst(inst, pos);
-	}
-
-	void addMultiArray(ConstIndex classIndex, u1 dims, Inst* pos = nullptr) {
-		auto inst = new MultiArrayInst(OPCODE_multianewarray, classIndex, dims,
+	PushInst* addSiPush(u2 value, Inst* pos = nullptr) {
+		PushInst* inst = new PushInst(OPCODE_sipush, KIND_SIPUSH, value,
 				constPool);
 		addInst(inst, pos);
+
+		return inst;
+	}
+
+	LdcInst* addLdc(Opcode opcode, ConstIndex valueIndex, Inst* pos = nullptr) {
+		LdcInst* inst = new LdcInst(opcode, valueIndex, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	VarInst* addVar(Opcode opcode, u1 lvindex, Inst* pos = nullptr) {
+		VarInst* inst = new VarInst(opcode, lvindex, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	IincInst* addIinc(u1 index, u1 value, Inst* pos = nullptr) {
+		IincInst* inst = new IincInst(index, value, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	WideInst* addWideVar(Opcode varOpcode, u2 lvindex, Inst* pos = nullptr) {
+		WideInst* inst = new WideInst(varOpcode, lvindex, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	WideInst* addWideIinc(u2 index, u2 value, Inst* pos = nullptr) {
+		WideInst* inst = new WideInst(index, value, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	JumpInst* addJump(Opcode opcode, LabelInst* targetLabel,
+			Inst* pos = nullptr) {
+		JumpInst* inst = new JumpInst(opcode, targetLabel, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	FieldInst* addField(Opcode opcode, ConstIndex fieldRefIndex, Inst* pos =
+			nullptr) {
+		FieldInst* inst = new FieldInst(opcode, fieldRefIndex, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	InvokeInst* addInvoke(Opcode opcode, ConstIndex methodRefIndex, Inst* pos =
+			nullptr) {
+		InvokeInst* inst = new InvokeInst(opcode, methodRefIndex, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	InvokeInterfaceInst* addInvokeInterface(ConstIndex interMethodRefIndex,
+			u1 count, Inst* pos = nullptr) {
+		InvokeInterfaceInst* inst = new InvokeInterfaceInst(interMethodRefIndex,
+				count, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	TypeInst* addType(Opcode opcode, ConstIndex classIndex,
+			Inst* pos = nullptr) {
+		TypeInst* inst = new TypeInst(opcode, classIndex, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	NewArrayInst* addNewArray(u1 atype, Inst* pos = nullptr) {
+		NewArrayInst* inst = new NewArrayInst(OPCODE_newarray, atype,
+				constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	MultiArrayInst* addMultiArray(ConstIndex classIndex, u1 dims, Inst* pos =
+			nullptr) {
+		MultiArrayInst* inst = new MultiArrayInst(OPCODE_multianewarray,
+				classIndex, dims, constPool);
+		addInst(inst, pos);
+
+		return inst;
 	}
 
 	TableSwitchInst* addTableSwitch(LabelInst* def, int low, int high,
@@ -2343,11 +2380,7 @@ private:
 			constPool(constPool), first(nullptr), last(nullptr), size(0) {
 	}
 
-	~InstList() {
-		for (Inst* inst : *this) {
-			delete inst;
-		}
-	}
+	~InstList();
 
 	void addInst(Inst* inst, Inst* pos);
 
@@ -2356,8 +2389,6 @@ private:
 
 	int size;
 };
-
-class ControlFlowGraph;
 
 /**
  * Represents a basic block of instructions.
@@ -2369,7 +2400,7 @@ public:
 	BasicBlock(const BasicBlock&) = delete;
 	BasicBlock(BasicBlock&&) = default;
 
-	friend ControlFlowGraph;
+	friend class ControlFlowGraph;
 
 	void addTarget(BasicBlock* target);
 
@@ -2388,12 +2419,12 @@ public:
 	}
 
 	BasicBlock* next;
-	ControlFlowGraph* cfg;
+	class ControlFlowGraph* cfg;
 
 private:
 
 	BasicBlock(InstList::Iterator& start, InstList::Iterator& exit,
-			const String& name, ControlFlowGraph* cfg) :
+			const String& name, class ControlFlowGraph* cfg) :
 			start(start), exit(exit), name(name), next(nullptr), cfg(cfg) {
 	}
 
@@ -2416,11 +2447,7 @@ public:
 
 	ControlFlowGraph(InstList& instList);
 
-	~ControlFlowGraph() {
-		for (auto bb : *this) {
-			delete bb;
-		}
-	}
+	~ControlFlowGraph();
 
 	/**
 	 * Adds a basic block to this control flow graph.
@@ -2481,29 +2508,31 @@ public:
 
 //	virtual void accept(Visitor* v) = 0;
 
+	virtual ~Attr() {
+	}
+
 protected:
 
 	Attr(AttrKind kind, u2 nameIndex, u4 len, ConstPool* constPool) :
 			kind(kind), nameIndex(nameIndex), len(len), constPool(constPool) {
 	}
+
 };
 
 /**
  * Represents a collection of attributes within a class, method or field
  * or even with another attributes, e.g., CodeAttr.
  */
-struct Attrs {
+class Attrs {
+public:
+
 	Attrs(const Attrs&) = delete;
 	Attrs(Attrs&&) = default;
 
 	Attrs() {
 	}
 
-	~Attrs() {
-		for (Attr* attr : attrs) {
-			delete attr;
-		}
-	}
+	~Attrs();
 
 	Attr* add(Attr* attr) {
 		attrs.push_back(attr);
@@ -2671,6 +2700,8 @@ public:
 			Attr(ATTR_CODE, nameIndex, 0, constPool), maxStack(0), maxLocals(0), codeLen(
 					0), instList(constPool), cfg(nullptr) {
 	}
+
+	~CodeAttr();
 
 	u2 maxStack;
 	u2 maxLocals;
@@ -2917,6 +2948,11 @@ public:
 	ClassFile(const u1* classFileData, int classFileLen);
 
 	/**
+	 * Releases the memory used for this class file.
+	 */
+	~ClassFile();
+
+	/**
 	 * Gets the class name of this class file.
 	 */
 	const char* getThisClassName() const {
@@ -2924,17 +2960,26 @@ public:
 	}
 
 	/**
+	 * Adds a new field to this class file.
 	 *
+	 * @param nameIndex the utf8 index in the constant pool that contains the
+	 * name of the field to add.
+	 * @param descIndex the utf8 index in the constant pool that contains the
+	 * descriptor of the field to add.
+	 * @param accessFlags the access flags of the field to add.
+	 * @returns the newly created field.
 	 */
 	Field* addField(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags =
-			FIELD_PUBLIC) {
-		Field* field = new Field(accessFlags, nameIndex, descIndex, this);
-		fields.push_back(field);
-		return field;
-	}
+			FIELD_PUBLIC);
 
 	/**
+	 * Adds a new field to this class file by passing directly the name
+	 * and descriptor.
 	 *
+	 * @param fieldName the name of the field to add.
+	 * @param fieldDesc the descriptor of the field to add.
+	 * @param accessFlags the access flags of the field to add.
+	 * @returns the newly created field.
 	 */
 	Field* addField(const char* fieldName, const char* fieldDesc,
 			u2 accessFlags = FIELD_PUBLIC) {
@@ -2945,17 +2990,26 @@ public:
 	}
 
 	/**
+	 * Adds a new method to this class file.
 	 *
+	 * @param nameIndex the utf8 index in the constant pool that contains the
+	 * name of the method to add.
+	 * @param descIndex the utf8 index in the constant pool that contains the
+	 * descriptor of the method to add.
+	 * @param accessFlags the access flags of the field to add.
+	 * @returns the newly created method.
 	 */
 	Method* addMethod(ConstIndex nameIndex, ConstIndex descIndex,
-			u2 accessFlags = METHOD_PUBLIC) {
-		Method* method = new Method(accessFlags, nameIndex, descIndex, this);
-		methods.push_back(method);
-		return method;
-	}
+			u2 accessFlags = METHOD_PUBLIC);
 
 	/**
+	 * Adds a new method to this class file by passing directly the name
+	 * and descriptor.
 	 *
+	 * @param methodName the name of the method to add.
+	 * @param methodDesc the descriptor of the method to add.
+	 * @param accessFlags the access flags of the method to add.
+	 * @returns the newly created method.
 	 */
 	Method* addMethod(const char* methodName, const char* methodDesc,
 			u2 accessFlags = METHOD_PUBLIC) {
