@@ -18,8 +18,8 @@
 #include <netdb.h>
 #include <netinet/tcp.h>
 
-#include "frlog.h"
-#include "frjvmti.h"
+#include "frlog.hpp"
+#include "frjvmti.hpp"
 
 static void _SendData(int sockfd, const void* data, int datalen) {
 	int sent = 0;
@@ -113,7 +113,7 @@ void FrInstrClassFileClientServer(jvmtiEnv* jvmti,
 	ASSERT(newClassNameLen == strlen(name), "");
 	ASSERT(newClassBytesLen > 0, "");
 
-	char* newClassName = malloc(newClassNameLen + 1);
+	char* newClassName = (char*)malloc(newClassNameLen + 1);
 	_ReceiveData(sockfd, newClassName, newClassNameLen);
 	newClassName[newClassNameLen] = '\0';
 

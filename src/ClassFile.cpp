@@ -9,6 +9,7 @@
 
 namespace jnif {
 
+
 Attrs::~Attrs() {
 	for (Attr* attr : attrs) {
 		delete attr;

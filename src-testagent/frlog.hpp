@@ -6,7 +6,7 @@
  */
 #include <stdio.h>
 
-#include "frthread.h"
+#include "frthread.hpp"
 
 #define _STREXPAND(token) #token
 #define _STR(token) _STREXPAND(token)

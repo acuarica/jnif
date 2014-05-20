@@ -3,7 +3,7 @@
  */
 #include <stdbool.h>
 
-#include "frthread.h"
+#include "frthread.hpp"
 
 /**
  *

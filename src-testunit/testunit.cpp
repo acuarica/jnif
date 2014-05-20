@@ -325,7 +325,20 @@ static int visitFile(const char* filePath, const struct stat*, int) {
 	return 0;
 }
 
+static void _StartServer() {
+	fprintf(stderr, "asdfasdfasdf\n");
+	//int res =
+	system("java -cp .:log4j-1.2.17.jar ch.usi.inf.sape.frheap.server.FrHeapInstrumentServer &");
+
+	//fprintf(stderr, "res: %d\n", res);
+//	java -cp ${FR}/bin:${FRLIB}/log4j-1.2.17.jar:${FRLIB}/asm-debug-all-4.0.jar:$FR/resources:$JARS \
+//		ch.usi.inf.sape.frheap.server.FrHeapInstrumentServer > logs/server-output.log &
+
+}
+
 int main(int argc, const char* argv[]) {
+	//_StartServer();
+	//return 1;
 
 #define ENTRY(testName) { &testName, #testName }
 
@@ -368,23 +381,24 @@ int main(int argc, const char* argv[]) {
 		}
 		cout << endl;
 		return 0;
-	} else if (argc == 3) {
+	} else if (argc == 2) {
 		classPath = argv[1];
-		testName = argv[2];
-		cerr << "[Loading classes from " << classPath << "]" << endl;
+		//testName = argv[2];
+		cerr << "[Loading classes from " << classPath << "... " << flush;
 
 		ftw(classPath.c_str(), visitFile, 50);
 
-		cerr << "[Loaded " << tests4.size() << " classes]" << endl;
+		cerr << "loaded " << tests4.size() << " class(es)]" << endl;
 
 		for (TestEntry& te : testEntries) {
-			if (testName == te.testName) {
+			//if (testName == te.testName) {
 				run(te.testFunc, te.testName);
-				return 0;
-			}
+				//return 0;
+			//}
 		}
 
-		return 2;
+		return 0;
+		//return 2;
 	} else {
 		cerr << "Usage: " << endl;
 		cerr << "  [1] " << argv[0] << " <classPath> <testName>" << endl;

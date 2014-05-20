@@ -6,12 +6,12 @@
 #include <jvmti.h>
 #include <jni.h>
 
-#include "frthread.h"
-#include "frlog.h"
-#include "frjvmti.h"
-#include "frtlog.h"
-#include "frstamp.h"
-#include "frinstr.h"
+#include "frthread.hpp"
+#include "frlog.hpp"
+#include "frjvmti.hpp"
+#include "frtlog.hpp"
+#include "frstamp.hpp"
+#include "frinstr.hpp"
 
 typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
@@ -98,7 +98,7 @@ extern int frproxy_FrInstrProxy_class_len;
 static void JNICALL VMStartEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 	_TLOG("VMSTART");
 
-	jclass proxyClass = (*jni)->DefineClass(jni, FR_PROXY_CLASS, NULL,
+	jclass proxyClass = jni->DefineClass(FR_PROXY_CLASS, NULL,
 			frproxy_FrInstrProxy_class, frproxy_FrInstrProxy_class_len);
 
 	if (proxyClass == NULL) {
@@ -160,7 +160,8 @@ static void JNICALL ThreadStartEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 			tldget()->threadTag);
 }
 
-static void JNICALL ThreadEndEvent(jvmtiEnv* jvmti, JNIEnv* jni, jthread thread) {
+static void JNICALL ThreadEndEvent(jvmtiEnv* jvmti, JNIEnv* jni,
+		jthread thread) {
 	_TLOG("Thread end: Thread id: %d, tag: %ld", tldget()->threadId,
 			tldget()->threadTag);
 }
@@ -229,24 +230,25 @@ void PrintProperties(jvmtiEnv* jvmti) {
 	jint count;
 	char** properties;
 	//jvmtiError error =
-	(*jvmti)->GetSystemProperties(jvmti, &count, &properties);
+	jvmti->GetSystemProperties(&count, &properties);
 
 	for (int i = 0; i < count; i++) {
 		const char* property = properties[i];
 		char* value;
-		(*jvmti)->GetSystemProperty(jvmti, property, &value);
+		jvmti->GetSystemProperty(property, &value);
 
 		_TLOG("Property %d: %s=%s", i, property, value);
 	}
 }
 
-JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options, void* reserved) {
+JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
+		void* reserved) {
 	_TLOG("Agent loaded. options: %s", options);
 
 	ParseOptions(options);
 
 	jvmtiEnv* jvmti;
-	jint res = (*jvm)->GetEnv(jvm, (void **) &jvmti, JVMTI_VERSION_1_0);
+	jint res = jvm->GetEnv((void **) &jvmti, JVMTI_VERSION_1_0);
 	if (res != JNI_OK || jvmti == NULL) {
 		EXCEPTION(
 				"Unable to access JVMTI Version 1 (0x%x)," " is your J2SE a 1.5 or newer version?" " JNIEnv's GetEnv() returned %d\n",

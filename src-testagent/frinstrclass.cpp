@@ -8,10 +8,10 @@
 
 #include <jvmti.h>
 
-#include "frlog.h"
-#include "frtlog.h"
-#include "frexception.h"
-#include "frinstr.h"
+#include "frlog.hpp"
+#include "frtlog.hpp"
+#include "frexception.hpp"
+#include "frinstr.hpp"
 
 #include <iostream>
 #include <string>
@@ -169,7 +169,7 @@ typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
 		JNIEnv* jni, InstrArgs* args);
 
-extern "C" {
+//extern "C" {
 
 void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
@@ -537,4 +537,4 @@ void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 	}
 }
 
-}
+//}
