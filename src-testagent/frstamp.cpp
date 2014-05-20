@@ -5,10 +5,10 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "frlog.h"
-#include "frjvmti.h"
-#include "frstamp.h"
-#include "frtlog.h"
+#include "frlog.hpp"
+#include "frjvmti.hpp"
+#include "frstamp.hpp"
+#include "frtlog.hpp"
 
 static jlong _nextclassid = 1;
 static jlong _nextobjectid = 1;
@@ -17,13 +17,17 @@ static jlong _nextobjectid = 1;
 
 static unsigned char states[1L << CLASS_BITS];
 
-static inline jlong _GetNextStamp(jint type, jlong threadId, jlong classId, jlong objectId) {
-	return ((type & TYPE_MASK)<< TYPE_POS) | ((threadId & THREAD_MASK)<< THREAD_POS)
-			| ((classId & CLASS_MASK)<< CLASS_POS) | ((objectId & OBJECT_MASK)<< OBJECT_POS);
+static inline jlong _GetNextStamp(jint type, jlong threadId, jlong classId,
+		jlong objectId) {
+	return ((type & TYPE_MASK) << TYPE_POS)
+			| ((threadId & THREAD_MASK) << THREAD_POS)
+			| ((classId & CLASS_MASK) << CLASS_POS)
+			| ((objectId & OBJECT_MASK) << OBJECT_POS);
 }
 
 static inline jlong _GetNextClassStamp() {
-	jlong stamp = _GetNextStamp(TYPE_CLASS, tldget()->threadId, _nextclassid, _nextobjectid);
+	jlong stamp = _GetNextStamp(TYPE_CLASS, tldget()->threadId, _nextclassid,
+			_nextobjectid);
 
 	_nextclassid++;
 	_nextobjectid++;
@@ -32,7 +36,8 @@ static inline jlong _GetNextClassStamp() {
 }
 
 static inline jlong GetNextObjectStamp(jlong classId) {
-	jlong stamp = _GetNextStamp(TYPE_OBJECT, tldget()->threadId, classId, _nextobjectid);
+	jlong stamp = _GetNextStamp(TYPE_OBJECT, tldget()->threadId, classId,
+			_nextobjectid);
 
 	_nextobjectid++;
 
@@ -51,17 +56,18 @@ void StampThread(jvmtiEnv* jvmti, jthread thread) {
 }
 
 static inline bool IsClassObject(jvmtiEnv* jvmti, jobject object) {
-	jvmtiError error = (*jvmti)->GetClassSignature(jvmti, object, NULL, NULL );
+	jvmtiError error = jvmti->GetClassSignature((jclass) object, NULL, NULL);
 
 	return error == JVMTI_ERROR_NONE;
 }
 
-static void PrepareClass(jvmtiEnv *jvmti, JNIEnv* jni, jclass klass, jlong stamp) {
+static void PrepareClass(jvmtiEnv *jvmti, JNIEnv* jni, jclass klass,
+		jlong stamp) {
 	jint interfacecount;
 	jclass* interfaces;
 
 	FrGetImplementedInterfaces(jvmti, klass, &interfacecount, &interfaces);
-	jlong* interstamps = malloc(sizeof(jlong) * interfacecount);
+	jlong* interstamps = (jlong*) malloc(sizeof(jlong) * interfacecount);
 	for (int i = 0; i < interfacecount; i++) {
 		interstamps[i] = StampClass(jvmti, jni, interfaces[i]);
 	}
@@ -85,7 +91,7 @@ static void PrepareClass(jvmtiEnv *jvmti, JNIEnv* jni, jclass klass, jlong stamp
 		char *fname;
 		char *fsig;
 
-		FrGetFieldName(jvmti, klass, idlist[i], &fname, &fsig, NULL );
+		FrGetFieldName(jvmti, klass, idlist[i], &fname, &fsig, NULL);
 
 		fprintf(tldget()->_tlog, "#%d@%s@%s", i, fname, fsig);
 
@@ -114,17 +120,19 @@ jlong StampClass(jvmtiEnv* jvmti, JNIEnv* jni, jclass klass) {
 	FrGetTag(jvmti, klass, &stamp);
 
 	if (stamp == NULL_TAG) {
-		jclass superklass = (*jni)->GetSuperclass(jni, klass);
-		jlong superklassstamp = superklass != NULL ? StampClass(jvmti, jni, superklass) : -1;
+		jclass superklass = jni->GetSuperclass(klass);
+		jlong superklassstamp =
+				superklass != NULL ? StampClass(jvmti, jni, superklass) : -1;
 
 		stamp = _GetNextClassStamp();
 
 		FrSetTag(jvmti, klass, stamp);
 
 		char* classsig;
-		FrGetClassSignature(jvmti, klass, &classsig, NULL );
+		FrGetClassSignature(jvmti, klass, &classsig, NULL);
 
-		_TLOG("STAMPCLASS:%ld:%ld:%ld:%s", stamp, GetClassIdFromStamp(stamp), superklassstamp, classsig);
+		_TLOG("STAMPCLASS:%ld:%ld:%ld:%s", stamp, GetClassIdFromStamp(stamp),
+				superklassstamp, classsig);
 
 		FrDeallocate(jvmti, classsig);
 	}
@@ -158,9 +166,9 @@ jlong StampObject(jvmtiEnv* jvmti, JNIEnv* jni, jobject object) {
 	}
 
 	if (IsClassObject(jvmti, object)) {
-		stamp = StampClass(jvmti, jni, object);
+		stamp = StampClass(jvmti, jni, (jclass) object);
 	} else {
-		jclass klass = (*jni)->GetObjectClass(jni, object);
+		jclass klass = jni->GetObjectClass(object);
 		jlong classStamp = StampClass(jvmti, jni, klass);
 		jlong classId = GetClassIdFromStamp(classStamp);
 
@@ -168,24 +176,23 @@ jlong StampObject(jvmtiEnv* jvmti, JNIEnv* jni, jobject object) {
 		FrSetTag(jvmti, object, stamp);
 
 		static int times = 0;
-		if (times < 0)
-		{
+		if (times < 0) {
 
-			jclass objectclass = (*jni)->FindClass(jni, "java/lang/Object");
+			jclass objectclass = jni->FindClass("java/lang/Object");
 
 			ASSERT(objectclass != NULL, "");
 
-			jfieldID fid = (*jni)->GetFieldID(jni, objectclass, "__elcampito__", "J");
+			jfieldID fid = jni->GetFieldID(objectclass, "__elcampito__", "J");
 
 			ASSERT(fid != NULL, "");
 			//fprintf(stderr, "%ld --\n", (long) fid);
 			ASSERT(object != NULL, "");
 
-			jlong value = (*jni)->GetLongField(jni, object, fid);
+			jlong value = jni->GetLongField(object, fid);
 			//printf("%ld\n", value);
 
 			if (value == 0) {
-				(*jni)->SetLongField(jni, object, fid, times);
+				jni->SetLongField(object, fid, times);
 			}
 
 //			_TLOG("__elcampito__:%ld", value);

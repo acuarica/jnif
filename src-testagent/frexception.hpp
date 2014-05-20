@@ -6,7 +6,7 @@
  */
 #include <stdlib.h>
 
-#include "frlog.h"
+#include "frlog.hpp"
 
 static inline int _exception(int code) __attribute__((noreturn));
 

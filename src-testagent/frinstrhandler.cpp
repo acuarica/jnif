@@ -4,11 +4,11 @@
 #include <string.h>
 #include <jni.h>
 
-#include "frlog.h"
-#include "frjvmti.h"
-#include "frstamp.h"
-#include "frinstr.h"
-#include "frtlog.h"
+#include "frlog.hpp"
+#include "frjvmti.hpp"
+#include "frstamp.hpp"
+#include "frinstr.hpp"
+#include "frtlog.hpp"
 
 /**
  *
@@ -20,10 +20,10 @@ static jvmtiEnv* _jvmti;
 #define DEFHANDLER(name) JNIEXPORT void JNICALL HANDLER(name)
 
 #define WITH(jni, string, body) \
-	jsize string ## len = (*jni)->GetStringUTFLength(jni, string); \
-	const char* string ## utf8 = (*jni)->GetStringUTFChars(jni, string, NULL ); \
+	jsize string ## len = jni->GetStringUTFLength(string); \
+	const char* string ## utf8 = jni->GetStringUTFChars(string, NULL ); \
 	body; \
-	(*jni)->ReleaseStringUTFChars(jni, string, string ## utf8);
+	jni->ReleaseStringUTFChars(string, string ## utf8);
 
 static inline jlong FrLiveStamp(JNIEnv* jni, jobject object) {
 	return StampObject(_jvmti, jni, object);
@@ -173,7 +173,7 @@ void FrSetInstrHandlerNatives(jvmtiEnv* jvmti, JNIEnv* jni, jclass proxyClass) {
 
 	};
 
-	jint res = (*jni)->RegisterNatives(jni, proxyClass, methods,
+	jint res = jni->RegisterNatives(proxyClass, methods,
 			sizeof(methods) / sizeof(methods[0]));
 
 	CHECK(res == 0, "reg natives");

@@ -1,4 +1,4 @@
-#include "frthread.h"
+#include "frthread.hpp"
 
 extern jlong __globaleventno;
 
