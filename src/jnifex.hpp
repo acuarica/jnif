@@ -9,7 +9,7 @@
 
 #include <sstream>
 
-//#include <iostream>
+#include <iostream>
 
 namespace jnif {
 

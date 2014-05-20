@@ -6,6 +6,22 @@ import java.util.*;
 
 public class BasicClass {
 
+	BasicClass getParent() {
+		return null;
+	}
+
+	public BasicClass getRoot() {
+		BasicClass ancestor = this;
+		BasicClass previous;
+
+		do {
+			previous = ancestor;
+			ancestor = ancestor.getParent();
+		} while (ancestor != null);
+
+		return previous;
+	}
+
 	private static void sort0(int[] array) {
 		int n = array.length;
 

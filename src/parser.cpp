@@ -312,7 +312,7 @@ private:
 					u4 value = br.readu4();
 					float fvalue = *(float*) &value;
 					//auto idx =
-							cp.addFloat(fvalue);
+					cp.addFloat(fvalue);
 
 					//float v = cp.entries[idx].f.value;
 					//Error::assert(value== *(u4*) &v, "invalid: ", br.offset() );
@@ -508,169 +508,176 @@ private:
 		}
 	}
 
+	static Inst* parseInst(BufferReader& br, InstList& instList,
+			LabelManager& labelManager) {
+		int offset = br.offset();
+
+		if (labelManager.hasLabel(offset)) {
+			LabelInst* label = labelManager[offset];
+			label->_offset = offset;
+			instList.addLabel(label);
+		}
+
+		Opcode opcode = (Opcode) br.readu1();
+		u1 kind = OPKIND[opcode];
+
+		//Inst* instp = new Inst(opcode, kind);
+		//instp->_offset = offset;
+		//Inst& inst = *instp;
+
+		//inst.opcode = (Opcode) br.readu1();
+		//inst.kind = OPKIND[inst.opcode];
+
+		if (kind == KIND_ZERO) {
+			if (opcode == OPCODE_wide) {
+				Opcode subOpcode = (Opcode) br.readu1();
+				if (subOpcode == OPCODE_iinc) {
+					u2 index = br.readu2();
+					u2 value = br.readu2();
+
+					return instList.addWideIinc(index, value);
+				} else {
+					u2 lvindex = br.readu2();
+					return instList.addWideVar(subOpcode, lvindex);
+				}
+			} else {
+				return instList.addZero(opcode);
+			}
+		} else if (kind == KIND_BIPUSH) {
+			u1 value = br.readu1();
+			return instList.addBiPush(value);
+		} else if (kind == KIND_SIPUSH) {
+			u2 value = br.readu2();
+			return instList.addSiPush(value);
+		} else if (kind == KIND_LDC) {
+			u2 valueIndex;
+			if (opcode == OPCODE_ldc) {
+				valueIndex = br.readu1();
+			} else {
+				valueIndex = br.readu2();
+			}
+			return instList.addLdc(opcode, valueIndex);
+		} else if (kind == KIND_VAR) {
+			u1 lvindex = br.readu1();
+			return instList.addVar(opcode, lvindex);
+		} else if (kind == KIND_IINC) {
+			u1 index = br.readu1();
+			u1 value = br.readu1();
+			return instList.addIinc(index, value);
+		} else if (kind == KIND_JUMP) {
+			//
+			short targetOffset = br.readu2();
+			//inst.jump.label = targetOffset;
+
+			short labelpos = offset + targetOffset;
+			Error::check(labelpos >= 0,
+					"invalid target for jump: must be >= 0");
+			Error::check(labelpos < br.size(), "invalid target for jump");
+
+			//	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
+
+			LabelInst* targetLabel = labelManager[offset + targetOffset];
+			Error::check(targetLabel != nullptr, "invalid label");
+
+			return instList.addJump(opcode, targetLabel);
+		} else if (kind == KIND_TABLESWITCH) {
+			for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
+				u1 pad = br.readu1();
+				Error::assert(pad == 0, "Padding must be zero");
+			}
+
+			{
+				bool check2 = br.offset() % 4 == 0;
+				assert(check2, "%d", br.offset());
+			}
+
+			int defOffset = br.readu4();
+			LabelInst* def = labelManager[offset + defOffset];
+			int low = br.readu4();
+			int high = br.readu4();
+
+			Error::assert(low <= high,
+					"low (%d) must be less or equal than high (%d)", low, high);
+
+			TableSwitchInst* ts = instList.addTableSwitch(def, low, high);
+			for (int i = 0; i < high - low + 1; i++) {
+				u4 targetOffset = br.readu4();
+				ts->targets.push_back(labelManager[offset + targetOffset]);
+			}
+
+			//		fprintf(stderr, "parser ts: offset: %d\n", br.offset());
+
+			return ts;
+		} else if (kind == KIND_LOOKUPSWITCH) {
+			for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
+				u1 pad = br.readu1();
+				assert(pad == 0, "Padding must be zero");
+			}
+
+			int defOffset = br.readu4();
+			LabelInst* defbyte = labelManager[offset + defOffset];
+			u4 npairs = br.readu4();
+
+			LookupSwitchInst* ls = instList.addLookupSwitch(defbyte, npairs);
+			for (u4 i = 0; i < npairs; i++) {
+				u4 key = br.readu4();
+				u4 offsetTarget = br.readu4();
+
+				ls->keys.push_back(key);
+				ls->targets.push_back(labelManager[offset + offsetTarget]);
+			}
+
+			return ls;
+		} else if (kind == KIND_FIELD) {
+			u2 fieldRefIndex = br.readu2();
+
+			return instList.addField(opcode, fieldRefIndex);
+		} else if (kind == KIND_INVOKE) {
+			u2 methodRefIndex = br.readu2();
+
+			return instList.addInvoke(opcode, methodRefIndex);
+		} else if (kind == KIND_INVOKEINTERFACE) {
+			Error::assert(opcode == OPCODE_invokeinterface, "invalid opcode");
+
+			u2 interMethodRefIndex = br.readu2();
+			u1 count = br.readu1();
+
+			Error::assert(count != 0, "Count is zero!");
+
+			u1 zero = br.readu1();
+			Error::assert(zero == 0, "Fourth operand must be zero");
+
+			return instList.addInvokeInterface(interMethodRefIndex, count);
+		} else if (kind == KIND_INVOKEDYNAMIC) {
+			Error::raise("FrParseInvokeDynamicInstr not implemented");
+		} else if (kind == KIND_TYPE) {
+			ConstIndex classIndex = br.readu2();
+
+			return instList.addType(opcode, classIndex);
+		} else if (kind == KIND_NEWARRAY) {
+			u1 atype = br.readu1();
+
+			return instList.addNewArray(atype);
+		} else if (kind == KIND_MULTIARRAY) {
+			ConstIndex classIndex = br.readu2();
+			u1 dims = br.readu1();
+
+			return instList.addMultiArray(classIndex, dims);
+		} else if (kind == KIND_PARSE4TODO) {
+			Error::raise("FrParse4__TODO__Instr not implemented");
+		} else if (kind == KIND_RESERVED) {
+			Error::raise("FrParseReservedInstr not implemented");
+		} else {
+			Error::raise("default kind in parseInstList");
+		}
+	}
+
 	static void parseInstList(BufferReader& br, InstList& instList,
 			LabelManager& labelManager) {
 		while (!br.eor()) {
 			int offset = br.offset();
-
-			if (labelManager.hasLabel(offset)) {
-				LabelInst* label = labelManager[offset];
-				label->_offset = offset;
-				instList.addLabel(label);
-			}
-
-			Opcode opcode = (Opcode) br.readu1();
-			u1 kind = OPKIND[opcode];
-
-			//Inst* instp = new Inst(opcode, kind);
-			//instp->_offset = offset;
-			//Inst& inst = *instp;
-
-			//inst.opcode = (Opcode) br.readu1();
-			//inst.kind = OPKIND[inst.opcode];
-
-			if (kind == KIND_ZERO) {
-				if (opcode == OPCODE_wide) {
-					Opcode subOpcode = (Opcode) br.readu1();
-					if (subOpcode == OPCODE_iinc) {
-						u2 index = br.readu2();
-						u2 value = br.readu2();
-
-						instList.addWideIinc(index, value);
-					} else {
-						u2 lvindex = br.readu2();
-						instList.addWideVar(subOpcode, lvindex);
-					}
-				} else {
-					instList.addZero(opcode);
-				}
-			} else if (kind == KIND_BIPUSH) {
-				u1 value = br.readu1();
-				instList.addBiPush(value);
-			} else if (kind == KIND_SIPUSH) {
-				u2 value = br.readu2();
-				instList.addSiPush(value);
-			} else if (kind == KIND_LDC) {
-				u2 valueIndex;
-				if (opcode == OPCODE_ldc) {
-					valueIndex = br.readu1();
-				} else {
-					valueIndex = br.readu2();
-				}
-				instList.addLdc(opcode, valueIndex);
-			} else if (kind == KIND_VAR) {
-				u1 lvindex = br.readu1();
-				instList.addVar(opcode, lvindex);
-			} else if (kind == KIND_IINC) {
-				u1 index = br.readu1();
-				u1 value = br.readu1();
-				instList.addIinc(index, value);
-			} else if (kind == KIND_JUMP) {
-				//
-				short targetOffset = br.readu2();
-				//inst.jump.label = targetOffset;
-
-				short labelpos = offset + targetOffset;
-				Error::check(labelpos >= 0,
-						"invalid target for jump: must be >= 0");
-				Error::check(labelpos < br.size(), "invalid target for jump");
-
-				//	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
-
-				LabelInst* targetLabel = labelManager[offset + targetOffset];
-				Error::check(targetLabel != nullptr, "invalid label");
-
-				instList.addJump(opcode, targetLabel);
-			} else if (kind == KIND_TABLESWITCH) {
-				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
-					u1 pad = br.readu1();
-					Error::assert(pad == 0, "Padding must be zero");
-				}
-
-				{
-					bool check2 = br.offset() % 4 == 0;
-					assert(check2, "%d", br.offset());
-				}
-
-				int defOffset = br.readu4();
-				LabelInst* def = labelManager[offset + defOffset];
-				int low = br.readu4();
-				int high = br.readu4();
-
-				Error::assert(low <= high,
-						"low (%d) must be less or equal than high (%d)", low,
-						high);
-
-				TableSwitchInst* ts = instList.addTableSwitch(def, low, high);
-				for (int i = 0; i < high - low + 1; i++) {
-					u4 targetOffset = br.readu4();
-					ts->targets.push_back(labelManager[offset + targetOffset]);
-				}
-
-				//		fprintf(stderr, "parser ts: offset: %d\n", br.offset());
-
-			} else if (kind == KIND_LOOKUPSWITCH) {
-				for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
-					u1 pad = br.readu1();
-					assert(pad == 0, "Padding must be zero");
-				}
-
-				int defOffset = br.readu4();
-				LabelInst* defbyte = labelManager[offset + defOffset];
-				u4 npairs = br.readu4();
-
-				LookupSwitchInst* ls = instList.addLookupSwitch(defbyte,
-						npairs);
-				for (u4 i = 0; i < npairs; i++) {
-					u4 key = br.readu4();
-					u4 offsetTarget = br.readu4();
-
-					ls->keys.push_back(key);
-					ls->targets.push_back(labelManager[offset + offsetTarget]);
-				}
-			} else if (kind == KIND_FIELD) {
-				u2 fieldRefIndex = br.readu2();
-
-				instList.addField(opcode, fieldRefIndex);
-			} else if (kind == KIND_INVOKE) {
-				u2 methodRefIndex = br.readu2();
-
-				instList.addInvoke(opcode, methodRefIndex);
-			} else if (kind == KIND_INVOKEINTERFACE) {
-				Error::assert(opcode == OPCODE_invokeinterface,
-						"invalid opcode");
-
-				u2 interMethodRefIndex = br.readu2();
-				u1 count = br.readu1();
-
-				Error::assert(count != 0, "Count is zero!");
-
-				u1 zero = br.readu1();
-				Error::assert(zero == 0, "Fourth operand must be zero");
-
-				instList.addInvokeInterface(interMethodRefIndex, count);
-			} else if (kind == KIND_INVOKEDYNAMIC) {
-				Error::raise("FrParseInvokeDynamicInstr not implemented");
-			} else if (kind == KIND_TYPE) {
-				ConstIndex classIndex = br.readu2();
-
-				instList.addType(opcode, classIndex);
-			} else if (kind == KIND_NEWARRAY) {
-				u1 atype = br.readu1();
-
-				instList.addNewArray(atype);
-			} else if (kind == KIND_MULTIARRAY) {
-				ConstIndex classIndex = br.readu2();
-				u1 dims = br.readu1();
-
-				instList.addMultiArray(classIndex, dims);
-			} else if (kind == KIND_PARSE4TODO) {
-				Error::raise("FrParse4__TODO__Instr not implemented");
-			} else if (kind == KIND_RESERVED) {
-				Error::raise("FrParseReservedInstr not implemented");
-			} else {
-				Error::raise("default kind in parseInstList");
-			}
+			Inst* inst = parseInst(br, instList, labelManager);
+			inst->_offset = offset;
 		}
 	}
 
@@ -854,7 +861,7 @@ private:
 			}
 		}
 
-		raise("Error on parse smt");
+		Error::raise("Error on parse smt");
 	}	;
 
 		auto parseTs = [&](int count, vector<Type>& locs) {

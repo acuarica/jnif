@@ -65,7 +65,15 @@ public:
 
 				String res = getCommonSuperClass(clazz1, clazz2, classPath);
 
-				t = Type::objectType(res);
+				Type superClass = Type::objectType(res);
+				Error::assert((superClass == t) == (res == clazz1),
+						"Invalid super class: ", superClass, t, o);
+
+				if (superClass == t) {
+					return false;
+				}
+
+				t = superClass;
 				return true;
 			}
 
@@ -78,11 +86,12 @@ public:
 				Type st = t.stripArrayType();
 				Type so = o.stripArrayType();
 
-				bool change = assign(st, so, classPath);
-				Error::assert(change, "Assigning types between ", t,
-						" (with stripped array type ", st, ") and ", o,
-						" (with stripped array type ", so,
-						") should have change the assign result.");
+				//bool change =
+						assign(st, so, classPath);
+//				Error::assert(change, "Assigning types between ", t,
+//						" (with stripped array type ", st, ") and ", o,
+//						" (with stripped array type ", so,
+//						") should have change the assign result.");
 
 //				Error::assert(!st.isTop(), "Assigning types between ", t,
 //						" and ", o,
@@ -124,6 +133,8 @@ public:
 	}
 
 	static bool join(Frame& frame, Frame& how, IClassPath* classPath) {
+		//cerr << frame << " join " << how << endl;
+
 		Error::check(frame.stack.size() == how.stack.size(),
 				"Different stack sizes: ", frame.stack.size(), " != ",
 				how.stack.size(), ": #", frame, " != #", how);
@@ -201,6 +212,7 @@ public:
 				//bb.out = bb.in;
 				return true;
 			} else {
+				//cerr
 				return join(bb.in, how, classPath);
 			}
 		}();
@@ -211,8 +223,13 @@ public:
 			SmtBuilder builder(bb.out, cf);
 			for (auto it = bb.start; it != bb.exit; ++it) {
 				Inst* inst = *it;
+
+				//cerr << "after cf" << *inst << endl;
+
 				builder.processInst(*inst);
 			}
+
+			//cerr << "finished process inst"   << endl;
 
 			Frame h = bb.out;
 
@@ -1085,9 +1102,10 @@ public:
 			ClassFile* cf, ConstIndex* attrIndex, IClassPath* classPath) {
 
 		for (auto it = code->attrs.begin(); it != code->attrs.end(); it++) {
-			auto attr = *it;
+			Attr* attr = *it;
 			if (attr->kind == ATTR_SMT) {
 				code->attrs.attrs.erase(it);
+				delete attr;
 				break;
 			}
 		}
@@ -1125,6 +1143,8 @@ public:
 
 		ControlFlowGraph* cfgp = new ControlFlowGraph(code->instList);
 		ControlFlowGraph& cfg = *cfgp;
+
+		//cerr << cfg << endl;
 
 		initFrame.valid = true;
 		BasicBlock* bbe = cfg.entry;
@@ -1224,8 +1244,11 @@ public:
 						e.full_frame.offset_delta = offsetDelta;
 						e.full_frame.locals = current.lva;
 
-						for (auto t : current.stack) {
+						list<Type> rs = current.stack;
+						rs.reverse();
+						for (const Type& t : rs) {
 							e.full_frame.stack.push_back(t);
+							//e.full_frame.stack.push_front(t);
 						}
 					}
 
