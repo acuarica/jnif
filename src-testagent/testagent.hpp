@@ -14,6 +14,7 @@ public:
 
 	jnif::String instrFuncName;
 	jnif::String outputPath;
+
 };
 
 extern Options args;

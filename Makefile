@@ -31,7 +31,7 @@ TESTAPP_OBJS=$(TESTAPP_SRCS:$(TESTAPP_SRC)/%.java=$(BUILD)/testapp/%.class)
 INSTRSERVER=$(BUILD)/instrserver.jar
 INSTRSERVER_SRC=src-instrserver
 INSTRSERVER_SRCS=$(shell find $(INSTRSERVER_SRC) -name *.java)
-INSTRSERVER_OBJS=$(INSTRSERVER_SRCS:$(INSTRSERVER_SRC)/src/%.java=$(BUILD)/instrserver/%.class)
+INSTRSERVER_OBJS=$(BUILD)/instrserver/log4j.properties $(INSTRSERVER_SRCS:$(INSTRSERVER_SRC)/src/%.java=$(BUILD)/instrserver/%.class)
 INSTRSERVER_CP=$(subst $(_EMPTY) $(_EMPTY),:,$(wildcard $(INSTRSERVER_SRC)/lib/*.jar))
 
 JARS=$(wildcard jars/*.jar)
@@ -109,9 +109,6 @@ $(BUILD)/%: jars/%.jar
 testapp: $(TESTAGENT) $(TESTAPP) startserver | $(BUILD)/testapplog
 	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTRS):$(BUILD)/testapplog/ -jar $(TESTAPP)
 
-#$(MAKE) stopserver
-#$(MAKE) startserver
-
 $(BUILD)/testapplog:
 	mkdir -p $@
 
@@ -129,14 +126,15 @@ $(BUILD)/testdacapolog:
 #
 startserver: $(INSTRSERVER).pid
 
-$(INSTRSERVER).pid: $(INSTRSERVER)
+$(INSTRSERVER).pid: $(INSTRSERVER) $(TESTAPP)
 	-$(MAKE) stopserver
-	$(JAVA) -jar $(INSTRSERVER) & echo "$$!" > $(INSTRSERVER).pid
+	$(JAVA) -classpath $(CP):$(TESTAPP) -jar $(INSTRSERVER) & echo "$$!" > $(INSTRSERVER).pid
+	sleep 1
 
 stopserver:
 	test -s $(INSTRSERVER).pid || { echo "Server stopped."; exit 1; }
-	kill `cat $(INSTRSERVER).pid`
-	rm $(INSTRSERVER).pid
+	-kill `cat $(INSTRSERVER).pid`
+	rm -f $(INSTRSERVER).pid
 
 #
 # Rules for $(LIBJNIF)
@@ -145,7 +143,7 @@ $(LIBJNIF): $(LIBJNIF_OBJS)
 	ar crv $@ $^
 
 $(BUILD)/%.cpp.o: $(LIBJNIF_SRC)/%.cpp $(LIBJNIF_HPPS) | $(BUILD)
-	$(LINK.c) -std=c++11 -stdlib=libc++ -c -o $@ $<
+	$(LINK.c) -O4 -std=c++11 -stdlib=libc++ -c -o $@ $<
 
 #
 # Rules for $(TESTUNIT)
@@ -174,7 +172,7 @@ $(BUILD)/%.java.o: $(TESTAGENT_SRC)/%.java
 # Rules for $(TESTAPP)
 #
 $(TESTAPP): $(TESTAPP_SRC)/MANIFEST.MF $(TESTAPP_OBJS)
-	jar cvfm $@ $< -C $(BUILD)/testapp .
+	jar cfm $@ $< -C $(BUILD)/testapp .
 
 $(BUILD)/testapp/%.class: $(TESTAPP_SRC)/%.java | $(BUILD)/testapp
 	$(JAVAC) -sourcepath $(TESTAPP_SRC) -d $(BUILD)/testapp $<
@@ -186,10 +184,13 @@ $(BUILD)/testapp:
 # Rules for $(INSTRSERVER)
 #
 $(INSTRSERVER): $(INSTRSERVER_SRC)/MANIFEST.MF $(INSTRSERVER_OBJS)
-	jar cvfm $@ $< -C $(BUILD)/instrserver .
+	jar cfm $@ $< -C $(BUILD)/instrserver .
 
 $(BUILD)/instrserver/%.class: $(INSTRSERVER_SRC)/src/%.java | $(BUILD)/instrserver
 	$(JAVAC) -classpath $(INSTRSERVER_CP) -sourcepath $(INSTRSERVER_SRC)/src -d $(BUILD)/instrserver $<
+
+$(BUILD)/instrserver/%: $(INSTRSERVER_SRC)/src/% | $(BUILD)/instrserver
+	cp $< $@
 
 $(BUILD)/instrserver:
 	mkdir -p $(BUILD)/instrserver
