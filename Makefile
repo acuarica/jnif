@@ -1,7 +1,4 @@
 
-BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat tradebeans tradesoap xalan
-INSTRS=Print Identity ObjectInit NewArray ANewArray Main ClientServer
-
 ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
@@ -33,6 +30,10 @@ TESTAPP_OBJS=$(TESTAPP_SRCS:$(TESTAPP_SRC)/%.java=$(BUILD)/testapp/%.class)
 
 JARS=$(wildcard jars/*.jar)
 DIRS=$(JARS:jars/%.jar=$(BUILD)/%)
+
+BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat tradebeans tradesoap xalan
+INSTRS=Compute
+#INSTRS=Print Identity ObjectInit NewArray ANewArray Main ClientServer
 
 CFLAGS += -fPIC -W -O0 -g -Wall -Wextra 
 
@@ -70,6 +71,8 @@ show:
 	@echo TESTAPP_OBJS: $(TESTAPP_OBJS)
 	@echo JARS: $(JARS)
 	@echo DIRS: $(DIRS)
+	@echo BENCHS: $(BENCHS)
+	@echo INSTRS: $(INSTRS)
 	@echo CFLAGS: $(CFLAGS)
 
 #
@@ -85,13 +88,13 @@ $(BUILD)/%: jars/%.jar
 # Rules to run $(TESTAPP)
 #
 testapp: $(TESTAGENT) $(TESTAPP)
-	$(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=Compute:build/ -jar $(TESTAPP)
+	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTRS):build/ -jar $(TESTAPP)
 
 #
 # Rules to run $(TESTDACAPO)
 #
 testdacapo: $(TESTAGENT)
-	time $(JAVA) -agentpath:$(TESTAGENT)=Compute:build/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(BUILD)/scratch $(BENCHS)
+	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTRS):build/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(BUILD)/scratch $(BENCHS)
 
 #
 # Rules for $(LIBJNIF)
