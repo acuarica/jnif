@@ -61,6 +61,7 @@ show:
 	@echo TESTAGENT_HPPS: $(TESTAGENT_HPPS)
 	@echo TESTAGENT_SRCS: $(TESTAGENT_SRCS)
 	@echo TESTAGENT_OBJS: $(TESTAGENT_OBJS)
+	@echo TESTAPP: $(TESTAPP)
 	@echo TESTAPP_SRC: $(TESTAPP_SRC)
 	@echo TESTAPP_SRCS: $(TESTAPP_SRCS)
 	@echo TESTAPP_OBJS: $(TESTAPP_OBJS)
@@ -81,7 +82,7 @@ $(BUILD)/%: jars/%.jar
 # Rules to run $(TESTAPP)
 #
 testapp: $(TESTAGENT) $(TESTAPP)
-	java $(JVMARGS) -agentpath:$(TESTAGENT)=Compute -jar $(TESTAPP)
+	java $(JVMARGS) -agentpath:$(TESTAGENT)=Compute:build/ -jar $(TESTAPP)
 
 #
 # Rules for $(LIBJNIF)

@@ -7,7 +7,7 @@
 #include <jvmti.h>
 
 #define TYPE_CLASS	0B0
-#define TYPE_OBJECT	0B1
+#define STAMP_TYPE_OBJECT	0B1
 
 #define TYPE_BITS	 1
 #define THREAD_BITS	 8

@@ -19,33 +19,7 @@ static inline jlong getglobal() {
 //#define _TLOG(format, ...) ( FrOpenTransactionLog(&tldget()->_tlog, tldget()->threadId), fprintf( tldget()->_tlog, format "\n", ##__VA_ARGS__) )
 #define _TLOG(format, ...) _TLOGBEGIN(format "\n", ##__VA_ARGS__)
 
-static inline void FrOpenTransactionLog(FILE** _log, int tid) {
-	if (*_log != NULL) {
-		return;
-
-	}
-
-	//const int size = 1024 * 1024;
-
-	//_logbuf = malloc(size);
-
-	char filename[512];
-	sprintf(filename, "tlog.%04d.log", tid);
-
-	//NOTICE("%s", filename);
-
-	*_log = fopen(filename, "w+");
-
-	if (*_log == NULL) {
-		perror("Unable to create log file");
-
-		//int err = errno;
-		//ERROR("errno: %d, %s", err, "Unable to open ");
-		exit(1);
-	}
-
-	//check_std_error(setvbuf(_log, _logbuf, _IOFBF, size), "setvbuf");
-}
+void FrOpenTransactionLog(FILE** _log, int tid);
 
 //static void FrCloseTransactionLog() {
 //NOTICE("Closing transaction log...");
