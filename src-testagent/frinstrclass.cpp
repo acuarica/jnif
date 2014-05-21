@@ -12,6 +12,7 @@
 #include "frtlog.hpp"
 #include "frexception.hpp"
 #include "frinstr.hpp"
+#include "testagent.hpp"
 
 #include <iostream>
 #include <string>
@@ -171,11 +172,25 @@ typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 //extern "C" {
 
+ofstream prof;
+
 void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
-		InstrArgs* args) {
+		InstrArgs* args2) {
 	try {
-		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args);
+
+		clock_t start = clock();
+		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args2);
+		clock_t end = clock();
+
+		if (!prof.is_open()) {
+			stringstream ss;
+			ss << args.outputPath << "agent.prof";
+			prof.open(ss.str().c_str());
+		}
+
+		prof << className << ":" << (end - start) << endl;
+
 	} catch (const JnifException& ex) {
 		//cerr << "Error: JNIF Exception: " << ex.message << " @ " << endl;
 		//cerr << "Error: exception on jnif: (stackTrace)" << endl;
