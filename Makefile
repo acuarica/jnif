@@ -28,6 +28,12 @@ TESTAPP_SRC=src-testapp
 TESTAPP_SRCS=$(wildcard $(TESTAPP_SRC)/*/*.java)
 TESTAPP_OBJS=$(TESTAPP_SRCS:$(TESTAPP_SRC)/%.java=$(BUILD)/testapp/%.class)
 
+INSTRSERVER=$(BUILD)/instrserver.jar
+INSTRSERVER_SRC=src-instrserver
+INSTRSERVER_SRCS=$(shell find $(INSTRSERVER_SRC) -name *.java)
+INSTRSERVER_OBJS=$(INSTRSERVER_SRCS:$(INSTRSERVER_SRC)/src/%.java=$(BUILD)/instrserver/%.class)
+INSTRSERVER_CP=$(subst $(_EMPTY) $(_EMPTY),:,$(wildcard $(INSTRSERVER_SRC)/lib/*.jar))
+
 JARS=$(wildcard jars/*.jar)
 DIRS=$(JARS:jars/%.jar=$(BUILD)/%)
 
@@ -39,7 +45,7 @@ CFLAGS += -fPIC -W -O0 -g -Wall -Wextra
 
 .PHONY: all docs clean show testunit testapp testdacapo
 
-all: $(LIBJNIF) $(TESTUNIT) $(TESTAGENT) $(TESTAPP)
+all: $(LIBJNIF) $(TESTUNIT) $(TESTAGENT) $(TESTAPP) $(INSTRSERVER)
 
 docs:
 	doxygen
@@ -50,29 +56,42 @@ clean:
 show:
 	@echo [Configuration]
 	@echo BUILD: $(BUILD)
+	@echo
 	@echo LIBJNIF: $(LIBJNIF)
 	@echo LIBJNIF_SRC: $(LIBJNIF_SRC)
 	@echo LIBJNIF_HPPS: $(LIBJNIF_HPPS)
 	@echo LIBJNIF_SRCS: $(LIBJNIF_SRCS)
 	@echo LIBJNIF_OBJS: $(LIBJNIF_OBJS)
+	@echo
 	@echo TESTUNIT: $(TESTUNIT)
 	@echo TESTUNIT_SRC: $(TESTUNIT_SRC)
 	@echo TESTUNIT_HPPS: $(TESTUNIT_HPPS)
 	@echo TESTUNIT_SRCS: $(TESTUNIT_SRCS)
 	@echo TESTUNIT_OBJS: $(TESTUNIT_OBJS)
+	@echo
 	@echo TESTAGENT: $(TESTAGENT)
 	@echo TESTAGENT_SRC: $(TESTAGENT_SRC)
 	@echo TESTAGENT_HPPS: $(TESTAGENT_HPPS)
 	@echo TESTAGENT_SRCS: $(TESTAGENT_SRCS)
 	@echo TESTAGENT_OBJS: $(TESTAGENT_OBJS)
+	@echo
 	@echo TESTAPP: $(TESTAPP)
 	@echo TESTAPP_SRC: $(TESTAPP_SRC)
 	@echo TESTAPP_SRCS: $(TESTAPP_SRCS)
 	@echo TESTAPP_OBJS: $(TESTAPP_OBJS)
+	@echo
+	@echo INSTRSERVER: $(INSTRSERVER)
+	@echo INSTRSERVER_SRC: $(INSTRSERVER_SRC)
+	@echo INSTRSERVER_SRCS: $(INSTRSERVER_SRCS)
+	@echo INSTRSERVER_OBJS: $(INSTRSERVER_OBJS)
+	@echo INSTRSERVER_CP: $(INSTRSERVER_CP)
+	@echo
 	@echo JARS: $(JARS)
 	@echo DIRS: $(DIRS)
+	@echo
 	@echo BENCHS: $(BENCHS)
 	@echo INSTRS: $(INSTRS)
+	@echo
 	@echo CFLAGS: $(CFLAGS)
 
 #
@@ -87,14 +106,20 @@ $(BUILD)/%: jars/%.jar
 #
 # Rules to run $(TESTAPP)
 #
-testapp: $(TESTAGENT) $(TESTAPP)
-	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTRS):build/ -jar $(TESTAPP)
+testapp: $(TESTAGENT) $(TESTAPP) | $(BUILD)/testapplog
+	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTRS):$(BUILD)/testapplog/ -jar $(TESTAPP)
+
+$(BUILD)/testapplog:
+	mkdir -p $@
 
 #
 # Rules to run $(TESTDACAPO)
 #
-testdacapo: $(TESTAGENT)
-	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTRS):build/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(BUILD)/scratch $(BENCHS)
+testdacapo: $(TESTAGENT) | $(BUILD)/testdacapolog
+	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTRS):$(BUILD)/testdacapolog/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(BUILD)/scratch $(BENCHS)
+
+$(BUILD)/testdacapolog:
+	mkdir -p $@
 
 #
 # Rules for $(LIBJNIF)
@@ -131,7 +156,7 @@ $(BUILD)/%.java.o: $(TESTAGENT_SRC)/%.java
 #
 # Rules for $(TESTAPP)
 #
-$(TESTAPP): $(TESTAPP_SRC)/META-INF/MANIFEST.MF $(TESTAPP_OBJS)
+$(TESTAPP): $(TESTAPP_SRC)/MANIFEST.MF $(TESTAPP_OBJS)
 	jar cvfm $@ $< -C $(BUILD)/testapp .
 
 $(BUILD)/testapp/%.class: $(TESTAPP_SRC)/%.java | $(BUILD)/testapp
@@ -141,7 +166,19 @@ $(BUILD)/testapp:
 	mkdir -p $(BUILD)/testapp
 
 #
-# Basic rules
+# Rules for $(INSTRSERVER)
+#
+$(INSTRSERVER): $(INSTRSERVER_SRC)/MANIFEST.MF $(INSTRSERVER_OBJS)
+	jar cvfm $@ $< -C $(BUILD)/instrserver .
+
+$(BUILD)/instrserver/%.class: $(INSTRSERVER_SRC)/src/%.java | $(BUILD)/instrserver
+	$(JAVAC) -classpath $(INSTRSERVER_CP) -sourcepath $(INSTRSERVER_SRC)/src -d $(BUILD)/instrserver $<
+
+$(BUILD)/instrserver:
+	mkdir -p $(BUILD)/instrserver
+
+#
+# Common rules used by all targets.
 #
 $(BUILD):
 	mkdir -p $(BUILD)
