@@ -1,4 +1,7 @@
 
+BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat tradebeans tradesoap xalan
+INSTRS=Print Identity ObjectInit NewArray ANewArray Main ClientServer
+
 ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
@@ -33,7 +36,7 @@ DIRS=$(JARS:jars/%.jar=$(BUILD)/%)
 
 CFLAGS += -fPIC -W -O0 -g -Wall -Wextra 
 
-.PHONY: all docs clean show testunit testapp
+.PHONY: all docs clean show testunit testapp testdacapo
 
 all: $(LIBJNIF) $(TESTUNIT) $(TESTAGENT) $(TESTAPP)
 
@@ -82,7 +85,13 @@ $(BUILD)/%: jars/%.jar
 # Rules to run $(TESTAPP)
 #
 testapp: $(TESTAGENT) $(TESTAPP)
-	java $(JVMARGS) -agentpath:$(TESTAGENT)=Compute:build/ -jar $(TESTAPP)
+	$(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=Compute:build/ -jar $(TESTAPP)
+
+#
+# Rules to run $(TESTDACAPO)
+#
+testdacapo: $(TESTAGENT)
+	time $(JAVA) -agentpath:$(TESTAGENT)=Compute:build/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(BUILD)/scratch $(BENCHS)
 
 #
 # Rules for $(LIBJNIF)
