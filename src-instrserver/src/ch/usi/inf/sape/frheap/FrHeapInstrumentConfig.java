@@ -4,7 +4,7 @@ public class FrHeapInstrumentConfig {
 
 	String proxyClass;
 
-	String dumpInstrDir = "build/instrserver";
+	String dumpInstrDir = "build/instrserverdump";
 
 	public FrHeapInstrumentConfig(String proxyClass) {
 		this.proxyClass = proxyClass;

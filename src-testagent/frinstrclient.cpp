@@ -20,6 +20,7 @@
 
 #include "frlog.hpp"
 #include "frjvmti.hpp"
+#include "frinstr.hpp"
 
 static void _SendData(int sockfd, const void* data, int datalen) {
 	int sent = 0;
@@ -85,44 +86,44 @@ static void _StartServer() {
 
 }
 
-void FrInstrClassFileClientServer(jvmtiEnv* jvmti,
-		const unsigned char* class_data, int class_data_len, const char* name,
-		int* new_class_data_len, unsigned char** new_class_data) {
+void InstrClassClientServer(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni, InstrArgs* args) {
 
 	int sockfd;
 
 	if (tldget()->socketfd == -1) {
-		_StartServer();
+		//_StartServer();
 		tldget()->socketfd = _FrConnect();
 	}
 
 	sockfd = tldget()->socketfd;
 
-	jint classNameLen = htonl(strlen(name));
-	jint dl = htonl(class_data_len);
+	jint classNameLen = htonl(strlen(className));
+	jint dl = htonl(len);
 
 	_SendData(sockfd, &classNameLen, sizeof(jint));
 	_SendData(sockfd, &dl, sizeof(jint));
 
-	_SendData(sockfd, name, strlen(name));
-	_SendData(sockfd, class_data, class_data_len);
+	_SendData(sockfd, className, strlen(className));
+	_SendData(sockfd, data, len);
 
 	size_t newClassNameLen = _ReceiveInt(sockfd);
 	jint newClassBytesLen = _ReceiveInt(sockfd);
 
-	ASSERT(newClassNameLen == strlen(name), "");
+	ASSERT(newClassNameLen == strlen(className), "");
 	ASSERT(newClassBytesLen > 0, "");
 
-	char* newClassName = (char*)malloc(newClassNameLen + 1);
+	char* newClassName = (char*) malloc(newClassNameLen + 1);
 	_ReceiveData(sockfd, newClassName, newClassNameLen);
 	newClassName[newClassNameLen] = '\0';
 
-	ASSERT(strcmp(newClassName, name) == 0, "");
+	ASSERT(strcmp(newClassName, className) == 0, "");
 
 	free(newClassName);
 
-	*new_class_data_len = newClassBytesLen;
-	FrAllocate(jvmti, newClassBytesLen, new_class_data);
+	*newlen = newClassBytesLen;
+	FrAllocate(jvmti, newClassBytesLen, newdata);
 
-	_ReceiveData(sockfd, *new_class_data, newClassBytesLen);
+	_ReceiveData(sockfd, *newdata, newClassBytesLen);
 }
