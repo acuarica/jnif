@@ -166,45 +166,6 @@ static string outFileName(const char* className, const char* ext,
 	return path.str();
 }
 
-typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni, InstrArgs* args);
-
-//extern "C" {
-
-ofstream prof;
-
-void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
-		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
-		InstrArgs* args2) {
-	try {
-
-		clock_t start = clock();
-		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args2);
-		clock_t end = clock();
-
-		if (!prof.is_open()) {
-			stringstream ss;
-			ss << args.outputPath << "agent.prof";
-			prof.open(ss.str().c_str());
-		}
-
-		prof << className << ":" << (end - start) << endl;
-
-	} catch (const JnifException& ex) {
-		//cerr << "Error: JNIF Exception: " << ex.message << " @ " << endl;
-		//cerr << "Error: exception on jnif: (stackTrace)" << endl;
-		//cerr << ex.stackTrace << endl;
-		cerr << ex << endl;
-		throw ex;
-	}
-}
-
-void InstrUnload() {
-	//cerr << "Class Hierarchy: " << endl;
-	//cerr << classHierarchy;
-}
-
 void InstrClassEmpty(jvmtiEnv*, u1* data, int len, const char* className, int*,
 		u1**, JNIEnv*, InstrArgs*) {
 }
@@ -551,5 +512,3 @@ void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
 		cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 	}
 }
-
-//}

@@ -22,8 +22,11 @@ static inline bool FrIsProxyClassSignature(const char* classSignature) {
 void FrSetInstrHandlerNatives(jvmtiEnv* jvmti, JNIEnv* jni, jclass klass);
 void FrSetInstrHandlerJvmtiEnv(jvmtiEnv* jvmti);
 
-typedef struct __InstrArgsTag {
+#include <string>
+
+struct InstrArgs {
 	jobject loader;
-} InstrArgs;
+	std::string instrName;
+};
 
 #endif
