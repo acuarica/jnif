@@ -6,12 +6,20 @@
 #include <jvmti.h>
 #include <jni.h>
 
+#include <iostream>
+
 #include "frthread.hpp"
 #include "frlog.hpp"
 #include "frjvmti.hpp"
 #include "frtlog.hpp"
 #include "frstamp.hpp"
 #include "frinstr.hpp"
+#include "testagent.hpp"
+
+#include <jnif.hpp>
+
+using namespace std;
+using namespace jnif;
 
 typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
@@ -170,7 +178,27 @@ static void JNICALL VMDeathEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
 	_TLOG("VMDEATH");
 }
 
-static void ParseOptions(const char* options) {
+Options args;
+
+static void ParseOptions(const char* commandLineOptions) {
+	const char* start = commandLineOptions;
+	vector<String> options;
+	for (const char* pos = commandLineOptions; *pos != '\0'; ++pos) {
+		if (*pos == ':') {
+			String str(start, pos - start);
+			options.push_back(str);
+			start = pos + 1;
+		}
+	}
+
+	String str(start);
+	options.push_back(str);
+
+	if (options.size() >= 2) {
+		args.instrFuncName = options[0];
+		args.outputPath = options[1];
+	}
+
 	extern InstrFunc InstrClassEmpty;
 	extern InstrFunc InstrClassPrint;
 	extern InstrFunc InstrClassIdentity;
@@ -209,7 +237,7 @@ static void ParseOptions(const char* options) {
 
 	};
 
-	const char* instrFuncName = options != NULL ? options : "Empty";
+	const char* instrFuncName = args.instrFuncName.c_str();
 
 	_TLOG("func index: %s", instrFuncName);
 
@@ -223,7 +251,8 @@ static void ParseOptions(const char* options) {
 		}
 	}
 
-	EXCEPTION("Invalid name options for instfuncindex: %s.", options);
+	EXCEPTION("Invalid name options for instfuncindex: %s.",
+			commandLineOptions);
 }
 
 void PrintProperties(jvmtiEnv* jvmti) {
@@ -243,9 +272,9 @@ void PrintProperties(jvmtiEnv* jvmti) {
 
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 		void* reserved) {
-	_TLOG("Agent loaded. options: %s", options);
-
 	ParseOptions(options);
+
+	_TLOG("Agent loaded. options: %s", options);
 
 	jvmtiEnv* jvmti;
 	jint res = jvm->GetEnv((void **) &jvmti, JVMTI_VERSION_1_0);

@@ -36,7 +36,7 @@ static inline jlong _GetNextClassStamp() {
 }
 
 static inline jlong GetNextObjectStamp(jlong classId) {
-	jlong stamp = _GetNextStamp(TYPE_OBJECT, tldget()->threadId, classId,
+	jlong stamp = _GetNextStamp(STAMP_TYPE_OBJECT, tldget()->threadId, classId,
 			_nextobjectid);
 
 	_nextobjectid++;
