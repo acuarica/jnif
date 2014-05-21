@@ -18,6 +18,9 @@
 
 #include <jnif.hpp>
 
+#include <sstream>
+#include <fstream>
+
 using namespace std;
 using namespace jnif;
 
@@ -25,13 +28,51 @@ typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
 		JNIEnv* jni, InstrArgs* args);
 
-InstrFunc* instrFunc;
+ofstream prof;
+
+void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
+		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
+		InstrArgs* args2) {
+	try {
+
+		clock_t start = clock();
+		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args2);
+		clock_t end = clock();
+
+		if (!prof.is_open()) {
+			stringstream ss;
+			ss << args.outputPath << "agent.prof";
+			prof.open(ss.str().c_str());
+		}
+
+		prof << args2->instrName << ":" << className << ":" << (end - start)
+				<< ":" << start << ":" << end << endl;
+
+	} catch (const JnifException& ex) {
+		//cerr << "Error: JNIF Exception: " << ex.message << " @ " << endl;
+		//cerr << "Error: exception on jnif: (stackTrace)" << endl;
+		//cerr << ex.stackTrace << endl;
+		cerr << ex << endl;
+		throw ex;
+	}
+}
+
+//typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
+//		const char* className, int* newlen, unsigned char** newdata,
+//		JNIEnv* jni, InstrArgs* args);
+
+typedef struct {
+	InstrFunc* instrFunc;
+	String name;
+} InstrFuncEntry;
+
+InstrFuncEntry instrFuncEntry;
 
 int inLivePhase = 0;
 
-void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, unsigned char* data,
-		int len, const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni, InstrArgs* args);
+//void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, unsigned char* data,
+//		int len, const char* className, int* newlen, unsigned char** newdata,
+//		JNIEnv* jni, InstrArgs* args);
 
 static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jclass class_being_redefined, jobject loader, const char* name,
@@ -49,10 +90,11 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 	if (!FrIsProxyClassName(name)) {
 		InstrArgs args;
 		args.loader = loader;
+		args.instrName = instrFuncEntry.name;
 
-		InvokeInstrFunc(instrFunc, jvmti, (unsigned char*) class_data,
-				class_data_len, name, new_class_data_len, new_class_data, jni,
-				&args);
+		InvokeInstrFunc(instrFuncEntry.instrFunc, jvmti,
+				(unsigned char*) class_data, class_data_len, name,
+				new_class_data_len, new_class_data, jni, &args);
 
 //		(*instrFunc)(jvmti, (unsigned char*) class_data, class_data_len, name,
 //				new_class_data_len, new_class_data, jni, &args);
@@ -210,11 +252,6 @@ static void ParseOptions(const char* commandLineOptions) {
 	extern InstrFunc InstrClassHeap;
 	extern InstrFunc InstrClassClientServer;
 
-	typedef struct {
-		InstrFunc* instrFunc;
-		const char* name;
-	} InstrFuncEntry;
-
 	InstrFuncEntry instrFuncTable[] = {
 
 	{ &InstrClassEmpty, "Empty" },
@@ -237,16 +274,16 @@ static void ParseOptions(const char* commandLineOptions) {
 
 	};
 
-	const char* instrFuncName = args.instrFuncName.c_str();
+	String instrFuncName = args.instrFuncName;
 
-	_TLOG("func index: %s", instrFuncName);
+	_TLOG("func index: %s", instrFuncName.c_str());
 
 	const int instrFuncTableSize = sizeof(instrFuncTable)
 			/ sizeof(instrFuncTable[0]);
 
 	for (int i = 0; i < instrFuncTableSize; i++) {
-		if (strcmp(instrFuncName, instrFuncTable[i].name) == 0) {
-			instrFunc = instrFuncTable[i].instrFunc;
+		if (instrFuncName == instrFuncTable[i].name) {
+			instrFuncEntry = instrFuncTable[i];
 			return;
 		}
 	}
@@ -344,12 +381,8 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 	return JNI_OK;
 }
 
-void InstrUnload();
-
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
 	_TLOG("Agent unloaded");
-
-	InstrUnload();
 
 	//FrCloseTransactionLog();
 }
