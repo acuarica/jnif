@@ -233,7 +233,7 @@ static void ParseOptions(const char* commandLineOptions) {
 
 	{ &InstrClassMain, "Main" },
 
-	{ &InstrClassHeap, "Heap" },
+	{ &InstrClassClientServer, "ClientServer" },
 
 	};
 

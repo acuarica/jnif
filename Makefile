@@ -106,8 +106,11 @@ $(BUILD)/%: jars/%.jar
 #
 # Rules to run $(TESTAPP)
 #
-testapp: $(TESTAGENT) $(TESTAPP) | $(BUILD)/testapplog
+testapp: $(TESTAGENT) $(TESTAPP) startserver | $(BUILD)/testapplog
 	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTRS):$(BUILD)/testapplog/ -jar $(TESTAPP)
+
+#$(MAKE) stopserver
+#$(MAKE) startserver
 
 $(BUILD)/testapplog:
 	mkdir -p $@
@@ -120,6 +123,20 @@ testdacapo: $(TESTAGENT) | $(BUILD)/testdacapolog
 
 $(BUILD)/testdacapolog:
 	mkdir -p $@
+
+#
+# Rules to run $(INSTRSERVER)
+#
+startserver: $(INSTRSERVER).pid
+
+$(INSTRSERVER).pid: $(INSTRSERVER)
+	-$(MAKE) stopserver
+	$(JAVA) -jar $(INSTRSERVER) & echo "$$!" > $(INSTRSERVER).pid
+
+stopserver:
+	test -s $(INSTRSERVER).pid || { echo "Server stopped."; exit 1; }
+	kill `cat $(INSTRSERVER).pid`
+	rm $(INSTRSERVER).pid
 
 #
 # Rules for $(LIBJNIF)

@@ -81,20 +81,20 @@ public class FrHeapInstrument {
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 			super.visit(version, access, name, signature, superName, interfaces);
 
-			if (_className.equals("java/lang/Object")) {
+//			if (_className.equals("java/lang/Object")) {
 				logger.debug("Adding field to object class");
 
-				visitField(Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE, "__elcampito__", "J", null, 28L);
-			}
+				//visitField(Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE, "__elcampito__", "J", null, 28L);
+	//		}
 		}
 
-		@Override
-		public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-			// logger.debug(String.format("%d %s %s %s %s", access, name, desc,
-			// signature, value));
-
-			return super.visitField(access, name, desc, signature, value);
-		}
+//		@Override
+//		public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+//			// logger.debug(String.format("%d %s %s %s %s", access, name, desc,
+//			// signature, value));
+//
+//			return super.visitField(access, name, desc, signature, value);
+//		}
 
 		public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
 			MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
