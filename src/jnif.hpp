@@ -5,6 +5,7 @@
 #include <vector>
 #include <list>
 #include <ostream>
+#include <map>
 
 /**
  * The jnif namespace contains all type definitions, constants, enumerations
@@ -3112,27 +3113,30 @@ public:
 
 	bool isDefined(const String& className) const;
 
-	std::list<ClassEntry>::iterator begin() {
-		return classes.begin();
-	}
-
-	std::list<ClassEntry>::iterator end() {
-		return classes.end();
-	}
-
-	std::list<ClassEntry>::const_iterator begin() const {
-		return classes.begin();
-	}
-
-	std::list<ClassEntry>::const_iterator end() const {
-		return classes.end();
-	}
+//	std::list<ClassEntry>::iterator begin() {
+//		return classes.begin();
+//	}
+//
+//	std::list<ClassEntry>::iterator end() {
+//		return classes.end();
+//	}
+//
+//	std::list<ClassEntry>::const_iterator begin() const {
+//		return classes.begin();
+//	}
+//
+//	std::list<ClassEntry>::const_iterator end() const {
+//		return classes.end();
+//	}
 
 private:
 
-	std::list<ClassEntry> classes;
+	//std::list<ClassEntry> classes;
 
-	const ClassEntry* getEntry(const String& className) const;
+	std::map<String, ClassEntry> classes;
+
+	std::map<String, ClassEntry>::const_iterator getEntry(
+			const String& className) const;
 };
 
 std::ostream& operator<<(std::ostream& os, const JnifException& ex);
