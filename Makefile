@@ -8,9 +8,14 @@ BUILD=build
 JARS=$(wildcard jars/*.jar)
 DIRS=$(JARS:jars/%.jar=$(BUILD)/%)
 
-BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat tradebeans tradesoap xalan
-INSTRS=Print Identity ObjectInit NewArray ANewArray Main ClientServer
+#INSTRS=Print Identity ObjectInit NewArray ANewArray Main ClientServer
+INSTRS=Empty Identity Compute ClientServer
+
+BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow \
+       tomcat tradebeans tradesoap xalan
+
 INSTR=Compute
+BENCH=avrora
 
 CFLAGS += -fPIC -W -O4 -g -Wall -Wextra 
 
@@ -146,7 +151,7 @@ start: $(INSTRSERVER).pid
 
 $(INSTRSERVER).pid: $(INSTRSERVER) $(TESTAPP)
 	$(MAKE) stop
-	$(JAVA) -classpath $(CP):$(TESTAPP) -jar $(INSTRSERVER) & echo "$$!" > $(INSTRSERVER).pid
+	$(JAVA) -jar $(INSTRSERVER) & echo "$$!" > $(INSTRSERVER).pid
 	sleep 1
 
 stop:
@@ -157,9 +162,10 @@ stop:
 # Rules to run $(TESTAPP)
 #
 TESTAPP_LOG=$(BUILD)/testapp.$(INSTR).log
+TESTAPP_PROF=$(BUILD)/testapp.$(INSTR).prof
 
 testapp: $(TESTAGENT) $(TESTAPP) start | $(TESTAPP_LOG)
-	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):$(TESTAPP_LOG)/ -jar $(TESTAPP)
+	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):testapp:$(TESTAPP_PROF):$(TESTAPP_LOG)/ -jar $(TESTAPP)
 	$(MAKE) stop
 
 $(TESTAPP_LOG):
@@ -168,11 +174,18 @@ $(TESTAPP_LOG):
 #
 # Rules to run dacapo benchmarks
 #
-DACAPO_LOG=$(BUILD)/dacapo.$(INSTR).log
-DACAPO_SCRATCH=$(BUILD)/scratch
+DACAPO_LOG=$(BUILD)/dacapo.log.$(INSTR).$(BENCH)
+DACAPO_PROF=$(BUILD)/dacapo-$(BENCH).$(INSTR).prof
+DACAPO_SCRATCH=$(BUILD)/dacapo.scratch.$(INSTR).$(BENCH)
 
 dacapo: $(TESTAGENT) start | $(DACAPO_LOG)
-	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):$(DACAPO_LOG)/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCHS)
+	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):dacapo-$(BENCH):$(DACAPO_PROF):$(DACAPO_LOG)/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)
 
 $(DACAPO_LOG):
 	mkdir -p $@
+
+#
+# eval
+#
+eval:
+	$(foreach i,$(INSTRS),$(foreach b,$(BENCHS),$(MAKE) dacapo INSTR=$(i) BENCH=$(b); ))

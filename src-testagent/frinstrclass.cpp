@@ -39,9 +39,9 @@ public:
 
 	string getCommonSuperClass(const string& className1,
 			const string& className2) {
-		_TLOG("Common super class: left: %s, right: %s, loader: %s",
-				className1.c_str(), className2.c_str(),
-				(loader != NULL ? "object" : "(null)"));
+//		_TLOG("Common super class: left: %s, right: %s, loader: %s",
+//				className1.c_str(), className2.c_str(),
+//				(loader != NULL ? "object" : "(null)"));
 
 		try {
 			loadClassIfNotLoaded(className1);
@@ -54,21 +54,21 @@ public:
 				loadClassIfNotLoaded(sup);
 				sup = classHierarchy.getSuperClass(sup);
 				if (sup == "0") {
-					_TLOG("Common class is java/lang/Object!!!");
+					//_TLOG("Common class is java/lang/Object!!!");
 					return "java/lang/Object";
 				}
 
-				_TLOG("Intermediate super class is %s", sup.c_str());
+				//_TLOG("Intermediate super class is %s", sup.c_str());
 			}
 
-			_TLOG("Common super class found: %s", sup.c_str());
+			//_TLOG("Common super class found: %s", sup.c_str());
 
 			return sup;
 		} catch (const ClassNotLoadedException& e) {
 			string res = "java/lang/Object";
-			_TLOG(
-					"Class not loaded while looking the common super class between %s and %s, returning %s",
-					className1.c_str(), className2.c_str(), res.c_str());
+//			_TLOG(
+//					"Class not loaded while looking the common super class between %s and %s, returning %s",
+//					className1.c_str(), className2.c_str(), res.c_str());
 			return res;
 		}
 	}
@@ -96,8 +96,8 @@ private:
 	}
 
 	void loadClassAsResource(const string& className) {
-		_TLOG("loadClassAsResource: Trying to load class %s as a resource...",
-				className.c_str());
+//		_TLOG("loadClassAsResource: Trying to load class %s as a resource...",
+//				className.c_str());
 
 		jclass proxyClass = jni->FindClass("frproxy/FrInstrProxy");
 		ASSERT(proxyClass != NULL, "");
@@ -116,7 +116,7 @@ private:
 					"loadClassAsResource: getResource returned null");
 
 			jsize len = jni->GetArrayLength((jarray) res);
-			_TLOG("loadClassAsResource: resource len: %d", len);
+		//	_TLOG("loadClassAsResource: resource len: %d", len);
 
 			u1* bytes = (u1*) jni->GetByteArrayElements((jbyteArray) res, NULL);
 			ASSERT(bytes != NULL, "loadClassAsResource: ");
@@ -216,7 +216,7 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 	};
 
 	if (isPrefix("java", className) || isPrefix("sun", className)) {
-		_TLOG("Skipping compute on class: %s", className);
+		//_TLOG("Skipping compute on class: %s", className);
 		return;
 	}
 

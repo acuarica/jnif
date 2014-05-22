@@ -21,6 +21,9 @@
 #include <sstream>
 #include <fstream>
 
+#include <mach/clock.h>
+#include <mach/mach.h>
+
 using namespace std;
 using namespace jnif;
 
@@ -30,23 +33,38 @@ typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 ofstream prof;
 
+double gettime() {
+#ifdef __MACH__
+	host_name_port_t self = mach_host_self();
+	clock_serv_t cclock;
+	host_get_clock_service(self, REALTIME_CLOCK, &cclock);
+	mach_timespec_t ts;
+	clock_get_time(cclock, &ts);
+	mach_port_deallocate(self, cclock);
+#else
+	struct timespec ts;
+	clock_gettime( CLOCK_MONOTONIC, &ts );
+#endif
+	return ts.tv_sec + ts.tv_nsec * 1e-9;
+}
+
 void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args2) {
 	try {
 
-		clock_t start = clock();
+		auto start = gettime();
 		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args2);
-		clock_t end = clock();
+		auto end = gettime();
 
 		if (!prof.is_open()) {
 			stringstream ss;
-			ss << args.outputPath << "agent.prof";
+			ss << args.profPath;
 			prof.open(ss.str().c_str());
 		}
 
-		prof << args2->instrName << ":" << className << ":" << (end - start)
-				<< ":" << start << ":" << end << endl;
+		prof << args.appName << ":" << args2->instrName << ":" << className
+				<< ":" << (end - start) << endl;
 
 	} catch (const JnifException& ex) {
 		//cerr << "Error: JNIF Exception: " << ex.message << " @ " << endl;
@@ -236,9 +254,13 @@ static void ParseOptions(const char* commandLineOptions) {
 	String str(start);
 	options.push_back(str);
 
-	if (options.size() >= 2) {
+	if (options.size() >= 4) {
 		args.instrFuncName = options[0];
-		args.outputPath = options[1];
+		args.appName = options[1];
+		args.profPath = options[2];
+		args.outputPath = options[3];
+	} else {
+		ERROR("Invalid configuration");
 	}
 
 	extern InstrFunc InstrClassEmpty;
@@ -307,8 +329,12 @@ void PrintProperties(jvmtiEnv* jvmti) {
 	}
 }
 
+double startTime, endTime;
+
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 		void* reserved) {
+	startTime = gettime();
+
 	ParseOptions(options);
 
 	_TLOG("Agent loaded. options: %s", options);
@@ -382,6 +408,13 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 }
 
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
+	endTime = gettime();
+
+	ASSERT(prof.is_open(), "Prof file not opened");
+
+	prof << args.appName << ":" << instrFuncEntry.name << ":" << "@total" << ":"
+			<< (endTime - startTime) << endl;
+
 	_TLOG("Agent unloaded");
 
 	//FrCloseTransactionLog();

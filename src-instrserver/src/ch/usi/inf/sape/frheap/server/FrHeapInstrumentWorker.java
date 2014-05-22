@@ -10,36 +10,49 @@ import ch.usi.inf.sape.frheap.FrHeapInstrumentConfig;
 
 public class FrHeapInstrumentWorker extends Thread {
 
-	private final static Logger logger = Logger.getLogger(FrHeapInstrumentWorker.class);
+	private final static Logger logger = Logger
+			.getLogger(FrHeapInstrumentWorker.class);
 
 	private FrHeapInstrumentSocket _socket;
 
 	private FrHeapInstrumentConfig _config;
 
-	public FrHeapInstrumentWorker(FrHeapInstrumentSocket socket, FrHeapInstrumentConfig config) {
+	public FrHeapInstrumentWorker(FrHeapInstrumentSocket socket,
+			FrHeapInstrumentConfig config) {
 		_socket = socket;
 		_config = config;
 	}
 
 	public void run() {
-		logger.debug(String.format("Running worker id %d '%s'", this.getId(), getName()));
+		logger.debug(String.format("Running worker id %d '%s'", this.getId(),
+				getName()));
 
 		try {
 			while (true) {
 				FrHeapInstrumentMessage request = _socket.read();
 
-				logger.trace(String.format("Message received: %s [%d], class bytes len: %d", new String(
-						request.className), request.className.length, request.classBytes.length));
+				if (request == null) {
+					logger.debug(String.format("End of stream. Worker done."));
+					return;
+				}
 
-				if (request.className.length == 0 && request.classBytes.length == 0) {
-					logger.debug(String.format("Received exit thread message. Exiting..."));
+				logger.trace(String.format(
+						"Message received: %s [%d], class bytes len: %d",
+						new String(request.className),
+						request.className.length, request.classBytes.length));
+
+				if (request.className.length == 0
+						&& request.classBytes.length == 0) {
+					logger.debug(String
+							.format("Received exit thread message. Exiting..."));
 
 					break;
 				}
 
 				byte[] instrClass;
 
-				instrClass = instrumentClass(new String(request.className), request.classBytes);
+				instrClass = instrumentClass(new String(request.className),
+						request.classBytes);
 
 				FrHeapInstrumentMessage response = new FrHeapInstrumentMessage();
 				response.className = request.className;
@@ -47,8 +60,10 @@ public class FrHeapInstrumentWorker extends Thread {
 
 				_socket.write(response);
 
-				logger.trace(String.format("Message sent: %s [%d], class len: %d", new String(response.className),
-						response.className.length, response.classBytes.length));
+				logger.trace(String.format(
+						"Message sent: %s [%d], class len: %d", new String(
+								response.className), response.className.length,
+						response.classBytes.length));
 			}
 
 			logger.debug(String.format("Worker done"));
@@ -59,7 +74,9 @@ public class FrHeapInstrumentWorker extends Thread {
 		}
 	}
 
-	private byte[] instrumentClass(String className, byte[] classBytes) throws IOException {
-		return new FrHeapInstrument(_config).instrumentClass(new ByteArrayInputStream(classBytes), className);
+	private byte[] instrumentClass(String className, byte[] classBytes)
+			throws IOException {
+		return new FrHeapInstrument(_config).instrumentClass(
+				new ByteArrayInputStream(classBytes), className);
 	}
 }
