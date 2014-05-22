@@ -9,7 +9,7 @@
  *
  */
 __thread ThreadLocalData __tld = {.threadId = -1, .threadTag = -1, .name = "<NOT INIT>", .priority = 0, .isDaemon =
-	false, .socketfd = -1, ._tlog = NULL};
+	false, .socketfd = -1, ._tlog = nullptr, ._prof=nullptr};
 
 jint __nextthreadid = 1;
 

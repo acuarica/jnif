@@ -9,10 +9,11 @@ JARS=$(wildcard jars/*.jar)
 DIRS=$(JARS:jars/%.jar=$(BUILD)/%)
 
 #INSTRS=Print Identity ObjectInit NewArray ANewArray Main ClientServer
-INSTRS=Empty Identity Compute ClientServer
+#BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow \
+#       tomcat tradebeans tradesoap xalan
 
-BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow \
-       tomcat tradebeans tradesoap xalan
+INSTRS=Empty Identity Compute ClientServer
+BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow 
 
 INSTR=Compute
 BENCH=avrora
@@ -125,15 +126,9 @@ $(INSTRSERVER_BUILD):
 # PHONY rules
 #
 
-.PHONY: all docs clean testunit start stop testapp dacapo
+.PHONY: all testunit start stop testapp dacapo eval docs clean cleaneval
 
 all: $(LIBJNIF) $(TESTUNIT) $(TESTAGENT) $(TESTAPP) $(INSTRSERVER)
-
-docs:
-	doxygen
-
-clean:
-	rm -rf $(BUILD)
 
 #
 # Rules to run $(TESTUNIT)
@@ -161,8 +156,8 @@ stop:
 #
 # Rules to run $(TESTAPP)
 #
-TESTAPP_LOG=$(BUILD)/testapp.$(INSTR).log
-TESTAPP_PROF=$(BUILD)/testapp.$(INSTR).prof
+TESTAPP_LOG=$(BUILD)/run/testapp.$(INSTR).log
+TESTAPP_PROF=$(BUILD)/eval-testapp.$(INSTR)
 
 testapp: $(TESTAGENT) $(TESTAPP) start | $(TESTAPP_LOG)
 	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):testapp:$(TESTAPP_PROF):$(TESTAPP_LOG)/ -jar $(TESTAPP)
@@ -174,18 +169,35 @@ $(TESTAPP_LOG):
 #
 # Rules to run dacapo benchmarks
 #
-DACAPO_LOG=$(BUILD)/dacapo.log.$(INSTR).$(BENCH)
-DACAPO_PROF=$(BUILD)/dacapo-$(BENCH).$(INSTR).prof
-DACAPO_SCRATCH=$(BUILD)/dacapo.scratch.$(INSTR).$(BENCH)
+DACAPO_LOG=$(BUILD)/run/dacapo/log/$(INSTR).$(BENCH)
+DACAPO_PROF=$(BUILD)/eval-dacapo-$(BENCH).$(INSTR)
+DACAPO_SCRATCH=$(BUILD)/run/dacapo/scratch/$(INSTR).$(BENCH)
 
-dacapo: $(TESTAGENT) start | $(DACAPO_LOG)
-	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):dacapo-$(BENCH):$(DACAPO_PROF):$(DACAPO_LOG)/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)
+dacapo: $(TESTAGENT) start | $(DACAPO_LOG) $(DACAPO_SCRATCH)
+	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):$(BENCH):$(DACAPO_PROF):$(DACAPO_LOG)/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)
 
 $(DACAPO_LOG):
+	mkdir -p $@
+
+$(DACAPO_SCRATCH):
 	mkdir -p $@
 
 #
 # eval
 #
 eval:
+	$(MAKE) cleaneval
 	$(foreach i,$(INSTRS),$(foreach b,$(BENCHS),$(MAKE) dacapo INSTR=$(i) BENCH=$(b); ))
+
+pdfs:
+	cat $(BUILD)/eval-*.prof > $(BUILD)/eval.prof
+	r --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.prof
+
+docs:
+	doxygen
+
+clean:
+	rm -rf $(BUILD)
+
+cleaneval:
+	rm -rf $(BUILD)/eval-*.prof $(BUILD)/run

@@ -126,6 +126,4 @@ void InstrClassClientServer(jvmtiEnv* jvmti, unsigned char* data, int len,
 	FrAllocate(jvmti, newClassBytesLen, newdata);
 
 	_ReceiveData(sockfd, *newdata, newClassBytesLen);
-
-	INFO("Instrumented %s", className);
 }
