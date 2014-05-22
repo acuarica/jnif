@@ -142,16 +142,22 @@ $(BUILD)/%: jars/%.jar
 #
 # Rules to run $(INSTRSERVER)
 #
-start: $(INSTRSERVER).pid
+#$(INSTRSERVER).pid: $(INSTRSERVER) $(TESTAPP)
+# & echo "$$!" > $(INSTRSERVER).pid
+#$(INSTRSERVER).pid
 
-$(INSTRSERVER).pid: $(INSTRSERVER) $(TESTAPP)
-	$(MAKE) stop
-	$(JAVA) -jar $(INSTRSERVER) & echo "$$!" > $(INSTRSERVER).pid
-	sleep 1
+start:
+	$(JAVA) -jar $(INSTRSERVER) &
+	sleep 2
+
+#$(MAKE) stop
 
 stop:
-	-IPID=`cat $(INSTRSERVER).pid 2> /dev/null` && kill $$IPID
-	rm -f $(INSTRSERVER).pid
+	kill `jps -mlv | grep build/instrserver.jar | cut -f 1 -d' '`
+	sleep 1
+
+#-IPID=`cat $(INSTRSERVER).pid 2> /dev/null` && kill $$IPID
+#rm -f $(INSTRSERVER).pid
 
 #
 # Rules to run $(TESTAPP)
@@ -159,7 +165,8 @@ stop:
 TESTAPP_LOG=$(BUILD)/run/testapp.$(INSTR).log
 TESTAPP_PROF=$(BUILD)/eval-testapp.$(INSTR)
 
-testapp: $(TESTAGENT) $(TESTAPP) start | $(TESTAPP_LOG)
+testapp: $(TESTAGENT) $(TESTAPP) | $(TESTAPP_LOG)
+	$(MAKE) start
 	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):testapp:$(TESTAPP_PROF):$(TESTAPP_LOG)/ -jar $(TESTAPP)
 	$(MAKE) stop
 
@@ -173,8 +180,10 @@ DACAPO_LOG=$(BUILD)/run/dacapo/log/$(INSTR).$(BENCH)
 DACAPO_PROF=$(BUILD)/eval-dacapo-$(BENCH).$(INSTR)
 DACAPO_SCRATCH=$(BUILD)/run/dacapo/scratch/$(INSTR).$(BENCH)
 
-dacapo: $(TESTAGENT) start | $(DACAPO_LOG) $(DACAPO_SCRATCH)
+dacapo: $(TESTAGENT) | $(DACAPO_LOG) $(DACAPO_SCRATCH)
+	$(MAKE) start
 	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):$(BENCH):$(DACAPO_PROF):$(DACAPO_LOG)/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)
+	$(MAKE) stop
 
 $(DACAPO_LOG):
 	mkdir -p $@

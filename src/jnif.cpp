@@ -84,12 +84,15 @@ void ClassHierarchy::addClass(const ClassFile& classFile) {
 		e.interfaces.push_back(interName);
 	}
 
-	classes.push_front(e);
+	classes[e.className] = e;
+	//classes.push_front(e);
 }
 
-const string& ClassHierarchy::getSuperClass(const string& className) const {
-	const ClassHierarchy::ClassEntry* e = getEntry(className);
-	return e->superClassName;
+const String& ClassHierarchy::getSuperClass(const String& className) const {
+	auto it = getEntry(className);
+	Error::assert(it != classes.end(), "Class not defined");
+
+	return it->second.superClassName;
 }
 
 bool ClassHierarchy::isAssignableFrom(const string& sub,
@@ -108,19 +111,31 @@ bool ClassHierarchy::isAssignableFrom(const string& sub,
 }
 
 bool ClassHierarchy::isDefined(const String& className) const {
-	const ClassHierarchy::ClassEntry* e = getEntry(className);
-	return e != nullptr;
+//	const ClassHierarchy::ClassEntry* e = getEntry(className);
+//	return e != nullptr;
+	auto it = getEntry(className);
+	return it != classes.end();
 }
 
-const ClassHierarchy::ClassEntry* ClassHierarchy::getEntry(
-		const string& className) const {
-	for (const ClassHierarchy::ClassEntry& e : *this) {
-		if (e.className == className) {
-			return &e;
-		}
-	}
+std::map<String, ClassHierarchy::ClassEntry>::const_iterator ClassHierarchy::getEntry(
+		const String& className) const {
 
-	return nullptr;
+	auto it = classes.find(className);
+
+	return it;
+
+//	if (it != classes.end()) {
+//		return &it->second;
+//	} else {
+//		return nullptr;
+//	}
+//	for (const ClassHierarchy::ClassEntry& e : *this) {
+//		if (e.className == className) {
+//			return &e;
+//		}
+//	}
+//
+//	return nullptr;
 }
 
 string Version::supportedByJdk() const {
@@ -137,16 +152,16 @@ string Version::supportedByJdk() const {
 }
 
 std::ostream& operator<<(std::ostream& os, const ClassHierarchy& ch) {
-	for (const ClassHierarchy::ClassEntry& e : ch) {
-		os << "Class: " << e.className << ", ";
-		os << "Super: " << e.superClassName << ", ";
-		os << "Interfaces: { ";
-		for (const string& interName : e.interfaces) {
-			os << interName << " ";
-		}
-
-		os << " }" << endl;
-	}
+//	for (const ClassHierarchy::ClassEntry& e : ch) {
+//		os << "Class: " << e.className << ", ";
+//		os << "Super: " << e.superClassName << ", ";
+//		os << "Interfaces: { ";
+//		for (const string& interName : e.interfaces) {
+//			os << interName << " ";
+//		}
+//
+//		os << " }" << endl;
+//	}
 
 	return os;
 }
