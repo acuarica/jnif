@@ -31,7 +31,7 @@ typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
 		JNIEnv* jni, InstrArgs* args);
 
-ofstream prof;
+//ofstream prof;
 
 double gettime() {
 #ifdef __MACH__
@@ -57,14 +57,8 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args2);
 		auto end = gettime();
 
-		if (!prof.is_open()) {
-			stringstream ss;
-			ss << args.profPath;
-			prof.open(ss.str().c_str());
-		}
-
-		prof << args.appName << ":" << args2->instrName << ":" << className
-				<< ":" << (end - start) << endl;
+		tldget()->prof(args.appName, args2->instrName, className,
+				(end - start));
 
 	} catch (const JnifException& ex) {
 		//cerr << "Error: JNIF Exception: " << ex.message << " @ " << endl;
@@ -410,10 +404,8 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
 	endTime = gettime();
 
-	ASSERT(prof.is_open(), "Prof file not opened");
-
-	prof << args.appName << ":" << instrFuncEntry.name << ":" << "@total" << ":"
-			<< (endTime - startTime) << endl;
+	tldget()->prof(args.appName, instrFuncEntry.name, "@total",
+			(endTime - startTime));
 
 	_TLOG("Agent unloaded");
 

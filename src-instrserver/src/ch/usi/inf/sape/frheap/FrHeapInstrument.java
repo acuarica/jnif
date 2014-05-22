@@ -24,8 +24,8 @@ import org.objectweb.asm.tree.ClassNode;
  */
 public class FrHeapInstrument {
 
-	private final static Logger logger = Logger
-			.getLogger(FrHeapInstrument.class);
+//	private final static Logger logger = Logger
+//			.getLogger(FrHeapInstrument.class);
 
 	private final FrHeapInstrumentConfig _config;
 
@@ -48,8 +48,8 @@ public class FrHeapInstrument {
 		ClassNode cf = new ClassNode();
 		cr.accept(cf, 0);
 
-		logger.trace(String.format("Instrumented class %s, new class len: %d",
-				className, instrClassBytes.length));
+//		logger.trace(String.format("Instrumented class %s, new class len: %d",
+//				className, instrClassBytes.length));
 
 		return instrClassBytes;
 	}
@@ -61,19 +61,19 @@ public class FrHeapInstrument {
 
 		String dir = new File(fileName).getParent();
 
-		logger.trace("Creating dir " + dir);
+		//logger.trace("Creating dir " + dir);
 		new File(dir).mkdirs();
 
-		logger.trace(String.format("Dumping class file for class %s in %s",
-				className, fileName));
+//		logger.trace(String.format("Dumping class file for class %s in %s",
+//				className, fileName));
 
 		try {
 			FileOutputStream output = new FileOutputStream(fileName);
 			output.write(instrClassBytes);
 			output.close();
 		} catch (IOException e) {
-			logger.warn("Unable to write instrumented class file in "
-					+ fileName, e);
+//			logger.warn("Unable to write instrumented class file in "
+//					+ fileName, e);
 		}
 	}
 
