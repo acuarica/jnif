@@ -2,6 +2,7 @@ package ch.usi.inf.sape.frheap.server;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 
@@ -17,18 +18,22 @@ public class FrHeapInstrumentSocket {
 	}
 
 	public FrHeapInstrumentMessage read() throws IOException {
-		FrHeapInstrumentMessage message = new FrHeapInstrumentMessage();
+		try {
+			FrHeapInstrumentMessage message = new FrHeapInstrumentMessage();
 
-		int classNameLen = is.readInt();
-		int classBytesLen = is.readInt();
+			int classNameLen = is.readInt();
+			int classBytesLen = is.readInt();
 
-		message.className = new byte[classNameLen];
-		is.readFully(message.className);
+			message.className = new byte[classNameLen];
+			is.readFully(message.className);
 
-		message.classBytes = new byte[classBytesLen];
-		is.readFully(message.classBytes);
+			message.classBytes = new byte[classBytesLen];
+			is.readFully(message.classBytes);
 
-		return message;
+			return message;
+		} catch (EOFException ex) {
+			return null;
+		}
 	}
 
 	public void write(FrHeapInstrumentMessage message) throws IOException {

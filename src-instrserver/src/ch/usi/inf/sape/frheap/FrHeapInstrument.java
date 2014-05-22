@@ -12,6 +12,8 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.commons.JSRInlinerAdapter;
+import org.objectweb.asm.tree.ClassNode;
 
 /**
  * 
@@ -33,9 +35,8 @@ public class FrHeapInstrument {
 
 	public byte[] instrumentClass(InputStream classBytes, String className)
 			throws IOException {
-		ClassWriter cw = new ClassWriter(// ClassWriter.COMPUTE_MAXS
-				// |
-				ClassWriter.COMPUTE_FRAMES);
+		ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+		// ClassWriter.COMPUTE_FRAMES
 
 		ClassReader cr = new ClassReader(classBytes);
 		ClassTransformer ct = new ClassTransformer(cw, className);
@@ -43,6 +44,9 @@ public class FrHeapInstrument {
 
 		byte[] instrClassBytes = cw.toByteArray();
 		// dumpInstrumentedClassFile(instrClassBytes, className);
+
+		ClassNode cf = new ClassNode();
+		cr.accept(cf, 0);
 
 		logger.trace(String.format("Instrumented class %s, new class len: %d",
 				className, instrClassBytes.length));

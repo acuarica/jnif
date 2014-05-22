@@ -1,3 +1,19 @@
 Manifest-Version: 1.0
 Main-Class: ch.usi.inf.sape.frheap.server.FrHeapInstrumentServer
-Class-Path: ../src-instrserver/lib/log4j-1.2.17.jar ../src-instrserver/lib/asm-debug-all-4.0.jar testapp.jar
+Class-Path: ../src-instrserver/lib/log4j-1.2.17.jar ../src-instrserver/lib/asm-debug-all-4.0.jar testapp.jar 
+  ../jars/antlr-3.1.3.jar ../jars/asm-3.1.jar ../jars/asm-commons-3.1.jar ../jars/avalon-framework-4.2.0.jar
+  ../jars/avrora-cvs-20091224.jar ../jars/batik-all-1.7.jar ../jars/batik-all.jar
+  ../jars/bootstrap.jar ../jars/commons-codec.jar ../jars/commons-daemon.jar
+  ../jars/commons-httpclient.jar ../jars/commons-io-1.3.1.jar
+  ../jars/commons-logging-1.0.4.jar ../jars/commons-logging.jar ../jars/constantine-0.4.jar
+  ../jars/crimson-1.1.3.jar  ../jars/dacapo-9.12-bach.jar
+  ../jars/dacapo-tomcat.jar ../jars/daytrader.jar ../jars/derby.jar ../jars/derbyclient.jar
+  ../jars/derbynet.jar ../jars/derbyTesting.jar ../jars/derbytools.jar
+  ../jars/eclipse.jar ../jars/fop.jar ../jars/h2-1.2.121.jar ../jars/janino-2.5.12.jar
+  ../jars/jaxen-1.1.1.jar ../jars/jna-posix.jar ../jars/jna.jar ../jars/junit-3.8.1.jar
+  ../jars/jython.jar ../jars/lucene-core-2.4.jar ../jars/lucene-demos-2.4.jar ../jars/luindex.jar
+  ../jars/lusearch.jar ../jars/pmd-4.2.5.jar ../jars/serializer-2.7.0.jar 
+  ../jars/serializer.jar ../jars/sunflow-0.07.2.jar ../jars/tomcat-juli.jar
+  ../jars/tpcc.jar ../jars/xalan-2.6.0.jar ../jars/xalan-benchmark.jar ../jars/xalan.jar 
+  ../jars/xerces_2_5_0.jar ../jars/xercesImpl.jar ../jars/xml-apis-ext.jar 
+  ../jars/xml-apis.jar ../jars/xmlgraphics-commons-1.3.1.jar
