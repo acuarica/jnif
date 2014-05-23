@@ -683,7 +683,7 @@ private:
 };
 
 ostream& operator<<(ostream& os, const Version& version) {
-	os << version.major << "." << version.minor;
+	os << version.majorVersion << "." << version.minorVersion;
 	os << " (supported by JDK " << version.supportedByJdk() << ")";
 	return os;
 }

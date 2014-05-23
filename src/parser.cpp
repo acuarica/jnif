@@ -226,8 +226,8 @@ public:
 		check(magic == CLASSFILE_MAGIC,
 				"Invalid magic number. Expected 0xcafebabe, found: ", magic);
 
-		cf.version.minor = br.readu2();
-		cf.version.major = br.readu2();
+		cf.version.minorVersion = br.readu2();
+		cf.version.majorVersion = br.readu2();
 
 		parseConstPool(br, cf);
 
