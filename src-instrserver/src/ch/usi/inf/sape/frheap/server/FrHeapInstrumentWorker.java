@@ -36,10 +36,10 @@ public class FrHeapInstrumentWorker extends Thread {
 					return;
 				}
 
-//				logger.trace(String.format(
-//						"Message received: %s [%d], class bytes len: %d",
-//						new String(request.className),
-//						request.className.length, request.classBytes.length));
+				// logger.trace(String.format(
+				// "Message received: %s [%d], class bytes len: %d",
+				// new String(request.className),
+				// request.className.length, request.classBytes.length));
 
 				if (request.className.length == 0
 						&& request.classBytes.length == 0) {
@@ -60,10 +60,10 @@ public class FrHeapInstrumentWorker extends Thread {
 
 				_socket.write(response);
 
-//				logger.trace(String.format(
-//						"Message sent: %s [%d], class len: %d", new String(
-//								response.className), response.className.length,
-//						response.classBytes.length));
+				// logger.trace(String.format(
+				// "Message sent: %s [%d], class len: %d", new String(
+				// response.className), response.className.length,
+				// response.classBytes.length));
 			}
 
 			logger.debug(String.format("Worker done"));
@@ -76,7 +76,13 @@ public class FrHeapInstrumentWorker extends Thread {
 
 	private byte[] instrumentClass(String className, byte[] classBytes)
 			throws IOException {
-		return new FrHeapInstrument(_config).instrumentClass(
-				new ByteArrayInputStream(classBytes), className);
+		try {
+			ByteArrayInputStream bis = new ByteArrayInputStream(classBytes);
+			FrHeapInstrument instr = new FrHeapInstrument(_config);
+			return instr.instrumentClass(bis, className);
+		} catch (RuntimeException ex) {
+			logger.warn("RuntimeException probably caused by JSR/RET instruction");
+			return classBytes;
+		}
 	}
 }

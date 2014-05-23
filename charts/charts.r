@@ -19,10 +19,11 @@ csvfilename <- '../build/eval.prof'
 csvfilename <- argv[1]
 
 path <- file_path_sans_ext(csvfilename)
-save <- function( p, d, s, w = 12, h = 8 ) {
-  path <- sprintf('%s.chart_%s.pdf', d, s)
-  pdf(file = path, paper = 'special', width = w, height = h, pointsize = 12)
-  print( p )
+save <- function(p, d, s, w=1400, h=800) {
+  path <- sprintf('%s-chart-%s.png', d, s)
+  #png(file = path, paper = 'special', width = w, height = h, pointsize = 12)
+  png(file = path, width=w, height=h, pointsize=24)
+  print(p)
   null <- dev.off()
 }
 
