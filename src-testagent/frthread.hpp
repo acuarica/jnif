@@ -18,13 +18,18 @@ class ThreadLocalData {
 public:
 
 	jint threadId;
+	jlong threadTag;
 	char name[1024];
 	jint priority;
 	jboolean isDaemon;
-	jlong threadTag;
 	int socketfd;
 	FILE* _tlog;
 	FILE* _prof;
+
+	ThreadLocalData() :
+			threadId(-1), threadTag(-1), name("NOT INIT"), priority(0), isDaemon(
+					false), socketfd(-1), _tlog(nullptr), _prof(nullptr) {
+	}
 
 	void prof(const std::string& appName, const std::string& instrName,
 			const std::string& className, double time) {
