@@ -662,7 +662,11 @@ public:
 	ConstIndex addUtf8(const char* utf8, int len) {
 		String str(utf8, len);
 		ConstItem e(CONST_UTF8, str);
-		return _addSingle(e);
+
+		ConstIndex i = _addSingle(e);
+		utf8s[String(str)] = i;
+
+		return i;
 	}
 
 	/**
@@ -674,7 +678,10 @@ public:
 	 */
 	ConstIndex addUtf8(const char* str) {
 		ConstItem e(CONST_UTF8, str);
-		return _addSingle(e);
+		ConstIndex i = _addSingle(e);
+		utf8s[String(str)] = i;
+
+		return i;
 	}
 
 	/**
@@ -786,22 +793,7 @@ public:
 		*desc = getUtf8(descIndex);
 	}
 
-	ConstIndex getIndexOfUtf8(const char* utf8) {
-
-		ConstPool& cp = *this;
-		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
-			ConstIndex i = *it;
-			//ConstPool::Tag tag = cp.getTag(i);
-
-			//const Entry* entry = &cp.entries[i];
-
-			if (isUtf8(i) && getUtf8(i) == String(utf8)) {
-				return i;
-			}
-		}
-
-		return NULLENTRY;
-	}
+	ConstIndex getIndexOfUtf8(const char* utf8);
 
 	ConstIndex putUtf8(const char* utf8) {
 		ConstIndex i = getIndexOfUtf8(utf8);
@@ -860,8 +852,9 @@ private:
 		*clazzName = getClassName(classIndex);
 		getNameAndType(nameAndTypeIndex, name, desc);
 	}
-}
-;
+
+	std::map<String, ConstIndex> utf8s;
+};
 
 /**
  * Access flags for the class itself.

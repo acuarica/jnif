@@ -39,6 +39,32 @@ std::ostream& operator<<(std::ostream& os, const JnifException& ex) {
 	return os;
 
 }
+
+ConstIndex ConstPool::getIndexOfUtf8(const char* utf8) {
+	auto it = utf8s.find(utf8);
+	if (it != utf8s.end()) {
+		ConstIndex idx = it->second;
+		Error::assert(getUtf8(idx) != utf8, "Error on get index of utf8");
+		return idx;
+	} else {
+		return NULLENTRY;
+	}
+
+//		ConstPool& cp = *this;
+//		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
+//			ConstIndex i = *it;
+//			//ConstPool::Tag tag = cp.getTag(i);
+//
+//			//const Entry* entry = &cp.entries[i];
+//
+//			if (isUtf8(i) && getUtf8(i) == String(utf8)) {
+//				return i;
+//			}
+//		}
+//
+//		return NULLENTRY;
+}
+
 const ConstItem* ConstPool::_getEntry(ConstIndex i) const {
 	Error::check(i > NULLENTRY, "Null access to constant pool: index = ", i);
 	Error::check(i < entries.size(), "Index out of bounds: index = ", i);
@@ -73,7 +99,9 @@ void ClassHierarchy::addClass(const ClassFile& classFile) {
 	e.className = classFile.getThisClassName();
 
 	if (classFile.superClassIndex == ConstPool::NULLENTRY) {
-		Error::check(e.className == "java/lang/Object", "invalid super class");
+		Error::check(e.className == "java/lang/Object",
+				"invalid class name for null super class: ", e.className,
+				"asdfasf");
 		e.superClassName = "0";
 	} else {
 		e.superClassName = classFile.getClassName(classFile.superClassIndex);
