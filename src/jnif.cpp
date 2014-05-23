@@ -172,7 +172,7 @@ string Version::supportedByJdk() const {
 	} else if (Version(45, 0) <= *this && *this <= Version(45, 65535)) {
 		return "1.1.*";
 	} else {
-		u2 k = major - 44;
+		u2 k = majorVersion - 44;
 		stringstream ss;
 		ss << "1." << k;
 		return ss.str();

@@ -2868,33 +2868,33 @@ public:
 	/**
 	 * Using default 51, which is supported by JDK 1.7.
 	 */
-	Version(u2 major = 51, u2 minor = 0) :
-			major(major), minor(minor) {
+	Version(u2 majorVersion = 51, u2 minorVersion = 0) :
+			majorVersion(majorVersion), minorVersion(minorVersion) {
 	}
 
 	/**
 	 * The major version number.
 	 */
-	u2 major;
+	u2 majorVersion;
 
 	/**
 	 * The minor version number.
 	 */
-	u2 minor;
+	u2 minorVersion;
 
 	/**
 	 *
 	 */
 	friend bool operator==(const Version& left, const Version& right) {
-		return left.major == right.major && left.major == right.major;
+		return left.majorVersion == right.majorVersion && left.majorVersion == right.majorVersion;
 	}
 
 	/**
 	 *
 	 */
 	friend bool operator<(const Version& left, const Version& right) {
-		return left.major < right.major
-				|| (left.major == right.major && left.minor < right.minor);
+		return left.majorVersion < right.majorVersion
+				|| (left.majorVersion == right.majorVersion && left.minorVersion < right.minorVersion);
 	}
 
 	/**
