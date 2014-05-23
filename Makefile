@@ -165,7 +165,7 @@ stop:
 TESTAPP_LOG=$(BUILD)/run/testapp.$(INSTR).log
 TESTAPP_PROF=$(BUILD)/eval-testapp.$(INSTR)
 
-testapp: $(TESTAGENT) $(TESTAPP) | $(TESTAPP_LOG)
+testapp: $(TESTAGENT) $(TESTAPP) $(INSTRSERVER) | $(TESTAPP_LOG)
 	$(MAKE) start
 	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):testapp:$(TESTAPP_PROF):$(TESTAPP_LOG)/ -jar $(TESTAPP)
 	$(MAKE) stop
@@ -180,7 +180,7 @@ DACAPO_LOG=$(BUILD)/run/dacapo/log/$(INSTR).$(BENCH)
 DACAPO_PROF=$(BUILD)/eval-dacapo-$(BENCH).$(INSTR)
 DACAPO_SCRATCH=$(BUILD)/run/dacapo/scratch/$(INSTR).$(BENCH)
 
-dacapo: $(TESTAGENT) | $(DACAPO_LOG) $(DACAPO_SCRATCH)
+dacapo: $(TESTAGENT) $(INSTRSERVER) | $(DACAPO_LOG) $(DACAPO_SCRATCH)
 	$(MAKE) start
 	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):$(BENCH):$(DACAPO_PROF):$(DACAPO_LOG)/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)
 	$(MAKE) stop

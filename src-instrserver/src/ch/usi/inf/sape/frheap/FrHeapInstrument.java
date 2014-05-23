@@ -4,15 +4,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.tree.ClassNode;
 
 /**
@@ -24,8 +23,8 @@ import org.objectweb.asm.tree.ClassNode;
  */
 public class FrHeapInstrument {
 
-//	private final static Logger logger = Logger
-//			.getLogger(FrHeapInstrument.class);
+	// private final static Logger logger = Logger
+	// .getLogger(FrHeapInstrument.class);
 
 	private final FrHeapInstrumentConfig _config;
 
@@ -33,13 +32,32 @@ public class FrHeapInstrument {
 		_config = config;
 	}
 
+	public static Map<String, Object> classes = new HashMap<String, Object>();
+
 	public byte[] instrumentClass(InputStream classBytes, String className)
 			throws IOException {
-		ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+
+//		boolean isDefined = false;
+//		for (int i = 0; i < 100; i++) {
+//			for (String key : classes.keySet()) {
+//				if (key.equals(className)) {
+//					isDefined = true;
+//
+//				}
+//			}
+//		}
+//
+//		if (!isDefined) {
+//			classes.put(className, classBytes);
+//		}
+
+		ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS
+				| ClassWriter.COMPUTE_FRAMES);
 		// ClassWriter.COMPUTE_FRAMES
 
 		ClassReader cr = new ClassReader(classBytes);
 		ClassTransformer ct = new ClassTransformer(cw, className);
+
 		cr.accept(ct, 0);
 
 		byte[] instrClassBytes = cw.toByteArray();
@@ -48,8 +66,8 @@ public class FrHeapInstrument {
 		ClassNode cf = new ClassNode();
 		cr.accept(cf, 0);
 
-//		logger.trace(String.format("Instrumented class %s, new class len: %d",
-//				className, instrClassBytes.length));
+		// logger.trace(String.format("Instrumented class %s, new class len: %d",
+		// className, instrClassBytes.length));
 
 		return instrClassBytes;
 	}
@@ -61,19 +79,19 @@ public class FrHeapInstrument {
 
 		String dir = new File(fileName).getParent();
 
-		//logger.trace("Creating dir " + dir);
+		// logger.trace("Creating dir " + dir);
 		new File(dir).mkdirs();
 
-//		logger.trace(String.format("Dumping class file for class %s in %s",
-//				className, fileName));
+		// logger.trace(String.format("Dumping class file for class %s in %s",
+		// className, fileName));
 
 		try {
 			FileOutputStream output = new FileOutputStream(fileName);
 			output.write(instrClassBytes);
 			output.close();
 		} catch (IOException e) {
-//			logger.warn("Unable to write instrumented class file in "
-//					+ fileName, e);
+			// logger.warn("Unable to write instrumented class file in "
+			// + fileName, e);
 		}
 	}
 
