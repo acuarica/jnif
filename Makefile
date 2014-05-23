@@ -3,22 +3,37 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
-BUILD=build
+UNAME := $(shell uname)
 
-JARS=$(wildcard jars/*.jar)
-DIRS=$(JARS:jars/%.jar=$(BUILD)/%)
+ifeq ($(UNAME), Linux)
+  CXXFLAGS+=
+endif
+ifeq ($(UNAME), Darwin)
+  CXXFLAGS+=-stdlib=libc++
+endif
+
+BUILD=build
 
 #INSTRS=Print Identity ObjectInit NewArray ANewArray Main ClientServer
 #BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow \
 #       tomcat tradebeans tradesoap xalan
 
-INSTRS=Empty Identity Compute ClientServer
-BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow 
-
 INSTR=Compute
 BENCH=avrora
+RUN=0
 
-CFLAGS += -fPIC -W -O4 -g -Wall -Wextra 
+TIMES=10
+INSTRS=Empty Identity Compute ClientServer
+BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow 
+RUNS=$(shell seq 1 $(TIMES))
+
+#CXX=g++
+CXXFLAGS+=-W -g -Wall -Wextra -O4 -std=c++11
+LDLIBS=hola que tal
+	#$(LINK.c)
+
+JARS=$(wildcard jars/*.jar)
+DIRS=$(JARS:jars/%.jar=$(BUILD)/%)
 
 #
 # Rules to make $(LIBJNIF)
@@ -31,10 +46,10 @@ LIBJNIF_SRCS=$(wildcard $(LIBJNIF_SRC)/*.cpp)
 LIBJNIF_OBJS=$(LIBJNIF_SRCS:$(LIBJNIF_SRC)/%=$(LIBJNIF_BUILD)/%.o)
 
 $(LIBJNIF): $(LIBJNIF_OBJS)
-	ar crv $@ $^
+	$(AR) crv $@ $^
 
 $(LIBJNIF_BUILD)/%.cpp.o: $(LIBJNIF_SRC)/%.cpp $(LIBJNIF_HPPS) | $(LIBJNIF_BUILD)
-	$(LINK.c) -O4 -std=c++11 -stdlib=libc++ -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 $(LIBJNIF_BUILD):
 	mkdir -p $@
@@ -50,10 +65,10 @@ TESTUNIT_SRCS=$(wildcard $(TESTUNIT_SRC)/*.cpp)
 TESTUNIT_OBJS=$(TESTUNIT_SRCS:$(TESTUNIT_SRC)/%=$(TESTUNIT_BUILD)/%.o)
 
 $(TESTUNIT): $(TESTUNIT_OBJS) $(LIBJNIF)
-	clang++ $(CFLAGS) -fsanitize=leak -stdlib=libc++ -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 $(TESTUNIT_BUILD)/%.cpp.o: $(TESTUNIT_SRC)/%.cpp $(TESTUNIT_HPPS) | $(TESTUNIT_BUILD)
-	$(LINK.c) -std=c++11 -stdlib=libc++ -I$(LIBJNIF_SRC) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -c -o $@ $<
 
 $(TESTUNIT_BUILD):
 	mkdir -p $@
@@ -69,10 +84,10 @@ TESTAGENT_SRCS=$(wildcard $(TESTAGENT_SRC)/*.cpp) $(wildcard $(TESTAGENT_SRC)/fr
 TESTAGENT_OBJS=$(TESTAGENT_SRCS:$(TESTAGENT_SRC)/%=$(TESTAGENT_BUILD)/%.o)
 
 $(TESTAGENT): $(TESTAGENT_OBJS) $(LIBJNIF)
-	clang++ $(CFLAGS) -fPIC -O0 -g -lpthread -shared -lstdc++ -stdlib=libc++ -o $@ $^
+	$(CXX) $(CXXFLAGS) -fPIC -O0 -g -lpthread -shared -lstdc++ -o $@ $^
 
 $(TESTAGENT_BUILD)/%.cpp.o: $(TESTAGENT_SRC)/%.cpp $(TESTAGENT_HPPS) | $(TESTAGENT_BUILD)
-	$(LINK.c) -std=c++11 -stdlib=libc++ -I$(LIBJNIF_SRC) -Wno-unused-parameter -I$(JAVA_HOME)/include -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -Wno-unused-parameter -I$(JAVA_HOME)/include -c -o $@ $<
 
 $(TESTAGENT_BUILD)/%.java.o: $(TESTAGENT_SRC)/%.java
 	$(JAVAC) -d $(TESTAGENT_BUILD)/ $<
@@ -163,7 +178,7 @@ stop:
 # Rules to run $(TESTAPP)
 #
 TESTAPP_LOG=$(BUILD)/run/testapp.$(INSTR).log
-TESTAPP_PROF=$(BUILD)/eval-testapp.$(INSTR)
+TESTAPP_PROF=$(BUILD)/eval-testapp-$(RUN).$(INSTR)
 
 testapp: $(TESTAGENT) $(TESTAPP) $(INSTRSERVER) | $(TESTAPP_LOG)
 	$(MAKE) start
@@ -177,7 +192,7 @@ $(TESTAPP_LOG):
 # Rules to run dacapo benchmarks
 #
 DACAPO_LOG=$(BUILD)/run/dacapo/log/$(INSTR).$(BENCH)
-DACAPO_PROF=$(BUILD)/eval-dacapo-$(BENCH).$(INSTR)
+DACAPO_PROF=$(BUILD)/eval-dacapo-$(RUN)-$(BENCH).$(INSTR)
 DACAPO_SCRATCH=$(BUILD)/run/dacapo/scratch/$(INSTR).$(BENCH)
 
 dacapo: $(TESTAGENT) $(INSTRSERVER) | $(DACAPO_LOG) $(DACAPO_SCRATCH)
@@ -196,7 +211,13 @@ $(DACAPO_SCRATCH):
 #
 eval:
 	$(MAKE) cleaneval
-	$(foreach i,$(INSTRS),$(foreach b,$(BENCHS),$(MAKE) dacapo INSTR=$(i) BENCH=$(b); ))
+	$(foreach r,$(RUNS),\
+		$(foreach i,$(INSTRS),\
+			$(foreach b,$(BENCHS),\
+				$(MAKE) dacapo RUN=$(r) INSTR=$(i) BENCH=$(b); \
+			)\
+		)\
+	)
 
 pdfs:
 	cat $(BUILD)/eval-*.prof > $(BUILD)/eval.prof
