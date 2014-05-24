@@ -70,7 +70,7 @@ private:
 /**
  *
  */
-extern __thread ThreadLocalData __tld;
+extern thread_local ThreadLocalData __tld;
 
 extern jint __nextthreadid;
 
