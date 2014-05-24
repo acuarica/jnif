@@ -21,8 +21,13 @@
 #include <sstream>
 #include <fstream>
 
+#include <ctime>
+#include <sys/time.h>
+
+#ifdef __MACH__
 #include <mach/clock.h>
 #include <mach/mach.h>
+#endif
 
 using namespace std;
 using namespace jnif;
