@@ -19,7 +19,7 @@ public:
 
 	jint threadId;
 	jlong threadTag;
-	char name[1024];
+	//char name[1024];
 	jint priority;
 	jboolean isDaemon;
 	int socketfd;
@@ -27,7 +27,7 @@ public:
 	FILE* _prof;
 
 	ThreadLocalData() :
-			threadId(-1), threadTag(-1), name("NOT INIT"), priority(0), isDaemon(
+			threadId(-1), threadTag(-1), /*name("NOT INIT"),*/ priority(0), isDaemon(
 					false), socketfd(-1), _tlog(nullptr), _prof(nullptr) {
 	}
 
