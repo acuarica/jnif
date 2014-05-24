@@ -7,12 +7,12 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
 
 /**
  * 
@@ -23,8 +23,8 @@ import org.objectweb.asm.tree.ClassNode;
  */
 public class FrHeapInstrument {
 
-	// private final static Logger logger = Logger
-	// .getLogger(FrHeapInstrument.class);
+	private final static Logger logger = Logger
+			.getLogger(FrHeapInstrument.class);
 
 	private final FrHeapInstrumentConfig _config;
 
@@ -37,23 +37,8 @@ public class FrHeapInstrument {
 	public byte[] instrumentClass(InputStream classBytes, String className)
 			throws IOException {
 
-//		boolean isDefined = false;
-//		for (int i = 0; i < 100; i++) {
-//			for (String key : classes.keySet()) {
-//				if (key.equals(className)) {
-//					isDefined = true;
-//
-//				}
-//			}
-//		}
-//
-//		if (!isDefined) {
-//			classes.put(className, classBytes);
-//		}
-
 		ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS
 				| ClassWriter.COMPUTE_FRAMES);
-		// ClassWriter.COMPUTE_FRAMES
 
 		ClassReader cr = new ClassReader(classBytes);
 		ClassTransformer ct = new ClassTransformer(cw, className);
@@ -61,37 +46,26 @@ public class FrHeapInstrument {
 		cr.accept(ct, 0);
 
 		byte[] instrClassBytes = cw.toByteArray();
-		// dumpInstrumentedClassFile(instrClassBytes, className);
-
-		ClassNode cf = new ClassNode();
-		cr.accept(cf, 0);
-
-		// logger.trace(String.format("Instrumented class %s, new class len: %d",
-		// className, instrClassBytes.length));
 
 		return instrClassBytes;
 	}
 
-	private void dumpInstrumentedClassFile(byte[] instrClassBytes,
+	public void dumpInstrumentedClassFile(byte[] instrClassBytes,
 			String className) {
 		String fileName = _config.dumpInstrDir + "/"
 				+ className.replace('.', '/') + ".class";
 
 		String dir = new File(fileName).getParent();
 
-		// logger.trace("Creating dir " + dir);
 		new File(dir).mkdirs();
-
-		// logger.trace(String.format("Dumping class file for class %s in %s",
-		// className, fileName));
 
 		try {
 			FileOutputStream output = new FileOutputStream(fileName);
 			output.write(instrClassBytes);
 			output.close();
 		} catch (IOException e) {
-			// logger.warn("Unable to write instrumented class file in "
-			// + fileName, e);
+			logger.warn("Unable to write instrumented class file in "
+					+ fileName, e);
 		}
 	}
 
@@ -155,10 +129,10 @@ public class FrHeapInstrument {
 			mv.visitCode();
 
 			// Loads this object
-			// mv.visitVarInsn(Opcodes.ALOAD, 0);
+			mv.visitVarInsn(Opcodes.ALOAD, 0);
 
-			// mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
-			// "alloc", "(Ljava/lang/Object;)V");
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+					"alloc", "(Ljava/lang/Object;)V");
 		}
 	}
 
@@ -173,8 +147,8 @@ public class FrHeapInstrument {
 			super(Opcodes.ASM4, mv);
 		}
 
-		// @Override
-		public void visitIntInsn32(int opcode, int operand) {
+		@Override
+		public void visitIntInsn(int opcode, int operand) {
 			if (opcode == Opcodes.NEWARRAY) {
 				// FORMAT: newarray atype
 				// OPERAND STACK: ... | count: int -> ... | arrayref
@@ -202,8 +176,8 @@ public class FrHeapInstrument {
 			}
 		}
 
-		// @Override
-		public void visitTypeInsn32(int opcode, String type) {
+		@Override
+		public void visitTypeInsn(int opcode, String type) {
 			if (opcode == Opcodes.ANEWARRAY) {
 				// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
 				// OPERAND STACK: ... | count: int -> ... | arrayref
@@ -231,8 +205,8 @@ public class FrHeapInstrument {
 			}
 		}
 
-		// @Override
-		public void visitMultiANewArrayInsn32(String desc, int dims) {
+		@Override
+		public void visitMultiANewArrayInsn(String desc, int dims) {
 			// FORMAT: multianewarray | indexbyte1 | indexbyte2 | dimensions
 			// OPERAND STACK: ... | count1 | [ count2 | ...]] -> ... | arrayref
 
@@ -421,11 +395,11 @@ public class FrHeapInstrument {
 
 		@Override
 		public void visitInsn(int opcode) {
-			// if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) ||
-			// opcode == Opcodes.ATHROW) {
-			// mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
-			// "exitMainMethod", "()V");
-			// }
+			if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)
+					|| opcode == Opcodes.ATHROW) {
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+						"exitMainMethod", "()V");
+			}
 
 			mv.visitInsn(opcode);
 		}

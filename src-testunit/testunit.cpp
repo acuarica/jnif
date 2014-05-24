@@ -325,20 +325,7 @@ static int visitFile(const char* filePath, const struct stat*, int) {
 	return 0;
 }
 
-static void _StartServer() {
-	fprintf(stderr, "asdfasdfasdf\n");
-	//int res =
-	system("java -cp .:log4j-1.2.17.jar ch.usi.inf.sape.frheap.server.FrHeapInstrumentServer &");
-
-	//fprintf(stderr, "res: %d\n", res);
-//	java -cp ${FR}/bin:${FRLIB}/log4j-1.2.17.jar:${FRLIB}/asm-debug-all-4.0.jar:$FR/resources:$JARS \
-//		ch.usi.inf.sape.frheap.server.FrHeapInstrumentServer > logs/server-output.log &
-
-}
-
 int main(int argc, const char* argv[]) {
-	//_StartServer();
-	//return 1;
 
 #define ENTRY(testName) { &testName, #testName }
 
@@ -392,8 +379,8 @@ int main(int argc, const char* argv[]) {
 
 		for (TestEntry& te : testEntries) {
 			//if (testName == te.testName) {
-				run(te.testFunc, te.testName);
-				//return 0;
+			run(te.testFunc, te.testName);
+			//return 0;
 			//}
 		}
 
