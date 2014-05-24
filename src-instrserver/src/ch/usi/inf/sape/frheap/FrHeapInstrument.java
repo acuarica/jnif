@@ -205,8 +205,8 @@ public class FrHeapInstrument {
 			}
 		}
 
-		@Override
-		public void visitMultiANewArrayInsn(String desc, int dims) {
+		//@Override
+		public void visitMultiANewArrayInsn32(String desc, int dims) {
 			// FORMAT: multianewarray | indexbyte1 | indexbyte2 | dimensions
 			// OPERAND STACK: ... | count1 | [ count2 | ...]] -> ... | arrayref
 
