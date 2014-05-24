@@ -67,10 +67,16 @@ private:
 
 };
 
+#ifdef __MACH__
+#define AGENT_THREAD_LOCAL __thread
+#else
+#define AGENT_THREAD_LOCAL thread_local
+#endif
+
 /**
  *
  */
-extern thread_local ThreadLocalData __tld;
+extern AGENT_THREAD_LOCAL ThreadLocalData __tld;
 
 extern jint __nextthreadid;
 
