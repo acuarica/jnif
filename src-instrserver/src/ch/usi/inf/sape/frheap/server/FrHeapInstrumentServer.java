@@ -10,7 +10,8 @@ import ch.usi.inf.sape.frheap.FrHeapInstrumentConfig;
 
 public class FrHeapInstrumentServer {
 
-	private final static Logger logger = Logger.getLogger(FrHeapInstrumentServer.class);
+	private final static Logger logger = Logger
+			.getLogger(FrHeapInstrumentServer.class);
 
 	private static final String PROXY_CLASS = "frproxy/FrInstrProxy";
 
@@ -21,23 +22,29 @@ public class FrHeapInstrumentServer {
 	public static void main(final String[] args) throws IOException {
 		logger.info(String.format("Starting instrumentation server..."));
 
-		try (final ServerSocket listenSocket = new ServerSocket(port)) {
-
-			logger.info(String.format("Listening at %s:%d", listenSocket.getInetAddress().getHostAddress(),
-					listenSocket.getLocalPort()));
+		final ServerSocket listenSocket = new ServerSocket(port);
+		try {
+			logger.info(String.format("Listening at %s:%d", listenSocket
+					.getInetAddress().getHostAddress(), listenSocket
+					.getLocalPort()));
 
 			logger.info(String.format("Starting accepting loop..."));
 
 			while (true) {
 				final Socket clientSocket = listenSocket.accept();
 
-				logger.info(String.format("Accepting connection from %s:%d", clientSocket.getInetAddress()
-						.getHostAddress(), clientSocket.getPort()));
+				logger.info(String.format("Accepting connection from %s:%d",
+						clientSocket.getInetAddress().getHostAddress(),
+						clientSocket.getPort()));
 
-				FrHeapInstrumentConfig config = new FrHeapInstrumentConfig(PROXY_CLASS);
-				FrHeapInstrumentSocket socket = new FrHeapInstrumentSocket(clientSocket);
+				FrHeapInstrumentConfig config = new FrHeapInstrumentConfig(
+						PROXY_CLASS);
+				FrHeapInstrumentSocket socket = new FrHeapInstrumentSocket(
+						clientSocket);
 				new FrHeapInstrumentWorker(socket, config).start();
 			}
+		} finally {
+			listenSocket.close();
 		}
 	}
 }
