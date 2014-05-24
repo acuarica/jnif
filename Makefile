@@ -28,7 +28,7 @@ BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow
 RUNS=$(shell seq 1 $(TIMES))
 
 #CXX=g++
-CXXFLAGS+=-W -g -Wall -Wextra -O4 -std=c++11
+CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O4 -std=c++11
 LDLIBS=hola que tal
 	#$(LINK.c)
 
