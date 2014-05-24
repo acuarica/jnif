@@ -8,13 +8,14 @@ public class FrInstrProxy {
 		try {
 			is = loader.getResourceAsStream(className + ".class");
 		} catch (Throwable e) {
-			//System.err.println("Error: getResource for " + className);
-			//System.err.println("Error: loader: " + loader);
-			//e.printStackTrace();
+			// System.err.println("Error: getResource for " + className);
+			// System.err.println("Error: loader: " + loader);
+			// e.printStackTrace();
 			return null;
 		}
 
-		try (java.io.ByteArrayOutputStream os = new java.io.ByteArrayOutputStream();) {
+		java.io.ByteArrayOutputStream os = new java.io.ByteArrayOutputStream();
+		try {
 			byte[] buffer = new byte[0xFFFF];
 
 			for (int len; (len = is.read(buffer)) != -1;) {
@@ -25,17 +26,17 @@ public class FrInstrProxy {
 
 			return os.toByteArray();
 		} catch (Throwable e) {
-			//System.err.println("Error: getResource for " + className);
-			//System.err.println("Error: loader: " + loader);
-			//System.err.println("Error: is: " + is);
-			//e.printStackTrace();
+			// System.err.println("Error: getResource for " + className);
+			// System.err.println("Error: loader: " + loader);
+			// System.err.println("Error: is: " + is);
+			// e.printStackTrace();
 			return null;
 		}
 	}
 
 	public static byte[] getResource(String className, ClassLoader loader) {
 		byte[] res = null;
-		
+
 		if (loader != null) {
 			res = getResourceEx(className, loader);
 		}
@@ -45,17 +46,17 @@ public class FrInstrProxy {
 			res = getResourceEx(className, cl);
 		}
 
-//		if (res == null) {
-//			String binaryName = className.replace('/', '.');
-//			try {
-//				Class<?> cls = loader.loadClass(binaryName);
-//			} catch (Throwable e) {
-//				System.err
-//						.println("Class not found even with loadClass for class: "
-//								+ className + "(" + binaryName + ")");
-//				e.printStackTrace();
-//			}
-//		}
+		// if (res == null) {
+		// String binaryName = className.replace('/', '.');
+		// try {
+		// Class<?> cls = loader.loadClass(binaryName);
+		// } catch (Throwable e) {
+		// System.err
+		// .println("Class not found even with loadClass for class: "
+		// + className + "(" + binaryName + ")");
+		// e.printStackTrace();
+		// }
+		// }
 
 		return res;
 	}
