@@ -27,10 +27,7 @@ INSTRS=Empty Identity Compute ClientServer
 BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow 
 RUNS=$(shell seq 1 $(TIMES))
 
-#CXX=g++
-CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O4 -std=c++11
-LDLIBS=hola que tal
-	#$(LINK.c)
+CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O0 -std=c++11
 
 JARS=$(wildcard jars/*.jar)
 DIRS=$(JARS:jars/%.jar=$(BUILD)/%)
@@ -182,7 +179,7 @@ TESTAPP_PROF=$(BUILD)/eval-testapp-$(RUN).$(INSTR)
 
 testapp: $(TESTAGENT) $(TESTAPP) $(INSTRSERVER) | $(TESTAPP_LOG)
 	$(MAKE) start
-	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):testapp:$(TESTAPP_PROF):$(TESTAPP_LOG)/ -jar $(TESTAPP)
+	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):testapp:$(TESTAPP_PROF):$(TESTAPP_LOG)/:$(RUN) -jar $(TESTAPP)
 	$(MAKE) stop
 
 $(TESTAPP_LOG):
@@ -197,7 +194,7 @@ DACAPO_SCRATCH=$(BUILD)/run/dacapo/scratch/$(INSTR).$(BENCH)
 
 dacapo: $(TESTAGENT) $(INSTRSERVER) | $(DACAPO_LOG) $(DACAPO_SCRATCH)
 	$(MAKE) start
-	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):$(BENCH):$(DACAPO_PROF):$(DACAPO_LOG)/ -jar jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)
+	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):$(BENCH):$(DACAPO_PROF):$(DACAPO_LOG)/:$(RUN) -jar jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)
 	$(MAKE) stop
 
 $(DACAPO_LOG):
