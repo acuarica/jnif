@@ -26,16 +26,19 @@ rename <- function(v) {
   return (result)
 }
 
+theme.config <- theme(axis.text.x = element_text(angle=35, hjust=1),
+                      legend.box="horizontal", legend.position="top")
+
 ## Arguments and output file ----
 argv <- commandArgs(trailingOnly = TRUE)
 csvfilename <- '../build/eval.prof'
 csvfilename <- argv[1]
 
 path <- file_path_sans_ext(csvfilename)
-save <- function(p, d, s, w=1400, h=800) {
-  path <- sprintf('%s-chart-%s.png', d, s)
-  #png(file = path, paper = 'special', width = w, height = h, pointsize = 12)
-  png(file = path, width=w, height=h, pointsize=24)
+save <- function(p, d, s, w=12, h=8) {
+  path <- sprintf('%s-chart-%s.pdf', d, s)
+  pdf(file=path, paper='special', width=w, height=h, pointsize=12)
+  #png(file = path, width=w, height=h, pointsize=24)
   print(p)
   null <- dev.off()
 }
@@ -65,7 +68,7 @@ p <-
   ggplot(csv.instrumentation)+facet_wrap(~bench, scales="free")+
   geom_boxplot(aes(instr, instrumentation, color=instr))+
   labs(x="Library", y = "Instrumentation time (in seconds)", title='Instrumentation time')+
-  theme(legend.position="top")
+  theme.config
 save(p, path, "instr")
 
 # Instrumentation with total
@@ -73,7 +76,7 @@ p <-
   ggplot(csv.all)+facet_wrap(~bench, scales="free")+
   geom_boxplot(aes(instr, time, color=stage))+
   labs(x="Library", y = "Instrumentation and total time (in seconds)", title='Instrumentation and total time')+
-  theme(legend.position="top")
+  theme.config
 save(p, path, "all")
 
 #geom_bar(aes(instr, instrumentation, fill=instr), stat="identity")+
