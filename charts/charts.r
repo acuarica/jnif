@@ -37,8 +37,8 @@ csvfilename <- argv[1]
 path <- file_path_sans_ext(csvfilename)
 save <- function(p, d, s, w=12, h=8) {
   path <- sprintf('%s-chart-%s.pdf', d, s)
+  printf("Saving plot %s to %s", s, path)
   pdf(file=path, paper='special', width=w, height=h, pointsize=12)
-  #png(file = path, width=w, height=h, pointsize=24)
   print(p)
   null <- dev.off()
 }
@@ -81,3 +81,9 @@ save(p, path, "all")
 
 #geom_bar(aes(instr, instrumentation, fill=instr), stat="identity")+
 #geom_bar(aes(instr, time, fill=stage), stat="identity")+
+
+# Some stats for interactive mode.
+csv.stats <- csv
+csv.stats <- dcast(csv.stats, run+bench+stage ~ instr, value.var='time')
+csv.stats$diff <- csv.stats[["ASM Frames"]] - csv.stats[["JNIF Frames"]]
+csv.stats <- csv.stats[order(csv.stats$diff),]
