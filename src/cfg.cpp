@@ -20,26 +20,31 @@ void BasicBlock::addTarget(BasicBlock* target) {
 	targets.push_back(target);
 }
 
-static void setBranchTargets(InstList& instList) {
-	for (Inst* inst : instList) {
-		if (inst->isJump()) {
-			inst->jump()->label2->label()->isBranchTarget = true;
-		} else if (inst->isTableSwitch()) {
-			inst->ts()->def->label()->isBranchTarget = true;
-			for (Inst* target : inst->ts()->targets) {
-				target->label()->isBranchTarget = true;
-			}
-		} else if (inst->isLookupSwitch()) {
-			inst->ls()->defbyte->label()->isBranchTarget = true;
-			for (Inst* target : inst->ls()->targets) {
-				target->label()->isBranchTarget = true;
-			}
-		}
-	}
-}
+//static void setBranchTargets(InstList& instList) {
+//	for (Inst* inst : instList) {
+//		if (inst->isJump()) {
+//			Error::assert(inst->jump()->label2->label()->isBranchTarget, "jmp");
+//			//inst->jump()->label2->label()->isBranchTarget = true;
+//		} else if (inst->isTableSwitch()) {
+//			Error::assert(inst->ts()->def->label()->isBranchTarget, "ts");
+//			//inst->ts()->def->label()->isBranchTarget = true;
+//			for (Inst* target : inst->ts()->targets) {
+//				Error::assert(target->label()->isBranchTarget, "ts:target");
+//				//target->label()->isBranchTarget = true;
+//			}
+//		} else if (inst->isLookupSwitch()) {
+//			Error::assert(inst->ls()->defbyte->label()->isBranchTarget, "ls");
+//			//inst->ls()->defbyte->label()->isBranchTarget = true;
+//			for (Inst* target : inst->ls()->targets) {
+//				Error::assert(target->label()->isBranchTarget, "ls:target");
+//				//target->label()->isBranchTarget = true;
+//			}
+//		}
+//	}
+//}
 
 static void buildBasicBlocks(InstList& instList, ControlFlowGraph& cfg) {
-	setBranchTargets(instList);
+	//setBranchTargets(instList);
 
 	int bbid = 0;
 	auto beginBb = instList.begin();

@@ -602,7 +602,8 @@ private:
 			TableSwitchInst* ts = instList.addTableSwitch(def, low, high);
 			for (int i = 0; i < high - low + 1; i++) {
 				u4 targetOffset = br.readu4();
-				ts->targets.push_back(labelManager[offset + targetOffset]);
+				//ts->targets.push_back(labelManager[offset + targetOffset]);
+				ts->addTarget(labelManager[offset + targetOffset]);
 			}
 
 			//		fprintf(stderr, "parser ts: offset: %d\n", br.offset());
@@ -624,7 +625,8 @@ private:
 				u4 offsetTarget = br.readu4();
 
 				ls->keys.push_back(key);
-				ls->targets.push_back(labelManager[offset + offsetTarget]);
+				//ls->targets.push_back(labelManager[offset + offsetTarget]);
+				ls->addTarget(labelManager[offset + offsetTarget]);
 			}
 
 			return ls;

@@ -32,9 +32,11 @@ public:
 
 	template<typename ... TArgs>
 	static inline void assert(bool cond, TArgs ... args) {
+//#ifdef DEBUG
 		if (!cond) {
 			raise(args...);
 		}
+//#endif
 	}
 
 	template<typename ... TArgs>
