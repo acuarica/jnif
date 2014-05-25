@@ -18,16 +18,19 @@ BUILD=build
 #BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow \
 #       tomcat tradebeans tradesoap xalan
 
+RUN=0
 INSTR=Compute
 BENCH=avrora
-RUN=0
+OLEVEL=O3
 
 TIMES=10
 INSTRS=Empty Identity Compute ClientServer
-BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow 
-RUNS=$(shell seq 1 $(TIMES))
+BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow
+OLEVELS=O0 O3
+ 
+#RUNS=$(shell seq 1 $(TIMES))
 
-CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O0 -std=c++11
+CXXFLAGS+=-fPIC -W -g -Wall -Wextra -$(OLEVEL) -std=c++11
 
 JARS=$(wildcard jars/*.jar)
 DIRS=$(JARS:jars/%.jar=$(BUILD)/%)
@@ -81,7 +84,7 @@ TESTAGENT_SRCS=$(wildcard $(TESTAGENT_SRC)/*.cpp) $(wildcard $(TESTAGENT_SRC)/fr
 TESTAGENT_OBJS=$(TESTAGENT_SRCS:$(TESTAGENT_SRC)/%=$(TESTAGENT_BUILD)/%.o)
 
 $(TESTAGENT): $(TESTAGENT_OBJS) $(LIBJNIF)
-	$(CXX) $(CXXFLAGS) -fPIC -O0 -g -lpthread -shared -lstdc++ -o $@ $^
+	$(CXX) $(CXXFLAGS) -fPIC -g -lpthread -shared -lstdc++ -o $@ $^
 
 $(TESTAGENT_BUILD)/%.cpp.o: $(TESTAGENT_SRC)/%.cpp $(TESTAGENT_HPPS) | $(TESTAGENT_BUILD)
 	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -Wno-unused-parameter -I$(JAVA_HOME)/include -c -o $@ $<
@@ -178,9 +181,13 @@ TESTAPP_LOG=$(BUILD)/run/testapp.$(INSTR).log
 TESTAPP_PROF=$(BUILD)/eval-testapp-$(RUN).$(INSTR)
 
 testapp: $(TESTAGENT) $(TESTAPP) $(INSTRSERVER) | $(TESTAPP_LOG)
+ifeq ($(INSTR), ClientServer)
 	$(MAKE) start
+endif
 	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):testapp:$(TESTAPP_PROF):$(TESTAPP_LOG)/:$(RUN) -jar $(TESTAPP)
+ifeq ($(INSTR), ClientServer)
 	$(MAKE) stop
+endif
 
 $(TESTAPP_LOG):
 	mkdir -p $@
@@ -193,9 +200,13 @@ DACAPO_PROF=$(BUILD)/eval-dacapo-$(RUN)-$(BENCH).$(INSTR)
 DACAPO_SCRATCH=$(BUILD)/run/dacapo/scratch/$(INSTR).$(BENCH)
 
 dacapo: $(TESTAGENT) $(INSTRSERVER) | $(DACAPO_LOG) $(DACAPO_SCRATCH)
+ifeq ($(INSTR), ClientServer)
 	$(MAKE) start
+endif
 	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):$(BENCH):$(DACAPO_PROF):$(DACAPO_LOG)/:$(RUN) -jar jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)
+ifeq ($(INSTR), ClientServer)
 	$(MAKE) stop
+endif
 
 $(DACAPO_LOG):
 	mkdir -p $@
@@ -208,16 +219,19 @@ $(DACAPO_SCRATCH):
 #
 eval:
 	$(MAKE) cleaneval
-	$(foreach r,$(RUNS),\
+	$(foreach r,$(shell seq 1 $(TIMES)),\
 		$(foreach i,$(INSTRS),\
 			$(foreach b,$(BENCHS),\
 				$(MAKE) dacapo RUN=$(r) INSTR=$(i) BENCH=$(b); \
 			)\
 		)\
 	)
-
-pdfs:
 	cat $(BUILD)/eval-*.prof > $(BUILD)/eval.prof
+
+eval-compute: 
+	$(MAKE) eval TIMES=1 INSTRS=Compute
+
+plots:
 	r --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.prof
 
 docs:
