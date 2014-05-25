@@ -87,7 +87,7 @@ public:
 				Type so = o.stripArrayType();
 
 				//bool change =
-						assign(st, so, classPath);
+				assign(st, so, classPath);
 //				Error::assert(change, "Assigning types between ", t,
 //						" (with stripped array type ", st, ") and ", o,
 //						" (with stripped array type ", so,
@@ -1059,28 +1059,12 @@ private:
 	const ConstPool& cp;
 };
 
-//static void appendComputedFrames(CodeAttr& code) {
-//
-//}
-
 class Compute: private Error {
 public:
 
 	static void setCpIndex(Type& type, ConstPool& cp) {
 		if (type.isObject()) {
-//			stringstream ss;
-//			for (u4 i = 0; i < type.dims; i++) {
-//				ss << "[";
-//			}
-
 			const string& className = type.getClassName();
-
-//			if (type.isArray()) {
-//				//ss << "L" << className << ";";
-//				ss << className;
-//			} else {
-//				ss << className;
-//			}
 
 			ConstIndex utf8index = cp.putUtf8(className.c_str());
 			ConstIndex index = cp.addClass(utf8index);
@@ -1118,7 +1102,7 @@ public:
 			*attrIndex = cf->putUtf8("StackMapTable");
 		}
 
-		code->instList.setLabelIds();
+		//code->instList.setLabelIds();
 
 		Frame initFrame;
 
@@ -1138,22 +1122,15 @@ public:
 
 		for (Type t : argsType) {
 			initFrame.setVar(&lvindex, t);
-			//lvindex++;
 		}
 
 		ControlFlowGraph* cfgp = new ControlFlowGraph(code->instList);
 		ControlFlowGraph& cfg = *cfgp;
 
-		//cerr << cfg << endl;
-
 		initFrame.valid = true;
 		BasicBlock* bbe = cfg.entry;
 		bbe->in = initFrame;
 		bbe->out = initFrame;
-
-//		const String& methodName = cf->getUtf8(method->nameIndex);
-//		cerr << "Computing frames for method: " << cf->getThisClassName() << "."
-//				<< methodName << cf->getUtf8(method->descIndex) << endl;
 
 		BasicBlock* to = *cfg.entry->begin();
 		SmtBuilder::computeState(*to, initFrame, code->instList, *cf, code,
@@ -1266,10 +1243,6 @@ public:
 };
 
 void ClassFile::computeFrames(IClassPath* classPath) {
-	if (version < Version(50, 0)) {
-		//return;
-	}
-
 	computeSize();
 
 	ConstIndex attrIndex = ConstPool::NULLENTRY;
@@ -1279,28 +1252,23 @@ void ClassFile::computeFrames(IClassPath* classPath) {
 
 		if (code != nullptr) {
 
-			bool hasJsrOrRet = false;
-			for (Inst* inst : code->instList) {
-				if (inst->isJsrOrRet()) {
-					hasJsrOrRet = true;
-				}
+//			bool hasJsrOrRet = false;
+//			for (Inst* inst : code->instList) {
+//				if (inst->isJsrOrRet()) {
+//					cerr << "JSR/RET in compute frames!" << endl;
+//					hasJsrOrRet = true;
+//				}
+//			}
+//
+//			Error::assert(hasJsrOrRet == code->instList.hasJsrOrRet());
+
+			bool hasJsrOrRet = code->instList.hasJsrOrRet();
+			if (hasJsrOrRet) {
+				return;
 			}
 
-			if (!hasJsrOrRet) {
-				//try {
-				Compute::computeFramesMethod(code, method, this, &attrIndex,
-						classPath);
-//				} catch (const JsrRetNotSupported& e) {
-//					const string& methodName = cf->getUtf8(method->nameIndex);
-//					cerr << "computeFramesMethod: " << cf->getThisClassName()
-//							<< "." << methodName
-//							<< cf->getUtf8(method->descIndex) << endl;
-//
-//					cerr << "JSR/RET found, version: " << version << endl;
-//
-//					//Error::assert(version == Version(49, 0));
-//				}
-			}
+			Compute::computeFramesMethod(code, method, this, &attrIndex,
+					classPath);
 		}
 	}
 }

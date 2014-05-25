@@ -537,7 +537,7 @@ private:
 
 		inc();
 
-		c.instList.setLabelIds();
+		//c.instList.setLabelIds();
 
 		if (c.cfg != nullptr) {
 			os << *c.cfg;

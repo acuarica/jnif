@@ -1672,8 +1672,7 @@ class Inst {
 	friend class TypeInst;
 	friend class NewArrayInst;
 	friend class MultiArrayInst;
-	friend class TableSwitchInst;
-	friend class LookupSwitchInst;
+	friend class SwitchInst;
 	friend class InstList;
 
 public:
@@ -1863,9 +1862,9 @@ public:
 
 private:
 
-	LabelInst(ConstPool* constPool) :
+	LabelInst(ConstPool* constPool, int id) :
 			Inst(OPCODE_nop, KIND_LABEL, constPool), offset(0), deltaOffset(0), id(
-					0), isBranchTarget(false), isTryStart(false), isCatchHandler(
+					id), isBranchTarget(false), isTryStart(false), isCatchHandler(
 					false) {
 	}
 
@@ -1974,6 +1973,9 @@ private:
 	WideInst(Opcode subOpcode, u2 lvindex, ConstPool* constPool) :
 			Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(subOpcode), var(
 					{ lvindex }) {
+		if (subOpcode == OPCODE_ret) {
+			throw JnifException("Ret found in wide instruction!!!", "no bt");
+		}
 	}
 
 	WideInst(u2 index, u2 value, ConstPool* constPool) :
@@ -2110,23 +2112,25 @@ private:
 };
 
 /**
- *
+ * Base class for TableSwitchInst and LookupSwitchInst.
  */
-class TableSwitchInst: public Inst {
-	friend class InstList;
+class SwitchInst: public Inst {
+	friend class TableSwitchInst;
+	friend class LookupSwitchInst;
 
 public:
 
-	Inst* def;
-	int low;
-	int high;
 	std::vector<Inst*> targets;
+
+	void addTarget(LabelInst* label) {
+		targets.push_back(label);
+		label->isBranchTarget = true;
+	}
 
 private:
 
-	TableSwitchInst(LabelInst* def, int low, int high, ConstPool* constPool) :
-			Inst(OPCODE_tableswitch, KIND_TABLESWITCH, constPool), def(def), low(
-					low), high(high) {
+	SwitchInst(Opcode opcode, OpKind kind, ConstPool* constPool) :
+			Inst(opcode, kind, constPool) {
 	}
 
 };
@@ -2134,19 +2138,40 @@ private:
 /**
  *
  */
-class LookupSwitchInst: public Inst {
+class TableSwitchInst: public SwitchInst {
+	friend class InstList;
+
+public:
+
+	Inst* def;
+	int low;
+	int high;
+
+private:
+
+	TableSwitchInst(LabelInst* def, int low, int high, ConstPool* constPool) :
+			SwitchInst(OPCODE_tableswitch, KIND_TABLESWITCH, constPool), def(
+					def), low(low), high(high) {
+	}
+
+};
+
+/**
+ *
+ */
+class LookupSwitchInst: public SwitchInst {
 	friend class InstList;
 
 public:
 	Inst* defbyte;
 	u4 npairs;
 	std::vector<u4> keys;
-	std::vector<Inst*> targets;
+	//std::vector<Inst*> targets;
 
 private:
 
 	LookupSwitchInst(LabelInst* def, u4 npairs, ConstPool* constPool) :
-			Inst(OPCODE_lookupswitch, KIND_LOOKUPSWITCH, constPool), defbyte(
+			SwitchInst(OPCODE_lookupswitch, KIND_LOOKUPSWITCH, constPool), defbyte(
 					def), npairs(npairs) {
 	}
 };
@@ -2189,13 +2214,13 @@ public:
 		Inst* last;
 	};
 
-	LabelInst* createLabel() const {
-		auto inst = new LabelInst(constPool);
+	LabelInst* createLabel() {
+		LabelInst* inst = new LabelInst(constPool, nextLabelId);
+		nextLabelId++;
 		return inst;
 	}
 
 	void addLabel(LabelInst* inst, Inst* pos = nullptr) {
-		//auto inst = new LabelInst(constPool);
 		addInst(inst, pos);
 	}
 
@@ -2240,6 +2265,10 @@ public:
 		VarInst* inst = new VarInst(opcode, lvindex, constPool);
 		addInst(inst, pos);
 
+		if (opcode == OPCODE_ret) {
+			jsrOrRet = true;
+		}
+
 		return inst;
 	}
 
@@ -2268,6 +2297,13 @@ public:
 			Inst* pos = nullptr) {
 		JumpInst* inst = new JumpInst(opcode, targetLabel, constPool);
 		addInst(inst, pos);
+		branchesCount++;
+
+		targetLabel->isBranchTarget = true;
+
+		if (opcode == OPCODE_jsr) {
+			jsrOrRet = true;
+		}
 
 		return inst;
 	}
@@ -2324,38 +2360,49 @@ public:
 
 	TableSwitchInst* addTableSwitch(LabelInst* def, int low, int high,
 			Inst* pos = nullptr) {
-		auto inst = new TableSwitchInst(def, low, high, constPool);
+		TableSwitchInst* inst = new TableSwitchInst(def, low, high, constPool);
 		addInst(inst, pos);
+		branchesCount++;
+
+		def->isBranchTarget = true;
 
 		return inst;
 	}
 
 	LookupSwitchInst* addLookupSwitch(LabelInst* def, u4 npairs, Inst* pos =
 			nullptr) {
-		auto inst = new LookupSwitchInst(def, npairs, constPool);
+		LookupSwitchInst* inst = new LookupSwitchInst(def, npairs, constPool);
 		addInst(inst, pos);
+		branchesCount++;
+
+		def->isBranchTarget = true;
 
 		return inst;
 	}
 
-	void setLabelIds() {
-		int id = 1;
-		for (Inst* inst : *this) {
-			if (inst->isLabel()) {
-				inst->label()->id = id;
-				id++;
-			}
-		}
-	}
+//	void setLabelIds() {
+//		int id = 1;
+//		for (Inst* inst : *this) {
+//			if (inst->isLabel()) {
+//				inst->label()->id = id;
+//				id++;
+//			}
+//		}
+//	}
 
 	bool hasBranches() const {
-		for (const Inst* inst : *this) {
-			if (inst->isBranch()) {
-				return true;
-			}
-		}
+		return branchesCount > 0;
+//		for (const Inst* inst : *this) {
+//			if (inst->isBranch()) {
+//				return true;
+//			}
+//		}
+//
+//		return false;
+	}
 
-		return false;
+	bool hasJsrOrRet() const {
+		return jsrOrRet;
 	}
 
 	Iterator begin() const {
@@ -2371,7 +2418,8 @@ public:
 private:
 
 	InstList(ConstPool* constPool) :
-			constPool(constPool), first(nullptr), last(nullptr), size(0) {
+			constPool(constPool), first(nullptr), last(nullptr), size(0), nextLabelId(
+					1), branchesCount(0), jsrOrRet(false) {
 	}
 
 	~InstList();
@@ -2382,6 +2430,12 @@ private:
 	Inst* last;
 
 	int size;
+
+	int nextLabelId;
+
+	int branchesCount;
+
+	bool jsrOrRet;
 };
 
 /**
@@ -2750,8 +2804,8 @@ public:
 	ConstIndex descIndex;
 	ConstPool* const constPool;
 
-	std::string getName() const {
-		std::string name = constPool->getUtf8(nameIndex);
+	String getName() const {
+		String name = constPool->getUtf8(nameIndex);
 		return name;
 	}
 
@@ -2886,7 +2940,8 @@ public:
 	 *
 	 */
 	friend bool operator==(const Version& left, const Version& right) {
-		return left.majorVersion == right.majorVersion && left.majorVersion == right.majorVersion;
+		return left.majorVersion == right.majorVersion
+				&& left.majorVersion == right.majorVersion;
 	}
 
 	/**
@@ -2894,7 +2949,8 @@ public:
 	 */
 	friend bool operator<(const Version& left, const Version& right) {
 		return left.majorVersion < right.majorVersion
-				|| (left.majorVersion == right.majorVersion && left.minorVersion < right.minorVersion);
+				|| (left.majorVersion == right.majorVersion
+						&& left.minorVersion < right.minorVersion);
 	}
 
 	/**
