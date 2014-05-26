@@ -10,7 +10,9 @@
 namespace jnif {
 
 void Inst::checkCast(bool cond, const char* kindName) const {
-	Error::assert(cond, "Inst is not a ", kindName, ": ", *this);
+	//Error::assert(cond, "Inst is not a ", kindName, ": ", *this);
+	Error::assert(cond, "Inst is not a ", kindName,
+			": <missing instruction due to const>");
 }
 
 }
