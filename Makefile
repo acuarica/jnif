@@ -21,7 +21,7 @@ BUILD=build
 RUN=0
 INSTR=Compute
 BENCH=avrora
-OLEVEL=O3
+OLEVEL=O4
 
 TIMES=10
 INSTRS=Empty Identity Compute ClientServer
@@ -30,7 +30,7 @@ OLEVELS=O0 O3
  
 #RUNS=$(shell seq 1 $(TIMES))
 
-CXXFLAGS+=-fPIC -W -g -Wall -Wextra -$(OLEVEL) -std=c++11
+CXXFLAGS+=-fPIC -W -g -Wall -Wextra -$(OLEVEL) -std=c++11 -Wno-unused-parameter
 
 JARS=$(wildcard jars/*.jar)
 DIRS=$(JARS:jars/%.jar=$(BUILD)/%)
