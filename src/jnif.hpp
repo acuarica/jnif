@@ -1313,48 +1313,48 @@ enum TypeTag {
 class Type {
 public:
 
-	static Type topType() {
-		return Type(TYPE_TOP);
+	static const Type& topType() {
+		return _topType;
 	}
 
-	static Type intType() {
-		return Type(TYPE_INTEGER, "I");
+	static const Type& intType() {
+		return _intType;
 	}
 
-	static Type floatType() {
-		return Type(TYPE_FLOAT, "F");
+	static const Type& floatType() {
+		return _floatType;
 	}
 
-	static Type longType() {
-		return Type(TYPE_LONG, "J");
+	static const Type& longType() {
+		return _longType;
 	}
 
-	static Type doubleType() {
-		return Type(TYPE_DOUBLE, "D");
+	static const Type& doubleType() {
+		return _doubleType;
 	}
 
-	static Type booleanType() {
-		return Type(TYPE_BOOLEAN, "Z");
+	static const Type& booleanType() {
+		return _booleanType;
 	}
 
-	static Type byteType() {
-		return Type(TYPE_BYTE, "B");
+	static const Type& byteType() {
+		return _byteType;
 	}
 
-	static Type charType() {
-		return Type(TYPE_CHAR, "C");
+	static const Type& charType() {
+		return _charType;
 	}
 
-	static Type shortType() {
-		return Type(TYPE_SHORT, "S");
+	static const Type& shortType() {
+		return _shortType;
 	}
 
-	static Type nullType() {
-		return Type(TYPE_NULL);
+	static const Type& nullType() {
+		return _nullType;
 	}
 
-	static Type uninitThisType() {
-		return Type(TYPE_UNINITTHIS);
+	static const Type& uninitThisType() {
+		return _uninitThisType;
 	}
 
 	static Type objectType(const String& className, u2 cpindex = 0);
@@ -1539,6 +1539,18 @@ private:
 			Type(other) {
 		this->dims = dims;
 	}
+
+	static Type _topType;
+	static Type _intType;
+	static Type _floatType;
+	static Type _longType;
+	static Type _doubleType;
+	static Type _booleanType;
+	static Type _byteType;
+	static Type _charType;
+	static Type _shortType;
+	static Type _nullType;
+	static Type _uninitThisType;
 };
 
 /**

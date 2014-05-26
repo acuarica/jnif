@@ -827,7 +827,7 @@ private:
 
 		SmtAttr* smt = new SmtAttr(nameIndex, &cp);
 
-		auto parseType = [&](BufferReader& br) {
+		auto parseType = [&](BufferReader& br)->Type {
 			u1 tag = br.readu1();
 
 			switch (tag) {
@@ -995,6 +995,11 @@ private:
 
 ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
 		version(0, 0), accessFlags(0), thisClassIndex(0), superClassIndex(0) {
+
+//	cerr << sizeof(Type) << endl;
+//	cerr << sizeof(Frame) << endl;
+//	exit(1);
+
 	ClassParser::parseClassFile(classFileData, classFileLen, *this);
 }
 
