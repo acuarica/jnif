@@ -28,10 +28,10 @@ class Error {
 public:
 
 	template<typename ... TArgs>
-	static void raise(TArgs ... args) __attribute__((noreturn));
+	static void raise(const TArgs& ... args) __attribute__((noreturn));
 
 	template<typename ... TArgs>
-	static inline void assert(bool cond, TArgs ... args) {
+	static inline void assert(bool cond, const TArgs& ... args) {
 //#ifdef DEBUG
 		if (!cond) {
 			raise(args...);
@@ -40,7 +40,7 @@ public:
 	}
 
 	template<typename ... TArgs>
-	static inline void check(bool cond, TArgs ... args) {
+	static inline void check(bool cond, const TArgs& ... args) {
 		if (!cond) {
 			raise(args...);
 		}
@@ -54,7 +54,8 @@ private:
 	}
 
 	template<typename TArg, typename ... TArgs>
-	static inline void _raise(std::ostream& os, TArg arg, TArgs ... args) {
+	static inline void _raise(std::ostream& os, const TArg& arg,
+			const TArgs& ... args) {
 		os << arg;
 		_raise(os, args...);
 	}
@@ -62,7 +63,7 @@ private:
 };
 
 template<typename ... TArgs>
-void Error::raise(TArgs ... args) {
+void Error::raise(const TArgs& ... args) {
 	std::stringstream message;
 	_raise(message, args...);
 
