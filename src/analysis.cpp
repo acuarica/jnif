@@ -1613,7 +1613,6 @@ void InstTable::init() {
 			};
 
 	initialized = true;
-	cerr << "asdfsdf";
 }
 
 class Compute: private Error {
