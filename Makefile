@@ -25,9 +25,9 @@ OLEVEL=O4
 
 TIMES=10
 INSTRS=Empty Identity Compute ClientServer
-BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow
+BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow xalan
 OLEVELS=O0 O3
- 
+
 #RUNS=$(shell seq 1 $(TIMES))
 
 CXXFLAGS+=-fPIC -W -g -Wall -Wextra -$(OLEVEL) -std=c++11 -Wno-unused-parameter
@@ -236,6 +236,13 @@ plots:
 
 docs:
 	doxygen
+
+DOTS=$(shell find build -name *.dot)
+PNGS=$(DOTS:%.dot=%.png)
+dots: $(PNGS)
+	
+$(BUILD)/%.png: $(BUILD)/%.dot
+	dot -Tpng $< > $@
 
 clean:
 	rm -rf $(BUILD)

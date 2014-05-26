@@ -296,7 +296,8 @@ public:
 	ConstIndex nameIndex;
 
 	/**
-	 * The index of the utf8 entry containing the type descriptor of this entry.
+	 * The index of the utf8 entry containing the type
+	 * descriptor of this entry.
 	 */
 	ConstIndex descriptorIndex;
 };
@@ -1873,14 +1874,15 @@ public:
 	int id;
 	bool isBranchTarget;
 	bool isTryStart;
+	bool isTryEnd;
 	bool isCatchHandler;
 
 private:
 
 	LabelInst(ConstPool* constPool, int id) :
 			Inst(OPCODE_nop, KIND_LABEL, constPool), offset(0), deltaOffset(0), id(
-					id), isBranchTarget(false), isTryStart(false), isCatchHandler(
-					false) {
+					id), isBranchTarget(false), isTryStart(false), isTryEnd(
+					false), isCatchHandler(false) {
 	}
 
 };

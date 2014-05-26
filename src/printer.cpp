@@ -85,8 +85,9 @@ std::ostream& operator<<(std::ostream& os, Inst& inst) {
 
 	if (inst.kind == KIND_LABEL) {
 		os << "label " << inst.label()->id << ", B: "
-				<< yesNo(inst.label()->isBranchTarget) << ", T: "
-				<< yesNo(inst.label()->isTryStart) << ", C: "
+				<< yesNo(inst.label()->isBranchTarget) << ", TS: "
+				<< yesNo(inst.label()->isTryStart) << ", TE: "
+				<< yesNo(inst.label()->isTryEnd) << ", C: "
 				<< yesNo(inst.label()->isCatchHandler);
 		return os;
 	}

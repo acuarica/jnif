@@ -81,7 +81,7 @@ public class FrHeapInstrumentWorker extends Thread {
 			FrHeapInstrument instr = new FrHeapInstrument(_config);
 			return instr.instrumentClass(bis, className);
 		} catch (RuntimeException ex) {
-			logger.warn("RuntimeException probably caused by JSR/RET instruction");
+			//logger.warn("RuntimeException probably caused by JSR/RET instruction");
 			return classBytes;
 		}
 	}
