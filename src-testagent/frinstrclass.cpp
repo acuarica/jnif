@@ -35,6 +35,17 @@ public:
 
 	ClassPath(JNIEnv* jni, jobject loader) :
 			jni(jni), loader(loader) {
+		if (proxyClass == nullptr) {
+			proxyClass = jni->FindClass("frproxy/FrInstrProxy");
+			ASSERT(proxyClass != NULL, "");
+
+			getResourceId = jni->GetStaticMethodID(proxyClass, "getResource",
+					"(Ljava/lang/String;Ljava/lang/ClassLoader;)[B");
+			ASSERT(getResourceId != NULL, "");
+
+			proxyClass = (jclass) jni->NewGlobalRef(proxyClass);
+			ASSERT(proxyClass != NULL, "");
+		}
 	}
 
 	string getCommonSuperClass(const string& className1,
@@ -99,12 +110,12 @@ private:
 //		_TLOG("loadClassAsResource: Trying to load class %s as a resource...",
 //				className.c_str());
 
-		jclass proxyClass = jni->FindClass("frproxy/FrInstrProxy");
-		ASSERT(proxyClass != NULL, "");
-
-		jmethodID getResourceId = jni->GetStaticMethodID(proxyClass,
-				"getResource", "(Ljava/lang/String;Ljava/lang/ClassLoader;)[B");
-		ASSERT(getResourceId != NULL, "");
+//		jclass proxyClass = jni->FindClass("frproxy/FrInstrProxy");
+//		ASSERT(proxyClass != NULL, "");
+//
+//		jmethodID getResourceId = jni->GetStaticMethodID(proxyClass,
+//				"getResource", "(Ljava/lang/String;Ljava/lang/ClassLoader;)[B");
+//		ASSERT(getResourceId != NULL, "");
 
 		jstring targetName = jni->NewStringUTF(className.c_str());
 		ASSERT(targetName != NULL, "loadClassAsResource: ");
@@ -116,7 +127,7 @@ private:
 					"loadClassAsResource: getResource returned null");
 
 			jsize len = jni->GetArrayLength((jarray) res);
-		//	_TLOG("loadClassAsResource: resource len: %d", len);
+			//	_TLOG("loadClassAsResource: resource len: %d", len);
 
 			u1* bytes = (u1*) jni->GetByteArrayElements((jbyteArray) res, NULL);
 			ASSERT(bytes != NULL, "loadClassAsResource: ");
@@ -131,7 +142,14 @@ private:
 
 	JNIEnv* jni;
 	jobject loader;
+
+	static jclass proxyClass;
+	static jmethodID getResourceId;
+
 };
+
+jclass ClassPath::proxyClass = nullptr;
+jmethodID ClassPath::getResourceId = nullptr;
 
 static unsigned char* Allocate(jvmtiEnv* jvmti, jlong size) {
 
@@ -153,7 +171,7 @@ static unsigned char* Allocate(jvmtiEnv* jvmti, jlong size) {
 }
 
 static string outFileName(const char* className, const char* ext,
-		const char* prefix = "./instr/") {
+		const char* prefix = "./build/instr/") {
 	string fileName = className;
 
 	for (u4 i = 0; i < fileName.length(); i++) {
@@ -223,8 +241,8 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 	ClassPath cp(jni, args->loader);
 	cf.computeFrames(&cp);
 
-	ofstream os(outFileName(className, "disasm").c_str());
-	os << cf;
+//	ofstream os(outFileName(className, "disasm").c_str());
+//	os << cf;
 
 //	ofstream dos(outFileName(className, "dot").c_str());
 //	cf.dot(dos);

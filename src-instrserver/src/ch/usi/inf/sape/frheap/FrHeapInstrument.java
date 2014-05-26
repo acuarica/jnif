@@ -90,14 +90,14 @@ public class FrHeapInstrument {
 					exceptions);
 
 			if (mv != null) {
-				if (isMainMethod(access, name, desc)) {
-					mv = new MainMethodTransformer(mv);
-				}
-
-				if (_className.equals("java/lang/Object")
-						&& name.equals("<init>") && desc.equals("()V")) {
-					mv = new ObjectInitMethodTransformer(mv);
-				}
+				// if (isMainMethod(access, name, desc)) {
+				// mv = new MainMethodTransformer(mv);
+				// }
+				//
+				// if (_className.equals("java/lang/Object")
+				// && name.equals("<init>") && desc.equals("()V")) {
+				// mv = new ObjectInitMethodTransformer(mv);
+				// }
 
 				mv = new MethodTransformer(mv);
 			}
@@ -124,8 +124,8 @@ public class FrHeapInstrument {
 			super(Opcodes.ASM4, mv);
 		}
 
-		@Override
-		public void visitCode() {
+		// @Override
+		public void visitCode32() {
 			mv.visitCode();
 
 			// Loads this object
@@ -147,8 +147,8 @@ public class FrHeapInstrument {
 			super(Opcodes.ASM4, mv);
 		}
 
-		@Override
-		public void visitIntInsn(int opcode, int operand) {
+		// @Override
+		public void visitIntInsn32(int opcode, int operand) {
 			if (opcode == Opcodes.NEWARRAY) {
 				// FORMAT: newarray atype
 				// OPERAND STACK: ... | count: int -> ... | arrayref
@@ -176,8 +176,8 @@ public class FrHeapInstrument {
 			}
 		}
 
-		@Override
-		public void visitTypeInsn(int opcode, String type) {
+		// @Override
+		public void visitTypeInsn32(int opcode, String type) {
 			if (opcode == Opcodes.ANEWARRAY) {
 				// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
 				// OPERAND STACK: ... | count: int -> ... | arrayref
@@ -205,7 +205,7 @@ public class FrHeapInstrument {
 			}
 		}
 
-		//@Override
+		// @Override
 		public void visitMultiANewArrayInsn32(String desc, int dims) {
 			// FORMAT: multianewarray | indexbyte1 | indexbyte2 | dimensions
 			// OPERAND STACK: ... | count1 | [ count2 | ...]] -> ... | arrayref
@@ -386,15 +386,15 @@ public class FrHeapInstrument {
 			super(Opcodes.ASM4, mv);
 		}
 
-		@Override
-		public void visitCode() {
+		// @Override
+		public void visitCode32() {
 			mv.visitCode();
 			mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
 					"enterMainMethod", "()V");
 		}
 
-		@Override
-		public void visitInsn(int opcode) {
+		// @Override
+		public void visitInsn32(int opcode) {
 			if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)
 					|| opcode == Opcodes.ATHROW) {
 				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,

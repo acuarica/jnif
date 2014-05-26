@@ -1545,6 +1545,9 @@ private:
  *
  */
 class Frame {
+
+	//Frame(const Frame&) = delete;
+
 public:
 
 	Frame() :
