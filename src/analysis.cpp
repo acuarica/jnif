@@ -183,19 +183,46 @@ public:
 
 		return change;
 	}
+//
+//	static void visitCatch(const CodeExceptionEntry& ex, InstList& instList,
+//			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
+//			const ControlFlowGraph* cfg, Frame frame) {
+//		int handlerPcId = ex.handlerpc->label()->id;
+//		BasicBlock* handlerBb = cfg->findBasicBlockOfLabel(handlerPcId);
+//
+//		Type exType = [&]() {
+//			if (ex.catchtype != ConstPool::NULLENTRY) {
+//				const String& className = cf.getClassName(ex.catchtype);
+//				return Type::fromConstClass(className);
+//			} else {
+//				return Type::objectType("java/lang/Throwable");
+//			}
+//		}();
+//
+//		//Frame frame = bb.in;
+//		frame.clearStack();
+//		frame.push(exType);
+//
+//		computeState(*handlerBb, frame, instList, cf, code, classPath);
+//	}
 
 	static void visitCatch(const BasicBlock& bb, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
 			bool useIn) {
 		if (bb.start->isLabel()) {
-			for (auto ex : code->exceptions) {
+			for (const CodeExceptionEntry& ex : code->exceptions) {
+//				if (ex.startpc->label()->id == bb.start->label()->id) {
+//					visitCatch(ex, instList, cf, code, classPath, bb.cfg,
+//							bb.in);
+//				}
+
 				if (ex.startpc->label()->id == bb.start->label()->id) {
 					BasicBlock* handlerBb = bb.cfg->findBasicBlockOfLabel(
 							ex.handlerpc->label()->id);
 
 					Type exType = [&]() {
 						if (ex.catchtype != ConstPool::NULLENTRY) {
-							const string& className = cf.getClassName(
+							const String& className = cf.getClassName(
 									ex.catchtype);
 							return Type::fromConstClass(className);
 						} else {
@@ -204,6 +231,7 @@ public:
 					}();
 
 					Frame frame = useIn ? bb.in : bb.out;
+//					Frame frame = bb.in;
 					//Frame frame = bb.out;
 					frame.clearStack();
 					frame.push(exType);
@@ -211,6 +239,30 @@ public:
 					computeState(*handlerBb, frame, instList, cf, code,
 							classPath);
 				}
+
+//				if (ex.endpc->label()->id == bb.start->label()->id) {
+//					BasicBlock* handlerBb = bb.cfg->findBasicBlockOfLabel(
+//							ex.handlerpc->label()->id);
+//
+//					Type exType = [&]() {
+//						if (ex.catchtype != ConstPool::NULLENTRY) {
+//							const String& className = cf.getClassName(
+//									ex.catchtype);
+//							return Type::fromConstClass(className);
+//						} else {
+//							return Type::objectType("java/lang/Throwable");
+//						}
+//					}();
+//
+//					Frame frame = bb.out;
+//					//Frame frame = bb.out;
+//					frame.clearStack();
+//					frame.push(exType);
+//
+//					computeState(*handlerBb, frame, instList, cf, code,
+//							classPath);
+//				}
+
 			}
 		}
 	}
@@ -237,6 +289,17 @@ public:
 			}
 		}();
 
+//		auto hola = [&](Inst* inst, const Frame& out) {
+//			if (inst->isLabel()) {
+//				for (const CodeExceptionEntry& ex : code->exceptions) {
+//					if (ex.endpc->label()->id == inst->label()->id) {
+//						visitCatch(ex, instList, cf, code, classPath, bb.cfg,
+//								out);
+//					}
+//				}
+//			}
+//		};
+
 		if (change) {
 			bb.out = bb.in;
 
@@ -247,6 +310,8 @@ public:
 				//cerr << "after cf" << *inst << endl;
 
 				builder.processInst(*inst);
+
+				//hola(inst, bb.out);
 			}
 
 			//cerr << "finished process inst"   << endl;

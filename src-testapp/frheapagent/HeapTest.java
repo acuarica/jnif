@@ -625,6 +625,22 @@ public class HeapTest {
 
 		use(f);
 	}
+//
+//	static byte[] wrap() throws RuntimeException {
+//		byte[] result = null;
+//
+//		try {
+//			byte[] encodedKey = new byte[2];
+//			if (encodedKey == null) {
+//				throw new RuntimeException();
+//			}
+//
+//			result = new byte[1];
+//		} catch (NullPointerException e) {
+//		}
+//
+//		return result;
+//	}
 
 	public static void main(String[] args) throws IOException {
 		System.err.println("Siamo arrivati al main!!!");

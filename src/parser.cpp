@@ -183,10 +183,11 @@ public:
 		return lab;
 	}
 
-	LabelInst* createExceptionLabel(u2 labelPos, bool isTryStart,
+	LabelInst* createExceptionLabel(u2 labelPos, bool isTryStart, bool isTryEnd,
 			bool isCatchHandler) {
 		LabelInst* label = createLabel(labelPos);
 		label->isTryStart = label->isTryStart || isTryStart;
+		label->isTryEnd = label->isTryEnd || isTryEnd;
 		label->isCatchHandler = label->isCatchHandler || isCatchHandler;
 
 		return label;
@@ -721,10 +722,12 @@ private:
 					"");
 
 			CodeExceptionEntry e;
-			e.startpc = labelManager.createExceptionLabel(startPc, true, false);
-			e.endpc = labelManager.createExceptionLabel(endPc, false, false);
+			e.startpc = labelManager.createExceptionLabel(startPc, true, false,
+					false);
+			e.endpc = labelManager.createExceptionLabel(endPc, false, true,
+					false);
 			e.handlerpc = labelManager.createExceptionLabel(handlerPc, false,
-					true);
+					false, true);
 			e.catchtype = catchType;
 
 			ca->exceptions.push_back(e);
