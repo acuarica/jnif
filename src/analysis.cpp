@@ -263,564 +263,564 @@ public:
 	}
 
 	void processInst(Inst& inst) {
-		InstTable::InstHandler handler = InstTable::cases[inst.opcode];
-		(*handler)(*this, inst);
-//		switch (inst.opcode) {
-//			case OPCODE_nop:
-//				break;
-//			case OPCODE_aconst_null:
-//				frame.pushNull();
-//				break;
-//			case OPCODE_iconst_m1:
-//			case OPCODE_iconst_0:
-//			case OPCODE_iconst_1:
-//			case OPCODE_iconst_2:
-//			case OPCODE_iconst_3:
-//			case OPCODE_iconst_4:
-//			case OPCODE_iconst_5:
-//			case OPCODE_bipush:
-//			case OPCODE_sipush:
-//				frame.pushInt();
-//				break;
-//			case OPCODE_lconst_0:
-//			case OPCODE_lconst_1:
-//				frame.pushLong();
-//				break;
-//			case OPCODE_fconst_0:
-//			case OPCODE_fconst_1:
-//			case OPCODE_fconst_2:
-//				frame.pushFloat();
-//				break;
-//			case OPCODE_dconst_0:
-//			case OPCODE_dconst_1:
-//				frame.pushDouble();
-//				break;
-//			case OPCODE_ldc:
-//			case OPCODE_ldc_w:
-//				ldc(inst);
-//				break;
-//			case OPCODE_ldc2_w:
-//				ldc2(inst);
-//				break;
-//			case OPCODE_iload:
-//			case OPCODE_iload_0:
-//			case OPCODE_iload_1:
-//			case OPCODE_iload_2:
-//			case OPCODE_iload_3:
-//				frame.pushInt();
-//				break;
-//			case OPCODE_lload:
-//			case OPCODE_lload_0:
-//			case OPCODE_lload_1:
-//			case OPCODE_lload_2:
-//			case OPCODE_lload_3:
-//				frame.pushLong();
-//				break;
-//			case OPCODE_fload:
-//			case OPCODE_fload_0:
-//			case OPCODE_fload_1:
-//			case OPCODE_fload_2:
-//			case OPCODE_fload_3:
-//				frame.pushFloat();
-//				break;
-//			case OPCODE_dload:
-//			case OPCODE_dload_0:
-//			case OPCODE_dload_1:
-//			case OPCODE_dload_2:
-//			case OPCODE_dload_3:
-//				frame.pushDouble();
-//				break;
-//			case OPCODE_aload:
-//				aload(inst.var()->lvindex);
-//				break;
-//			case OPCODE_aload_0:
-//				aload(0);
-//				break;
-//			case OPCODE_aload_1:
-//				aload(1);
-//				break;
-//			case OPCODE_aload_2:
-//				aload(2);
-//				break;
-//			case OPCODE_aload_3:
-//				aload(3);
-//				break;
-//			case OPCODE_iaload:
-//			case OPCODE_baload:
-//			case OPCODE_caload:
-//			case OPCODE_saload:
-//				frame.popInt();
-//				frame.popArray();
-//				frame.pushInt();
-//				break;
-//			case OPCODE_laload:
-//				frame.popInt();
-//				frame.popArray();
-//				frame.pushLong();
-//				break;
-//			case OPCODE_faload:
-//				frame.popInt();
-//				frame.popArray();
-//				frame.pushFloat();
-//				break;
-//			case OPCODE_daload: {
-//				frame.popInt();
-//				Type arrayType = frame.popArray();
-//				frame.pushDouble();
-//				break;
-//			}
-//			case OPCODE_aaload:
-//				aaload(inst);
-//				break;
-//			case OPCODE_istore:
-//				istore(inst.var()->lvindex);
-//				break;
-//			case OPCODE_lstore:
-//				lstore(inst.var()->lvindex);
-//				break;
-//			case OPCODE_fstore:
-//				fstore(inst.var()->lvindex);
-//				break;
-//			case OPCODE_dstore:
-//				dstore(inst.var()->lvindex);
-//				break;
-//			case OPCODE_astore:
-//				astore(inst.var()->lvindex);
-//				break;
-//			case OPCODE_istore_0:
-//				istore(0);
-//				break;
-//			case OPCODE_istore_1:
-//				istore(1);
-//				break;
-//			case OPCODE_istore_2:
-//				istore(2);
-//				break;
-//			case OPCODE_istore_3:
-//				istore(3);
-//				break;
-//			case OPCODE_lstore_0:
-//				lstore(0);
-//				break;
-//			case OPCODE_lstore_1:
-//				lstore(1);
-//				break;
-//			case OPCODE_lstore_2:
-//				lstore(2);
-//				break;
-//			case OPCODE_lstore_3:
-//				lstore(3);
-//				break;
-//			case OPCODE_fstore_0:
-//				fstore(0);
-//				break;
-//			case OPCODE_fstore_1:
-//				fstore(1);
-//				break;
-//			case OPCODE_fstore_2:
-//				fstore(2);
-//				break;
-//			case OPCODE_fstore_3:
-//				fstore(3);
-//				break;
-//			case OPCODE_dstore_0:
-//				dstore(0);
-//				break;
-//			case OPCODE_dstore_1:
-//				dstore(1);
-//				break;
-//			case OPCODE_dstore_2:
-//				dstore(2);
-//				break;
-//			case OPCODE_dstore_3:
-//				dstore(3);
-//				break;
-//			case OPCODE_astore_0:
-//				astore(0);
-//				break;
-//			case OPCODE_astore_1:
-//				astore(1);
-//				break;
-//			case OPCODE_astore_2:
-//				astore(2);
-//				break;
-//			case OPCODE_astore_3:
-//				astore(3);
-//				break;
-//			case OPCODE_iastore:
-//			case OPCODE_bastore:
-//			case OPCODE_castore:
-//			case OPCODE_sastore:
-//				frame.popInt();
-//				xastore();
-//				break;
-//			case OPCODE_lastore:
-//				frame.popLong();
-//				xastore();
-//				break;
-//			case OPCODE_fastore:
-//				frame.popFloat();
-//				xastore();
-//				break;
-//			case OPCODE_dastore:
-//				frame.popDouble();
-//				xastore();
-//				break;
-//			case OPCODE_aastore:
-//				frame.popRef();
-//				xastore();
-//				break;
-//			case OPCODE_pop:
-//				frame.popOneWord();
-//				break;
-//			case OPCODE_pop2:
-//				frame.popTwoWord();
-//				break;
-//			case OPCODE_dup: {
-//				auto t1 = frame.popOneWord();
-//				frame.push(t1);
-//				frame.push(t1);
-//				break;
-//			}
-//			case OPCODE_dup_x1: {
-//				auto t1 = frame.pop();
-//				auto t2 = frame.pop();
-//				frame.push(t1);
-//				frame.push(t2);
-//				frame.push(t1);
-//				break;
-//			}
-//			case OPCODE_dup_x2: {
-//				auto t1 = frame.pop();
-//				auto t2 = frame.pop();
-//				auto t3 = frame.pop();
-//				frame.push(t1);
-//				frame.push(t3);
-//				frame.push(t2);
-//				frame.push(t1);
-//				break;
-//			}
-//			case OPCODE_dup2: {
-//				auto t1 = frame.pop();
-//				auto t2 = frame.pop();
-//				frame.push(t2);
-//				frame.push(t1);
-//				frame.push(t2);
-//				frame.push(t1);
-//				break;
-//			}
-//			case OPCODE_dup2_x1: {
-//				auto t1 = frame.pop();
-//				auto t2 = frame.pop();
-//				auto t3 = frame.pop();
-//				frame.push(t2);
-//				frame.push(t1);
-//				frame.push(t3);
-//				frame.push(t2);
-//				frame.push(t1);
-//				break;
-//			}
-//			case OPCODE_dup2_x2: {
-//				auto t1 = frame.pop();
-//				auto t2 = frame.pop();
-//				auto t3 = frame.pop();
-//				auto t4 = frame.pop();
-//				frame.push(t2);
-//				frame.push(t1);
-//				frame.push(t4);
-//				frame.push(t3);
-//				frame.push(t2);
-//				frame.push(t1);
-//				break;
-//			}
-//			case OPCODE_swap: {
-//				auto t1 = frame.pop();
-//				auto t2 = frame.pop();
-//				frame.push(t1);
-//				frame.push(t2);
-//				break;
-//			}
-//			case OPCODE_iadd:
-//			case OPCODE_fadd:
-//			case OPCODE_isub:
-//			case OPCODE_fsub:
-//			case OPCODE_imul:
-//			case OPCODE_fmul:
-//			case OPCODE_idiv:
-//			case OPCODE_fdiv:
-//			case OPCODE_irem:
-//			case OPCODE_frem:
-//			case OPCODE_ishl:
-//			case OPCODE_ishr:
-//			case OPCODE_iushr:
-//			case OPCODE_iand:
-//			case OPCODE_ior:
-//			case OPCODE_ixor: {
-//				auto t1 = frame.pop();
-//				frame.pop();
-//				frame.push(t1);
-//				break;
-//			}
-//			case OPCODE_ladd:
-//			case OPCODE_lsub:
-//			case OPCODE_lmul:
-//			case OPCODE_ldiv:
-//			case OPCODE_lrem:
-//			case OPCODE_land:
-//			case OPCODE_lor:
-//			case OPCODE_lxor:
-//				frame.popLong();
-//				frame.popLong();
-//				frame.pushLong();
-//				break;
-//			case OPCODE_lshl:
-//			case OPCODE_lshr:
-//			case OPCODE_lushr:
-//				frame.popInt();
-//				frame.popLong();
-//				frame.pushLong();
-//				break;
-//			case OPCODE_dadd:
-//			case OPCODE_dsub:
-//			case OPCODE_dmul:
-//			case OPCODE_ddiv:
-//			case OPCODE_drem: {
-//				frame.pop();
-//				frame.pop();
-//				frame.pop();
-//				frame.pop();
-//				frame.pushDouble();
-//				break;
-//			}
-//			case OPCODE_ineg:
-//			case OPCODE_fneg: {
-//				auto t1 = frame.pop();
-//				frame.push(t1);
-//				break;
-//			}
-//			case OPCODE_lneg: {
-//				frame.popLong();
-//				frame.pushLong();
-//				break;
-//			}
-//			case OPCODE_dneg: {
-//				frame.popDouble();
-//				frame.pushDouble();
-//				break;
-//			}
-//			case OPCODE_iinc:
-//				iinc(inst.iinc()->index);
-//				break;
-//			case OPCODE_i2l:
-//				frame.popInt();
-//				frame.pushLong();
-//				break;
-//			case OPCODE_i2f:
-//				frame.popInt();
-//				frame.pushFloat();
-//				break;
-//			case OPCODE_i2d:
-//				frame.popInt();
-//				frame.pushDouble();
-//				break;
-//			case OPCODE_l2i:
-//				frame.popLong();
-//				frame.pushInt();
-//				break;
-//			case OPCODE_l2f:
-//				frame.popLong();
-//				frame.pushFloat();
-//				break;
-//			case OPCODE_l2d:
-//				frame.popLong();
-//				frame.pushDouble();
-//				break;
-//			case OPCODE_f2i:
-//				frame.popFloat();
-//				frame.pushInt();
-//				break;
-//			case OPCODE_f2l:
-//				frame.popFloat();
-//				frame.pushLong();
-//				break;
-//			case OPCODE_f2d:
-//				frame.popFloat();
-//				frame.pushDouble();
-//				break;
-//			case OPCODE_d2i:
-//				frame.popDouble();
-//				frame.pushInt();
-//				break;
-//			case OPCODE_d2l:
-//				frame.popDouble();
-//				frame.pushLong();
-//				break;
-//			case OPCODE_d2f:
-//				frame.popDouble();
-//				frame.pushFloat();
-//				break;
-//			case OPCODE_i2b:
-//			case OPCODE_i2c:
-//			case OPCODE_i2s:
-//				frame.popInt();
-//				frame.pushInt();
-//				break;
-//			case OPCODE_lcmp:
-//				frame.pop();
-//				frame.pop();
-//				frame.pop();
-//				frame.pop();
-//				frame.pushInt();
-//				break;
-//			case OPCODE_fcmpl:
-//			case OPCODE_fcmpg:
-//				frame.pop();
-//				frame.pop();
-//				frame.pushInt();
-//				break;
-//			case OPCODE_dcmpl:
-//			case OPCODE_dcmpg:
-//				frame.pop();
-//				frame.pop();
-//				frame.pop();
-//				frame.pop();
-//				frame.pushInt();
-//				break;
-//			case OPCODE_ifeq:
-//			case OPCODE_ifne:
-//			case OPCODE_iflt:
-//			case OPCODE_ifge:
-//			case OPCODE_ifgt:
-//			case OPCODE_ifle:
-//				frame.pop();
-//				break;
-//			case OPCODE_if_icmpeq:
-//			case OPCODE_if_icmpne:
-//			case OPCODE_if_icmplt:
-//			case OPCODE_if_icmpge:
-//			case OPCODE_if_icmpgt:
-//			case OPCODE_if_icmple:
-//				frame.pop();
-//				frame.pop();
-//				break;
-//			case OPCODE_if_acmpeq:
-//			case OPCODE_if_acmpne:
-//				frame.pop();
-//				frame.pop();
-//				break;
-//			case OPCODE_goto:
-//				break;
-//			case OPCODE_jsr:
-//				throw JsrRetNotSupported();
-//				break;
-//			case OPCODE_ret:
-//				throw JsrRetNotSupported();
-//				break;
-//			case OPCODE_tableswitch:
-//			case OPCODE_lookupswitch:
-//				frame.pop();
-//				break;
-//			case OPCODE_ireturn:
-//				frame.pop();
-//				break;
-//			case OPCODE_lreturn:
-//				frame.pop();
-//				frame.pop();
-//				break;
-//			case OPCODE_freturn:
-//				frame.pop();
-//				break;
-//			case OPCODE_dreturn:
-//				frame.pop();
-//				frame.pop();
-//				break;
-//			case OPCODE_areturn:
-//				frame.pop();
-//				break;
-//			case OPCODE_return:
-//				break;
-//			case OPCODE_getstatic: {
-//				auto t = fieldType(inst);
-//				frame.pushType(t);
-//				break;
-//			}
-//			case OPCODE_putstatic: {
-//				auto t = fieldType(inst);
-//				frame.popType(t);
-//				break;
-//			}
-//			case OPCODE_getfield: {
-//				auto t = fieldType(inst);
-//				frame.popRef();
-//				frame.pushType(t);
-//				break;
-//			}
-//			case OPCODE_putfield: {
-//				auto t = fieldType(inst);
-//				frame.popType(t);
-//				frame.popRef();
-//				break;
-//			}
-//			case OPCODE_invokevirtual:
-//			case OPCODE_invokespecial:
-//				invokeMethod(inst.invoke()->methodRefIndex, true);
-//				break;
-//			case OPCODE_invokestatic:
-//				invokeMethod(inst.invoke()->methodRefIndex, false);
-//				break;
-//			case OPCODE_invokeinterface:
-//				invokeInterface(inst.invokeinterface()->interMethodRefIndex);
-//				break;
-//			case OPCODE_new:
-//				newinst(inst);
-//				break;
-//			case OPCODE_newarray:
-//				newarray(inst);
-//				break;
-//			case OPCODE_anewarray:
-//				anewarray(inst);
-//				break;
-//			case OPCODE_arraylength:
-//				frame.pop();
-//				frame.pushInt();
-//				break;
-//			case OPCODE_athrow:
-//				athrow(inst);
-//				break;
-//			case OPCODE_checkcast:
-//				checkcast(inst);
-//				break;
-//			case OPCODE_instanceof:
-//				frame.popRef();
-//				frame.pushInt();
-//				break;
-//			case OPCODE_monitorenter:
-//			case OPCODE_monitorexit:
-//				frame.popRef();
-//				break;
-//			case OPCODE_wide:
-//				wide(inst);
-//				break;
-//			case OPCODE_multianewarray:
-//				multianewarray(inst);
-//				break;
-//			case OPCODE_ifnull:
-//			case OPCODE_ifnonnull:
-//				frame.pop();
-//				break;
-//			case OPCODE_goto_w:
-//			case OPCODE_jsr_w:
-//			case OPCODE_breakpoint:
-//			case OPCODE_impdep1:
-//			case OPCODE_impdep2:
-//				Error::raise("goto_w, jsr_w breakpoint not implemented");
-//				break;
-//			case OPCODE_invokedynamic:
-//				Error::raise("invoke dynamic instances not implemented");
-//				break;
-//			default:
-//				Error::raise("unknown opcode not implemented: ", inst.opcode);
-//		}
+//		InstTable::InstHandler handler = InstTable::cases[inst.opcode];
+//		(*handler)(*this, inst);
+		switch (inst.opcode) {
+			case OPCODE_nop:
+				break;
+			case OPCODE_aconst_null:
+				frame.pushNull();
+				break;
+			case OPCODE_iconst_m1:
+			case OPCODE_iconst_0:
+			case OPCODE_iconst_1:
+			case OPCODE_iconst_2:
+			case OPCODE_iconst_3:
+			case OPCODE_iconst_4:
+			case OPCODE_iconst_5:
+			case OPCODE_bipush:
+			case OPCODE_sipush:
+				frame.pushInt();
+				break;
+			case OPCODE_lconst_0:
+			case OPCODE_lconst_1:
+				frame.pushLong();
+				break;
+			case OPCODE_fconst_0:
+			case OPCODE_fconst_1:
+			case OPCODE_fconst_2:
+				frame.pushFloat();
+				break;
+			case OPCODE_dconst_0:
+			case OPCODE_dconst_1:
+				frame.pushDouble();
+				break;
+			case OPCODE_ldc:
+			case OPCODE_ldc_w:
+				ldc(inst);
+				break;
+			case OPCODE_ldc2_w:
+				ldc2(inst);
+				break;
+			case OPCODE_iload:
+			case OPCODE_iload_0:
+			case OPCODE_iload_1:
+			case OPCODE_iload_2:
+			case OPCODE_iload_3:
+				frame.pushInt();
+				break;
+			case OPCODE_lload:
+			case OPCODE_lload_0:
+			case OPCODE_lload_1:
+			case OPCODE_lload_2:
+			case OPCODE_lload_3:
+				frame.pushLong();
+				break;
+			case OPCODE_fload:
+			case OPCODE_fload_0:
+			case OPCODE_fload_1:
+			case OPCODE_fload_2:
+			case OPCODE_fload_3:
+				frame.pushFloat();
+				break;
+			case OPCODE_dload:
+			case OPCODE_dload_0:
+			case OPCODE_dload_1:
+			case OPCODE_dload_2:
+			case OPCODE_dload_3:
+				frame.pushDouble();
+				break;
+			case OPCODE_aload:
+				aload(inst.var()->lvindex);
+				break;
+			case OPCODE_aload_0:
+				aload(0);
+				break;
+			case OPCODE_aload_1:
+				aload(1);
+				break;
+			case OPCODE_aload_2:
+				aload(2);
+				break;
+			case OPCODE_aload_3:
+				aload(3);
+				break;
+			case OPCODE_iaload:
+			case OPCODE_baload:
+			case OPCODE_caload:
+			case OPCODE_saload:
+				frame.popInt();
+				frame.popArray();
+				frame.pushInt();
+				break;
+			case OPCODE_laload:
+				frame.popInt();
+				frame.popArray();
+				frame.pushLong();
+				break;
+			case OPCODE_faload:
+				frame.popInt();
+				frame.popArray();
+				frame.pushFloat();
+				break;
+			case OPCODE_daload: {
+				frame.popInt();
+				Type arrayType = frame.popArray();
+				frame.pushDouble();
+				break;
+			}
+			case OPCODE_aaload:
+				aaload(inst);
+				break;
+			case OPCODE_istore:
+				istore(inst.var()->lvindex);
+				break;
+			case OPCODE_lstore:
+				lstore(inst.var()->lvindex);
+				break;
+			case OPCODE_fstore:
+				fstore(inst.var()->lvindex);
+				break;
+			case OPCODE_dstore:
+				dstore(inst.var()->lvindex);
+				break;
+			case OPCODE_astore:
+				astore(inst.var()->lvindex);
+				break;
+			case OPCODE_istore_0:
+				istore(0);
+				break;
+			case OPCODE_istore_1:
+				istore(1);
+				break;
+			case OPCODE_istore_2:
+				istore(2);
+				break;
+			case OPCODE_istore_3:
+				istore(3);
+				break;
+			case OPCODE_lstore_0:
+				lstore(0);
+				break;
+			case OPCODE_lstore_1:
+				lstore(1);
+				break;
+			case OPCODE_lstore_2:
+				lstore(2);
+				break;
+			case OPCODE_lstore_3:
+				lstore(3);
+				break;
+			case OPCODE_fstore_0:
+				fstore(0);
+				break;
+			case OPCODE_fstore_1:
+				fstore(1);
+				break;
+			case OPCODE_fstore_2:
+				fstore(2);
+				break;
+			case OPCODE_fstore_3:
+				fstore(3);
+				break;
+			case OPCODE_dstore_0:
+				dstore(0);
+				break;
+			case OPCODE_dstore_1:
+				dstore(1);
+				break;
+			case OPCODE_dstore_2:
+				dstore(2);
+				break;
+			case OPCODE_dstore_3:
+				dstore(3);
+				break;
+			case OPCODE_astore_0:
+				astore(0);
+				break;
+			case OPCODE_astore_1:
+				astore(1);
+				break;
+			case OPCODE_astore_2:
+				astore(2);
+				break;
+			case OPCODE_astore_3:
+				astore(3);
+				break;
+			case OPCODE_iastore:
+			case OPCODE_bastore:
+			case OPCODE_castore:
+			case OPCODE_sastore:
+				frame.popInt();
+				xastore();
+				break;
+			case OPCODE_lastore:
+				frame.popLong();
+				xastore();
+				break;
+			case OPCODE_fastore:
+				frame.popFloat();
+				xastore();
+				break;
+			case OPCODE_dastore:
+				frame.popDouble();
+				xastore();
+				break;
+			case OPCODE_aastore:
+				frame.popRef();
+				xastore();
+				break;
+			case OPCODE_pop:
+				frame.popOneWord();
+				break;
+			case OPCODE_pop2:
+				frame.popTwoWord();
+				break;
+			case OPCODE_dup: {
+				auto t1 = frame.popOneWord();
+				frame.push(t1);
+				frame.push(t1);
+				break;
+			}
+			case OPCODE_dup_x1: {
+				auto t1 = frame.pop();
+				auto t2 = frame.pop();
+				frame.push(t1);
+				frame.push(t2);
+				frame.push(t1);
+				break;
+			}
+			case OPCODE_dup_x2: {
+				auto t1 = frame.pop();
+				auto t2 = frame.pop();
+				auto t3 = frame.pop();
+				frame.push(t1);
+				frame.push(t3);
+				frame.push(t2);
+				frame.push(t1);
+				break;
+			}
+			case OPCODE_dup2: {
+				auto t1 = frame.pop();
+				auto t2 = frame.pop();
+				frame.push(t2);
+				frame.push(t1);
+				frame.push(t2);
+				frame.push(t1);
+				break;
+			}
+			case OPCODE_dup2_x1: {
+				auto t1 = frame.pop();
+				auto t2 = frame.pop();
+				auto t3 = frame.pop();
+				frame.push(t2);
+				frame.push(t1);
+				frame.push(t3);
+				frame.push(t2);
+				frame.push(t1);
+				break;
+			}
+			case OPCODE_dup2_x2: {
+				auto t1 = frame.pop();
+				auto t2 = frame.pop();
+				auto t3 = frame.pop();
+				auto t4 = frame.pop();
+				frame.push(t2);
+				frame.push(t1);
+				frame.push(t4);
+				frame.push(t3);
+				frame.push(t2);
+				frame.push(t1);
+				break;
+			}
+			case OPCODE_swap: {
+				auto t1 = frame.pop();
+				auto t2 = frame.pop();
+				frame.push(t1);
+				frame.push(t2);
+				break;
+			}
+			case OPCODE_iadd:
+			case OPCODE_fadd:
+			case OPCODE_isub:
+			case OPCODE_fsub:
+			case OPCODE_imul:
+			case OPCODE_fmul:
+			case OPCODE_idiv:
+			case OPCODE_fdiv:
+			case OPCODE_irem:
+			case OPCODE_frem:
+			case OPCODE_ishl:
+			case OPCODE_ishr:
+			case OPCODE_iushr:
+			case OPCODE_iand:
+			case OPCODE_ior:
+			case OPCODE_ixor: {
+				auto t1 = frame.pop();
+				frame.pop();
+				frame.push(t1);
+				break;
+			}
+			case OPCODE_ladd:
+			case OPCODE_lsub:
+			case OPCODE_lmul:
+			case OPCODE_ldiv:
+			case OPCODE_lrem:
+			case OPCODE_land:
+			case OPCODE_lor:
+			case OPCODE_lxor:
+				frame.popLong();
+				frame.popLong();
+				frame.pushLong();
+				break;
+			case OPCODE_lshl:
+			case OPCODE_lshr:
+			case OPCODE_lushr:
+				frame.popInt();
+				frame.popLong();
+				frame.pushLong();
+				break;
+			case OPCODE_dadd:
+			case OPCODE_dsub:
+			case OPCODE_dmul:
+			case OPCODE_ddiv:
+			case OPCODE_drem: {
+				frame.pop();
+				frame.pop();
+				frame.pop();
+				frame.pop();
+				frame.pushDouble();
+				break;
+			}
+			case OPCODE_ineg:
+			case OPCODE_fneg: {
+				auto t1 = frame.pop();
+				frame.push(t1);
+				break;
+			}
+			case OPCODE_lneg: {
+				frame.popLong();
+				frame.pushLong();
+				break;
+			}
+			case OPCODE_dneg: {
+				frame.popDouble();
+				frame.pushDouble();
+				break;
+			}
+			case OPCODE_iinc:
+				iinc(inst.iinc()->index);
+				break;
+			case OPCODE_i2l:
+				frame.popInt();
+				frame.pushLong();
+				break;
+			case OPCODE_i2f:
+				frame.popInt();
+				frame.pushFloat();
+				break;
+			case OPCODE_i2d:
+				frame.popInt();
+				frame.pushDouble();
+				break;
+			case OPCODE_l2i:
+				frame.popLong();
+				frame.pushInt();
+				break;
+			case OPCODE_l2f:
+				frame.popLong();
+				frame.pushFloat();
+				break;
+			case OPCODE_l2d:
+				frame.popLong();
+				frame.pushDouble();
+				break;
+			case OPCODE_f2i:
+				frame.popFloat();
+				frame.pushInt();
+				break;
+			case OPCODE_f2l:
+				frame.popFloat();
+				frame.pushLong();
+				break;
+			case OPCODE_f2d:
+				frame.popFloat();
+				frame.pushDouble();
+				break;
+			case OPCODE_d2i:
+				frame.popDouble();
+				frame.pushInt();
+				break;
+			case OPCODE_d2l:
+				frame.popDouble();
+				frame.pushLong();
+				break;
+			case OPCODE_d2f:
+				frame.popDouble();
+				frame.pushFloat();
+				break;
+			case OPCODE_i2b:
+			case OPCODE_i2c:
+			case OPCODE_i2s:
+				frame.popInt();
+				frame.pushInt();
+				break;
+			case OPCODE_lcmp:
+				frame.pop();
+				frame.pop();
+				frame.pop();
+				frame.pop();
+				frame.pushInt();
+				break;
+			case OPCODE_fcmpl:
+			case OPCODE_fcmpg:
+				frame.pop();
+				frame.pop();
+				frame.pushInt();
+				break;
+			case OPCODE_dcmpl:
+			case OPCODE_dcmpg:
+				frame.pop();
+				frame.pop();
+				frame.pop();
+				frame.pop();
+				frame.pushInt();
+				break;
+			case OPCODE_ifeq:
+			case OPCODE_ifne:
+			case OPCODE_iflt:
+			case OPCODE_ifge:
+			case OPCODE_ifgt:
+			case OPCODE_ifle:
+				frame.pop();
+				break;
+			case OPCODE_if_icmpeq:
+			case OPCODE_if_icmpne:
+			case OPCODE_if_icmplt:
+			case OPCODE_if_icmpge:
+			case OPCODE_if_icmpgt:
+			case OPCODE_if_icmple:
+				frame.pop();
+				frame.pop();
+				break;
+			case OPCODE_if_acmpeq:
+			case OPCODE_if_acmpne:
+				frame.pop();
+				frame.pop();
+				break;
+			case OPCODE_goto:
+				break;
+			case OPCODE_jsr:
+				throw JsrRetNotSupported();
+				break;
+			case OPCODE_ret:
+				throw JsrRetNotSupported();
+				break;
+			case OPCODE_tableswitch:
+			case OPCODE_lookupswitch:
+				frame.pop();
+				break;
+			case OPCODE_ireturn:
+				frame.pop();
+				break;
+			case OPCODE_lreturn:
+				frame.pop();
+				frame.pop();
+				break;
+			case OPCODE_freturn:
+				frame.pop();
+				break;
+			case OPCODE_dreturn:
+				frame.pop();
+				frame.pop();
+				break;
+			case OPCODE_areturn:
+				frame.pop();
+				break;
+			case OPCODE_return:
+				break;
+			case OPCODE_getstatic: {
+				auto t = fieldType(inst);
+				frame.pushType(t);
+				break;
+			}
+			case OPCODE_putstatic: {
+				auto t = fieldType(inst);
+				frame.popType(t);
+				break;
+			}
+			case OPCODE_getfield: {
+				auto t = fieldType(inst);
+				frame.popRef();
+				frame.pushType(t);
+				break;
+			}
+			case OPCODE_putfield: {
+				auto t = fieldType(inst);
+				frame.popType(t);
+				frame.popRef();
+				break;
+			}
+			case OPCODE_invokevirtual:
+			case OPCODE_invokespecial:
+				invokeMethod(inst.invoke()->methodRefIndex, true);
+				break;
+			case OPCODE_invokestatic:
+				invokeMethod(inst.invoke()->methodRefIndex, false);
+				break;
+			case OPCODE_invokeinterface:
+				invokeInterface(inst.invokeinterface()->interMethodRefIndex);
+				break;
+			case OPCODE_new:
+				newinst(inst);
+				break;
+			case OPCODE_newarray:
+				newarray(inst);
+				break;
+			case OPCODE_anewarray:
+				anewarray(inst);
+				break;
+			case OPCODE_arraylength:
+				frame.pop();
+				frame.pushInt();
+				break;
+			case OPCODE_athrow:
+				athrow(inst);
+				break;
+			case OPCODE_checkcast:
+				checkcast(inst);
+				break;
+			case OPCODE_instanceof:
+				frame.popRef();
+				frame.pushInt();
+				break;
+			case OPCODE_monitorenter:
+			case OPCODE_monitorexit:
+				frame.popRef();
+				break;
+			case OPCODE_wide:
+				wide(inst);
+				break;
+			case OPCODE_multianewarray:
+				multianewarray(inst);
+				break;
+			case OPCODE_ifnull:
+			case OPCODE_ifnonnull:
+				frame.pop();
+				break;
+			case OPCODE_goto_w:
+			case OPCODE_jsr_w:
+			case OPCODE_breakpoint:
+			case OPCODE_impdep1:
+			case OPCODE_impdep2:
+				Error::raise("goto_w, jsr_w breakpoint not implemented");
+				break;
+			case OPCODE_invokedynamic:
+				Error::raise("invoke dynamic instances not implemented");
+				break;
+			default:
+				Error::raise("unknown opcode not implemented: ", inst.opcode);
+		}
 	}
 
 private:

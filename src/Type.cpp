@@ -99,7 +99,7 @@ Type Type::fromFieldDesc(const char*& fieldDesc) {
 
 	Error::check(*fieldDesc != '\0', "");
 
-	auto parseBaseType = [&] () {
+	auto parseBaseType = [&] () -> Type {
 		switch (*fieldDesc) {
 			case 'Z':
 			return Type::booleanType();
@@ -185,6 +185,18 @@ Type Type::fromMethodDesc(const char* methodDesc, vector<Type>* argsType) {
 
 	return returnType;
 }
+
+Type Type::_topType(TYPE_TOP);
+Type Type::_intType(TYPE_INTEGER, "I");
+Type Type::_floatType(TYPE_FLOAT, "F");
+Type Type::_longType(TYPE_LONG, "J");
+Type Type::_doubleType(TYPE_DOUBLE, "D");
+Type Type::_booleanType(TYPE_BOOLEAN, "Z");
+Type Type::_byteType(TYPE_BYTE, "B");
+Type Type::_charType(TYPE_CHAR, "C");
+Type Type::_shortType(TYPE_SHORT, "S");
+Type Type::_nullType(TYPE_NULL);
+Type Type::_uninitThisType(TYPE_UNINITTHIS);
 
 }
 
