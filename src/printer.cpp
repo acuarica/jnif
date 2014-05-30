@@ -221,6 +221,8 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 		os << "[]";
 	}
 
+	os << "init: " << type.init;
+	os << ", id: " << type.typeId;
 	if (type.isTop()) {
 		os << "Top";
 	} else if (type.isInt()) {

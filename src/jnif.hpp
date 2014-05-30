@@ -1432,6 +1432,7 @@ public:
 		struct {
 			short offset;
 			Inst* label;
+			class TypeInst* newinst;
 		} uninit;
 	};
 
@@ -1573,6 +1574,12 @@ public:
 	static Type fromMethodDesc(const char* methodDesc,
 			std::vector<Type>* argsType);
 
+	bool init;
+
+	long typeId;
+
+	static long nextTypeId;
+
 private:
 
 	TypeTag tag;
@@ -1581,17 +1588,18 @@ private:
 	String className;
 
 	Type(TypeTag tag) :
-			tag(tag), dims(0), classIndex(0) {
+			init(true), typeId(0), tag(tag), dims(0), classIndex(0) {
 	}
 
 	Type(TypeTag tag, short offset, Inst* label) :
-			tag(tag), dims(0), classIndex(0) {
+			init(true), typeId(0), tag(tag), dims(0), classIndex(0) {
 		uninit.offset = offset;
 		uninit.label = label;
 	}
 
 	Type(TypeTag tag, const String& className, u2 classIndex = 0) :
-			tag(tag), dims(0), classIndex(classIndex), className(className) {
+			init(true), typeId(0), tag(tag), dims(0), classIndex(classIndex), className(
+					className) {
 	}
 
 	Type(const Type& other, u4 dims) :
