@@ -14,9 +14,6 @@ endif
 
 BUILD=build
 
-#INSTRS=Print Identity ObjectInit NewArray ANewArray Main ClientServer
-#BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow \
-#       tomcat tradebeans tradesoap xalan
 
 RUN=0
 INSTR=Compute
@@ -24,11 +21,10 @@ BENCH=avrora
 OLEVEL=O4
 
 TIMES=10
-INSTRS=Empty Identity Compute ClientServer
-BENCHS=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow xalan
+INSTRS=Empty Identity Compute ClientServer   #Print ObjectInit NewArray ANewArray Main ClientServer
+BENCHS=avrora batik eclipse fop h2 jython luindex lusearch \
+       pmd sunflow tomcat xalan  #tradebeans tradesoap
 OLEVELS=O0 O3
-
-#RUNS=$(shell seq 1 $(TIMES))
 
 CXXFLAGS+=-fPIC -W -g -Wall -Wextra -$(OLEVEL) -std=c++11 -Wno-unused-parameter
 

@@ -510,7 +510,7 @@ private:
 	}
 
 	static Inst* parseInst(BufferReader& br, InstList& instList,
-			LabelManager& labelManager) {
+			const LabelManager& labelManager) {
 		int offset = br.offset();
 
 		if (labelManager.hasLabel(offset)) {
@@ -676,7 +676,7 @@ private:
 	}
 
 	static void parseInstList(BufferReader& br, InstList& instList,
-			LabelManager& labelManager) {
+			const LabelManager& labelManager) {
 		while (!br.eor()) {
 			int offset = br.offset();
 			Inst* inst = parseInst(br, instList, labelManager);
@@ -856,18 +856,13 @@ private:
 				}
 				case TYPE_UNINIT: {
 					u2 offset = br.readu2();
-
 					LabelInst* label = labelManager.createLabel(offset);
-//					if (label == nullptr) {
-//						label = new Inst(KIND_LABEL);
-//					}
-
-				return Type::uninitType(offset, label);
+					return Type::uninitType(offset, label);
+				}
 			}
-		}
 
-		Error::raise("Error on parse smt");
-	}	;
+			Error::raise("Error on parse smt");
+		};
 
 		auto parseTs = [&](int count, vector<Type>& locs) {
 			for (u1 i = 0; i < count; i++) {
@@ -937,6 +932,9 @@ private:
 //				//fprintf(stderr, "WARNING: Label is null in smt at offset %d", toff);
 //				label = new Inst(KIND_LABEL);
 //			}
+
+			Error::check(labelManager.hasLabel(toff), "invalid toff for label");
+
 			LabelInst* label = labelManager.createLabel(toff);
 
 			e.label = label;

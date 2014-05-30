@@ -239,7 +239,8 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 		os << "Object: #" << type.getClassName() << "#@" << type.getCpIndex();
 	} else if (type.isUninit()) {
 		u2 offset = type.uninit.label->label()->offset;
-		os << "Uninitialized offset" << type.uninit.offset << " " << offset;
+		os << "Uninitialized offset: new offset=" << type.uninit.offset
+				<< ", delta offset=" << offset;
 	} else {
 		os << "UNKNOWN TYPE!!!";
 
