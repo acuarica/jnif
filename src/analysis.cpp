@@ -171,40 +171,42 @@ public:
 		bool change = false;
 
 		for (u4 i = 0; i < frame.lva.size(); i++) {
-			change = change || assign(frame.lva[i], how.lva[i], classPath);
+			bool assignChanged = assign(frame.lva[i], how.lva[i], classPath);
+			change = change || assignChanged;
 		}
 
 		std::list<Type>::iterator i = frame.stack.begin();
 		std::list<Type>::iterator j = how.stack.begin();
 
 		for (; i != frame.stack.end(); i++, j++) {
-			change = change || assign(*i, *j, classPath);
+			bool assignChanged = assign(*i, *j, classPath);
+			change = change || assignChanged;
 		}
 
 		return change;
 	}
-//
-//	static void visitCatch(const CodeExceptionEntry& ex, InstList& instList,
-//			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
-//			const ControlFlowGraph* cfg, Frame frame) {
-//		int handlerPcId = ex.handlerpc->label()->id;
-//		BasicBlock* handlerBb = cfg->findBasicBlockOfLabel(handlerPcId);
-//
-//		Type exType = [&]() {
-//			if (ex.catchtype != ConstPool::NULLENTRY) {
-//				const String& className = cf.getClassName(ex.catchtype);
-//				return Type::fromConstClass(className);
-//			} else {
-//				return Type::objectType("java/lang/Throwable");
-//			}
-//		}();
-//
-//		//Frame frame = bb.in;
-//		frame.clearStack();
-//		frame.push(exType);
-//
-//		computeState(*handlerBb, frame, instList, cf, code, classPath);
-//	}
+
+	static void visitCatch(const CodeExceptionEntry& ex, InstList& instList,
+			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
+			const ControlFlowGraph* cfg, Frame frame) {
+		int handlerPcId = ex.handlerpc->label()->id;
+		BasicBlock* handlerBb = cfg->findBasicBlockOfLabel(handlerPcId);
+
+		Type exType = [&]() {
+			if (ex.catchtype != ConstPool::NULLENTRY) {
+				const String& className = cf.getClassName(ex.catchtype);
+				return Type::fromConstClass(className);
+			} else {
+				return Type::objectType("java/lang/Throwable");
+			}
+		}();
+
+		//Frame frame = bb.in;
+		frame.clearStack();
+		frame.push(exType);
+
+		computeState(*handlerBb, frame, instList, cf, code, classPath);
+	}
 
 	static void visitCatch(const BasicBlock& bb, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
@@ -278,6 +280,8 @@ public:
 		Error::assert(how.valid, "how valid");
 		Error::assert(bb.in.valid == bb.out.valid, "");
 
+		//cerr << bb << how << endl << endl;
+
 		bool change = [&]() {
 			if (!bb.in.valid) {
 				bb.in = how;
@@ -289,16 +293,23 @@ public:
 			}
 		}();
 
-//		auto hola = [&](Inst* inst, const Frame& out) {
-//			if (inst->isLabel()) {
-//				for (const CodeExceptionEntry& ex : code->exceptions) {
-//					if (ex.endpc->label()->id == inst->label()->id) {
-//						visitCatch(ex, instList, cf, code, classPath, bb.cfg,
-//								out);
-//					}
-//				}
-//			}
-//		};
+		auto hola = [&](Inst* inst, const Frame& out) {
+			//if (inst->isLabel()) {
+				for (const CodeExceptionEntry& ex : code->exceptions) {
+					//if (ex.endpc->label()->id == inst->label()->id)
+
+					//cerr << "visitCatch: " << ;
+					if (ex.startpc->label()->_offset <= inst->_offset &&
+							inst->_offset < ex.endpc->label()->_offset
+					)
+					{
+						//	cerr << "visitCatch: ";
+						visitCatch(ex, instList, cf, code, classPath, bb.cfg,
+								out);
+					}
+				}
+				//}
+			};
 
 		if (change) {
 			bb.out = bb.in;
@@ -306,12 +317,9 @@ public:
 			SmtBuilder builder(bb.out, cf);
 			for (auto it = bb.start; it != bb.exit; ++it) {
 				Inst* inst = *it;
-
 				//cerr << "after cf" << *inst << endl;
-
 				builder.processInst(*inst);
-
-				//hola(inst, bb.out);
+				hola(inst, bb.out);
 			}
 
 			//cerr << "finished process inst"   << endl;
@@ -322,14 +330,22 @@ public:
 				computeState(*nid, h, instList, cf, code, classPath);
 			}
 
-			visitCatch(bb, instList, cf, code, classPath, true);
-			visitCatch(bb, instList, cf, code, classPath, false);
+//			for (auto it = bb.start; it != bb.exit; ++it) {
+//				Inst* inst = *it;
+//				hola(inst, bb.out);
+//			}
+
+			//visitCatch(bb, instList, cf, code, classPath, true);
+			//visitCatch(bb, instList, cf, code, classPath, false);
 		}
 	}
 
 	void processInst(Inst& inst) {
 //		InstTable::InstHandler handler = InstTable::cases[inst.opcode];
 //		(*handler)(*this, inst);
+
+		//return;
+
 		switch (inst.opcode) {
 			case OPCODE_nop:
 				break;
@@ -1678,6 +1694,10 @@ void InstTable::init() {
 			};
 
 	initialized = true;
+}
+
+void Frame::join(Frame& how, IClassPath* classPath) {
+	SmtBuilder::join(*this, how, classPath);
 }
 
 class Compute: private Error {
