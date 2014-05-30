@@ -25,6 +25,7 @@ public:
 	int socketfd;
 	FILE* _tlog;
 	FILE* _prof;
+	int classLoadedStack;
 
 //	ThreadLocalData() :
 //			threadId(-1), threadTag(-1), /*name("NOT INIT"),*/priority(0), isDaemon(
