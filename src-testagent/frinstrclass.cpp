@@ -18,6 +18,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <mutex>
 
 #include "jnif.hpp"
 
@@ -214,11 +215,37 @@ void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
 
+std::mutex _mutex;
+
+class LoadClassEvent {
+public:
+
+	LoadClassEvent() {
+		if (tldget()->classLoadedStack == 0) {
+			_mutex.lock();
+			//cerr << "+";
+		}
+
+		tldget()->classLoadedStack++;
+	}
+
+	~LoadClassEvent() {
+		tldget()->classLoadedStack--;
+
+		if (tldget()->classLoadedStack == 0) {
+			//cerr << "-";
+			_mutex.unlock();
+		}
+	}
+
+private:
+};
+
 void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args) {
-//	ClassFile f("hola/Clase", "hola/UnaSuperClase");
-	//f.getClassName(0);
+
+	LoadClassEvent m;
 
 	ClassFile cf(data, len);
 	classHierarchy.addClass(cf);
@@ -241,8 +268,8 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 	ClassPath cp(jni, args->loader);
 	cf.computeFrames(&cp);
 
-//	ofstream os(outFileName(className, "compute.disasm").c_str());
-//	os << cf;
+	ofstream os(outFileName(className, "compute.disasm").c_str());
+	os << cf;
 
 //	ofstream dos(outFileName(className, "dot").c_str());
 //	cf.dot(dos);
@@ -391,7 +418,7 @@ void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
 //
 //			m->codeAttr()->maxStack += 3;
 
-			//	m.instList(code);
+//	m.instList(code);
 		}
 	}
 
