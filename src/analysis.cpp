@@ -843,17 +843,19 @@ public:
 				break;
 			}
 			case OPCODE_invokevirtual:
+				invokeMethod(inst.invoke()->methodRefIndex, true, false);
+				break;
 			case OPCODE_invokespecial:
-				invokeMethod(inst.invoke()->methodRefIndex, true);
+				invokeMethod(inst.invoke()->methodRefIndex, true, true);
 				break;
 			case OPCODE_invokestatic:
-				invokeMethod(inst.invoke()->methodRefIndex, false);
+				invokeMethod(inst.invoke()->methodRefIndex, false, false);
 				break;
 			case OPCODE_invokeinterface:
 				invokeInterface(inst.invokeinterface()->interMethodRefIndex);
 				break;
 			case OPCODE_new:
-				newinst(inst);
+				newinst(*inst.type());
 				break;
 			case OPCODE_newarray:
 				newarray(inst);
@@ -906,9 +908,14 @@ public:
 
 private:
 
-	void newinst(Inst& inst) {
+	void newinst(TypeInst& inst) {
 		const String& className = cp.getClassName(inst.type()->classIndex);
-		const Type t = Type::fromConstClass(className);
+		Type t = Type::fromConstClass(className);
+		t.init = false;
+		t.typeId = Type::nextTypeId;
+		Type::nextTypeId++;
+
+		t.uninit.newinst = &inst;
 		Error::check(!t.isArray(), "New with array: ", t);
 		frame.push(t);
 	}
@@ -1027,19 +1034,20 @@ private:
 		frame.setIntVar(index);
 	}
 
-	void invokeMethod(u2 methodRefIndex, bool popThis) {
-		string className, name, desc;
+	void invokeMethod(u2 methodRefIndex, bool popThis, bool isSpecial) {
+		String className, name, desc;
 		cp.getMethodRef(methodRefIndex, &className, &name, &desc);
-		invoke(desc, popThis);
+		invoke(className, name, desc, popThis, isSpecial);
 	}
 
 	void invokeInterface(u2 interMethodRefIndex) {
-		string className, name, desc;
+		String className, name, desc;
 		cp.getInterMethodRef(interMethodRefIndex, &className, &name, &desc);
-		invoke(desc, true);
+		invoke(className, name, desc, true, false);
 	}
 
-	void invoke(const string& desc, bool popThis) {
+	void invoke(const String& className, const String& name, const String& desc,
+			bool popThis, bool isSpecial) {
 		const char* d = desc.c_str();
 		vector<Type> argsType;
 		Type returnType = Type::fromMethodDesc(d, &argsType);
@@ -1052,7 +1060,32 @@ private:
 		}
 
 		if (popThis) {
-			frame.popRef();
+			Type t = frame.popRef();
+
+			if (isSpecial && name == "<init>" && t.typeId > 0) {
+				Error::check(!t.init, "Object is already init: ", t, ", ",
+						className, ".", name, desc, ", frame: ", frame);
+				t.init = true;
+
+				for (Type& tr : frame.lva) {
+					if (tr.typeId == t.typeId) {
+//						Error::check(!tr.init,
+//								"Object is already init in lva: ", tr, ", ",
+//								className, ".", name, desc, ", ", t);
+						tr.init = true;
+					}
+				}
+
+				for (Type& tr : frame.stack) {
+					if (tr.typeId == t.typeId) {
+//						Error::check(!tr.init,
+//								"Object is already init in stack: ", tr, ", ",
+//								className, ".", name, desc, ", ", t);
+						tr.init = true;
+					}
+				}
+				//frame.push(t);
+			}
 		}
 
 		if (!returnType.isVoid()) {
@@ -1647,17 +1680,17 @@ void InstTable::init() {
 
 	cases[OPCODE_invokevirtual] = cases[OPCODE_invokespecial] =
 			[](SmtBuilder& self, Inst& inst) {
-				self. invokeMethod(inst.invoke()->methodRefIndex, true);
+				//	self. invokeMethod(inst.invoke()->methodRefIndex, true);
 			};
 	cases[OPCODE_invokestatic] = [](SmtBuilder& self, Inst& inst) {
-		self. invokeMethod(inst.invoke()->methodRefIndex, false);
-	};
+		//self. invokeMethod(inst.invoke()->methodRefIndex, false);
+		};
 	cases[OPCODE_invokeinterface] = [](SmtBuilder& self, Inst& inst) {
 		self. invokeInterface(inst.invokeinterface()->interMethodRefIndex);
 	};
 	cases[OPCODE_new] = [](SmtBuilder& self, Inst& inst) {
-		self. newinst(inst);
-	};
+		//self. newinst(inst);
+		};
 	cases[OPCODE_newarray] = [](SmtBuilder& self, Inst& inst) {
 		self. newarray(inst);
 	};
@@ -1703,23 +1736,33 @@ void Frame::join(Frame& how, IClassPath* classPath) {
 class Compute: private Error {
 public:
 
-	static void setCpIndex(Type& type, ConstPool& cp) {
+	static void setCpIndex(Type& type, ConstPool& cp, InstList& instList) {
 		if (type.isObject()) {
 			const string& className = type.getClassName();
 
 			ConstIndex utf8index = cp.putUtf8(className.c_str());
 			ConstIndex index = cp.addClass(utf8index);
 			type.setCpIndex(index);
+
+			if (!type.init) {
+				Error::assert(type.uninit.newinst->isType(), "It is not type");
+				LabelInst* l = instList.addLabel(type.uninit.newinst);
+				//cerr << instList << endl;
+				//type.uninit.label = l;
+				//type.uninit.newinst->
+
+				type = Type::uninitType(-1, l);
+			}
 		}
 	}
 
-	static void setCpIndexes(Frame& frame, ConstPool& cp) {
+	static void setCpIndexes(Frame& frame, ConstPool& cp, InstList& instList) {
 		for (Type& type : frame.lva) {
-			setCpIndex(type, cp);
+			setCpIndex(type, cp, instList);
 		}
 
 		for (Type& type : frame.stack) {
-			setCpIndex(type, cp);
+			setCpIndex(type, cp, instList);
 		}
 	}
 
@@ -1808,7 +1851,7 @@ public:
 					Frame& current = bb->in;
 					current.cleanTops();
 
-					setCpIndexes(current, *cf);
+					setCpIndexes(current, *cf, code->instList);
 
 					SmtAttr::Entry e;
 
@@ -1844,7 +1887,7 @@ public:
 									offsetDelta;
 						}
 					} else if ((diff = isChopAppend(current, *f)) != 0) {
-						assert(diff != 0 && diff >= -3 && diff <= 3);
+						Error::assert(diff != 0 && diff >= -3 && diff <= 3);
 
 						e.frameType = 251 + diff;
 						if (diff > 0) {

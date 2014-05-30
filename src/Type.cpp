@@ -72,7 +72,7 @@ Type Type::stripArrayType() const {
 	return Type(*this, 0);
 }
 
-Type Type::fromConstClass(const std::string& className) {
+Type Type::fromConstClass(const String& className) {
 	Error::assert(!className.empty(), "Invalid string class");
 
 	if (className[0] == '[') {
@@ -197,6 +197,8 @@ Type Type::_charType(TYPE_CHAR, "C");
 Type Type::_shortType(TYPE_SHORT, "S");
 Type Type::_nullType(TYPE_NULL);
 Type Type::_uninitThisType(TYPE_UNINITTHIS);
+
+long Type::nextTypeId = 2;
 
 }
 

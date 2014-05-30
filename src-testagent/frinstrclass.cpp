@@ -268,8 +268,8 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 	ClassPath cp(jni, args->loader);
 	cf.computeFrames(&cp);
 
-	ofstream os(outFileName(className, "compute.disasm").c_str());
-	os << cf;
+//	ofstream os(outFileName(className, "compute.disasm").c_str());
+	//os << cf;
 
 //	ofstream dos(outFileName(className, "dot").c_str());
 //	cf.dot(dos);
