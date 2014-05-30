@@ -262,6 +262,28 @@ public class HeapTest {
 		return arr[0];
 	}
 
+	private static int tryCatchm2() throws CloneNotSupportedException {
+		int a;
+		try {
+			a = 3;
+		} catch (Exception e) {
+			a = 2;
+		}
+
+		return a;
+	}
+
+	private static HeapTest tryCatchm1() throws CloneNotSupportedException {
+		HeapTest a;
+		try {
+			a = new HeapTest();
+		} catch (Exception e) {
+			a = null;
+		}
+
+		return a;
+	}
+
 	private static HeapTest tryCatch0(HeapTest arg)
 			throws CloneNotSupportedException {
 		HeapTest obj0;
@@ -625,22 +647,6 @@ public class HeapTest {
 
 		use(f);
 	}
-//
-//	static byte[] wrap() throws RuntimeException {
-//		byte[] result = null;
-//
-//		try {
-//			byte[] encodedKey = new byte[2];
-//			if (encodedKey == null) {
-//				throw new RuntimeException();
-//			}
-//
-//			result = new byte[1];
-//		} catch (NullPointerException e) {
-//		}
-//
-//		return result;
-//	}
 
 	public static void main(String[] args) throws IOException {
 		System.err.println("Siamo arrivati al main!!!");
@@ -653,6 +659,7 @@ public class HeapTest {
 		use(new Chapter3Snippets().new Far());
 		use(new Chapter3Snippets.TestExc1());
 		use(new Chapter3Snippets.Example());
+		use(new ClassTryCatch0());
 
 		tryCatch7();
 		useFloat0();
