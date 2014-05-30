@@ -34,6 +34,7 @@ public class ClassTryCatch0 {
 	}
 
 	void uninit0(int arg) {
+		arg++;
 		new Inner(arg == 0 ? 1 : 2);
 	}
 

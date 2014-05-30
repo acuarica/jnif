@@ -908,7 +908,7 @@ private:
 
 	void newinst(Inst& inst) {
 		const String& className = cp.getClassName(inst.type()->classIndex);
-		Type t = Type::fromConstClass(className);
+		const Type t = Type::fromConstClass(className);
 		Error::check(!t.isArray(), "New with array: ", t);
 		frame.push(t);
 	}
