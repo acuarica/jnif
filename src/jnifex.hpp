@@ -21,58 +21,6 @@ enum Magic {
 	CLASSFILE_MAGIC = 0xcafebabe
 };
 
-/**
- * This class contains static method to facilitate error handling mechanism.
- */
-class Error {
-public:
-
-	template<typename ... TArgs>
-	static void raise(const TArgs& ... args) __attribute__((noreturn));
-
-	template<typename ... TArgs>
-	static inline void assert(bool cond, const TArgs& ... args) {
-//#ifdef DEBUG
-		if (!cond) {
-			raise(args...);
-		}
-//#endif
-	}
-
-	template<typename ... TArgs>
-	static inline void check(bool cond, const TArgs& ... args) {
-		if (!cond) {
-			raise(args...);
-		}
-	}
-
-private:
-
-	static void _backtrace(std::ostream& os);
-
-	static inline void _raise(std::ostream&) {
-	}
-
-	template<typename TArg, typename ... TArgs>
-	static inline void _raise(std::ostream& os, const TArg& arg,
-			const TArgs& ... args) {
-		os << arg;
-		_raise(os, args...);
-	}
-
-};
-
-template<typename ... TArgs>
-void Error::raise(const TArgs& ... args) {
-	std::stringstream message;
-	_raise(message, args...);
-
-	std::stringstream stackTrace;
-	_backtrace(stackTrace);
-
-	throw JnifException(message.str(), stackTrace.str());
-}
-
 }
 
 #endif

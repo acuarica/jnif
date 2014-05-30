@@ -430,12 +430,15 @@ public:
 		for (Inst* instp : instList) {
 			Inst& inst = *instp;
 
+			instp->_offset = pos();
+
 			if (inst.kind == KIND_LABEL) {
 				inst.label()->offset = pos();
 
 				//fprintf(stderr, "label pos @ write: %d\n", inst.label.offset);
 				continue;
 			}
+
 
 			bw.writeu1(inst.opcode);
 
