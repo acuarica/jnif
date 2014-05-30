@@ -33,7 +33,7 @@ OLEVELS=O0 O3
 CXXFLAGS+=-fPIC -W -g -Wall -Wextra -$(OLEVEL) -std=c++11 -Wno-unused-parameter
 
 JARS=$(wildcard jars/*.jar)
-DIRS=$(JARS:jars/%.jar=$(BUILD)/%)
+DIRS=$(JARS:%.jar=$(BUILD)/%)
 
 #
 # Rules to make $(LIBJNIF)
@@ -96,6 +96,7 @@ $(TESTAGENT_BUILD)/%.java.o: $(TESTAGENT_SRC)/%.java
 
 $(TESTAGENT_BUILD):
 	mkdir -p $@
+	mkdir -p $(BUILD)/instr
 
 #
 # Rules to make $(TESTAPP)
@@ -151,8 +152,11 @@ all: $(LIBJNIF) $(TESTUNIT) $(TESTAGENT) $(TESTAPP) $(INSTRSERVER)
 testunit: $(TESTUNIT) $(DIRS)
 	$(TESTUNIT) $(BUILD) > $(TESTUNIT).log
 
-$(BUILD)/%: jars/%.jar
+$(BUILD)/jars/%: jars/%.jar | $(BUILD)/jars
 	unzip $< -d $@
+
+$(BUILD)/jars:
+	mkdir -p $@
 
 #
 # Rules to run $(INSTRSERVER)
@@ -218,11 +222,10 @@ $(DACAPO_SCRATCH):
 # eval
 #
 eval:
-	$(MAKE) cleaneval
-	$(foreach r,$(shell seq 1 $(TIMES)),\
+	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(TIMES)),\
 		$(foreach i,$(INSTRS),\
 			$(foreach b,$(BENCHS),\
-				$(MAKE) dacapo RUN=$(r) INSTR=$(i) BENCH=$(b); \
+				&& $(MAKE) dacapo RUN=$(r) INSTR=$(i) BENCH=$(b) \
 			)\
 		)\
 	)
@@ -240,7 +243,7 @@ docs:
 DOTS=$(shell find build -name *.dot)
 PNGS=$(DOTS:%.dot=%.png)
 dots: $(PNGS)
-	
+
 $(BUILD)/%.png: $(BUILD)/%.dot
 	dot -Tpng $< > $@
 
