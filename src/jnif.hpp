@@ -6,6 +6,7 @@
 #include <list>
 #include <ostream>
 #include <map>
+#include <sstream>
 
 /**
  * The jnif namespace contains all type definitions, constants, enumerations
@@ -75,6 +76,63 @@ public:
 	 * the stack trace where this exception happened.
 	 */
 	String stackTrace;
+
+};
+
+/**
+ * This class contains static method to facilitate error handling mechanism.
+ */
+class Error {
+public:
+
+//	template<typename ... TArgs>
+//	static void raise(const TArgs& ... args) __attribute__((noreturn));
+
+	template<typename ... TArgs>
+	static void raise(const TArgs& ... args) __attribute__((noreturn)) {
+		std::stringstream message;
+		_raise(message, args...);
+
+		std::stringstream stackTrace;
+		_backtrace(stackTrace);
+
+		throw JnifException(message.str(), stackTrace.str());
+	}
+
+	template<typename ... TArgs>
+	static inline void assert(bool cond, const TArgs& ... args) {
+		if (!cond) {
+			raise(args...);
+		}
+	}
+
+	template<typename T, typename ... TArgs>
+	static inline void assertEquals(const T& expected, const T& actual,
+			const TArgs& ... args) {
+		assert(expected == actual, "assertEqual failed: expected=", expected,
+				", actual=", actual, ", message: ", args...);
+	}
+
+	template<typename ... TArgs>
+	static inline void check(bool cond, const TArgs& ... args) {
+		if (!cond) {
+			raise(args...);
+		}
+	}
+
+private:
+
+	static void _backtrace(std::ostream& os);
+
+	static inline void _raise(std::ostream&) {
+	}
+
+	template<typename TArg, typename ... TArgs>
+	static inline void _raise(std::ostream& os, const TArg& arg,
+			const TArgs& ... args) {
+		os << arg;
+		_raise(os, args...);
+	}
 
 };
 
@@ -1632,6 +1690,8 @@ public:
 
 	void setVar(u4* lvindex, const Type& t);
 
+	void setVar2(u4 lvindex, const Type& t);
+
 	void setIntVar(u4 lvindex) {
 		setVar(&lvindex, Type::intType());
 	}
@@ -1660,9 +1720,16 @@ public:
 
 	void cleanTops();
 
+	void join(Frame& how, class IClassPath* classPath);
+
 	std::vector<Type> lva;
 	std::list<Type> stack;
 	bool valid;
+
+	friend bool operator ==(const Frame& lhs, const Frame& rhs) {
+		return lhs.lva == rhs.lva && lhs.stack == rhs.stack
+				&& lhs.valid == rhs.valid;
+	}
 
 private:
 

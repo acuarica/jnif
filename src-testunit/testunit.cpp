@@ -288,6 +288,113 @@ static void testNopAdderInstr() {
 	});
 }
 
+static void testJoinFrameObjectAndEmpty() {
+	UnitTestClassPath cp;
+
+	const Type& s = Type::objectType("TypeS");
+	const Type& t = Type::objectType("TypeT");
+
+	Frame lhs;
+	lhs.setVar2(0, s);
+	lhs.setVar2(1, t);
+
+	Frame rhs;
+	rhs.setVar2(0, s);
+
+	lhs.join(rhs, &cp);
+
+	Frame res;
+	res.lva.resize(2, Type::topType());
+	res.setVar2(0, s);
+
+	Error::assertEquals(res, lhs);
+}
+
+static void testJoinFrameException() {
+	UnitTestClassPath cp;
+
+	const Type& classType = Type::objectType("testunit/Class");
+	const Type& exType = Type::objectType("java/lang/Exception");
+
+	Frame lhs;
+	lhs.setVar2(0, Type::nullType());
+	lhs.setVar2(1, exType);
+
+	Frame rhs;
+	rhs.setVar2(0, classType);
+
+	lhs.join(rhs, &cp);
+
+	cerr << lhs;
+
+	Frame res;
+	res.lva.resize(2, Type::topType());
+	res.setVar2(0, classType);
+	//res.setVar2(1, Type::topType());
+
+
+	Error::assertEquals(res, lhs);
+}
+
+static void testJoinFrame() {
+	UnitTestClassPath cp;
+
+	ClassFile cf("testunit/Class");
+	Method* m = cf.addMethod("method", "()Ltestunit/Class;",
+			METHOD_PUBLIC | METHOD_STATIC);
+	auto cidx = cf.addUtf8("Code");
+	CodeAttr* code = new CodeAttr(cidx, &cf);
+	m->add(code);
+	InstList& instList = m->codeAttr()->instList;
+
+	auto idx = cf.addClass("testunit/Class");
+	auto exidx = cf.addClass("java/lang/Exception");
+	auto initidx = cf.addMethodRef(idx, "<init>", "()V");
+
+	auto l = instList.createLabel();
+
+	auto tryLabel = instList.createLabel();
+	tryLabel->isTryStart = true;
+
+	auto endLabel = instList.createLabel();
+	endLabel->isTryEnd = true;
+
+	auto handlerLabel = instList.createLabel();
+	handlerLabel->isCatchHandler = true;
+
+	instList.addLabel(tryLabel);
+	instList.addType(OPCODE_new, idx);
+	instList.addZero(OPCODE_dup);
+	instList.addInvoke(OPCODE_invokespecial, initidx);
+	instList.addZero(OPCODE_astore_0);
+	instList.addLabel(endLabel);
+	instList.addJump(OPCODE_goto, l);
+	instList.addLabel(handlerLabel);
+	instList.addZero(OPCODE_astore_1);
+	instList.addZero(OPCODE_aconst_null);
+	instList.addZero(OPCODE_astore_0);
+	instList.addLabel(l);
+	instList.addZero(OPCODE_aload_0);
+	instList.addZero(OPCODE_areturn);
+
+	CodeExceptionEntry ex;
+	ex.startpc = tryLabel;
+	ex.endpc = endLabel;
+	ex.handlerpc = handlerLabel;
+	ex.catchtype = exidx;
+	code->exceptions.push_back(ex);
+
+	cf.computeFrames(&cp);
+	cerr << cf;
+
+//	u1* data;
+//	int len;
+//	cf.write(&data, &len, [&](u4 size) {return new u1[size];});
+//	ClassFile cf2(data, len);
+//	cf2.computeFrames(&cp);
+//	cerr << cf2;
+}
+
 static int visitFile(const char* filePath, const struct stat*, int) {
 
 	auto isSuffix = [&](const string& suffix, const string& text) {
@@ -348,6 +455,12 @@ int main(int argc, const char* argv[]) {
 
 		cerr << " [OK]" << endl;
 	};
+
+	run(&testJoinFrameObjectAndEmpty, "testFrame");
+	run(&testJoinFrameException, "testJoinFrameException");
+	run(&testJoinFrame, "testJoinFrame");
+
+	return 0;
 
 	vector<TestEntry> testEntries = { ENTRY(testPrinterModel),
 	ENTRY(testParser), ENTRY(testPrinterParser),

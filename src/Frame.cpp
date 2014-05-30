@@ -109,6 +109,10 @@ void Frame::setVar(u4* lvindex, const Type& t) {
 	}
 }
 
+void Frame::setVar2(u4 lvindex, const Type& t) {
+	setVar(&lvindex, t);
+}
+
 void Frame::setRefVar(u4 lvindex, const Type& type) {
 	Error::check(type.isObject() || type.isNull(), "Type must be object type: ",
 			type);
