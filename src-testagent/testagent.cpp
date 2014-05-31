@@ -62,8 +62,8 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args2);
 		auto end = gettime();
 
-		tldget()->prof(args.runId, args.appName, args2->instrName, className,
-				(end - start));
+//		tldget()->prof(args.runId, args.appName, args2->instrName, className,
+//				(end - start));
 
 	} catch (const JnifException& ex) {
 		//cerr << "Error: JNIF Exception: " << ex.message << " @ " << endl;
@@ -120,14 +120,14 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 
 static void JNICALL ClassLoadEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
 		jclass klass) {
-	char* classsig;
-	FrGetClassSignature(jvmti, klass, &classsig, NULL);
+	//char* classsig;
+	//FrGetClassSignature(jvmti, klass, &classsig, NULL);
 
-	_TLOG("CLASSLOAD:%s", classsig);
+	//_TLOG("CLASSLOAD:%s", classsig);
 
-	FrDeallocate(jvmti, classsig);
+	//FrDeallocate(jvmti, classsig);
 
-	StampClass(jvmti, jni, klass);
+	//StampClass(jvmti, jni, klass);
 }
 
 /**
@@ -139,7 +139,7 @@ static void JNICALL ClassPrepareEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 
 	FrGetClassSignature(jvmti, klass, &classsig, NULL);
 
-	_TLOG("CLASSPREPARE:%s", classsig);
+	//_TLOG("CLASSPREPARE:%s", classsig);
 
 	if (FrIsProxyClassSignature(classsig)) {
 		FrSetInstrHandlerNatives(jvmti, jni, klass);
@@ -147,7 +147,7 @@ static void JNICALL ClassPrepareEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 
 	FrDeallocate(jvmti, classsig);
 
-	StampClass(jvmti, jni, klass);
+	//StampClass(jvmti, jni, klass);
 }
 
 extern signed char frproxy_FrInstrProxy_class[];
@@ -223,14 +223,14 @@ static void JNICALL ThreadStartEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jthread thread) {
 	StampThread(jvmti, thread);
 
-	_TLOG("Thread start: Thread id: %d, tag: %ld", tldget()->threadId,
-			tldget()->threadTag);
+	//_TLOG("Thread start: Thread id: %d, tag: %ld", tldget()->threadId,
+	//	tldget()->threadTag);
 }
 
 static void JNICALL ThreadEndEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jthread thread) {
-	_TLOG("Thread end: Thread id: %d, tag: %ld", tldget()->threadId,
-			tldget()->threadTag);
+	//_TLOG("Thread end: Thread id: %d, tag: %ld", tldget()->threadId,
+	//	tldget()->threadTag);
 }
 
 static void JNICALL VMDeathEvent(jvmtiEnv* jvmti, JNIEnv* jni) {
@@ -410,8 +410,8 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
 	endTime = gettime();
 
-	tldget()->prof(args.runId, args.appName, instrFuncEntry.name, "@total",
-			(endTime - startTime));
+//	tldget()->prof(args.runId, args.appName, instrFuncEntry.name, "@total",
+//			(endTime - startTime));
 
 	_TLOG("Agent unloaded");
 
