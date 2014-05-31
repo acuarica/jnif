@@ -62,8 +62,8 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args2);
 		auto end = gettime();
 
-//		tldget()->prof(args.runId, args.appName, args2->instrName, className,
-//				(end - start));
+		tldget()->prof(args.runId, args.appName, args2->instrName, className,
+				(end - start));
 
 	} catch (const JnifException& ex) {
 		//cerr << "Error: JNIF Exception: " << ex.message << " @ " << endl;
@@ -410,8 +410,8 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
 	endTime = gettime();
 
-//	tldget()->prof(args.runId, args.appName, instrFuncEntry.name, "@total",
-//			(endTime - startTime));
+	tldget()->prof(args.runId, args.appName, instrFuncEntry.name, "@total",
+			(endTime - startTime));
 
 	_TLOG("Agent unloaded");
 
