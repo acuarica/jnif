@@ -1,7 +1,11 @@
+/*
+ * printer.cpp
+ *
+ *  Created on: Apr 4, 2014
+ *      Author: luigi
+ */
 #include "jnif.hpp"
-#include "jnifex.hpp"
 
-#include <ostream>
 #include <iomanip>
 
 using namespace std;
@@ -74,7 +78,7 @@ std::ostream& operator<<(std::ostream& os, const ConstTag& tag) {
 	return os << ConstNames[tag];
 }
 
-std::ostream& operator<<(std::ostream& os, Inst& inst) {
+std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 	Error::assert(&inst != nullptr, "Invalid reference for inst");
 
 	int offset = inst._offset;
@@ -194,7 +198,7 @@ std::ostream& operator<<(std::ostream& os, Inst& inst) {
 	return os;
 }
 
-std::ostream& operator<<(std::ostream& os, InstList& instList) {
+std::ostream& operator<<(std::ostream& os, const InstList& instList) {
 	for (Inst* inst : instList) {
 		os << *inst << endl;
 	}
@@ -695,6 +699,36 @@ ostream& operator<<(ostream& os, const Version& version) {
 ostream& operator<<(ostream& os, ClassFile& cf) {
 	ClassPrinter cp(cf, os, 0);
 	cp.print();
+
+	return os;
+}
+
+std::ostream& operator<<(std::ostream& os, BasicBlock& bb) {
+	os << "* " << bb.name;
+
+	os << " @Out { ";
+	for (BasicBlock* bbt : bb) {
+		os << "->" << bbt->name << ", ";
+	}
+	os << "} ";
+
+	os << "in frame: " << bb.in << ", out frame: " << bb.out;
+	os << endl;
+
+	for (auto it = bb.start; it != bb.exit; ++it) {
+		Inst* inst = *it;
+		os << *inst << endl;
+	}
+
+	return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const ControlFlowGraph& cfg) {
+	for (BasicBlock* bb : cfg) {
+		os << *bb;
+	}
+
+	os << endl;
 
 	return os;
 }

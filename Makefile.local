@@ -1,6 +1,0 @@
-
-# Mac OS X
-JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home
-
-# Linux
-#JAVA_HOME=/usr/lib/jvm/java-6-openjdk-amd64

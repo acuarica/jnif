@@ -5,7 +5,6 @@
  *      Author: luigi
  */
 #include "jnif.hpp"
-#include "jnifex.hpp"
 
 #include <iostream>
 
