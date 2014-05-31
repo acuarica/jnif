@@ -1,10 +1,11 @@
 
+JAVA=java
+JAVAC=javac -g:none
+
 ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
-JAVA=java
-JAVAC=javac -g:none
 #JVMARGS=-Xverify:all -Xprof -Xdiag -Xcheck:jni -Xfuture -XX:+PrintCompilation -verbose:class1 -verbose:gc -verbose:jni
 #JVMARGS=-Xverify:all
 #-Xcheck:jni -verbose:jni
