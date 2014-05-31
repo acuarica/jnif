@@ -85,19 +85,19 @@ public:
 class Error {
 public:
 
-//	template<typename ... TArgs>
-//	static void raise(const TArgs& ... args) __attribute__((noreturn));
-
 	template<typename ... TArgs>
-	static void raise(const TArgs& ... args) __attribute__((noreturn)) {
-		std::stringstream message;
-		_raise(message, args...);
+	static void raise(const TArgs& ... args) __attribute__((noreturn));
 
-		std::stringstream stackTrace;
-		_backtrace(stackTrace);
-
-		throw JnifException(message.str(), stackTrace.str());
-	}
+//	template<typename ... TArgs>
+//	static void raise(const TArgs& ... args) __attribute__((noreturn)) {
+//		std::stringstream message;
+//		_raise(message, args...);
+//
+//		std::stringstream stackTrace;
+//		_backtrace(stackTrace);
+//
+//		throw JnifException(message.str(), stackTrace.str());
+//	}
 
 	template<typename ... TArgs>
 	static inline void assert(bool cond, const TArgs& ... args) {
@@ -135,6 +135,17 @@ private:
 	}
 
 };
+
+template<typename ... TArgs>
+void Error::raise(const TArgs& ... args) {
+	std::stringstream message;
+	_raise(message, args...);
+
+	std::stringstream stackTrace;
+	_backtrace(stackTrace);
+
+	throw JnifException(message.str(), stackTrace.str());
+}
 
 /**
  * Constant pool enum used to distinguish between different kinds of elements
