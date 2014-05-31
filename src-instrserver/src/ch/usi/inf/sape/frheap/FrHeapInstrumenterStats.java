@@ -1,13 +1,8 @@
 package ch.usi.inf.sape.frheap;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -21,19 +16,9 @@ import org.objectweb.asm.Opcodes;
  * @author luigi
  * 
  */
-public class FrHeapInstrument {
+public class FrHeapInstrumenterStats extends FrHeapInstrumenter {
 
-	private final static Logger logger = Logger
-			.getLogger(FrHeapInstrument.class);
-
-	private final FrHeapInstrumentConfig _config;
-
-	public FrHeapInstrument(FrHeapInstrumentConfig config) {
-		_config = config;
-	}
-
-	public static Map<String, Object> classes = new HashMap<String, Object>();
-
+	@Override
 	public byte[] instrumentClass(InputStream classBytes, String className)
 			throws IOException {
 
@@ -50,30 +35,6 @@ public class FrHeapInstrument {
 		return instrClassBytes;
 	}
 
-	public void dumpInstrumentedClassFile(byte[] instrClassBytes,
-			String className) {
-		String fileName = _config.dumpInstrDir + "/"
-				+ className.replace('.', '/') + ".class";
-
-		String dir = new File(fileName).getParent();
-
-		new File(dir).mkdirs();
-
-		try {
-			FileOutputStream output = new FileOutputStream(fileName);
-			output.write(instrClassBytes);
-			output.close();
-		} catch (IOException e) {
-			logger.warn("Unable to write instrumented class file in "
-					+ fileName, e);
-		}
-	}
-
-	/**
-	 * 
-	 * @author luigi
-	 * 
-	 */
 	private class ClassTransformer extends ClassVisitor {
 
 		private String _className;
@@ -131,7 +92,7 @@ public class FrHeapInstrument {
 			// Loads this object
 			mv.visitVarInsn(Opcodes.ALOAD, 0);
 
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 					"alloc", "(Ljava/lang/Object;)V");
 		}
 	}
@@ -167,7 +128,7 @@ public class FrHeapInstrument {
 				mv.visitLdcInsn(operand);
 				// STACK: ... | arrayref | count | arrayref | atype
 
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 						"newArrayEvent", "(ILjava/lang/Object;I)V");
 				// STACK: ... | arrayref
 
@@ -196,7 +157,7 @@ public class FrHeapInstrument {
 				mv.visitLdcInsn(type);
 				// STACK: ... | arrayref | count | arrayref | type
 
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 						"aNewArrayEvent",
 						"(ILjava/lang/Object;Ljava/lang/String;)V");
 				// STACK: ... | arrayref
@@ -235,7 +196,7 @@ public class FrHeapInstrument {
 				mv.visitLdcInsn(desc);
 				// STACK: ... | arrayref | count1 | arrayref | desc
 
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 						"multiANewArray1Event",
 						"(ILjava/lang/Object;Ljava/lang/String;)V");
 				// STACK: ... | arrayref
@@ -249,7 +210,7 @@ public class FrHeapInstrument {
 				mv.visitLdcInsn(desc);
 				// STACK: ... | arrayref | count1 | count2 | arrayref | desc
 
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 						"multiANewArray2Event",
 						"(IILjava/lang/Object;Ljava/lang/String;)V");
 
@@ -267,7 +228,7 @@ public class FrHeapInstrument {
 				mv.visitLdcInsn(desc);
 				// STACK: ... | arrayref | arrayref | dims | desc
 
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 						"multiANewArrayNEvent",
 						"(Ljava/lang/Object;ILjava/lang/String;)V");
 				// STACK: ... | arrayref
@@ -297,7 +258,7 @@ public class FrHeapInstrument {
 				mv.visitLdcInsn(name);
 				// STACK: ... | objectref | value | name
 
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 						"putFieldEvent",
 						"(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)V");
 				// STACK: ...
@@ -320,7 +281,7 @@ public class FrHeapInstrument {
 				mv.visitLdcInsn(name);
 				// STACK: ... | value | owner | name
 
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 						"putStaticEvent",
 						"(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)V");
 				// STACK: ...
@@ -363,7 +324,7 @@ public class FrHeapInstrument {
 				mv.visitInsn(opcode); // aastore
 				// STACK: ... | index | value | arrayref
 
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 						"aastoreEvent",
 						"(ILjava/lang/Object;Ljava/lang/Object;)V");
 
@@ -389,7 +350,7 @@ public class FrHeapInstrument {
 		// @Override
 		public void visitCode32() {
 			mv.visitCode();
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 					"enterMainMethod", "()V");
 		}
 
@@ -397,7 +358,7 @@ public class FrHeapInstrument {
 		public void visitInsn32(int opcode) {
 			if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)
 					|| opcode == Opcodes.ATHROW) {
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass,
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 						"exitMainMethod", "()V");
 			}
 

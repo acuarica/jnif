@@ -5,8 +5,7 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import ch.usi.inf.sape.frheap.FrHeapInstrument;
-import ch.usi.inf.sape.frheap.FrHeapInstrumentConfig;
+import ch.usi.inf.sape.frheap.FrHeapInstrumenter;
 
 public class FrHeapInstrumentWorker extends Thread {
 
@@ -15,12 +14,12 @@ public class FrHeapInstrumentWorker extends Thread {
 
 	private FrHeapInstrumentSocket _socket;
 
-	private FrHeapInstrumentConfig _config;
+	private FrHeapInstrumenter _instr;
 
 	public FrHeapInstrumentWorker(FrHeapInstrumentSocket socket,
-			FrHeapInstrumentConfig config) {
+			FrHeapInstrumenter instr) {
 		_socket = socket;
-		_config = config;
+		_instr = instr;
 	}
 
 	public void run() {
@@ -35,11 +34,6 @@ public class FrHeapInstrumentWorker extends Thread {
 					logger.debug(String.format("End of stream. Worker done."));
 					return;
 				}
-
-				// logger.trace(String.format(
-				// "Message received: %s [%d], class bytes len: %d",
-				// new String(request.className),
-				// request.className.length, request.classBytes.length));
 
 				if (request.className.length == 0
 						&& request.classBytes.length == 0) {
@@ -59,11 +53,6 @@ public class FrHeapInstrumentWorker extends Thread {
 				response.classBytes = instrClass;
 
 				_socket.write(response);
-
-				// logger.trace(String.format(
-				// "Message sent: %s [%d], class len: %d", new String(
-				// response.className), response.className.length,
-				// response.classBytes.length));
 			}
 
 			logger.debug(String.format("Worker done"));
@@ -78,10 +67,8 @@ public class FrHeapInstrumentWorker extends Thread {
 			throws IOException {
 		try {
 			ByteArrayInputStream bis = new ByteArrayInputStream(classBytes);
-			FrHeapInstrument instr = new FrHeapInstrument(_config);
-			return instr.instrumentClass(bis, className);
+			return _instr.instrumentClass(bis, className);
 		} catch (RuntimeException ex) {
-			//logger.warn("RuntimeException probably caused by JSR/RET instruction");
 			return classBytes;
 		}
 	}

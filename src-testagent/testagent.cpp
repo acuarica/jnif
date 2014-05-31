@@ -58,9 +58,9 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		InstrArgs* args2) {
 	try {
 
-		auto start = gettime();
+		double start = gettime();
 		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args2);
-		auto end = gettime();
+		double end = gettime();
 
 		tldget()->prof(args.runId, args.appName, args2->instrName, className,
 				(end - start));
@@ -221,7 +221,7 @@ static void JNICALL GarbageCollectionFinishEvent(jvmtiEnv *jvmti) {
 
 static void JNICALL ThreadStartEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jthread thread) {
-	StampThread(jvmti, thread);
+	//StampThread(jvmti, thread);
 
 	//_TLOG("Thread start: Thread id: %d, tag: %ld", tldget()->threadId,
 	//	tldget()->threadTag);

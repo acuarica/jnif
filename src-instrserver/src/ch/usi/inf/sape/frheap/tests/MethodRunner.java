@@ -11,7 +11,7 @@ import org.apache.log4j.Logger;
 
 import com.cedarsoftware.util.DeepEquals;
 
-import ch.usi.inf.sape.frheap.FrHeapInstrument;
+import ch.usi.inf.sape.frheap.FrHeapInstrumenterStats;
 import ch.usi.inf.sape.frheap.FrHeapInstrumentConfig;
 
 public class MethodRunner {
@@ -27,8 +27,10 @@ public class MethodRunner {
 		}
 	}
 
-	private static Class<?> instrument(Class<?> uninstrumentedKlass) throws IOException, NoSuchMethodException,
-			SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	private static Class<?> instrument(Class<?> uninstrumentedKlass)
+			throws IOException, NoSuchMethodException, SecurityException,
+			IllegalAccessException, IllegalArgumentException,
+			InvocationTargetException {
 
 		logger.debug("Running uninstrumented class " + uninstrumentedKlass);
 
@@ -37,18 +39,23 @@ public class MethodRunner {
 
 		logger.debug("Getting resource " + classFileName);
 
-		InputStream is = ClassInstrumenterFieldTests.class.getClassLoader().getResourceAsStream(classFileName);
+		InputStream is = ClassInstrumenterFieldTests.class.getClassLoader()
+				.getResourceAsStream(classFileName);
 
 		Assert.assertNotNull(is);
 
 		FrHeapInstrumentConfig config = new FrHeapInstrumentConfig(PROXY_CLASS);
+		FrHeapInstrumenterStats instr = new FrHeapInstrumenterStats();
+		instr.config = config;
 
-		byte[] instrumentedClassBytes = new FrHeapInstrument(config).instrumentClass(is, className);
+		byte[] instrumentedClassBytes = instr.instrumentClass(is, className);
 
-		return new TestClassLoader().loadFromBytes(uninstrumentedKlass.getName(), instrumentedClassBytes);
+		return new TestClassLoader().loadFromBytes(
+				uninstrumentedKlass.getName(), instrumentedClassBytes);
 	}
 
-	private static Object exec(Class<?> klass, String methodName) throws Throwable {
+	private static Object exec(Class<?> klass, String methodName)
+			throws Throwable {
 		Method method = klass.getMethod(methodName);
 		Object instance = klass.newInstance();
 
@@ -65,7 +72,8 @@ public class MethodRunner {
 		return bc.getMap();
 	}
 
-	public static void run(Class<?> uninstrumentedClass, String methodName) throws Throwable {
+	public static void run(Class<?> uninstrumentedClass, String methodName)
+			throws Throwable {
 		Object expected = exec(uninstrumentedClass, methodName);
 
 		Class<?> instrumentedClass = instrument(uninstrumentedClass);
