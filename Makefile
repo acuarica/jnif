@@ -214,6 +214,16 @@ $(DACAPO_LOG):
 $(DACAPO_SCRATCH):
 	mkdir -p $@
 
+
+SCALA_LOG=$(BUILD)/run/scala/log/$(INSTR).$(BENCH)
+SCALA_PROF=$(BUILD)/eval-scala-$(RUN)-$(BENCH).$(INSTR)
+
+scala: $(TESTAGENT) $(INSTRSERVER) | $(SCALA_LOG)
+	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):$(BENCH):$(SCALA_PROF):$(SCALA_LOG)/:$(RUN) -jar jars/scala-benchmark-suite-0.1.0-20120216.103539-3.jar $(BENCH)
+
+$(SCALA_LOG):
+	mkdir -p $@
+
 #
 # eval
 #
@@ -221,7 +231,7 @@ eval:
 	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(TIMES)),\
 		$(foreach i,$(INSTRS),\
 			$(foreach b,$(BENCHS),\
-				&& $(MAKE) dacapo RUN=$(r) INSTR=$(i) BENCH=$(b) \
+				&& $(MAKE) dacapo RUN=$(r) INSTR=$(i) BENCH=$(b) && sleep 1 \
 			)\
 		)\
 	)
