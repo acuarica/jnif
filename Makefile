@@ -3,6 +3,12 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
+JAVA=java
+JAVAC=javac -g:none
+#JVMARGS=-Xverify:all -Xprof -Xdiag -Xcheck:jni -Xfuture -XX:+PrintCompilation -verbose:class1 -verbose:gc -verbose:jni
+#JVMARGS=-Xverify:all
+#-Xcheck:jni -verbose:jni
+
 UNAME := $(shell uname)
 
 ifeq ($(UNAME), Linux)
@@ -227,15 +233,16 @@ $(SCALA_LOG):
 #
 # eval
 #
+				#&& $(MAKE) dacapo RUN=$(r) INSTR=$(i) BENCH=$(b) && sleep 1 \ 
 eval:
 	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(TIMES)),\
 		$(foreach i,$(INSTRS),\
 			$(foreach b,$(BENCHS),\
-				&& $(MAKE) dacapo RUN=$(r) INSTR=$(i) BENCH=$(b) && sleep 1 \
+				&& $(JAVA) $(JVMARGS) -jar jars/dacapo-9.12-bach.jar $(b) \
 			)\
 		)\
 	)
-	cat $(BUILD)/eval-*.prof > $(BUILD)/eval.prof
+	#cat $(BUILD)/eval-*.prof > $(BUILD)/eval.prof
 
 eval-compute: 
 	$(MAKE) eval TIMES=1 INSTRS=Compute
