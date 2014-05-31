@@ -1863,9 +1863,6 @@ public:
 	Inst* prev;
 	Inst* next;
 
-	/**
-	 *
-	 */
 	class LabelInst* label() {
 		return cast<LabelInst>(isLabel(), "label");
 	}
@@ -1926,6 +1923,66 @@ public:
 		return cast<MultiArrayInst>(isMultiArray(), "multiarray");
 	}
 
+	class LabelInst* label() const {
+		return cast<LabelInst>(isLabel(), "label");
+	}
+
+	class PushInst* push() const {
+		return cast<PushInst>(isPush(), "push");
+	}
+
+	class LdcInst* ldc() const {
+		return cast<LdcInst>(isLdc(), "ldc");
+	}
+
+	class VarInst* var() const {
+		return cast<VarInst>(isVar(), "var");
+	}
+
+	class IincInst* iinc() const {
+		return cast<IincInst>(isIinc(), "iinc");
+	}
+
+	class InvokeInst* invoke() const {
+		return cast<InvokeInst>(isInvoke(), "invoke");
+	}
+
+	class JumpInst* jump() const {
+		return cast<JumpInst>(isJump(), "jump");
+	}
+
+	class TableSwitchInst* ts() const {
+		return cast<TableSwitchInst>(isTableSwitch(), "ts");
+	}
+
+	class LookupSwitchInst* ls() const {
+		return cast<LookupSwitchInst>(isLookupSwitch(), "ls");
+	}
+
+	class InvokeInterfaceInst* invokeinterface() const {
+		return cast<InvokeInterfaceInst>(isInvokeInterface(), "invinter");
+	}
+
+	class TypeInst* type() const {
+		return cast<TypeInst>(isType(), "type");
+	}
+
+	class NewArrayInst* newarray() const {
+		return cast<NewArrayInst>(isNewArray(), "newarray");
+	}
+
+	class WideInst* wide() const {
+		return cast<WideInst>(isWide(), "wide");
+	}
+
+	class FieldInst* field() const {
+		return cast<FieldInst>(isField(), "field");
+	}
+
+	class MultiArrayInst* multiarray() const {
+		return cast<MultiArrayInst>(isMultiArray(), "multiarray");
+	}
+
 private:
 
 	Inst() :
@@ -1941,6 +1998,12 @@ private:
 
 	template<typename TKind>
 	TKind* cast(bool cond, const char* kindName) {
+		checkCast(cond, kindName);
+		return (TKind*) this;
+	}
+
+	template<typename TKind>
+	TKind* cast(bool cond, const char* kindName) const {
 		checkCast(cond, kindName);
 		return (TKind*) this;
 	}
@@ -3077,6 +3140,14 @@ public:
 };
 
 /**
+ * The magic number signature that must appear at the beginning of each
+ * class file.
+ */
+enum Magic {
+	CLASSFILE_MAGIC = 0xcafebabe
+};
+
+/**
  * Models a Java Class File following the specification of the JVM version 7.
  */
 class ClassFile: public ConstPool, public Attrs {
@@ -3295,8 +3366,8 @@ std::ostream& operator<<(std::ostream& os, const JnifException& ex);
 std::ostream& operator<<(std::ostream& os, const ConstTag& tag);
 std::ostream& operator<<(std::ostream& os, const Frame& frame);
 std::ostream& operator<<(std::ostream& os, const Type& type);
-std::ostream& operator<<(std::ostream& os, Inst& inst);
-std::ostream& operator<<(std::ostream& os, InstList& instList);
+std::ostream& operator<<(std::ostream& os, const Inst& inst);
+std::ostream& operator<<(std::ostream& os, const InstList& instList);
 std::ostream& operator<<(std::ostream& os, BasicBlock& bb);
 std::ostream& operator<<(std::ostream& os, const ControlFlowGraph& cfg);
 std::ostream& operator<<(std::ostream& os, const Version& version);

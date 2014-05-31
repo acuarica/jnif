@@ -1,14 +1,11 @@
 
 JAVA=java
-JAVAC=javac -g:none
+JAVAC=javac
+JAR=jar
 
 ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
-
-#JVMARGS=-Xverify:all -Xprof -Xdiag -Xcheck:jni -Xfuture -XX:+PrintCompilation -verbose:class1 -verbose:gc -verbose:jni
-#JVMARGS=-Xverify:all
-#-Xcheck:jni -verbose:jni
 
 UNAME := $(shell uname)
 
@@ -20,7 +17,6 @@ ifeq ($(UNAME), Darwin)
 endif
 
 BUILD=build
-
 
 RUN=0
 INSTR=Compute
@@ -111,7 +107,7 @@ TESTAPP_SRCS=$(wildcard $(TESTAPP_SRC)/*/*.java)
 TESTAPP_OBJS=$(TESTAPP_SRCS:$(TESTAPP_SRC)/%.java=$(TESTAPP_BUILD)/%.class)
 
 $(TESTAPP): $(TESTAPP_SRC)/MANIFEST.MF $(TESTAPP_OBJS)
-	jar cfm $@ $< -C $(TESTAPP_BUILD) .
+	$(JAR) cfm $@ $< -C $(TESTAPP_BUILD) .
 
 $(TESTAPP_BUILD)/%.class: $(TESTAPP_SRC)/%.java | $(TESTAPP_BUILD)
 	$(JAVAC) -sourcepath $(TESTAPP_SRC) -d $(TESTAPP_BUILD) $<
@@ -130,7 +126,7 @@ INSTRSERVER_OBJS=$(INSTRSERVER_BUILD)/log4j.properties $(INSTRSERVER_SRCS:$(INST
 INSTRSERVER_CP=$(subst $(_EMPTY) $(_EMPTY),:,$(wildcard $(INSTRSERVER_SRC)/lib/*.jar))
 
 $(INSTRSERVER): $(INSTRSERVER_SRC)/MANIFEST.MF $(INSTRSERVER_OBJS)
-	jar cfm $@ $< -C $(INSTRSERVER_BUILD) .
+	$(JAR) cfm $@ $< -C $(INSTRSERVER_BUILD) .
 
 $(INSTRSERVER_BUILD)/%.class: $(INSTRSERVER_SRC)/src/%.java | $(INSTRSERVER_BUILD)
 	$(JAVAC) -classpath $(INSTRSERVER_CP) -sourcepath $(INSTRSERVER_SRC)/src -d $(INSTRSERVER_BUILD) $<
@@ -178,8 +174,12 @@ stop:
 	kill `jps -mlv | grep build/instrserver.jar | cut -f 1 -d' '`
 	sleep 1
 
-#-IPID=`cat $(INSTRSERVER).pid 2> /dev/null` && kill $$IPID
-#rm -f $(INSTRSERVER).pid
+#
+# Rules to run a jar
+#
+runjar: JARAPP?=$(error JARAPP must be set to a valid jar but is not defined)
+runjar:
+	time $(JAVA) $(JVMARGS) -jar $(JARAPP)
 
 #
 # Rules to run $(TESTAPP)
