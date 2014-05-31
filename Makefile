@@ -18,18 +18,7 @@ endif
 
 BUILD=build
 
-RUN=0
-INSTR=Compute
-BENCH=avrora
-OLEVEL=O4
-
-TIMES=10
-INSTRS=Empty Identity Compute ClientServer   #Print ObjectInit NewArray ANewArray Main ClientServer
-BENCHS=avrora batik eclipse fop h2 jython luindex lusearch \
-       pmd sunflow tomcat xalan  #tradebeans tradesoap
-OLEVELS=O0 O3
-
-CXXFLAGS+=-fPIC -W -g -Wall -Wextra -$(OLEVEL) -std=c++11 -Wno-unused-parameter
+CXXFLAGS+=-fPIC -W -g -Wall -Wextra -o3 -std=c++11 -Wno-unused-parameter
 
 JARS=$(wildcard jars/*.jar)
 DIRS=$(JARS:%.jar=$(BUILD)/%)
@@ -160,26 +149,39 @@ $(BUILD)/jars:
 #
 # Rules to run $(INSTRSERVER)
 #
-#$(INSTRSERVER).pid: $(INSTRSERVER) $(TESTAPP)
-# & echo "$$!" > $(INSTRSERVER).pid
-#$(INSTRSERVER).pid
-
 start:
-	$(JAVA) -jar $(INSTRSERVER) &
+	$(JAVA) -jar $(INSTRSERVER) ch.usi.inf.sape.frheap.FrHeapInstrumenter$(INSTRSERVERCLASS) &
 	sleep 2
 
-#$(MAKE) stop
-
 stop:
-	kill `jps -mlv | grep build/instrserver.jar | cut -f 1 -d' '`
+	kill `jps -mlv | grep $(INSTRSERVER) | cut -f 1 -d' '`
 	sleep 1
 
 #
 # Rules to run a jar
 #
-runjar: JARAPP?=$(error JARAPP must be set to a valid jar but is not defined)
 runjar:
 	time $(JAVA) $(JVMARGS) -jar $(JARAPP)
+
+runagent: LOGDIR=$(BUILD)/run/$(APP)/log/$(INSTR).$(APP)
+runagent: PROF=$(BUILD)/eval-$(RUN)-$(APP).$(FUNC)
+runagent: JVMARGS+=-agentpath:$(TESTAGENT)=$(FUNC):$(APP):$(PROF):$(LOGDIR)/:$(RUN)
+runagent: logdir $(TESTAGENT) runjar
+
+logdir:
+	mkdir -p $(LOGDIR)
+
+runserver: INSTRSERVERCLASS=$(INSTR)
+runserver: FUNC=ClientServer
+runserver: $(INSTRSERVER) start runagent stop
+
+#ifeq ($(backend), asm)
+#	$(MAKE) start
+#	$(MAKE) runjar
+#endif
+#ifeq ($(backend), asm)
+#	$(MAKE) stop
+#endif
 
 #
 # Rules to run $(TESTAPP)
@@ -187,40 +189,50 @@ runjar:
 TESTAPP_LOG=$(BUILD)/run/testapp.$(INSTR).log
 TESTAPP_PROF=$(BUILD)/eval-testapp-$(RUN).$(INSTR)
 
-testapp: $(TESTAGENT) $(TESTAPP) $(INSTRSERVER) | $(TESTAPP_LOG)
-ifeq ($(INSTR), ClientServer)
-	$(MAKE) start
-endif
-	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):testapp:$(TESTAPP_PROF):$(TESTAPP_LOG)/:$(RUN) -jar $(TESTAPP)
-ifeq ($(INSTR), ClientServer)
-	$(MAKE) stop
-endif
+RUN=4
+INSTR=Compute
+FUNC=$(INSTR)
+BACKEND=runagent
 
-$(TESTAPP_LOG):
-	mkdir -p $@
+testapp: JARAPP=$(TESTAPP)
+testapp: APP=jnif-testapp
+testapp: $(TESTAPP)
+# | $(TESTAPP_LOG)
+testapp: $(BACKEND)
 
-#
-# Rules to run dacapo benchmarks
-#
-DACAPO_LOG=$(BUILD)/run/dacapo/log/$(INSTR).$(BENCH)
-DACAPO_PROF=$(BUILD)/eval-dacapo-$(RUN)-$(BENCH).$(INSTR)
+BENCH=avrora
+
 DACAPO_SCRATCH=$(BUILD)/run/dacapo/scratch/$(INSTR).$(BENCH)
 
-dacapo: $(TESTAGENT) $(INSTRSERVER) | $(DACAPO_LOG) $(DACAPO_SCRATCH)
-ifeq ($(INSTR), ClientServer)
-	$(MAKE) start
-endif
-	time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):$(BENCH):$(DACAPO_PROF):$(DACAPO_LOG)/:$(RUN) -jar jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)
-ifeq ($(INSTR), ClientServer)
-	$(MAKE) stop
-endif
-
-$(DACAPO_LOG):
-	mkdir -p $@
+dacapo: JARAPP=jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)
+dacapo: | $(DACAPO_SCRATCH)
+dacapo: $(BACKEND)
 
 $(DACAPO_SCRATCH):
 	mkdir -p $@
 
+#	$(MAKE) runjar AGENT=-agentpath:$(TESTAGENT)=$(INSTR):testapp:$(TESTAPP_PROF):$(TESTAPP_LOG)/:$(RUN) JARAPP=$(TESTAPP)
+#time $(JAVA) $(JVMARGS) -agentpath:$(TESTAGENT)=$(INSTR):testapp:$(TESTAPP_PROF):$(TESTAPP_LOG)/:$(RUN) -jar $(TESTAPP)
+
+#$(TESTAPP_LOG):
+#	mkdir -p $@
+
+#
+# Rules to run dacapo benchmarks
+#
+
+#DACAPO_LOG=$(BUILD)/run/dacapo/log/$(INSTR).$(BENCH)
+#DACAPO_PROF=$(BUILD)/eval-dacapo-$(RUN)-$(BENCH).$(INSTR)
+#DACAPO_SCRATCH=$(BUILD)/run/dacapo/scratch/$(INSTR).$(BENCH)
+
+#dacapo: $(TESTAGENT) $(INSTRSERVER) | $(DACAPO_LOG) $(DACAPO_SCRATCH)
+#	$(MAKE) runjar AGENT=-agentpath:$(TESTAGENT)=$(INSTR):$(BENCH):$(DACAPO_PROF):$(DACAPO_LOG)/:$(RUN) JARAPP="jars/dacapo-9.12-bach.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)"
+
+#$(DACAPO_LOG):
+#	mkdir -p $@
+
+#$(DACAPO_SCRATCH):
+#	mkdir -p $@
 
 SCALA_LOG=$(BUILD)/run/scala/log/$(INSTR).$(BENCH)
 SCALA_PROF=$(BUILD)/eval-scala-$(RUN)-$(BENCH).$(INSTR)
@@ -234,13 +246,21 @@ $(SCALA_LOG):
 #
 # eval
 #
-#&& $(JAVA) $(JVMARGS) -jar jars/dacapo-9.12-bach.jar $(b) \
-				 
+#runs=10
+
+#convs=Identity Compute   #Print ObjectInit NewArray ANewArray Main
+
+eval: times=1
+eval: backends=runagent runserver
+eval: instrs=Identity Compute
+eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan  #tradebeans tradesoap
 eval:
-	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(TIMES)),\
-		$(foreach i,$(INSTRS),\
-			$(foreach b,$(BENCHS),\
-				&& $(MAKE) dacapo RUN=$(r) INSTR=$(i) BENCH=$(b) \
+	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
+		$(foreach be,$(backends),\
+			$(foreach instr,$(instrs),\
+				$(foreach bench,$(benchs),\
+					&& $(MAKE) dacapo BACKEND=$(be) RUN=$(r) INSTR=$(instr) BENCH=$(bench) \
+				)\
 			)\
 		)\
 	)
