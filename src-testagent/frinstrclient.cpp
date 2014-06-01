@@ -75,17 +75,6 @@ static int _FrConnect() {
 	return sockfd;
 }
 
-static void _StartServer() {
-	fprintf(stderr, "asdfasdfasdf\n");
-	//int res =
-	system("java");
-
-	//fprintf(stderr, "res: %d\n", res);
-//	java -cp ${FR}/bin:${FRLIB}/log4j-1.2.17.jar:${FRLIB}/asm-debug-all-4.0.jar:$FR/resources:$JARS \
-//		ch.usi.inf.sape.frheap.server.FrHeapInstrumentServer > logs/server-output.log &
-
-}
-
 void InstrClassClientServer(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
 		JNIEnv* jni, InstrArgs* args) {

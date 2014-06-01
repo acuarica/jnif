@@ -668,11 +668,11 @@ InstList::~InstList() {
 void InstList::addInst(Inst* inst, Inst* pos) {
 	Error::assert((first == nullptr) == (last == nullptr),
 			"Invalid head/tail/size: head: ", first, ", tail: ", last,
-			", size: ", size);
+			", size: ", _size);
 
-	Error::assert((first == nullptr) == (size == 0),
+	Error::assert((first == nullptr) == (_size == 0),
 			"Invalid head/tail/size: head: ", first, ", tail: ", last,
-			", size: ", size);
+			", size: ", _size);
 
 	Inst* p;
 	Inst* n;
@@ -681,13 +681,13 @@ void InstList::addInst(Inst* inst, Inst* pos) {
 
 		p = nullptr;
 		n = nullptr;
-		first = inst;
-		last = inst;
+		//first = inst;
+		//last = inst;
 	} else {
 		if (pos == nullptr) {
 			p = last;
 			n = nullptr;
-			last = inst;
+			//last = inst;
 		} else {
 			p = pos->prev;
 			n = pos;
@@ -699,13 +699,17 @@ void InstList::addInst(Inst* inst, Inst* pos) {
 
 	if (inst->prev != nullptr) {
 		inst->prev->next = inst;
+	} else {
+		first = inst;
 	}
 
 	if (inst->next != nullptr) {
 		inst->next->prev = inst;
+	} else {
+		last = inst;
 	}
 
-	size++;
+	_size++;
 }
 
 void BasicBlock::addTarget(BasicBlock* target) {

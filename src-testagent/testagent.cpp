@@ -36,8 +36,6 @@ typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
 		JNIEnv* jni, InstrArgs* args);
 
-//ofstream prof;
-
 double gettime() {
 #ifdef __MACH__
 	host_name_port_t self = mach_host_self();
@@ -262,33 +260,26 @@ static void ParseOptions(const char* commandLineOptions) {
 	}
 
 	extern InstrFunc InstrClassEmpty;
-	extern InstrFunc InstrClassPrint;
 	extern InstrFunc InstrClassIdentity;
 	extern InstrFunc InstrClassCompute;
-	extern InstrFunc InstrClassObjectInit;
-	extern InstrFunc InstrClassNewArray;
-	extern InstrFunc InstrClassANewArray;
-	extern InstrFunc InstrClassMain;
-	extern InstrFunc InstrClassHeap;
+	extern InstrFunc InstrClassStats;
+	extern InstrFunc InstrClassPrint;
+	extern InstrFunc InstrClassDot;
 	extern InstrFunc InstrClassClientServer;
 
 	InstrFuncEntry instrFuncTable[] = {
 
 	{ &InstrClassEmpty, "Empty" },
 
-	{ &InstrClassPrint, "Print" },
-
 	{ &InstrClassIdentity, "Identity" },
 
 	{ &InstrClassCompute, "Compute" },
 
-	{ &InstrClassObjectInit, "ObjectInit" },
+	{ &InstrClassStats, "Stats" },
 
-	{ &InstrClassNewArray, "NewArray" },
+	{ &InstrClassPrint, "Print" },
 
-	{ &InstrClassANewArray, "ANewArray" },
-
-	{ &InstrClassMain, "Main" },
+	{ &InstrClassDot, "Dot" },
 
 	{ &InstrClassClientServer, "ClientServer" },
 
@@ -315,7 +306,6 @@ static void ParseOptions(const char* commandLineOptions) {
 void PrintProperties(jvmtiEnv* jvmti) {
 	jint count;
 	char** properties;
-	//jvmtiError error =
 	jvmti->GetSystemProperties(&count, &properties);
 
 	for (int i = 0; i < count; i++) {
@@ -400,8 +390,6 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 
 	FrSetInstrHandlerJvmtiEnv(jvmti);
 
-	//FrOpenTransactionLog();
-
 	return JNI_OK;
 }
 
@@ -411,6 +399,4 @@ JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
 	tldget()->prof(args.runId, "@total", endTime - startTime);
 
 	_TLOG("Agent unloaded");
-
-	//FrCloseTransactionLog();
 }

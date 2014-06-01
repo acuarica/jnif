@@ -114,8 +114,6 @@ DEFHANDLER(enterMethod) (JNIEnv* jni, jclass proxyClass, jstring className,
 		jstring methodName) {
 	_TLOG("ENTERMETHOD");
 
-//	fprintf(stderr, "we just enter a method!!!\n");
-
 	WITH(jni, className,
 			{ WITH(jni, methodName, {
 
@@ -133,45 +131,45 @@ DEFHANDLER(exitMainMethod) (JNIEnv* jni, jclass proxyClass) {
 	_TLOG("EXITMAIN");
 }
 
+static JNINativeMethod methods[] = {
+
+{ (char*) "alloc", (char*) "(Ljava/lang/Object;)V", (void *) &HANDLER(alloc) },
+
+		{ "newArrayEvent", "(ILjava/lang/Object;I)V", (void *) &HANDLER(
+				newArrayEvent) },
+
+		{ "aNewArrayEvent", "(ILjava/lang/Object;Ljava/lang/String;)V",
+				(void *) &HANDLER(aNewArrayEvent) },
+
+		{ "multiANewArray1Event", "(ILjava/lang/Object;Ljava/lang/String;)V",
+				(void*) &HANDLER(multiANewArray1Event) },
+
+		{ "multiANewArray2Event", "(IILjava/lang/Object;Ljava/lang/String;)V",
+				(void*) &HANDLER(multiANewArray2Event) },
+
+		{ "multiANewArrayNEvent", "(Ljava/lang/Object;ILjava/lang/String;)V",
+				(void*) &HANDLER(multiANewArrayNEvent) },
+
+		{ "putFieldEvent",
+				"(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)V",
+				(void*) &HANDLER(putFieldEvent) },
+
+		{ "putStaticEvent",
+				"(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)V",
+				(void*) &HANDLER(putStaticEvent) },
+
+		{ "aastoreEvent", "(ILjava/lang/Object;Ljava/lang/Object;)V",
+				(void*) &HANDLER(aastoreEvent) },
+
+		{ "enterMethod", "(Ljava/lang/String;Ljava/lang/String;)V",
+				(void*) &HANDLER(enterMethod) },
+
+		{ "enterMainMethod", "()V", (void*) &HANDLER(enterMainMethod) },
+
+		{ "exitMainMethod", "()V", (void*) &HANDLER(exitMainMethod) },
+
+};
 void FrSetInstrHandlerNatives(jvmtiEnv* jvmti, JNIEnv* jni, jclass proxyClass) {
-	static JNINativeMethod methods[] = {
-
-	{ "alloc", "(Ljava/lang/Object;)V", (void *) &HANDLER(alloc) },
-
-	{ "newArrayEvent", "(ILjava/lang/Object;I)V",
-			(void *) &HANDLER(newArrayEvent) },
-
-	{ "aNewArrayEvent", "(ILjava/lang/Object;Ljava/lang/String;)V",
-			(void *) &HANDLER(aNewArrayEvent) },
-
-	{ "multiANewArray1Event", "(ILjava/lang/Object;Ljava/lang/String;)V",
-			(void*) &HANDLER(multiANewArray1Event) },
-
-	{ "multiANewArray2Event", "(IILjava/lang/Object;Ljava/lang/String;)V",
-			(void*) &HANDLER(multiANewArray2Event) },
-
-	{ "multiANewArrayNEvent", "(Ljava/lang/Object;ILjava/lang/String;)V",
-			(void*) &HANDLER(multiANewArrayNEvent) },
-
-	{ "putFieldEvent",
-			"(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)V",
-			(void*) &HANDLER(putFieldEvent) },
-
-	{ "putStaticEvent",
-			"(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)V",
-			(void*) &HANDLER(putStaticEvent) },
-
-	{ "aastoreEvent", "(ILjava/lang/Object;Ljava/lang/Object;)V",
-			(void*) &HANDLER(aastoreEvent) },
-
-	{ "enterMethod", "(Ljava/lang/String;Ljava/lang/String;)V",
-			(void*) &HANDLER(enterMethod) },
-
-	{ "enterMainMethod", "()V", (void*) &HANDLER(enterMainMethod) },
-
-	{ "exitMainMethod", "()V", (void*) &HANDLER(exitMainMethod) },
-
-	};
 
 	jint res = jni->RegisterNatives(proxyClass, methods,
 			sizeof(methods) / sizeof(methods[0]));

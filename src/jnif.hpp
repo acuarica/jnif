@@ -2606,6 +2606,10 @@ public:
 		return jsrOrRet;
 	}
 
+	int size() const {
+		return _size;
+	}
+
 	Iterator begin() const {
 		return Iterator(first, last);
 	}
@@ -2619,7 +2623,7 @@ public:
 private:
 
 	InstList(ConstPool* constPool) :
-			constPool(constPool), first(nullptr), last(nullptr), size(0), nextLabelId(
+			constPool(constPool), first(nullptr), last(nullptr), _size(0), nextLabelId(
 					1), branchesCount(0), jsrOrRet(false) {
 	}
 
@@ -2630,7 +2634,7 @@ private:
 	Inst* first;
 	Inst* last;
 
-	int size;
+	int _size;
 
 	int nextLabelId;
 
@@ -3072,19 +3076,25 @@ public:
 
 	InstList& instList();
 
-//	void instList(const InstList& newcode) {
-//		for (Attr* attr : attrs) {
-//			if (attr->kind == ATTR_CODE) {
-//				((CodeAttr*) attr)->instList = newcode;
-//				return;
-//			}
-//		}
-//
-//		Error::raise("ERROR! setting inst list");
-//	}
+	bool isPublic() const {
+		return accessFlags & METHOD_PUBLIC;
+	}
 
 	bool isStatic() const {
 		return accessFlags & METHOD_STATIC;
+	}
+
+	bool isInit() const {
+		String name = constPool->getUtf8(nameIndex);
+		return hasCode() && name == "<init>";
+	}
+
+	bool isMain() const {
+		String name = constPool->getUtf8(nameIndex);
+		String desc = constPool->getUtf8(descIndex);
+
+		return hasCode() && name == "main" && isStatic() && isPublic()
+				&& desc == "([Ljava/lang/String;)V";
 	}
 
 private:

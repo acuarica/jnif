@@ -228,7 +228,7 @@ eval-scala:
 
 eval: times=1
 eval: backends=runagent runserver
-eval: instrs=Empty Identity Compute
+eval: instrs=Empty Identity Compute Stats
 eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan  #tradebeans tradesoap
 eval:
 	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
