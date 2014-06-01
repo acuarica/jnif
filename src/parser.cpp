@@ -975,7 +975,7 @@ private:
 //				label = new Inst(KIND_LABEL);
 //			}
 
-			Error::check(labelManager.hasLabel(toff), "invalid toff for label");
+			//Error::check(labelManager.hasLabel(toff), "invalid toff for label");
 
 			LabelInst* label = labelManager.createLabel(toff);
 
