@@ -185,36 +185,7 @@ static string outFileName(const char* className, const char* ext,
 	return path.str();
 }
 
-void InstrClassEmpty(jvmtiEnv*, u1* data, int len, const char* className, int*,
-		u1**, JNIEnv*, InstrArgs*) {
-}
-
-void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
-		u1**, JNIEnv*, InstrArgs* args) {
-	ClassFile cf(data, len);
-
-//	classHierarchy.addClass(cf);
-
-	ofstream os(outFileName(className, "disasm").c_str());
-	os << cf;
-
-//	ofstream os(outFileName(className, "class").c_str(), ios::binary);
-//	os.write((char*) data, len);
-}
-
 extern int inLivePhase;
-
-void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
-		const char* className, int* newlen, u1** newdata, JNIEnv*,
-		InstrArgs* args) {
-	ClassFile cf(data, len);
-
-//	ofstream os(outFileName(className, "disasm").c_str());
-//	os << cf;
-
-	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
-}
-
 std::mutex _mutex;
 
 class LoadClassEvent {
@@ -241,319 +212,206 @@ public:
 private:
 };
 
+void InstrClassEmpty(jvmtiEnv*, u1* data, int len, const char* className, int*,
+		u1**, JNIEnv*, InstrArgs*) {
+}
+
+void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
+		const char* className, int* newlen, u1** newdata, JNIEnv*,
+		InstrArgs* args) {
+	ClassFile cf(data, len);
+	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+}
+
+bool isPrefix(const string& prefix, const string& text) {
+	auto res = std::mismatch(prefix.begin(), prefix.end(), text.begin());
+	return res.first == prefix.end();
+}
+
+bool skipCompute(const char* className) {
+	if (!inLivePhase) {
+		return true;
+	}
+
+	if (isPrefix("java", className) || isPrefix("sun", className)) {
+		return true;
+	}
+
+	return false;
+}
+
 void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args) {
-
 	LoadClassEvent m;
 
 	ClassFile cf(data, len);
 	classHierarchy.addClass(cf);
 
-	//if (args->loader == NULL)
-	if (!inLivePhase) {
-		return;
-	}
-
-	auto isPrefix = [&](const string& prefix, const string& text) {
-		auto res = std::mismatch(prefix.begin(), prefix.end(), text.begin());
-		return res.first == prefix.end();
-	};
-
-	if (isPrefix("java", className) || isPrefix("sun", className)) {
-		//_TLOG("Skipping compute on class: %s", className);
+	if (skipCompute(className)) {
 		return;
 	}
 
 	ClassPath cp(jni, args->loader);
 	cf.computeFrames(&cp);
 
-//	ofstream os(outFileName(className, "compute.disasm").c_str());
-	//os << cf;
-
-//	ofstream dos(outFileName(className, "dot").c_str());
-//	cf.dot(dos);
-
 	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 }
 
-void InstrClassObjectInit(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni, InstrArgs* args) {
+class Instr {
+public:
 
-	if (string(className) != "java/lang/Object") {
-		return;
-	}
-
-	ClassFile cf(data, len);
-
-	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
-
-	u2 allocMethodRef = cf.addMethodRef(classIndex, "alloc",
-			"(Ljava/lang/Object;)V");
-
-	for (Method* m : cf.methods) {
-		String name = cf.getUtf8(m->nameIndex);
-
-		if (m->hasCode() && name == "<init>") {
-			InstList& instList = m->instList();
-
-			Inst* first = *instList.begin();
-			instList.addInvoke(OPCODE_invokestatic, allocMethodRef, first);
-			instList.addZero(OPCODE_aload_0, first);
+	static void instrObjectInit(ClassFile& cf, ConstIndex classIndex) {
+		if (cf.getThisClassName() != String("java/lang/Object")) {
+			return;
 		}
-	}
 
-	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
-}
-
-void InstrClassNewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni, InstrArgs* args) {
-	ClassFile cf(data, len);
-
-	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
-
-	u2 newArrayEventRef = cf.addMethodRef(classIndex, "newArrayEvent",
-			"(ILjava/lang/Object;I)V");
-
-	for (Method* m : cf.methods) {
-		if (m->hasCode()) {
-			//InstList& instList = m->instList();
-
-//			InstList code;
-//
-//			for (Inst* instp : instList) {
-//				Inst& inst = *instp;
-//
-//				if (inst.opcode == OPCODE_newarray) {
-//					// FORMAT: newarray atype
-//					// OPERAND STACK: ... | count: int -> ... | arrayref
-//
-//					// STACK: ... | count
-//
-//					code.push_back(new Inst(OPCODE_dup));
-//					// STACK: ... | count | count
-//
-//					code.push_back(&inst); // newarray
-//					// STACK: ... | count | arrayref
-//
-//					code.push_back(new Inst(OPCODE_dup_x1));
-//					// STACK: ... | arrayref | count | arrayref
-//
-//					code.push_back(bipush(inst.newarray.atype));
-//					//u2 typeindex = instr.cp->addInteger(atype);
-//
-//					//bv.visitLdc(offset, OPCODE_ldc_w, typeindex);
-//					// STACK: ... | arrayref | count | arrayref | atype
-//
-//					code.push_back(
-//							invoke(OPCODE_invokestatic, newArrayEventRef));
-//					// STACK: ... | arrayref
-//
-//				} else {
-//					code.push_back(&inst);
-//				}
-//			}
-//
-//			m->instList(code);
-//			m->codeAttr()->maxStack += 3;
-		}
-	}
-
-	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
-}
-
-void InstrClassANewArray(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni, InstrArgs* args) {
-
-	ClassFile cf(data, len);
-
-	ConstIndex classIndex = cf.addClass("frproxy/FrInstrProxy");
-	ConstIndex aNewArrayEventRef = cf.addMethodRef(classIndex, "aNewArrayEvent",
-			"(ILjava/lang/Object;Ljava/lang/String;)V");
-
-	for (Method* m : cf.methods) {
-		if (m->hasCode()) {
-//			InstList& instList = m->instList();
-//
-//			InstList& code = instList;
-//
-////			for (Inst* instp : instList) {
-//			for (auto instp = instList.begin(); instp != instList.end();
-//					++instp) {
-//				Inst& inst = **instp;
-//
-//				if (inst.opcode == OPCODE_anewarray) {
-//					// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
-//					// OPERAND STACK: ... | count: int -> ... | arrayref
-//
-//					// STACK: ... | count
-//
-//					code.insert(instp, new Inst(OPCODE_dup));
-//					// STACK: ... | count | count
-//
-//					instp++;
-//					//code.push_back(&inst); // anewarray
-//					// STACK: ... | count | arrayref
-//
-//					code.insert(instp, new Inst(OPCODE_dup_x1));
-//					// STACK: ... | arrayref | count | arrayref
-//
-//					ConstIndex strIndex = cf.addStringFromClass(
-//							inst.type.classIndex);
-//
-//					code.insert(instp, ldc(OPCODE_ldc_w, strIndex));
-//					// STACK: ... | arrayref | count | arrayref | classname
-//
-//					instp = code.insert(instp,
-//							invoke(OPCODE_invokestatic, aNewArrayEventRef));
-//					// STACK: ... | arrayref
-//
-//				} else {
-//					//code.push_back(&inst);
-//				}
-//			}
-//
-//			m->codeAttr()->maxStack += 3;
-
-//	m.instList(code);
-		}
-	}
-
-	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
-}
-
-void InstrClassMain(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni, InstrArgs* args) {
-
-	ClassFile cf(data, len);
-
-	u2 classIndex = cf.addClass("frproxy/FrInstrProxy");
-	u2 enterMainMethodRef = cf.addMethodRef(classIndex, "enterMainMethod",
-			"()V");
-
-	for (Method* m : cf.methods) {
-
-		String name = cf.getUtf8(m->nameIndex);
-		String desc = cf.getUtf8(m->descIndex);
-
-		if (m->hasCode() && name == "main" && (m->accessFlags & METHOD_STATIC)
-				&& (m->accessFlags & METHOD_PUBLIC)
-				&& desc == "([Ljava/lang/String;)V") {
-			InstList& instList = m->instList();
-
-			instList.addInvoke(OPCODE_invokestatic, enterMainMethodRef,
-					*instList.begin());
-
-//			if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) || opcode == Opcodes.ATHROW) {
-//				mv.visitMethodInsn(Opcodes.INVOKESTATIC, _config.proxyClass, "exitMainMethod", "()V");
-//			}
-
-		}
-	}
-
-	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
-}
-
-void InstrClassHeap(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni, InstrArgs* args) {
-
-	ClassFile cf(data, len);
-
-	ConstIndex classIndex = cf.addClass("frproxy/FrInstrProxy");
-	ConstIndex aNewArrayEventRef = cf.addMethodRef(classIndex, "aNewArrayEvent",
-			"(ILjava/lang/Object;Ljava/lang/String;)V");
-	ConstIndex enterMainMethodRef = cf.addMethodRef(classIndex,
-			"enterMainMethod", "()V");
-	ConstIndex exitMainMethodRef = cf.addMethodRef(classIndex, "exitMainMethod",
-			"()V");
-
-	if (string(className) == "java/lang/Object") {
-		u2 allocMethodRef = cf.addMethodRef(classIndex, "alloc",
+		ConstIndex mid = cf.addMethodRef(classIndex, "alloc",
 				"(Ljava/lang/Object;)V");
 
 		for (Method* m : cf.methods) {
-			const string& name = cf.getUtf8(m->nameIndex);
-
-			if (m->hasCode() && name == "<init>") {
+			if (m->isInit()) {
 				InstList& instList = m->instList();
 
-//				instList.push_front(
-//						invoke(OPCODE_invokestatic, allocMethodRef));
-//				instList.push_front(new Inst(OPCODE_aload_0));
+				Inst* p = *instList.begin();
+				instList.addZero(OPCODE_aload_0, p);
+				instList.addInvoke(OPCODE_invokestatic, mid, p);
 			}
 		}
 	}
 
-	for (Method* m : cf.methods) {
-		if (m->hasCode()) {
-			const string& methodName = cf.getUtf8(m->nameIndex);
-			const string& methodDesc = cf.getUtf8(m->descIndex);
+	static void instrNewArray(ClassFile& cf, ConstIndex classIndex) {
+		const char* desc = "(ILjava/lang/Object;I)V";
+		ConstIndex mid = cf.addMethodRef(classIndex, "newArrayEvent", desc);
 
-			InstList& instList = m->instList();
-			InstList& code = instList;
+		for (Method* m : cf.methods) {
+			if (m->hasCode()) {
+				InstList& instList = m->instList();
 
-			for (auto instp = instList.begin(); instp != instList.end();
-					++instp) {
-				Inst& inst = **instp;
+				for (Inst* inst : instList) {
+					if (inst->opcode == OPCODE_newarray) {
+						// FORMAT: newarray atype
+						// OPERAND STACK: ... | count: int -> ... | arrayref
 
-				if (inst.opcode == OPCODE_anewarray) {
-					// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
-					// OPERAND STACK: ... | count: int -> ... | arrayref
+						// STACK: ... | count
+						instList.addZero(OPCODE_dup, inst);
 
-					// STACK: ... | count
+						// STACK: ... | count | count
 
-//					code.insert(instp, new Inst(OPCODE_dup));
-//					// STACK: ... | count | count
-//
-//					instp++;
-//					//code.push_back(&inst); // anewarray
-//					// STACK: ... | count | arrayref
-//
-//					code.insert(instp, new Inst(OPCODE_dup_x1));
-//					// STACK: ... | arrayref | count | arrayref
-//
-//					ConstIndex strIndex = cf.addStringFromClass(
-//							inst.type.classIndex);
-//
-//					code.insert(instp, ldc(OPCODE_ldc_w, strIndex));
-//					// STACK: ... | arrayref | count | arrayref | classname
-//
-//					instp = code.insert(instp,
-//							invoke(OPCODE_invokestatic, aNewArrayEventRef));
-					// STACK: ... | arrayref
+						Inst* p = inst->next; // newarray
+						// STACK: ... | count | arrayref
 
-				} else {
-					//code.push_back(&inst);
+						instList.addZero(OPCODE_dup_x1, p);
+						// STACK: ... | arrayref | count | arrayref
+
+						instList.addBiPush(inst->newarray()->atype, p);
+
+						// STACK: ... | arrayref | count | arrayref | atype
+
+						instList.addInvoke(OPCODE_invokestatic, mid, p);
+						// STACK: ... | arrayref
+					}
 				}
+
+				m->codeAttr()->maxStack += 3;
 			}
+		}
+	}
 
-			m->codeAttr()->maxStack += 3;
+	static void instrANewArray(ClassFile& cf, ConstIndex classIndex) {
+		const char* desc = "(ILjava/lang/Object;Ljava/lang/String;)V";
+		ConstIndex mid = cf.addMethodRef(classIndex, "aNewArrayEvent", desc);
 
-			if (methodName == "main" && (m->accessFlags & METHOD_STATIC)
-					&& (m->accessFlags & METHOD_PUBLIC)
-					&& methodDesc == "([Ljava/lang/String;)V") {
-//				instList.push_front(
-//						invoke(OPCODE_invokestatic, enterMainMethodRef));
+		for (Method* m : cf.methods) {
+			if (m->hasCode()) {
+				InstList& instList = m->instList();
 
-				for (auto instp = instList.begin(); instp != instList.end();
-						++instp) {
-					Inst& inst = **instp;
+				for (Inst* inst : instList) {
+					if (inst->opcode == OPCODE_anewarray) {
+						// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
+						// OPERAND STACK: ... | count: int -> ... | arrayref
 
-					if ((inst.opcode >= OPCODE_ireturn
-							&& inst.opcode <= OPCODE_return)
-							|| inst.opcode == OPCODE_athrow) {
-//						instList.insert(instp,
-//								invoke(OPCODE_invokestatic, exitMainMethodRef));
+						// STACK: ... | count
+
+						instList.addZero(OPCODE_dup, inst);
+						// STACK: ... | count | count
+
+						Inst* p = inst->next; // anewarray
+						// STACK: ... | count | arrayref
+
+						instList.addZero(OPCODE_dup_x1, p);
+						// STACK: ... | arrayref | count | arrayref
+
+						auto ci = inst->type()->classIndex;
+						auto strIndex = cf.addStringFromClass(ci);
+
+						instList.addLdc(OPCODE_ldc_w, strIndex, p);
+						// STACK: ... | arrayref | count | arrayref | classname
+
+						instList.addInvoke(OPCODE_invokestatic, mid, p);
+						// STACK: ... | arrayref
+					}
+				}
+
+				m->codeAttr()->maxStack += 3;
+			}
+		}
+	}
+
+	static void instrMain(ClassFile& cf, ConstIndex classIndex) {
+		ConstIndex sid = cf.addMethodRef(classIndex, "enterMainMethod", "()V");
+		ConstIndex eid = cf.addMethodRef(classIndex, "exitMainMethod", "()V");
+
+		for (Method* m : cf.methods) {
+			if (m->isMain()) {
+				InstList& instList = m->instList();
+
+				Inst* p = *instList.begin();
+				instList.addInvoke(OPCODE_invokestatic, sid, p);
+
+				for (Inst* inst : instList) {
+					if (inst->isExit()) {
+						instList.addInvoke(OPCODE_invokestatic, eid, inst);
 					}
 				}
 			}
 		}
-
-		cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
 	}
+};
+
+void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni, InstrArgs* args) {
+	LoadClassEvent m;
+
+	ClassFile cf(data, len);
+	classHierarchy.addClass(cf);
+
+	ConstIndex classIndex = cf.addClass("frproxy/FrInstrProxy");
+
+	Instr::instrObjectInit(cf, classIndex);
+	Instr::instrNewArray(cf, classIndex);
+	Instr::instrANewArray(cf, classIndex);
+	Instr::instrMain(cf, classIndex);
+
+	if (!skipCompute(className)) {
+		ClassPath cp(jni, args->loader);
+		cf.computeFrames(&cp);
+	}
+
+	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+}
+
+void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
+		u1**, JNIEnv*, InstrArgs* args) {
+	ClassFile cf(data, len);
+	ofstream os(outFileName(className, "disasm").c_str());
+	os << cf;
+}
+
+void InstrClassDot(jvmtiEnv*, u1* data, int len, const char* className, int*,
+		u1**, JNIEnv*, InstrArgs* args) {
+	ClassFile cf(data, len);
+	ofstream os(outFileName(className, "dot").c_str());
+	cf.dot(os);
 }
