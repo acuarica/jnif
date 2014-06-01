@@ -52,7 +52,7 @@ typedef unsigned int u4;
 typedef std::string String;
 
 /**
- * Represents the exception that jnif can throw.
+ * Represents the base exception that jnif can throw.
  */
 class JnifException {
 public:
@@ -64,18 +64,46 @@ public:
 	 * @param stackTrace the stack trace where this exception happened.
 	 */
 	JnifException(const String& message, const String& stackTrace) :
-			message(message), stackTrace(stackTrace) {
+			_message(message), stackTrace(stackTrace) {
 	}
 
+//	JnifException() {
+//	}
+//
+//	JnifException(JnifException&& ex) :
+//			_message(std::move(ex._message)) {
+//	}
+
 	/**
-	 * Contains information about the exceptional situation.
+	 * Returns information about the exceptional situation.
 	 */
-	String message;
+	String _message; //() const {
+//		return _message.str();
+//	}
+
+	const String& message() const {
+		return _message;
+	}
 
 	/**
 	 * the stack trace where this exception happened.
 	 */
 	String stackTrace;
+
+//	template<typename T>
+//	JnifException& operator<<(const T& arg) {
+//		_message << arg;
+//		return *this;
+//	}
+
+	/**
+	 * Shows this.
+	 */
+	friend std::ostream& operator<<(std::ostream& os, const JnifException& ex);
+
+private:
+
+	//std::stringstream _message;
 
 };
 
@@ -434,7 +462,7 @@ class ConstInvokeDynamic {
 public:
 
 	/**
-	 * The bootstrap method attribute idnex.
+	 * The bootstrap method attribute index.
 	 */
 	ConstIndex bootstrapMethodAttrIndex;
 
@@ -3377,7 +3405,6 @@ private:
 			const String& className) const;
 };
 
-std::ostream& operator<<(std::ostream& os, const JnifException& ex);
 std::ostream& operator<<(std::ostream& os, const ConstTag& tag);
 std::ostream& operator<<(std::ostream& os, const Frame& frame);
 std::ostream& operator<<(std::ostream& os, const Type& type);

@@ -74,6 +74,14 @@ const char* OPCODES[] = { "nop", "aconst_null", "iconst_m1", "iconst_0",
 		"RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED", "RESERVED",
 		"impdep1", "impdep2" };
 
+std::ostream& operator<<(std::ostream& os, const JnifException& ex) {
+	os << "Error: JNIF Exception: " << ex.message() << " @ " << endl;
+	os << ex.stackTrace;
+
+	return os;
+
+}
+
 std::ostream& operator<<(std::ostream& os, const ConstTag& tag) {
 	return os << ConstNames[tag];
 }

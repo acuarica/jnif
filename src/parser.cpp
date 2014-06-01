@@ -231,6 +231,19 @@ private:
 	LabelInst** labels;
 };
 
+class BootstrapMethodsAttrParser {
+public:
+
+	void parse(BufferReader& br) {
+//		 u2 num_bootstrap_methods;
+//		    {   u2 bootstrap_method_ref;
+//		        u2 num_bootstrap_arguments;
+//		        u2 bootstrap_arguments[num_bootstrap_arguments];
+//		    } bootstrap_methods[num_bootstrap_methods];
+//
+	}
+};
+
 class ClassParser: private Error {
 public:
 
@@ -452,6 +465,9 @@ private:
 				case KIND_INVOKEINTERFACE:
 					br.skip(4);
 					break;
+				case KIND_INVOKEDYNAMIC:
+					br.skip(4);
+					break;
 				case KIND_LDC:
 					if (opcode == OPCODE_ldc) {
 						br.readu1();
@@ -520,7 +536,7 @@ private:
 					//			break;
 				default:
 					Error::raise("default kind in parseInstTargets: "
-							"opcode: %d, kind: %d", opcode, kind);
+							"opcode: ", opcode, ", kind: ", kind);
 			}
 		}
 	}
@@ -670,7 +686,13 @@ private:
 
 			return instList.addInvokeInterface(interMethodRefIndex, count);
 		} else if (kind == KIND_INVOKEDYNAMIC) {
-			Error::raise("FrParseInvokeDynamicInstr not implemented");
+			u2 callSiteSpecifier = br.readu2();
+			u2 zero = br.readu2();
+			Error::check(zero == 0, "Zero is not zero: ", zero);
+
+
+			//return instList.addInvokeDynamic();
+			//Error::raise("FrParseInvokeDynamicInstr not implemented");
 		} else if (kind == KIND_TYPE) {
 			ConstIndex classIndex = br.readu2();
 

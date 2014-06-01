@@ -30,14 +30,6 @@ void Error::_backtrace(std::ostream& os) {
 	free(symbols);
 }
 
-std::ostream& operator<<(std::ostream& os, const JnifException& ex) {
-	os << "Error: JNIF Exception: " << ex.message << " @ " << endl;
-	os << ex.stackTrace;
-
-	return os;
-
-}
-
 ConstIndex ConstPool::getIndexOfUtf8(const char* utf8) {
 	auto it = utf8s.find(utf8);
 	if (it != utf8s.end()) {
