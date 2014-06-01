@@ -390,7 +390,7 @@ void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
 	ConstIndex classIndex = cf.addClass("frproxy/FrInstrProxy");
 
 	Instr::instrObjectInit(cf, classIndex);
-	Instr::instrNewArray(cf, classIndex);
+	//Instr::instrNewArray(cf, classIndex);
 	Instr::instrANewArray(cf, classIndex);
 	Instr::instrMain(cf, classIndex);
 
