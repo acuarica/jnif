@@ -66,8 +66,7 @@ public class FrHeapInstrumentWorker extends Thread {
 	private byte[] instrumentClass(String className, byte[] classBytes)
 			throws IOException {
 		try {
-			ByteArrayInputStream bis = new ByteArrayInputStream(classBytes);
-			return _instr.instrumentClass(bis, className);
+			return _instr.instrumentClass(classBytes, className);
 		} catch (RuntimeException ex) {
 			return classBytes;
 		}

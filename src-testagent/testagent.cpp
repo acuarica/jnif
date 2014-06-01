@@ -62,13 +62,12 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args2);
 		double end = gettime();
 
-		tldget()->prof(args.runId, args.appName, args2->instrName, className,
-				(end - start));
+		double instrTime = end - start;
+//		tldget()->instrTime += end - start;
+
+		tldget()->prof(args.runId, className, instrTime);
 
 	} catch (const JnifException& ex) {
-		//cerr << "Error: JNIF Exception: " << ex.message << " @ " << endl;
-		//cerr << "Error: exception on jnif: (stackTrace)" << endl;
-		//cerr << ex.stackTrace << endl;
 		cerr << ex << endl;
 		throw ex;
 	}
@@ -253,12 +252,11 @@ static void ParseOptions(const char* commandLineOptions) {
 	String str(start);
 	options.push_back(str);
 
-	if (options.size() >= 5) {
+	if (options.size() >= 4) {
 		args.instrFuncName = options[0];
-		args.appName = options[1];
-		args.profPath = options[2];
-		args.outputPath = options[3];
-		args.runId = options[4];
+		args.profPath = options[1];
+		args.outputPath = options[2];
+		args.runId = options[3];
 	} else {
 		ERROR("Invalid configuration");
 	}
@@ -410,8 +408,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
 	endTime = gettime();
 
-	tldget()->prof(args.runId, args.appName, instrFuncEntry.name, "@total",
-			(endTime - startTime));
+	tldget()->prof(args.runId, "@total", endTime - startTime);
 
 	_TLOG("Agent unloaded");
 

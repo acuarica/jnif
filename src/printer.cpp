@@ -330,7 +330,7 @@ private:
 class ClassPrinter: private Error {
 public:
 
-	ClassPrinter(ClassFile& cf, ostream& os, int tabs) :
+	ClassPrinter(const ClassFile& cf, ostream& os, int tabs) :
 			cf(cf), os(os), tabs(tabs) {
 	}
 
@@ -402,7 +402,7 @@ private:
 
 	//static const char* ConstNames[];
 
-	void printConstPool(ConstPool& cp) {
+	void printConstPool(const ConstPool& cp) {
 		line() << "#0 [null entry]: -" << endl;
 
 		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
@@ -490,7 +490,7 @@ private:
 		}
 	}
 
-	void printAttrs(Attrs& attrs, void* args = nullptr) {
+	void printAttrs(const Attrs& attrs, void* args = nullptr) {
 		for (Attr* attrp : attrs) {
 			Attr& attr = *attrp;
 
@@ -667,7 +667,7 @@ private:
 
 private:
 
-	ClassFile& cf;
+	const ClassFile& cf;
 
 	ostream& os;
 
@@ -696,7 +696,7 @@ ostream& operator<<(ostream& os, const Version& version) {
 	return os;
 }
 
-ostream& operator<<(ostream& os, ClassFile& cf) {
+ostream& operator<<(ostream& os, const ClassFile& cf) {
 	ClassPrinter cp(cf, os, 0);
 	cp.print();
 

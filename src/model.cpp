@@ -177,7 +177,7 @@ string Version::supportedByJdk() const {
 	}
 }
 
-std::ostream& operator<<(std::ostream& os, const ClassHierarchy& ch) {
+std::ostream& operator<<(std::ostream& os, const ClassHierarchy&) {
 //	for (const ClassHierarchy::ClassEntry& e : ch) {
 //		os << "Class: " << e.className << ", ";
 //		os << "Super: " << e.superClassName << ", ";

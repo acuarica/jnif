@@ -43,25 +43,33 @@ save <- function(p, d, s, w=12, h=8) {
   null <- dev.off()
 }
 
-instrs <- c('Empty', 'Identity', 'Compute', 'ClientServer')
+instrs <- c('runagent-Empty', 'runagent-Identity', 'runagent-Compute', 
+            'runserver-Empty', 'runserver-Identity', 'runserver-Compute')
+
+labels <- c('JNIF Empty', 'JNIF Identity', 'JNIF Frames', 
+            'ASM Empty', 'ASM Identity', 'ASM Frames')
 
 printf('Loading table from %s...', csvfilename);
-csv <- read.csv(csvfilename, strip.white=TRUE, sep=':', header=FALSE);
-colnames(csv) <- c('run', 'bench', 'instr', 'stage', 'time');
+csv <- read.csv(csvfilename, strip.white=TRUE, sep=',', header=FALSE);
+colnames(csv) <- c('backend', 'bench', 'run', 'instr', 'stage', 'time');
+csv$instrTemp <- sprintf('%s-%s', csv$backend, csv$instr);
+csv$instr <- csv$instrTemp
+csv$instrTemp <- NULL
+csv$backend <- NULL
 csv$instr <- factor(csv$instr, levels=instrs)
-levels(csv$instr) <- rename(levels(csv$instr))
+levels(csv$instr) <- labels
 
 # Instrumentation
 csv.instrumentation <- subset(csv, !(stage %in% '@total'))
-csv.instrumentation <- dcast(csv.instrumentation, run+bench+instr~'time', value.var='time', fun.aggregate=sum)
-colnames(csv.instrumentation) <- c('run', 'bench', 'instr', 'instrumentation');
+csv.instrumentation <- dcast(csv.instrumentation, bench+run+instr~'time', value.var='time', fun.aggregate=sum)
+colnames(csv.instrumentation) <- c('bench', 'run', 'instr', 'instrumentation');
 
 csv.total <- subset(csv, stage %in% '@total')
 csv.total$stage <- NULL
-colnames(csv.total) <- c('run', 'bench', 'instr', 'total');
+colnames(csv.total) <- c('bench', 'run', 'instr', 'total');
 
-csv.all <- merge(csv.instrumentation, csv.total, by=c('run', 'bench', 'instr'))
-csv.all <- melt(csv.all, id.vars=c('run', 'bench', 'instr'), variable.name='stage', value.name='time')
+csv.all <- merge(csv.instrumentation, csv.total, by=c('bench', 'run', 'instr'))
+csv.all <- melt(csv.all, id.vars=c('bench', 'run', 'instr'), variable.name='stage', value.name='time')
 
 # Instrumentation
 p <-
@@ -83,7 +91,7 @@ save(p, path, "all")
 #geom_bar(aes(instr, time, fill=stage), stat="identity")+
 
 # Some stats for interactive mode.
-csv.stats <- csv
-csv.stats <- dcast(csv.stats, run+bench+stage ~ instr, value.var='time')
-csv.stats$diff <- csv.stats[["ASM Frames"]] - csv.stats[["JNIF Frames"]]
-csv.stats <- csv.stats[order(csv.stats$diff),]
+#csv.stats <- csv
+#csv.stats <- dcast(csv.stats, run+bench+stage ~ instr, value.var='time')
+#csv.stats$diff <- csv.stats[["ASM Frames"]] - csv.stats[["JNIF Frames"]]
+#csv.stats <- csv.stats[order(csv.stats$diff),]
