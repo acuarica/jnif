@@ -165,8 +165,8 @@ public:
 
 	LabelManager(u4 codeLen, InstList& instList) :
 			codeLen(codeLen), instList(instList), labels(
-					new LabelInst*[codeLen]) {
-		for (u4 i = 0; i < codeLen; i++) {
+					new LabelInst*[codeLen + 1]) {
+		for (u4 i = 0; i < codeLen + 1; i++) {
 			labels[i] = nullptr;
 		}
 	}
@@ -176,9 +176,9 @@ public:
 	}
 
 	LabelInst* createLabel(int labelPos) {
-		Error::assert(0 <= labelPos, "Invalid position for label: ", labelPos);
-		Error::assert((u4) labelPos < codeLen, "Invalid position for label: ",
-				labelPos);
+		Error::check(0 <= labelPos, "Invalid position for label: ", labelPos);
+		Error::check((u4) labelPos < codeLen + 1,
+				"Invalid position for label: ", labelPos, ", : ", codeLen);
 
 		LabelInst*& lab = labels[labelPos];
 		if (lab == nullptr) {
@@ -190,6 +190,9 @@ public:
 
 	LabelInst* createExceptionLabel(u2 labelPos, bool isTryStart, bool isTryEnd,
 			bool isCatchHandler) {
+		Error::check(labelPos != codeLen || isTryEnd,
+				"Only tryEnd can have a labelPos equal to codeLen.");
+
 		LabelInst* label = createLabel(labelPos);
 		label->isTryStart = label->isTryStart || isTryStart;
 		label->isTryEnd = label->isTryEnd || isTryEnd;
@@ -199,10 +202,18 @@ public:
 	}
 
 	bool hasLabel(u2 labelPos) const {
-		Error::assert(labelPos < codeLen, "Invalid position for label: ",
+		Error::assert(labelPos < codeLen + 1, "Invalid position for label: ",
 				labelPos);
 
 		return labels[labelPos] != nullptr;
+	}
+
+	void putLabelIfExists(u2 labelPos) const {
+		if (hasLabel(labelPos)) {
+			LabelInst* label = (*this)[labelPos];
+			label->_offset = labelPos;
+			instList.addLabel(label);
+		}
 	}
 
 	LabelInst* operator[](u2 labelPos) const {
@@ -518,11 +529,13 @@ private:
 			const LabelManager& labelManager) {
 		int offset = br.offset();
 
-		if (labelManager.hasLabel(offset)) {
-			LabelInst* label = labelManager[offset];
-			label->_offset = offset;
-			instList.addLabel(label);
-		}
+//		if (labelManager.hasLabel(offset)) {
+//			LabelInst* label = labelManager[offset];
+//			label->_offset = offset;
+//			instList.addLabel(label);
+//		}
+
+		labelManager.putLabelIfExists(offset);
 
 		Opcode opcode = (Opcode) br.readu1();
 		u1 kind = OPKIND[opcode];
@@ -744,6 +757,8 @@ private:
 			BufferReader br(codeBuf, codeLen);
 			parseInstList(br, ca->instList, labelManager);
 		}
+
+		labelManager.putLabelIfExists(codeLen);
 
 		return ca;
 	}

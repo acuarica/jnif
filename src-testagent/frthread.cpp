@@ -10,7 +10,7 @@
  */
 AGENT_THREAD_LOCAL ThreadLocalData __tld
 = {.threadId = -1, .threadTag = -1, .priority = 0, .isDaemon =
-	false, .socketfd = -1, ._tlog = nullptr, ._prof=nullptr, .classLoadedStack=0};
+	false, .socketfd = -1, ._tlog = nullptr, ._prof=nullptr, .classLoadedStack=0, .instrTime=0};
 
 jint __nextthreadid = 1;
 

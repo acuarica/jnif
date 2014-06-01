@@ -48,7 +48,7 @@ public class MethodRunner {
 		FrHeapInstrumenterStats instr = new FrHeapInstrumenterStats();
 		instr.config = config;
 
-		byte[] instrumentedClassBytes = instr.instrumentClass(is, className);
+		byte[] instrumentedClassBytes = instr.instrumentClass(null, className);
 
 		return new TestClassLoader().loadFromBytes(
 				uninstrumentedKlass.getName(), instrumentedClassBytes);

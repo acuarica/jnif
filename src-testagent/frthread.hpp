@@ -26,19 +26,18 @@ public:
 	FILE* _tlog;
 	FILE* _prof;
 	int classLoadedStack;
+	double instrTime;
 
 //	ThreadLocalData() :
 //			threadId(-1), threadTag(-1), /*name("NOT INIT"),*/priority(0), isDaemon(
 //					false), socketfd(-1), _tlog(nullptr), _prof(nullptr) {
 //	}
 
-	void prof(const std::string& runId, const std::string& appName,
-			const std::string& instrName, const std::string& className,
+	void prof(const std::string& runId, const std::string& className,
 			double time) {
 		open();
 
-		fprintf(_prof, "%s:%s:%s:%s:%f\n", runId.c_str(), appName.c_str(),
-				instrName.c_str(), className.c_str(), time);
+		fprintf(_prof, "%s,%s,%f\n", runId.c_str(), className.c_str(), time);
 	}
 
 private:

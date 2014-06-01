@@ -13,7 +13,6 @@ class Options {
 public:
 
 	jnif::String instrFuncName;
-	jnif::String appName;
 	jnif::String profPath;
 	jnif::String outputPath;
 	jnif::String runId;

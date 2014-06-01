@@ -80,6 +80,13 @@ public:
 };
 
 /**
+ *
+ */
+class ParserException: public JnifException {
+public:
+};
+
+/**
  * This class contains static method to facilitate error handling mechanism.
  */
 class Error {
@@ -2770,6 +2777,14 @@ public:
 		return attrs.end();
 	}
 
+	std::vector<Attr*>::const_iterator begin() const {
+		return attrs.begin();
+	}
+
+	std::vector<Attr*>::const_iterator end() const {
+		return attrs.end();
+	}
+
 	std::vector<Attr*> attrs;
 };
 
@@ -3371,7 +3386,7 @@ std::ostream& operator<<(std::ostream& os, const InstList& instList);
 std::ostream& operator<<(std::ostream& os, BasicBlock& bb);
 std::ostream& operator<<(std::ostream& os, const ControlFlowGraph& cfg);
 std::ostream& operator<<(std::ostream& os, const Version& version);
-std::ostream& operator<<(std::ostream& os, ClassFile& classFile);
+std::ostream& operator<<(std::ostream& os, const ClassFile& classFile);
 std::ostream& operator<<(std::ostream& os, const ClassHierarchy& ch);
 
 }
