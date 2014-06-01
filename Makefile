@@ -138,7 +138,7 @@ all: $(LIBJNIF) $(TESTUNIT) $(TESTAGENT) $(TESTAPP) $(INSTRSERVER)
 JARS=$(wildcard jars/*.jar)
 DIRS=$(JARS:%.jar=$(BUILD)/%)
 
-testunit: $(TESTUNIT) $(DIRS)
+testunit: $(TESTUNIT) #$(DIRS)
 	$(TESTUNIT) $(BUILD) > $(TESTUNIT).log
 
 $(BUILD)/jars/%: jars/%.jar | $(BUILD)/jars
@@ -150,9 +150,9 @@ $(BUILD)/jars:
 #
 # Rules to run $(INSTRSERVER)
 #
-
+start: CLASSPREFIX=ch.usi.inf.sape.frheap.FrHeapInstrumenter
 start:
-	$(JAVA) -jar $(INSTRSERVER) ch.usi.inf.sape.frheap.FrHeapInstrumenter$(INSTRSERVERCLASS) &
+	$(JAVA) -jar $(INSTRSERVER) $(CLASSPREFIX)$(INSTRSERVERCLASS) &
 	sleep 2
 
 stop:
@@ -179,7 +179,7 @@ INSTR=Compute
 FUNC=$(INSTR)
 BACKEND=runagent
 
-testapp: JARAPP=$(TESTAPP)
+testapp: JARAPP:=$(TESTAPP)
 testapp: APP=jnif-testapp
 testapp: $(TESTAPP)
 testapp: $(BACKEND)

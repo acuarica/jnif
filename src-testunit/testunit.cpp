@@ -288,6 +288,17 @@ static void testNopAdderInstr() {
 	});
 }
 
+static void testException() {
+//	try {
+//		JnifException ex();
+//		//ex << "arg1: " << 1 << ", arg2: " << "2" << ", arg3: " << 3.4;
+//
+//		throw ex;
+//	} catch (const JnifException& ex) {
+//		cerr << ex << endl;
+//	}
+}
+
 static void testJoinFrameObjectAndEmpty() {
 	UnitTestClassPath cp;
 
@@ -331,7 +342,6 @@ static void testJoinFrameException() {
 	res.lva.resize(2, Type::topType());
 	res.setVar2(0, classType);
 	//res.setVar2(1, Type::topType());
-
 
 	Error::assertEquals(res, lhs);
 }
@@ -450,12 +460,14 @@ int main(int argc, const char* argv[]) {
 			testFunc();
 		} catch (const JnifException& ex) {
 			cerr << ex << endl;
-			throw ex;
+			//throw ex;
+			exit(-2);
 		}
 
 		cerr << " [OK]" << endl;
 	};
 
+	run(&testException, "testException");
 	run(&testJoinFrameObjectAndEmpty, "testFrame");
 	run(&testJoinFrameException, "testJoinFrameException");
 	run(&testJoinFrame, "testJoinFrame");
