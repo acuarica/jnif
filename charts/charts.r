@@ -43,38 +43,37 @@ save <- function(p, d, s, w=12, h=8) {
   null <- dev.off()
 }
 
-instrs <- c('runagent-Empty', 'runagent-Identity', 'runagent-Compute', 
-            'runserver-Empty', 'runserver-Identity', 'runserver-Compute')
-
 labels <- c('JNIF Empty', 'JNIF Identity', 'JNIF Frames', 
             'ASM Empty', 'ASM Identity', 'ASM Frames')
 
 printf('Loading table from %s...', csvfilename);
 csv <- read.csv(csvfilename, strip.white=TRUE, sep=',', header=FALSE);
 colnames(csv) <- c('backend', 'bench', 'run', 'instr', 'stage', 'time');
-csv$instrTemp <- sprintf('%s-%s', csv$backend, csv$instr);
-csv$instr <- csv$instrTemp
-csv$instrTemp <- NULL
-csv$backend <- NULL
-csv$instr <- factor(csv$instr, levels=instrs)
-levels(csv$instr) <- labels
+#csv$instrTemp <- sprintf('%s-%s', csv$backend, csv$instr);
+#csv$instr <- csv$instrTemp
+#csv$instrTemp <- NULL
+#csv$backend <- NULL
+csv$backend <- factor(csv$backend, levels=c('runagent', 'runserver'))
+levels(csv$backend) <- c('JNIF', 'ASM')
+csv$instr <- factor(csv$instr, levels=c('Empty', 'Identity', 'Compute', 'Stats'))
+levels(csv$instr) <- c('Empty', 'Identity', 'Frame', 'Stats')
 
 # Instrumentation
 csv.instrumentation <- subset(csv, !(stage %in% '@total'))
-csv.instrumentation <- dcast(csv.instrumentation, bench+run+instr~'time', value.var='time', fun.aggregate=sum)
-colnames(csv.instrumentation) <- c('bench', 'run', 'instr', 'instrumentation');
+csv.instrumentation <- dcast(csv.instrumentation, backend+bench+run+instr~'time', value.var='time', fun.aggregate=sum)
+colnames(csv.instrumentation) <- c('backend', 'bench', 'run', 'instr', 'instrumentation');
 
 csv.total <- subset(csv, stage %in% '@total')
 csv.total$stage <- NULL
-colnames(csv.total) <- c('bench', 'run', 'instr', 'total');
+colnames(csv.total) <- c('backend', 'bench', 'run', 'instr', 'total');
 
-csv.all <- merge(csv.instrumentation, csv.total, by=c('bench', 'run', 'instr'))
-csv.all <- melt(csv.all, id.vars=c('bench', 'run', 'instr'), variable.name='stage', value.name='time')
+csv.all <- merge(csv.instrumentation, csv.total, by=c('backend', 'bench', 'run', 'instr'))
+csv.all <- melt(csv.all, id.vars=c('backend', 'bench', 'run', 'instr'), variable.name='stage', value.name='time')
 
 # Instrumentation
 p <-
   ggplot(csv.instrumentation)+facet_wrap(~bench, scales="free")+
-  geom_boxplot(aes(instr, instrumentation, color=instr))+
+  geom_boxplot(aes(instr, instrumentation, color=backend))+
   labs(x="Library", y = "Instrumentation time (in seconds)", title='Instrumentation time')+
   theme.config
 save(p, path, "instr")
@@ -82,7 +81,7 @@ save(p, path, "instr")
 # Instrumentation with total
 p <-
   ggplot(csv.all)+facet_wrap(~bench, scales="free")+
-  geom_boxplot(aes(instr, time, color=stage))+
+  geom_boxplot(aes(instr, time, color=stage, fill=backend))+
   labs(x="Library", y = "Instrumentation and total time (in seconds)", title='Instrumentation and total time')+
   theme.config
 save(p, path, "all")
