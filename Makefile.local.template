@@ -1,16 +1,20 @@
 #
-# Copy this file as Makefile.local and set the appropiate environment.
+# Copy this file as Makefile.local
+#
+# Uncomment and modified the lines specific to set up 
+# the appropiate environment.
 #
 
-# Mac OS X
+# Sets JAVA_HOME for a Mac OS X environment
 #JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home
 
-# Linux
+# Sets JAVA_HOME for a Linux environment
 #JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
 
-#JAVAC=javac -g:none
-#JAR=jar
+# Useful options for debugging
+#JVMARGS+=-Xverify:all
+#JVMARGS+=-Xprof -Xdiag -Xcheck:jni -Xfuture
+#JVMARGS+=-verbose:class1 -verbose:gc -verbose:jni
 
-#JVMARGS=-Xverify:all -Xprof -Xdiag -Xcheck:jni -Xfuture -XX:+PrintCompilation -verbose:class1 -verbose:gc -verbose:jni
-#JVMARGS=-Xverify:all
-#-Xcheck:jni -verbose:jni
+#ECLIPSE_HOME=/Users/luigi/Programs/eclipse
+#BUILD=/Users/luigi/work/jnif/build

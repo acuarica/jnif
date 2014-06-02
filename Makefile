@@ -163,10 +163,12 @@ stop:
 runjar:
 	time $(JAVA) $(JVMARGS) -jar $(JARAPP)
 
+CMD=runjar
+
 runagent: LOGDIR=$(BUILD)/run/$(APP)/log/$(INSTR).$(APP)
 runagent: PROF=$(BUILD)/eval-$(APP)-$(RUN)-$(BACKEND)-$(INSTR)
 runagent: JVMARGS+=-agentpath:$(TESTAGENT)=$(FUNC):$(PROF):$(LOGDIR)/:$(BACKEND),$(APP),$(RUN),$(INSTR)
-runagent: logdir $(TESTAGENT) runjar
+runagent: logdir $(TESTAGENT) $(CMD)
 
 logdir:
 	mkdir -p $(LOGDIR)
@@ -264,8 +266,14 @@ dots: DOTS=$(shell find build -name *.dot)
 dots: PNGS=$(DOTS:%.dot=%.png)
 dots: $(PNGS)
 
+
 $(BUILD)/%.png: $(BUILD)/%.dot
 	dot -Tpng $< > $@
+
+run: $(BACKEND)
+
+eclipse:
+	$(ECLIPSE_HOME)/eclipse -vmargs $(JVMARGS)
 
 clean:
 	rm -rf $(BUILD)
