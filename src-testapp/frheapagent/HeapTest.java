@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.*;
+import frheapagent.j8.*;
 
 public class HeapTest {
 
@@ -694,6 +695,13 @@ public class HeapTest {
 			}
 		} catch (Exception e) {
 			use(e);
+		}
+
+		Indy indy = new Indy();
+		indy.getStreams();
+
+		for (int i = 0; i < 10; i++) {
+			indy.getStreams2();
 		}
 
 		System.err.println("Siamo finito dal main!!!");

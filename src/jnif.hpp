@@ -1806,6 +1806,7 @@ class Inst {
 	friend class FieldInst;
 	friend class InvokeInst;
 	friend class InvokeInterfaceInst;
+	friend class InvokeDynamicInst;
 	friend class TypeInst;
 	friend class NewArrayInst;
 	friend class MultiArrayInst;
@@ -1858,9 +1859,23 @@ public:
 	bool isInvoke() const {
 		return kind == KIND_INVOKE;
 	}
+
+	/**
+	 * Returns true is this instruction is an invokeinterface instruction.
+	 * False otherwise.
+	 */
 	bool isInvokeInterface() const {
 		return kind == KIND_INVOKEINTERFACE;
 	}
+
+	/**
+	 * Returns true is this instruction is an invokedynamic instruction.
+	 * False otherwise.
+	 */
+	bool isInvokeDynamic() const {
+		return kind == KIND_INVOKEDYNAMIC;
+	}
+
 	bool isType() const {
 		return kind == KIND_TYPE;
 	}
@@ -1996,6 +2011,10 @@ public:
 
 	class InvokeInterfaceInst* invokeinterface() const {
 		return cast<InvokeInterfaceInst>(isInvokeInterface(), "invinter");
+	}
+
+	class InvokeDynamicInst* indy() const {
+		return cast<InvokeDynamicInst>(isInvokeDynamic(), "indy");
 	}
 
 	class TypeInst* type() const {
@@ -2252,6 +2271,31 @@ private:
 			Inst(OPCODE_invokeinterface, KIND_INVOKEINTERFACE, constPool), interMethodRefIndex(
 					interMethodRefIndex), count(count) {
 	}
+};
+
+/**
+ * Represents an invokedynamic bytecode.
+ */
+class InvokeDynamicInst: public Inst {
+	friend class InstList;
+
+public:
+
+	/**
+	 * Returns the call site for this invokedynamic instruction.
+	 */
+	ConstIndex callSite() const {
+		return _callSite;
+	}
+
+private:
+
+	InvokeDynamicInst(ConstIndex callSite, ConstPool* constPool) :
+			Inst(OPCODE_invokedynamic, KIND_INVOKEDYNAMIC, constPool), _callSite(
+					callSite) {
+	}
+
+	ConstIndex _callSite;
 };
 
 /**
@@ -2529,6 +2573,14 @@ public:
 			u1 count, Inst* pos = nullptr) {
 		InvokeInterfaceInst* inst = new InvokeInterfaceInst(interMethodRefIndex,
 				count, constPool);
+		addInst(inst, pos);
+
+		return inst;
+	}
+
+	InvokeDynamicInst* addInvokeDynamic(ConstIndex callSite,
+			Inst* pos = nullptr) {
+		InvokeDynamicInst* inst = new InvokeDynamicInst(callSite, constPool);
 		addInst(inst, pos);
 
 		return inst;

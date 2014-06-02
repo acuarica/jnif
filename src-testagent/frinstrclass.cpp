@@ -173,10 +173,10 @@ static unsigned char* Allocate(jvmtiEnv* jvmti, jlong size) {
 
 static string outFileName(const char* className, const char* ext,
 		const char* prefix = "./build/instr/") {
-	string fileName = className;
+	String fileName = className == NULL ? "null" : className;
 
 	for (u4 i = 0; i < fileName.length(); i++) {
-		fileName[i] = className[i] == '/' ? '.' : className[i];
+		fileName[i] = fileName[i] == '/' ? '.' : fileName[i];
 	}
 
 	stringstream path;
@@ -233,7 +233,8 @@ bool skipCompute(const char* className) {
 		return true;
 	}
 
-	if (isPrefix("java", className) || isPrefix("sun", className)) {
+	if (className != nullptr
+			&& (isPrefix("java", className) || isPrefix("sun", className))) {
 		return true;
 	}
 
@@ -377,6 +378,23 @@ public:
 			}
 		}
 	}
+
+	static void instrIndy(ClassFile& cf, ConstIndex classIndex) {
+		ConstIndex mid = cf.addMethodRef(classIndex, "indy", "(I)V");
+
+		for (Method* m : cf.methods) {
+			if (m->hasCode()) {
+				InstList& instList = m->instList();
+
+				for (Inst* inst : instList) {
+					if (inst->isInvokeDynamic()) {
+						instList.addSiPush(inst->indy()->callSite(), inst);
+						instList.addInvoke(OPCODE_invokestatic, mid, inst);
+					}
+				}
+			}
+		}
+	}
 };
 
 void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
@@ -393,6 +411,7 @@ void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
 	//Instr::instrNewArray(cf, classIndex);
 	Instr::instrANewArray(cf, classIndex);
 	Instr::instrMain(cf, classIndex);
+	Instr::instrIndy(cf, classIndex);
 
 	if (!skipCompute(className)) {
 		ClassPath cp(jni, args->loader);

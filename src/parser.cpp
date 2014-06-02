@@ -235,12 +235,14 @@ class BootstrapMethodsAttrParser {
 public:
 
 	void parse(BufferReader& br) {
-//		 u2 num_bootstrap_methods;
-//		    {   u2 bootstrap_method_ref;
-//		        u2 num_bootstrap_arguments;
-//		        u2 bootstrap_arguments[num_bootstrap_arguments];
-//		    } bootstrap_methods[num_bootstrap_methods];
+//		u2 num_bootstrap_methods =br.readu2();
 //
+//		for (u2 i = 0; i < num_bootstrap_methods; i++) {
+//		       u2 bootstrap_method_ref = br.readu2();
+//		        u2 num_bootstrap_arguments= br.readu2();
+//		        u2 bootstrap_arguments[num_bootstrap_arguments];
+//		    bootstrap_methods[num_bootstrap_methods];
+//		}
 	}
 };
 
@@ -392,10 +394,9 @@ private:
 					break;
 				}
 				case CONST_INVOKEDYNAMIC: {
-					u2 bootstrapMethodAttrIndex = br.readu2();
+					u2 bootMethodAttrIndex = br.readu2();
 					u2 nameAndTypeIndex = br.readu2();
-					cp.addInvokeDynamic(bootstrapMethodAttrIndex,
-							nameAndTypeIndex);
+					cp.addInvokeDynamic(bootMethodAttrIndex, nameAndTypeIndex);
 					break;
 				}
 				default:
@@ -686,13 +687,11 @@ private:
 
 			return instList.addInvokeInterface(interMethodRefIndex, count);
 		} else if (kind == KIND_INVOKEDYNAMIC) {
-			u2 callSiteSpecifier = br.readu2();
+			u2 callSite = br.readu2();
 			u2 zero = br.readu2();
 			Error::check(zero == 0, "Zero is not zero: ", zero);
 
-
-			//return instList.addInvokeDynamic();
-			//Error::raise("FrParseInvokeDynamicInstr not implemented");
+			return instList.addInvokeDynamic(callSite);
 		} else if (kind == KIND_TYPE) {
 			ConstIndex classIndex = br.readu2();
 

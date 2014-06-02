@@ -131,6 +131,10 @@ DEFHANDLER(exitMainMethod) (JNIEnv* jni, jclass proxyClass) {
 	_TLOG("EXITMAIN");
 }
 
+DEFHANDLER(indy) (JNIEnv* jni, jclass proxyClass, jint callSite) {
+	_TLOG("INDY:%d", callSite);
+}
+
 static JNINativeMethod methods[] = {
 
 { (char*) "alloc", (char*) "(Ljava/lang/Object;)V", (void *) &HANDLER(alloc) },
@@ -167,6 +171,8 @@ static JNINativeMethod methods[] = {
 		{ "enterMainMethod", "()V", (void*) &HANDLER(enterMainMethod) },
 
 		{ "exitMainMethod", "()V", (void*) &HANDLER(exitMainMethod) },
+
+		{ "indy", "(I)V", (void*) &HANDLER(indy) },
 
 };
 void FrSetInstrHandlerNatives(jvmtiEnv* jvmti, JNIEnv* jni, jclass proxyClass) {

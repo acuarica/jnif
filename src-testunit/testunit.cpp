@@ -375,6 +375,7 @@ static void testJoinFrame() {
 	instList.addLabel(tryLabel);
 	instList.addType(OPCODE_new, idx);
 	instList.addZero(OPCODE_dup);
+	instList.addZero(OPCODE_iadd);
 	instList.addInvoke(OPCODE_invokespecial, initidx);
 	instList.addZero(OPCODE_astore_0);
 	instList.addLabel(endLabel);
@@ -395,7 +396,6 @@ static void testJoinFrame() {
 	code->exceptions.push_back(ex);
 
 	cf.computeFrames(&cp);
-	cerr << cf;
 
 //	u1* data;
 //	int len;
@@ -471,7 +471,7 @@ int main(int argc, const char* argv[]) {
 	run(&testJoinFrameObjectAndEmpty, "testFrame");
 	run(&testJoinFrameException, "testJoinFrameException");
 	run(&testJoinFrame, "testJoinFrame");
-
+	run(&testIdentityParserWriter,"testIdentityParserWriter");
 	return 0;
 
 	vector<TestEntry> testEntries = { ENTRY(testPrinterModel),

@@ -553,6 +553,8 @@ public:
 					bw.writeu1(0);
 					break;
 				case KIND_INVOKEDYNAMIC:
+					bw.writeu2(inst.indy()->callSite());
+					bw.writeu2(0);
 					break;
 				case KIND_TYPE:
 					bw.writeu2(inst.type()->classIndex);

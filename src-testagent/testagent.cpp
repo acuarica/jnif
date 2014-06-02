@@ -54,6 +54,7 @@ double gettime() {
 void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args2) {
+
 	try {
 
 		double start = gettime();
@@ -63,7 +64,8 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		double instrTime = end - start;
 //		tldget()->instrTime += end - start;
 
-		tldget()->prof(args.runId, className, instrTime);
+		String clsn = className == NULL ? "null" : className;
+		tldget()->prof(args.runId, clsn, instrTime);
 
 	} catch (const JnifException& ex) {
 		cerr << ex << endl;
