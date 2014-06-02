@@ -90,6 +90,7 @@ TESTAPP=$(BUILD)/testapp.jar
 TESTAPP_BUILD=$(BUILD)/testapp
 TESTAPP_SRC=src-testapp
 TESTAPP_SRCS=$(wildcard $(TESTAPP_SRC)/*/*.java)
+TESTAPP_SRCS+=$(wildcard $(TESTAPP_SRC)/*/*/*.java)
 TESTAPP_OBJS=$(TESTAPP_SRCS:$(TESTAPP_SRC)/%.java=$(TESTAPP_BUILD)/%.class)
 
 $(TESTAPP): $(TESTAPP_SRC)/MANIFEST.MF $(TESTAPP_OBJS)
@@ -242,8 +243,16 @@ eval:
 	)
 	cat $(BUILD)/eval-*.prof > $(BUILD)/eval.prof
 
-eval-compute: 
-	$(MAKE) eval TIMES=1 INSTRS=Compute
+test: times=1
+test: backends=runagent
+test: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan  #tradebeans tradesoap
+test: eval
+
+test-compute: instrs=Compute
+test-compute: test
+
+test-stats: instrs=Stats
+test-stats: test
 
 plots:
 	r --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.prof

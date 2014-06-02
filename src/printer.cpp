@@ -158,9 +158,19 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 			break;
 		}
 		case KIND_INVOKE: {
-			string className, name, desc;
-			cf.getMethodRef(inst.invoke()->methodRefIndex, &className, &name,
-					&desc);
+			ConstIndex mid = inst.invoke()->methodRefIndex;
+			os << "#" << mid << " ";
+
+			String className, name, desc;
+			// New in Java 8, invokespecial can be either a method ref or
+			// inter method ref.
+			if (cf.getTag(mid) == CONST_INTERMETHODREF) {
+				cf.getInterMethodRef(inst.invoke()->methodRefIndex, &className,
+						&name, &desc);
+			} else {
+				cf.getMethodRef(inst.invoke()->methodRefIndex, &className,
+						&name, &desc);
+			}
 
 			os << className << "." << name << ": " << desc;
 			break;
@@ -174,9 +184,11 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 					<< int(inst.invokeinterface()->count) << ")";
 			break;
 		}
-		case KIND_INVOKEDYNAMIC:
-			Error::raise("FrParseInvokeDynamicInstr not implemented");
+		case KIND_INVOKEDYNAMIC: {
+			os << int(inst.indy()->callSite()) << "";
 			break;
+		}
+
 		case KIND_TYPE: {
 			string className = cf.getClassName(inst.type()->classIndex);
 			os << className;

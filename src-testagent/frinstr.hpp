@@ -12,7 +12,7 @@
 #define FR_PROXY_CLASS "frproxy/FrInstrProxy"
 
 static inline bool FrIsProxyClassName(const char* className) {
-	return strcmp(className, FR_PROXY_CLASS) == 0;
+	return className != NULL && strcmp(className, FR_PROXY_CLASS) == 0;
 }
 
 static inline bool FrIsProxyClassSignature(const char* classSignature) {

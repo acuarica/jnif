@@ -93,4 +93,6 @@ public class FrInstrProxy {
 
 	public static native void exitMainMethod();
 
+	public static native void indy(int callSite);
+
 }
