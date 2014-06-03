@@ -171,20 +171,30 @@ public:
 		return change;
 	}
 
+	static Type getExceptionType(const ConstPool& cp, ConstIndex catchIndex) {
+		if (catchIndex != ConstPool::NULLENTRY) {
+			const String& className = cp.getClassName(catchIndex);
+			return Type::fromConstClass(className);
+		} else {
+			return Type::objectType("java/lang/Throwable");
+		}
+	}
+
 	static void visitCatch(const CodeExceptionEntry& ex, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
 			const ControlFlowGraph* cfg, Frame frame, Method* method) {
 		int handlerPcId = ex.handlerpc->label()->id;
 		BasicBlock* handlerBb = cfg->findBasicBlockOfLabel(handlerPcId);
 
-		Type exType = [&]() {
-			if (ex.catchtype != ConstPool::NULLENTRY) {
-				const String& className = cf.getClassName(ex.catchtype);
-				return Type::fromConstClass(className);
-			} else {
-				return Type::objectType("java/lang/Throwable");
-			}
-		}();
+//		Type exType = [&]() {
+//			if (ex.catchtype != ConstPool::NULLENTRY) {
+//				const String& className = cf.getClassName(ex.catchtype);
+//				return Type::fromConstClass(className);
+//			} else {
+//				return Type::objectType("java/lang/Throwable");
+//			}
+//		}();
+		Type exType = getExceptionType(cf, ex.catchtype);
 
 		frame.clearStack();
 		frame.push(exType);
