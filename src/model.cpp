@@ -244,14 +244,11 @@ static void dotCfg(ostream& os, const ControlFlowGraph& cfg, int methodId) {
 		dotFrame(os, bb->in);
 		os << " | ";
 
-
-				for (auto it = bb->start; it != bb->exit; ++it) {
-					Inst* inst = *it;
-					os << *inst << endl;
-					//os << endl;
-				}
-
-
+		for (auto it = bb->start; it != bb->exit; ++it) {
+			Inst* inst = *it;
+			os << *inst << endl;
+			//os << endl;
+		}
 
 		os << " | ";
 		dotFrame(os, bb->out);
@@ -597,12 +594,19 @@ void Frame::setRefVar(u4 lvindex, const Type& type) {
 }
 
 void Frame::cleanTops() {
+	Error::assert(!topsErased, "tops already erased: ", topsErased);
+
 	for (u4 i = 0; i < lva.size(); i++) {
 		Type t = lva[i];
 		if (t.isTwoWord()) {
 			Type top = lva[i + 1];
-			Error::assert(top.isTop(), "Not top for two word: ", top);
-			lva.erase(lva.begin() + i + 1);
+
+			// workaround!!!
+			if (top.isTop()) {
+				Error::assert(top.isTop(), "Not top for two word: index: ", i,
+						", top: ", top, " for ", t, " in ", *this);
+				lva.erase(lva.begin() + i + 1);
+			}
 		}
 	}
 

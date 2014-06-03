@@ -162,8 +162,10 @@ rununit: $(TESTUNIT)
 #
 JARS=$(wildcard jars/*.jar)
 DIRS=$(JARS:%.jar=$(BUILD)/%)
+runcoverage: cp=$(BUILD)
+runcoverage: test=
 runcoverage: $(TESTCOVERAGE) $(DIRS)
-	$(TESTCOVERAGE) $(BUILD) $(args)
+	$(TESTCOVERAGE) $(cp) $(test)
 
 $(BUILD)/jars/%: jars/%.jar | $(BUILD)/jars
 	unzip $< -d $@
@@ -234,7 +236,7 @@ scala: $(BACKEND)
 eval-scala: times=1
 eval-scala: backends=runagent runserver
 eval-scala: instrs=Empty Identity Compute
-eval-scala: benchs=actors apparat avrora batik dummy eclipse factorie fop h2 jython kiama luindex lusearch pmd scalac scaladoc scalap scalariform scalatest scalaxb specs sunflow tmt tomcat tradebeans tradesoap xalan
+eval-scala: benchs=actors apparat dummy factorie kiama scalac scaladoc scalap scalariform scalatest scalaxb specs tmt
 eval-scala:
 	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
 		$(foreach be,$(backends),\

@@ -1710,7 +1710,7 @@ class Frame {
 public:
 
 	Frame() :
-			valid(false) {
+			valid(false), topsErased(false) {
 	}
 
 	Type pop();
@@ -1813,6 +1813,7 @@ public:
 	std::vector<Type> lva;
 	std::list<Type> stack;
 	bool valid;
+	bool topsErased;
 
 	friend bool operator ==(const Frame& lhs, const Frame& rhs) {
 		return lhs.lva == rhs.lva && lhs.stack == rhs.stack

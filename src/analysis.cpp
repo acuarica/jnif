@@ -202,7 +202,7 @@ public:
 		}
 
 		Error::assert(how.valid, "how valid");
-		Error::assert(bb.in.valid == bb.out.valid, "");
+		//Error::assert(bb.in.valid == bb.out.valid, "in.valid != out.valid");
 
 		bool change = [&]() {
 			if (!bb.in.valid) {
@@ -231,15 +231,17 @@ public:
 				}
 			};
 
-			bb.out = bb.in;
+			//bb.out = bb.in;
+			Frame out = bb.in;
 
-			SmtBuilder builder(bb.out, cf, method);
+			SmtBuilder builder(out, cf, method);
 			for (auto it = bb.start; it != bb.exit; ++it) {
 				Inst* inst = *it;
 				builder.processInst(*inst);
-				prepareCatchHandlerFrame(inst, bb.out);
+				prepareCatchHandlerFrame(inst, out);
 			}
 
+			bb.out = out;
 			Frame h = bb.out;
 
 			for (BasicBlock* nid : bb) {
