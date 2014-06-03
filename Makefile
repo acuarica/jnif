@@ -282,7 +282,7 @@ test-stats: instrs=Stats
 test-stats: test
 
 plots:
-	r --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.prof
+	$(R) --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.prof
 
 docs:
 	doxygen
