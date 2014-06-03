@@ -1,16 +1,8 @@
 
-## Prerequisites ----
 suppressPackageStartupMessages(library("ggplot2"))
-#suppressPackageStartupMessages(library("grid"))
-#suppressPackageStartupMessages(library("gridExtra"))
 suppressPackageStartupMessages(library("reshape2"))
 suppressPackageStartupMessages(library("tools"))
-#suppressPackageStartupMessages(library("parallel"))
-#suppressPackageStartupMessages(library("foreach"))
-#suppressPackageStartupMessages(library("iterators"))
-#suppressPackageStartupMessages(library("doParallel"))
 
-## Preparations ----
 printf <- function(format, ...) print(sprintf(format, ...))
 
 rename <- function(v) {
@@ -26,10 +18,6 @@ rename <- function(v) {
   return (result)
 }
 
-theme.config <- theme(axis.text.x = element_text(angle=35, hjust=1),
-                      legend.box="horizontal", legend.position="top")
-
-## Arguments and output file ----
 argv <- commandArgs(trailingOnly = TRUE)
 csvfilename <- '../build/eval.prof'
 csvfilename <- argv[1]
@@ -43,20 +31,19 @@ save <- function(p, d, s, w=12, h=8) {
   null <- dev.off()
 }
 
-labels <- c('JNIF Empty', 'JNIF Identity', 'JNIF Frames', 
-            'ASM Empty', 'ASM Identity', 'ASM Frames')
+#labels <- c('JNIF Empty', 'JNIF Identity', 'JNIF Frames', 
+#            'ASM Empty', 'ASM Identity', 'ASM Frames')
 
 printf('Loading table from %s...', csvfilename);
 csv <- read.csv(csvfilename, strip.white=TRUE, sep=',', header=FALSE);
 colnames(csv) <- c('backend', 'bench', 'run', 'instr', 'stage', 'time');
-#csv$instrTemp <- sprintf('%s-%s', csv$backend, csv$instr);
-#csv$instr <- csv$instrTemp
-#csv$instrTemp <- NULL
-#csv$backend <- NULL
 csv$backend <- factor(csv$backend, levels=c('runagent', 'runserver'))
 levels(csv$backend) <- c('JNIF', 'ASM')
 csv$instr <- factor(csv$instr, levels=c('Empty', 'Identity', 'Compute', 'Stats'))
 levels(csv$instr) <- c('Empty', 'Identity', 'Frame', 'Stats')
+
+csv.classes <- subset(csv, !(stage %in% '@total'))
+csv.classes <- dcast(csv.classes, backend+bench+run+instr~'count', value.var='time', fun.aggregate=length)
 
 # Instrumentation
 csv.instrumentation <- subset(csv, !(stage %in% '@total'))
@@ -70,12 +57,23 @@ colnames(csv.total) <- c('backend', 'bench', 'run', 'instr', 'total');
 csv.all <- merge(csv.instrumentation, csv.total, by=c('backend', 'bench', 'run', 'instr'))
 csv.all <- melt(csv.all, id.vars=c('backend', 'bench', 'run', 'instr'), variable.name='stage', value.name='time')
 
+theme.config.top <- theme(axis.text.x=element_text(angle=35, hjust=1), legend.box="horizontal", legend.position="top")
+theme.config.right <- theme(axis.text.x=element_text(angle=35, hjust=1), legend.box="horizontal", legend.position="right")
+
+# Classes per benchmark
+p <-
+  ggplot(csv.classes)+
+  geom_bar(aes(bench, count, fill=bench), stat='identity', position='dodge')+
+  labs(title='Classes loaded per benchmark', x="Benchmark", y = "Loaded classes")+
+  theme.config.right
+save(p, path, "classes")
+
 # Instrumentation
 p <-
   ggplot(csv.instrumentation)+facet_wrap(~bench, scales="free")+
   geom_boxplot(aes(instr, instrumentation, color=backend))+
   labs(x="Library", y = "Instrumentation time (in seconds)", title='Instrumentation time')+
-  theme.config
+  theme.config.top
 save(p, path, "instr")
 
 # Instrumentation with total
@@ -83,14 +81,20 @@ p <-
   ggplot(csv.all)+facet_wrap(~bench, scales="free")+
   geom_boxplot(aes(instr, time, color=stage, fill=backend))+
   labs(x="Library", y = "Instrumentation and total time (in seconds)", title='Instrumentation and total time')+
-  theme.config
+  theme.config.top
 save(p, path, "all")
 
-#geom_bar(aes(instr, instrumentation, fill=instr), stat="identity")+
-#geom_bar(aes(instr, time, fill=stage), stat="identity")+
+# Average time for instrumentation
+csv.mean <- dcast(csv, backend+bench+instr~'time', value.var='time', fun.aggregate=mean)
 
-# Some stats for interactive mode.
-#csv.stats <- csv
-#csv.stats <- dcast(csv.stats, run+bench+stage ~ instr, value.var='time')
+p <-
+  ggplot(csv.mean)+facet_grid(instr~backend)+geom_boxplot(aes(bench, time, color=bench))+
+  labs(x="Instrumentation kind", y="Average Instrumentation Time (in seconds)", title='Average Instrumentation Time')+theme.config.top
+save(p, path, "mean")
+
 #csv.stats$diff <- csv.stats[["ASM Frames"]] - csv.stats[["JNIF Frames"]]
 #csv.stats <- csv.stats[order(csv.stats$diff),]
+
+#csv.hist <- subset(csv, !(stage %in% '@total'))
+#csv.hist <- subset(csv, stage!='@total' & run==1 & bench=="dacapo-eclipse" & instr=='Frame')
+#ggplot(csv.hist)+facet_wrap(~backend)+geom_density(aes(x=time, ymax=400))
