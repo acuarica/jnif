@@ -35,9 +35,12 @@ public:
 
 	void prof(const std::string& runId, const std::string& className,
 			double time) {
-		open();
+		if (args.instrFuncName != "ClientServer") {
+			open();
 
-		fprintf(_prof, "%s,%s,%f\n", runId.c_str(), className.c_str(), time);
+			fprintf(_prof, "%s,%s,%f\n", runId.c_str(), className.c_str(),
+					time);
+		}
 	}
 
 private:

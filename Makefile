@@ -178,7 +178,7 @@ $(BUILD)/jars:
 #
 start: CLASSPREFIX=ch.usi.inf.sape.frheap.FrHeapInstrumenter
 start:
-	$(JAVA) -jar $(INSTRSERVER) $(CLASSPREFIX)$(INSTRSERVERCLASS) &
+	$(JAVA) -jar $(INSTRSERVER) $(CLASSPREFIX)$(INSTRSERVERCLASS) $(BACKEND),$(APP),$(RUN),$(INSTR) &
 	sleep 2
 
 stop:
@@ -191,7 +191,7 @@ runjar:
 CMD=runjar
 
 runagent: LOGDIR=$(BUILD)/run/$(APP)/log/$(INSTR).$(APP)
-runagent: PROF=$(BUILD)/eval-$(APP)-$(RUN)-$(BACKEND)-$(INSTR)
+runagent: PROF=$(BUILD)/eval-$(BACKEND)-$(APP)-$(RUN)-$(INSTR)
 runagent: JVMARGS+=-agentpath:$(TESTAGENT)=$(FUNC):$(PROF):$(LOGDIR)/:$(BACKEND),$(APP),$(RUN),$(INSTR)
 runagent: logdir $(TESTAGENT) $(CMD)
 
@@ -233,21 +233,35 @@ scala: | $(DACAPO_SCRATCH)
 scala: $(BACKEND) 
 
 
-eval-scala: times=1
-eval-scala: backends=runagent runserver
-eval-scala: instrs=Empty Identity Compute
-eval-scala: benchs=actors apparat dummy factorie kiama scalac scaladoc scalap scalariform scalatest scalaxb specs tmt
-eval-scala:
+runeval:
 	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
 		$(foreach be,$(backends),\
 			$(foreach i,$(instrs),\
 				$(foreach b,$(benchs),\
-					&& $(MAKE) scala BACKEND=$(be) RUN=$(r) INSTR=$(i) BENCH=$(b) \
+					&& $(MAKE) $(SUITE) BACKEND=$(be) RUN=$(r) INSTR=$(i) BENCH=$(b) \
 				)\
 			)\
 		)\
 	)
-	cat $(BUILD)/eval-*.prof > $(BUILD)/eval.prof
+	cat $(BUILD)/eval-runagent-*.prof $(BUILD)/eval-server-*.prof > $(BUILD)/eval.prof
+
+
+eval-scala: times=1
+eval-scala: backends=runagent runserver
+eval-scala: instrs=Empty Identity Compute
+eval-scala: benchs=actors apparat dummy factorie kiama scalac scaladoc scalap scalariform scalatest scalaxb specs tmt
+eval-scala: SUITE=scala
+eval-scala: runeval
+#	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
+#		$(foreach be,$(backends),\
+#			$(foreach i,$(instrs),\
+#				$(foreach b,$(benchs),\
+#					&& $(MAKE) scala BACKEND=$(be) RUN=$(r) INSTR=$(i) BENCH=$(b) \
+#				)\
+#			)\
+#		)\
+#	)
+#	cat $(BUILD)/eval-runagent-*.prof $(BUILD)/eval-server-*.prof > $(BUILD)/eval.prof
 
 #
 # eval
@@ -258,17 +272,18 @@ eval: times=1
 eval: backends=runagent runserver
 eval: instrs=Empty Identity Compute Stats
 eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan  #tradebeans tradesoap
-eval:
-	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
-		$(foreach be,$(backends),\
-			$(foreach i,$(instrs),\
-				$(foreach b,$(benchs),\
-					&& $(MAKE) dacapo BACKEND=$(be) RUN=$(r) INSTR=$(i) BENCH=$(b) \
-				)\
-			)\
-		)\
-	)
-	cat $(BUILD)/eval-*.prof > $(BUILD)/eval.prof
+eval: SUITE=dacapo
+eval: runeval
+#	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
+#		$(foreach be,$(backends),\
+#			$(foreach i,$(instrs),\
+#				$(foreach b,$(benchs),\
+#					&& $(MAKE) dacapo BACKEND=$(be) RUN=$(r) INSTR=$(i) BENCH=$(b) \
+#				)\
+#			)\
+#		)\
+#	)
+#	cat $(BUILD)/eval-*.prof > $(BUILD)/eval.prof
 
 test: times=1
 test: backends=runagent

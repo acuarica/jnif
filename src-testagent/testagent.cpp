@@ -65,6 +65,7 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 //		tldget()->instrTime += end - start;
 
 		String clsn = className == NULL ? "null" : className;
+
 		tldget()->prof(args.runId, clsn, instrTime);
 
 	} catch (const JnifException& ex) {

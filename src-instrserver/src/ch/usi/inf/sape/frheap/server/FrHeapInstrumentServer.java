@@ -40,6 +40,8 @@ public class FrHeapInstrumentServer {
 
 		Class<?> cls = getInstrClass(args);
 
+		String p = args[1];
+
 		Object inst = cls.newInstance();
 		FrHeapInstrumenter instr = (FrHeapInstrumenter) inst;
 
@@ -48,6 +50,7 @@ public class FrHeapInstrumentServer {
 		instr.config = config;
 
 		final ServerSocket listenSocket = new ServerSocket(port);
+		int tid = 1;
 		try {
 			logger.info(String.format("Listening at %s:%d", listenSocket
 					.getInetAddress().getHostAddress(), listenSocket
@@ -64,7 +67,9 @@ public class FrHeapInstrumentServer {
 
 				FrHeapInstrumentSocket socket = new FrHeapInstrumentSocket(
 						clientSocket);
-				new FrHeapInstrumentWorker(socket, instr).start();
+
+				new FrHeapInstrumentWorker(socket, instr, tid, p).start();
+				tid++;
 			}
 		} finally {
 			listenSocket.close();
