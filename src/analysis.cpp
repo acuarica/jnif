@@ -239,7 +239,7 @@ public:
 			Frame out = bb.in;
 
 			SmtBuilder builder(out, cf, method);
-			for (auto it = bb.start; it != bb.exit; ++it) {
+			for (InstList::Iterator it = bb.start; it != bb.exit; ++it) {
 				Inst* inst = *it;
 				builder.processInst(*inst);
 				//prepareCatchHandlerFrame(inst, out);
@@ -623,7 +623,7 @@ public:
 			}
 			case OPCODE_ineg:
 			case OPCODE_fneg: {
-				auto t1 = frame.pop();
+				const Type& t1 = frame.pop();
 				frame.push(t1);
 				break;
 			}
@@ -769,23 +769,23 @@ public:
 			case OPCODE_return:
 				break;
 			case OPCODE_getstatic: {
-				auto t = fieldType(inst);
+				const Type& t = fieldType(inst);
 				frame.pushType(t);
 				break;
 			}
 			case OPCODE_putstatic: {
-				auto t = fieldType(inst);
+				const Type& t = fieldType(inst);
 				frame.popType(t);
 				break;
 			}
 			case OPCODE_getfield: {
-				auto t = fieldType(inst);
+				const Type& t = fieldType(inst);
 				frame.popRef();
 				frame.pushType(t);
 				break;
 			}
 			case OPCODE_putfield: {
-				auto t = fieldType(inst);
+				const Type& t = fieldType(inst);
 				frame.popType(t);
 				frame.popRef();
 				break;
@@ -1073,7 +1073,7 @@ private:
 		cp.getFieldRef(inst.field()->fieldRefIndex, &className, &name, &desc);
 
 		const char* d = desc.c_str();
-		auto t = Type::fromFieldDesc(d);
+		const Type& t = Type::fromFieldDesc(d);
 
 		return t;
 	}
@@ -1223,15 +1223,14 @@ public:
 
 		Frame initFrame;
 
-		u4 lvindex = [&]() {
-			if (method->isStatic()) {
-				return 0;
-			} else {
-				string className = cf->getThisClassName();
-				initFrame.setRefVar(0, className);
-				return 1;
-			}
-		}();
+		u4 lvindex;
+		if (method->isStatic()) {
+			lvindex = 0;
+		} else {
+			string className = cf->getThisClassName();
+			initFrame.setRefVar(0, className);
+			lvindex = 1;
+		}
 
 		const char* methodDesc = cf->getUtf8(method->descIndex);
 		vector<Type> argsType;
@@ -1262,20 +1261,24 @@ public:
 		Frame* f = &cfg.entry->out;
 		f->cleanTops();
 
-		auto isSame = [] (Frame& current, Frame& prev) {
-			return current.lva == prev.lva && current.stack.size() == 0;
-		};
+		class Ser {
+		public:
 
-		auto isSameLocals1StackItem = [](Frame& current, Frame& prev) {
-			return current.lva == prev.lva && current.stack.size() == 1;
-		};
+			bool isSame(Frame& current, Frame& prev) {
+				return current.lva == prev.lva && current.stack.size() == 0;
+			}
 
-		auto isChopAppend = [] (Frame& current, Frame& prev) -> int {
-			int diff = current.lva.size() - prev.lva.size();
-			bool emptyStack = current.stack.size() == 0;
-			bool res = diff != 0 && diff >= -3 && diff <= 3 && emptyStack;
-			return res ? diff : 0;
-		};
+			bool isSameLocals1StackItem(Frame& current, Frame& prev) {
+				return current.lva == prev.lva && current.stack.size() == 1;
+			}
+
+			int isChopAppend(Frame& current, Frame& prev) {
+				int diff = current.lva.size() - prev.lva.size();
+				bool emptyStack = current.stack.size() == 0;
+				bool res = diff != 0 && diff >= -3 && diff <= 3 && emptyStack;
+				return res ? diff : 0;
+			}
+		} s;
 
 		for (BasicBlock* bb : cfg) {
 			if (bb->start != code->instList.end()) {
@@ -1301,14 +1304,14 @@ public:
 
 					int diff;
 
-					if (isSame(current, *f)) {
+					if (s.isSame(current, *f)) {
 						if (offsetDelta <= 63) {
 							e.frameType = offsetDelta;
 						} else {
 							e.frameType = 251;
 							e.same_frame_extended.offset_delta = offsetDelta;
 						}
-					} else if (isSameLocals1StackItem(current, *f)) {
+					} else if (s.isSameLocals1StackItem(current, *f)) {
 						if (offsetDelta <= 63) {
 							e.frameType = 64 + offsetDelta;
 							auto t = current.stack.front();
@@ -1321,7 +1324,7 @@ public:
 							e.same_locals_1_stack_item_frame_extended.offset_delta =
 									offsetDelta;
 						}
-					} else if ((diff = isChopAppend(current, *f)) != 0) {
+					} else if ((diff = s.isChopAppend(current, *f)) != 0) {
 						Error::assert(diff != 0 && diff >= -3 && diff <= 3);
 
 						e.frameType = 251 + diff;
