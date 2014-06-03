@@ -186,72 +186,10 @@ public:
 			}
 		}();
 
-		//Frame frame = bb.in;
 		frame.clearStack();
 		frame.push(exType);
 
 		computeState(*handlerBb, frame, instList, cf, code, classPath, method);
-	}
-
-	static void visitCatch234(const BasicBlock& bb, InstList& instList,
-			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
-			bool useIn, Method* method) {
-		if (bb.start->isLabel()) {
-			for (const CodeExceptionEntry& ex : code->exceptions) {
-//				if (ex.startpc->label()->id == bb.start->label()->id) {
-//					visitCatch(ex, instList, cf, code, classPath, bb.cfg,
-//							bb.in);
-//				}
-
-				if (ex.startpc->label()->id == bb.start->label()->id) {
-					BasicBlock* handlerBb = bb.cfg->findBasicBlockOfLabel(
-							ex.handlerpc->label()->id);
-
-					Type exType = [&]() {
-						if (ex.catchtype != ConstPool::NULLENTRY) {
-							const String& className = cf.getClassName(
-									ex.catchtype);
-							return Type::fromConstClass(className);
-						} else {
-							return Type::objectType("java/lang/Throwable");
-						}
-					}();
-
-					Frame frame = useIn ? bb.in : bb.out;
-//					Frame frame = bb.in;
-					//Frame frame = bb.out;
-					frame.clearStack();
-					frame.push(exType);
-
-					computeState(*handlerBb, frame, instList, cf, code,
-							classPath, method);
-				}
-
-//				if (ex.endpc->label()->id == bb.start->label()->id) {
-//					BasicBlock* handlerBb = bb.cfg->findBasicBlockOfLabel(
-//							ex.handlerpc->label()->id);
-//
-//					Type exType = [&]() {
-//						if (ex.catchtype != ConstPool::NULLENTRY) {
-//							const String& className = cf.getClassName(
-//									ex.catchtype);
-//							return Type::fromConstClass(className);
-//						} else {
-//							return Type::objectType("java/lang/Throwable");
-//						}
-//					}();
-//
-//					Frame frame = bb.out;
-//					//Frame frame = bb.out;
-//					frame.clearStack();
-//					frame.push(exType);
-//
-//					computeState(*handlerBb, frame, instList, cf, code,
-//							classPath);
-//				}
-
-			}
-		}
 	}
 
 	static void computeState(BasicBlock& bb, Frame& how, InstList& instList,
@@ -275,59 +213,42 @@ public:
 			}
 		}();
 
-		auto hola = [&](Inst* inst, const Frame& out) {
-			//if (inst->isLabel()) {
-				for (const CodeExceptionEntry& ex : code->exceptions) {
-					//if (ex.endpc->label()->id == inst->label()->id)
+		if (change) {
+			auto contains = [](const CodeExceptionEntry& ex, const Inst* inst) {
+				int start = ex.startpc->label()->_offset;
+				int end = ex.endpc->label()->_offset;
+				int off = inst->_offset;
 
-					//cerr << "visitCatch: " << ;
-					if (ex.startpc->label()->_offset <= inst->_offset &&
-							inst->_offset < ex.endpc->label()->_offset
-					)
-					{
-						//	cerr << "visitCatch: ";
+				return start <= off && off < end;
+			};
+
+			auto prepareCatchHandlerFrame = [&](Inst* inst, const Frame& out) {
+				for (const CodeExceptionEntry& ex : code->exceptions) {
+					if (contains(ex, inst)) {
 						visitCatch(ex, instList, cf, code, classPath, bb.cfg,
 								out,method);
 					}
 				}
-				//}
 			};
 
-		if (change) {
 			bb.out = bb.in;
 
 			SmtBuilder builder(bb.out, cf, method);
 			for (auto it = bb.start; it != bb.exit; ++it) {
 				Inst* inst = *it;
-				//cerr << "after cf" << *inst << endl;
 				builder.processInst(*inst);
-				hola(inst, bb.out);
+				prepareCatchHandlerFrame(inst, bb.out);
 			}
-
-			//cerr << "finished process inst"   << endl;
 
 			Frame h = bb.out;
 
 			for (BasicBlock* nid : bb) {
 				computeState(*nid, h, instList, cf, code, classPath, method);
 			}
-
-//			for (auto it = bb.start; it != bb.exit; ++it) {
-//				Inst* inst = *it;
-//				hola(inst, bb.out);
-//			}
-
-			//visitCatch(bb, instList, cf, code, classPath, true);
-			//visitCatch(bb, instList, cf, code, classPath, false);
 		}
 	}
 
 	void processInst(Inst& inst) {
-//		InstTable::InstHandler handler = InstTable::cases[inst.opcode];
-//		(*handler)(*this, inst);
-
-		//return;
-
 		switch (inst.opcode) {
 			case OPCODE_nop:
 				break;
@@ -1287,8 +1208,6 @@ public:
 			*attrIndex = cf->putUtf8("StackMapTable");
 		}
 
-		//code->instList.setLabelIds();
-
 		Frame initFrame;
 
 		u4 lvindex = [&]() {
@@ -1296,7 +1215,7 @@ public:
 				return 0;
 			} else {
 				string className = cf->getThisClassName();
-				initFrame.setRefVar(0, className); // this argument
+				initFrame.setRefVar(0, className);
 				return 1;
 			}
 		}();
@@ -1310,6 +1229,8 @@ public:
 		}
 
 		ControlFlowGraph* cfgp = new ControlFlowGraph(code->instList);
+		code->cfg = cfgp;
+
 		ControlFlowGraph& cfg = *cfgp;
 
 		initFrame.valid = true;
@@ -1421,7 +1342,7 @@ public:
 			}
 		}
 
-		code->cfg = cfgp;
+		//code->cfg = cfgp;
 
 		code->attrs.add(smt);
 	}
@@ -1436,17 +1357,6 @@ void ClassFile::computeFrames(IClassPath* classPath) {
 		CodeAttr* code = method->codeAttr();
 
 		if (code != nullptr) {
-
-//			bool hasJsrOrRet = false;
-//			for (Inst* inst : code->instList) {
-//				if (inst->isJsrOrRet()) {
-//					cerr << "JSR/RET in compute frames!" << endl;
-//					hasJsrOrRet = true;
-//				}
-//			}
-//
-//			Error::assert(hasJsrOrRet == code->instList.hasJsrOrRet());
-
 			bool hasJsrOrRet = code->instList.hasJsrOrRet();
 			if (hasJsrOrRet) {
 				return;

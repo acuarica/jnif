@@ -289,7 +289,6 @@ dots: DOTS=$(shell find build -name *.dot)
 dots: PNGS=$(DOTS:%.dot=%.png)
 dots: $(PNGS)
 
-
 $(BUILD)/%.png: $(BUILD)/%.dot
 	dot -Tpng $< > $@
 

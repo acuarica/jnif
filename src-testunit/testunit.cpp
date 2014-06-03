@@ -251,7 +251,14 @@ static void testJoinStack() {
 	code->exceptions.push_back(ex);
 
 	UnitTestClassPath cp;
-	cf.computeFrames(&cp);
+
+	try {
+		cf.computeFrames(&cp);
+	} catch (const JnifException& ex) {
+		//ofstream os("build/stack.dot");
+		//cf.dot(os);
+		throw ex;
+	}
 }
 
 typedef void (TestFunc)();
