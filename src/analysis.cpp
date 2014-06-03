@@ -1295,10 +1295,6 @@ public:
 
 					e.label = start;
 
-					//Inst* fi = new Inst(KIND_FRAME);
-					//fi->frame.frame = bb->in;
-					//code->instList.insert(bb->start, fi);
-
 					totalOffset += 1;
 					int offsetDelta = start->label()->offset - totalOffset;
 

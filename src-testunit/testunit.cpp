@@ -7,23 +7,8 @@
 #include <sstream>
 #include <fstream>
 
-//static inline int _exception(int) __attribute__((noreturn));
-//
-//static inline int _exception(int) {
-//	exit(1);
-//}
-
-//#define ASSERT(cond, format, ...) ( (cond) ? 0 : _exception(fprintf(stderr, \
-//			"ASSERT | '" #cond "' failed | " format "\n", ##__VA_ARGS__ )))
-
 using namespace std;
 using namespace jnif;
-
-//static string outFileName(const String& className, const char* ext) {
-//	stringstream path;
-//	path << className << "." << ext;
-//	return path.str();
-//}
 
 class UnitTestClassPath: public IClassPath {
 public:
@@ -94,12 +79,9 @@ static void testJoinFrameException() {
 
 	lhs.join(rhs, &cp);
 
-	cerr << lhs;
-
 	Frame res;
 	res.lva.resize(2, Type::topType());
 	res.setVar2(0, classType);
-	//res.setVar2(1, Type::topType());
 
 	Error::assertEquals(res, lhs);
 }
@@ -153,13 +135,6 @@ static void testJoinFrame() {
 	code->exceptions.push_back(ex);
 
 	cf.computeFrames(&cp);
-
-//	u1* data;
-//	int len;
-//	cf.write(&data, &len, [&](u4 size) {return new u1[size];});
-//	ClassFile cf2(data, len);
-//	cf2.computeFrames(&cp);
-//	cerr << cf2;
 }
 
 static void testJoinStack() {
