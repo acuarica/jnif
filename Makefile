@@ -9,7 +9,7 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
-UNAME := $(shell uname)
+UNAME:=$(shell uname)
 
 ifeq ($(UNAME), Linux)
   CXXFLAGS+=
@@ -243,7 +243,7 @@ runeval:
 			)\
 		)\
 	)
-	cat $(BUILD)/eval-runagent-*.prof $(BUILD)/eval-server-*.prof > $(BUILD)/eval.prof
+	cat $(BUILD)/eval-runagent-*.prof $(BUILD)/eval-server-*.prof > $(BUILD)/eval.$(UNAME).prof
 
 
 eval-scala: times=1
@@ -297,7 +297,7 @@ test-stats: instrs=Stats
 test-stats: test
 
 plots:
-	$(R) --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.prof
+	$(R) --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.$(UNAME).prof
 
 docs:
 	doxygen
