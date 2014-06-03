@@ -10,8 +10,10 @@ UNAME=$(shell uname)
 # Sets JAVA_HOME for the current environment
 ifeq ($(UNAME), Darwin)
   JAVA_HOME=$(shell /usr/libexec/java_home)
+  R=r
 else ifeq ($(UNAME), Linux)
   JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+  R=R
 else
   $(error Unrecognized environment. Only supported Darwin and Linux)
 endif
