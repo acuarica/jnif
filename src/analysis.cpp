@@ -214,14 +214,13 @@ public:
 		Error::assert(how.valid, "how valid");
 		//Error::assert(bb.in.valid == bb.out.valid, "in.valid != out.valid");
 
-		bool change = [&]() {
-			if (!bb.in.valid) {
-				bb.in = how;
-				return true;
-			} else {
-				return join(bb.in, how, classPath, method);
-			}
-		}();
+		bool change;
+		if (!bb.in.valid) {
+			bb.in = how;
+			change = true;
+		} else {
+			change = join(bb.in, how, classPath, method);
+		}
 
 		if (change) {
 			auto contains = [](const CodeExceptionEntry& ex, const Inst* inst) {
