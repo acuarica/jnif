@@ -689,6 +689,14 @@ public:
 	}
 
 	/**
+	 * Adds a string to the constant pool by providing a string.
+	 */
+	ConstIndex addString(const String& str) {
+		ConstIndex utf8Index = addUtf8(str.c_str());
+		return addString(utf8Index);
+	}
+
+	/**
 	 * @returns the ConstIndex of the newly created entry.
 	 */
 	ConstIndex addStringFromClass(ConstIndex classIndex) {
@@ -1492,7 +1500,20 @@ public:
 		return tag == TYPE_TOP && !isArray();
 	}
 
+	/**
+	 * Returns true when this type is exactly int type.
+	 * False otherwise.
+	 */
 	bool isInt() const {
+		return tag == TYPE_INTEGER && !isArray();
+	}
+
+	/**
+	 * Returns true when this type is an
+	 * integral type, i.e., int, boolean, byte, char, short.
+	 * False otherwise.
+	 */
+	bool isIntegral() const {
 		switch (tag) {
 			case TYPE_INTEGER:
 			case TYPE_BOOLEAN:
@@ -1504,6 +1525,19 @@ public:
 				return false;
 		}
 	}
+
+//
+//	bool isByte() const {
+//		return tag == TYPE_BYTE && !isArray();
+//	}
+//
+//	bool isChar() const {
+//		return tag == TYPE_CHAR && !isArray();
+//	}
+//
+//	bool isShort() const {
+//		return tag == TYPE_SHORT && !isArray();
+//	}
 
 	bool isFloat() const {
 		return tag == TYPE_FLOAT && !isArray();
@@ -1542,7 +1576,7 @@ public:
 	}
 
 	bool isOneWord() const {
-		return isInt() || isFloat() || isNull() || isObject();
+		return isIntegral() || isFloat() || isNull() || isObject();
 	}
 
 	bool isTwoWord() const {
@@ -1685,7 +1719,7 @@ public:
 
 	Type popTwoWord();
 
-	Type popInt();
+	Type popIntegral();
 
 	Type popFloat();
 
@@ -3148,6 +3182,11 @@ public:
 		return hasCode() && name == "main" && isStatic() && isPublic()
 				&& desc == "([Ljava/lang/String;)V";
 	}
+
+	/**
+	 * Shows this method in the specified ostream.
+	 */
+	friend std::ostream& operator<<(std::ostream& os, const Method& m);
 
 private:
 

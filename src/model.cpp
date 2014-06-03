@@ -508,9 +508,9 @@ Type Frame::popTwoWord() {
 	return t1;
 }
 
-Type Frame::popInt() {
+Type Frame::popIntegral() {
 	Type t = popOneWord();
-	Error::assert(t.isInt(), "invalid int type on top of the stack: ", t);
+	Error::assert(t.isIntegral(), "Invalid integral type on top of stack: ", t);
 	return t;
 }
 
@@ -534,8 +534,8 @@ Type Frame::popDouble() {
 }
 
 void Frame::popType(const Type& type) {
-	if (type.isInt()) {
-		popInt();
+	if (type.isIntegral()) {
+		popIntegral();
 	} else if (type.isFloat()) {
 		popFloat();
 	} else if (type.isLong()) {
@@ -550,7 +550,7 @@ void Frame::popType(const Type& type) {
 }
 
 void Frame::pushType(const Type& type) {
-	if (type.isInt()) {
+	if (type.isIntegral()) {
 		pushInt();
 	} else if (type.isFloat()) {
 		pushFloat();
@@ -612,7 +612,7 @@ void Frame::cleanTops() {
 }
 
 void Frame::_setVar(u4 lvindex, const Type& t) {
-	Error::check(lvindex < 256, "");
+	Error::check(lvindex < 256 * 256, "Index too large for LVA: ", lvindex);
 
 	if (lvindex >= lva.size()) {
 		lva.resize(lvindex + 1, Type::topType());

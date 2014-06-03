@@ -16,11 +16,19 @@ class JsrRetNotSupported {
 
 };
 
+std::ostream& operator<<(std::ostream& os, const Method* m) {
+	if (m == nullptr) {
+		return os << "null method";
+	} else {
+		return os << *m;
+	}
+}
+
 class SmtBuilder {
 public:
 
-	SmtBuilder(Frame& frame, const ConstPool& cp) :
-			frame(frame), cp(cp) {
+	SmtBuilder(Frame& frame, const ConstPool& cp, Method* m) :
+			frame(frame), cp(cp), _m(m) {
 	}
 
 	static bool isAssignable(const Type& subt, const Type& supt) {
@@ -36,9 +44,10 @@ public:
 			return true;
 		}
 
-//		if (subt.isArray() && supt.isArray()) {
-//			return true;
-//		}
+		if (subt.isIntegral() && supt.isInt()) {
+			Error::assert(!subt.isInt(), "Invalid subt");
+			return true;
+		}
 
 		return false;
 	}
@@ -54,9 +63,6 @@ public:
 	}
 
 	static bool assign(Type& t, Type o, IClassPath* classPath) {
-//		check(isAssignable(t, o) || isAssignable(o, t), "Invalid assign type: ",
-//				t, " <> ", o, " @ frame: ", *this);
-
 		if (!isAssignable(t, o) && !isAssignable(o, t)) {
 			if (t.isClass() && o.isClass()) {
 				String clazz1 = t.getClassName();
@@ -131,12 +137,12 @@ public:
 		return false;
 	}
 
-	static bool join(Frame& frame, Frame& how, IClassPath* classPath) {
-		//cerr << frame << " join " << how << endl;
-
+	static bool join(Frame& frame, Frame& how, IClassPath* classPath,
+			Method* method = nullptr) {
 		Error::check(frame.stack.size() == how.stack.size(),
 				"Different stack sizes: ", frame.stack.size(), " != ",
-				how.stack.size(), ": #", frame, " != #", how);
+				how.stack.size(), ": #", frame, " != #", how, "Method: ",
+				method);
 
 		if (frame.lva.size() < how.lva.size()) {
 			frame.lva.resize(how.lva.size(), Type::topType());
@@ -167,7 +173,7 @@ public:
 
 	static void visitCatch(const CodeExceptionEntry& ex, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
-			const ControlFlowGraph* cfg, Frame frame) {
+			const ControlFlowGraph* cfg, Frame frame, Method* method) {
 		int handlerPcId = ex.handlerpc->label()->id;
 		BasicBlock* handlerBb = cfg->findBasicBlockOfLabel(handlerPcId);
 
@@ -184,12 +190,12 @@ public:
 		frame.clearStack();
 		frame.push(exType);
 
-		computeState(*handlerBb, frame, instList, cf, code, classPath);
+		computeState(*handlerBb, frame, instList, cf, code, classPath, method);
 	}
 
-	static void visitCatch(const BasicBlock& bb, InstList& instList,
+	static void visitCatch234(const BasicBlock& bb, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
-			bool useIn) {
+			bool useIn, Method* method) {
 		if (bb.start->isLabel()) {
 			for (const CodeExceptionEntry& ex : code->exceptions) {
 //				if (ex.startpc->label()->id == bb.start->label()->id) {
@@ -218,7 +224,7 @@ public:
 					frame.push(exType);
 
 					computeState(*handlerBb, frame, instList, cf, code,
-							classPath);
+							classPath, method);
 				}
 
 //				if (ex.endpc->label()->id == bb.start->label()->id) {
@@ -249,7 +255,8 @@ public:
 	}
 
 	static void computeState(BasicBlock& bb, Frame& how, InstList& instList,
-			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath) {
+			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
+			Method* method) {
 		if (bb.start == instList.end()) {
 			Error::assert(bb.name == "Exit" && bb.exit == instList.end(),
 					"exit bb");
@@ -259,16 +266,12 @@ public:
 		Error::assert(how.valid, "how valid");
 		Error::assert(bb.in.valid == bb.out.valid, "");
 
-		//cerr << bb << how << endl << endl;
-
 		bool change = [&]() {
 			if (!bb.in.valid) {
 				bb.in = how;
-				//bb.out = bb.in;
 				return true;
 			} else {
-				//cerr
-				return join(bb.in, how, classPath);
+				return join(bb.in, how, classPath, method);
 			}
 		}();
 
@@ -284,7 +287,7 @@ public:
 					{
 						//	cerr << "visitCatch: ";
 						visitCatch(ex, instList, cf, code, classPath, bb.cfg,
-								out);
+								out,method);
 					}
 				}
 				//}
@@ -293,7 +296,7 @@ public:
 		if (change) {
 			bb.out = bb.in;
 
-			SmtBuilder builder(bb.out, cf);
+			SmtBuilder builder(bb.out, cf, method);
 			for (auto it = bb.start; it != bb.exit; ++it) {
 				Inst* inst = *it;
 				//cerr << "after cf" << *inst << endl;
@@ -306,7 +309,7 @@ public:
 			Frame h = bb.out;
 
 			for (BasicBlock* nid : bb) {
-				computeState(*nid, h, instList, cf, code, classPath);
+				computeState(*nid, h, instList, cf, code, classPath, method);
 			}
 
 //			for (auto it = bb.start; it != bb.exit; ++it) {
@@ -363,32 +366,64 @@ public:
 				ldc2(inst);
 				break;
 			case OPCODE_iload:
+				iload(inst.var()->lvindex);
+				break;
 			case OPCODE_iload_0:
+				iload(0);
+				break;
 			case OPCODE_iload_1:
+				iload(1);
+				break;
 			case OPCODE_iload_2:
+				iload(2);
+				break;
 			case OPCODE_iload_3:
-				frame.pushInt();
+				iload(3);
 				break;
 			case OPCODE_lload:
+				lload(inst.var()->lvindex);
+				break;
 			case OPCODE_lload_0:
+				lload(0);
+				break;
 			case OPCODE_lload_1:
+				lload(1);
+				break;
 			case OPCODE_lload_2:
+				lload(2);
+				break;
 			case OPCODE_lload_3:
-				frame.pushLong();
+				lload(3);
 				break;
 			case OPCODE_fload:
+				fload(inst.var()->lvindex);
+				break;
 			case OPCODE_fload_0:
+				fload(0);
+				break;
 			case OPCODE_fload_1:
+				fload(1);
+				break;
 			case OPCODE_fload_2:
+				fload(2);
+				break;
 			case OPCODE_fload_3:
-				frame.pushFloat();
+				fload(3);
 				break;
 			case OPCODE_dload:
+				dload(inst.var()->lvindex);
+				break;
 			case OPCODE_dload_0:
+				dload(0);
+				break;
 			case OPCODE_dload_1:
+				dload(1);
+				break;
 			case OPCODE_dload_2:
+				dload(2);
+				break;
 			case OPCODE_dload_3:
-				frame.pushDouble();
+				dload(3);
 				break;
 			case OPCODE_aload:
 				aload(inst.var()->lvindex);
@@ -409,22 +444,22 @@ public:
 			case OPCODE_baload:
 			case OPCODE_caload:
 			case OPCODE_saload:
-				frame.popInt();
+				frame.popIntegral();
 				frame.popArray();
 				frame.pushInt();
 				break;
 			case OPCODE_laload:
-				frame.popInt();
+				frame.popIntegral();
 				frame.popArray();
 				frame.pushLong();
 				break;
 			case OPCODE_faload:
-				frame.popInt();
+				frame.popIntegral();
 				frame.popArray();
 				frame.pushFloat();
 				break;
 			case OPCODE_daload: {
-				frame.popInt();
+				frame.popIntegral();
 				Type arrayType = frame.popArray();
 				frame.pushDouble();
 				break;
@@ -511,7 +546,7 @@ public:
 			case OPCODE_bastore:
 			case OPCODE_castore:
 			case OPCODE_sastore:
-				frame.popInt();
+				frame.popIntegral();
 				xastore();
 				break;
 			case OPCODE_lastore:
@@ -537,23 +572,23 @@ public:
 				frame.popTwoWord();
 				break;
 			case OPCODE_dup: {
-				auto t1 = frame.popOneWord();
+				const Type& t1 = frame.popOneWord();
 				frame.push(t1);
 				frame.push(t1);
 				break;
 			}
 			case OPCODE_dup_x1: {
-				auto t1 = frame.pop();
-				auto t2 = frame.pop();
+				const Type& t1 = frame.popOneWord();
+				const Type& t2 = frame.popOneWord();
 				frame.push(t1);
 				frame.push(t2);
 				frame.push(t1);
 				break;
 			}
 			case OPCODE_dup_x2: {
-				auto t1 = frame.pop();
-				auto t2 = frame.pop();
-				auto t3 = frame.pop();
+				const Type& t1 = frame.pop();
+				const Type& t2 = frame.pop();
+				const Type& t3 = frame.pop();
 				frame.push(t1);
 				frame.push(t3);
 				frame.push(t2);
@@ -561,8 +596,8 @@ public:
 				break;
 			}
 			case OPCODE_dup2: {
-				auto t1 = frame.pop();
-				auto t2 = frame.pop();
+				const Type& t1 = frame.pop();
+				const Type& t2 = frame.pop();
 				frame.push(t2);
 				frame.push(t1);
 				frame.push(t2);
@@ -570,9 +605,9 @@ public:
 				break;
 			}
 			case OPCODE_dup2_x1: {
-				auto t1 = frame.pop();
-				auto t2 = frame.pop();
-				auto t3 = frame.pop();
+				const Type& t1 = frame.pop();
+				const Type& t2 = frame.pop();
+				const Type& t3 = frame.pop();
 				frame.push(t2);
 				frame.push(t1);
 				frame.push(t3);
@@ -581,10 +616,10 @@ public:
 				break;
 			}
 			case OPCODE_dup2_x2: {
-				auto t1 = frame.pop();
-				auto t2 = frame.pop();
-				auto t3 = frame.pop();
-				auto t4 = frame.pop();
+				const Type& t1 = frame.pop();
+				const Type& t2 = frame.pop();
+				const Type& t3 = frame.pop();
+				const Type& t4 = frame.pop();
 				frame.push(t2);
 				frame.push(t1);
 				frame.push(t4);
@@ -594,8 +629,8 @@ public:
 				break;
 			}
 			case OPCODE_swap: {
-				auto t1 = frame.pop();
-				auto t2 = frame.pop();
+				const Type& t1 = frame.pop();
+				const Type& t2 = frame.pop();
 				frame.push(t1);
 				frame.push(t2);
 				break;
@@ -616,7 +651,7 @@ public:
 			case OPCODE_iand:
 			case OPCODE_ior:
 			case OPCODE_ixor: {
-				auto t1 = frame.pop();
+				const Type& t1 = frame.pop();
 				frame.pop();
 				frame.push(t1);
 				break;
@@ -636,7 +671,7 @@ public:
 			case OPCODE_lshl:
 			case OPCODE_lshr:
 			case OPCODE_lushr:
-				frame.popInt();
+				frame.popIntegral();
 				frame.popLong();
 				frame.pushLong();
 				break;
@@ -672,15 +707,15 @@ public:
 				iinc(inst.iinc()->index);
 				break;
 			case OPCODE_i2l:
-				frame.popInt();
+				frame.popIntegral();
 				frame.pushLong();
 				break;
 			case OPCODE_i2f:
-				frame.popInt();
+				frame.popIntegral();
 				frame.pushFloat();
 				break;
 			case OPCODE_i2d:
-				frame.popInt();
+				frame.popIntegral();
 				frame.pushDouble();
 				break;
 			case OPCODE_l2i:
@@ -722,7 +757,7 @@ public:
 			case OPCODE_i2b:
 			case OPCODE_i2c:
 			case OPCODE_i2s:
-				frame.popInt();
+				frame.popIntegral();
 				frame.pushInt();
 				break;
 			case OPCODE_lcmp:
@@ -760,8 +795,8 @@ public:
 			case OPCODE_if_icmpge:
 			case OPCODE_if_icmpgt:
 			case OPCODE_if_icmple:
-				frame.pop();
-				frame.pop();
+				frame.popIntegral();
+				frame.popIntegral();
 				break;
 			case OPCODE_if_acmpeq:
 			case OPCODE_if_acmpne:
@@ -900,19 +935,19 @@ private:
 	}
 
 	void newarray(Inst& inst) {
-		frame.popInt();
+		frame.popIntegral();
 		frame.pushArray(getArrayBaseType(inst.newarray()->atype), 1);
 	}
 
 	void anewarray(Inst& inst) {
-		frame.popInt();
+		frame.popIntegral();
 		const String& className = cp.getClassName(inst.type()->classIndex);
 		Type t = Type::fromConstClass(className);
 		frame.pushArray(t, t.getDims() + 1);
 	}
 
 	void aaload(Inst&) {
-		frame.popInt();
+		frame.popIntegral();
 		Type arrayType = frame.popArray();
 		if (arrayType.isNull()) {
 			frame.pushNull();
@@ -970,7 +1005,7 @@ private:
 	}
 
 	void istore(int lvindex) {
-		frame.popInt();
+		frame.popIntegral();
 		frame.setIntVar(lvindex);
 	}
 
@@ -997,6 +1032,31 @@ private:
 		frame.setRefVar(lvindex, refType);
 	}
 
+	void iload(u4 lvindex, int offset = 0) {
+		const Type& type = frame.getVar(lvindex);
+		Error::check(type.isIntegral(), "iload: ", type, " at index ", lvindex,
+				":offset:", offset, " for ", _m);
+		frame.pushInt();
+	}
+
+	void fload(u4 lvindex) {
+		const Type& type = frame.getVar(lvindex);
+		Error::check(type.isFloat(), "fload: ", type, " @ ", lvindex);
+		frame.pushFloat();
+	}
+
+	void lload(u4 lvindex) {
+		const Type& type = frame.getVar(lvindex);
+		Error::check(type.isLong(), "lload: ", type, " @ ", lvindex);
+		frame.pushLong();
+	}
+
+	void dload(u4 lvindex) {
+		const Type& type = frame.getVar(lvindex);
+		Error::check(type.isDouble(), "dload: ", type, " @ ", lvindex);
+		frame.pushDouble();
+	}
+
 	void aload(u4 lvindex) {
 		const Type& type = frame.getVar(lvindex);
 		Error::check(type.isObject() || type.isNull(), "Bad ref var at index[",
@@ -1005,7 +1065,7 @@ private:
 	}
 
 	void xastore() {
-		frame.popInt();
+		frame.popIntegral();
 		frame.popArray();
 	}
 
@@ -1089,7 +1149,7 @@ private:
 		Error::check(dims >= 1, "invalid dims: ", dims);
 
 		for (int i = 0; i < dims; i++) {
-			frame.popInt();
+			frame.popIntegral();
 		}
 
 		string arrayClassName = cp.getClassName(inst.multiarray()->classIndex);
@@ -1100,30 +1160,37 @@ private:
 	}
 
 	void wide(Inst& inst) {
+		u2 lvindex = inst.wide()->var.lvindex;
 		switch (inst.wide()->subOpcode) {
 			case OPCODE_iload:
-				frame.pushInt();
+				iload(lvindex);
 				break;
 			case OPCODE_lload:
-				frame.pushLong();
+				lload(lvindex);
 				break;
 			case OPCODE_fload:
-				frame.pushFloat();
+				fload(lvindex);
 				break;
 			case OPCODE_dload:
-				frame.pushDouble();
+				dload(lvindex);
+				break;
+			case OPCODE_aload:
+				aload(lvindex);
 				break;
 			case OPCODE_istore:
-				istore(inst.wide()->var.lvindex);
+				istore(lvindex);
 				break;
 			case OPCODE_fstore:
-				fstore(inst.wide()->var.lvindex);
+				fstore(lvindex);
 				break;
 			case OPCODE_lstore:
-				lstore(inst.wide()->var.lvindex);
+				lstore(lvindex);
 				break;
 			case OPCODE_dstore:
-				dstore(inst.wide()->var.lvindex);
+				dstore(lvindex);
+				break;
+			case OPCODE_astore:
+				astore(lvindex);
 				break;
 			case OPCODE_iinc:
 				iinc(inst.wide()->iinc.index);
@@ -1160,6 +1227,7 @@ private:
 
 	Frame& frame;
 	const ConstPool& cp;
+	Method* _m;
 };
 
 void Frame::join(Frame& how, IClassPath* classPath) {
@@ -1251,7 +1319,7 @@ public:
 
 		BasicBlock* to = *cfg.entry->begin();
 		SmtBuilder::computeState(*to, initFrame, code->instList, *cf, code,
-				classPath);
+				classPath, method);
 
 		SmtAttr* smt = new SmtAttr(*attrIndex, cf);
 

@@ -362,7 +362,7 @@ public:
 
 			if (type.isTop()) {
 				bw.writeu1(TYPE_TOP);
-			} else if (type.isInt()) {
+			} else if (type.isIntegral()) {
 				bw.writeu1(TYPE_INTEGER);
 			} else if (type.isFloat()) {
 				bw.writeu1(TYPE_FLOAT);

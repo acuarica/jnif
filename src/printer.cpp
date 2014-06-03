@@ -249,7 +249,7 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 	os << ", id: " << type.typeId;
 	if (type.isTop()) {
 		os << "Top";
-	} else if (type.isInt()) {
+	} else if (type.isIntegral()) {
 		os << "Integer";
 	} else if (type.isFloat()) {
 		os << "Float";
@@ -347,6 +347,19 @@ private:
 	const char* const sep;
 };
 
+std::ostream& operator<<(std::ostream& os, const Method& m) {
+	ConstPool& cp = *m.constPool;
+	os << "+Method " << AccessFlagsPrinter(m.accessFlags) << " "
+			<< cp.getUtf8(m.nameIndex) << ": " << " #" << m.nameIndex << ": "
+			<< cp.getUtf8(m.descIndex) << "#" << m.descIndex << endl;
+
+	if (m.hasCode()) {
+		os << m.codeAttr()->instList;
+	}
+
+	return os;
+}
+
 class ClassPrinter: private Error {
 public:
 
@@ -404,10 +417,7 @@ public:
 		inc();
 
 		for (Method* m : cf.methods) {
-			line() << "+Method " << AccessFlagsPrinter(m->accessFlags) << " "
-					<< cf.getUtf8(m->nameIndex) << ": " << " #" << m->nameIndex
-					<< ": " << cf.getUtf8(m->descIndex) << "#" << m->descIndex
-					<< endl;
+			line() << *m;
 
 			printAttrs(*m, m);
 		}
