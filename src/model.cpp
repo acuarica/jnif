@@ -221,15 +221,15 @@ Method* ClassFile::addMethod(ConstIndex nameIndex, ConstIndex descIndex,
 }
 
 static ostream& dotFrame(ostream& os, const Frame& frame) {
-	os << " LVA: ";
-	for (u4 i = 0; i < frame.lva.size(); i++) {
-		os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i];
-	}
+//	os << " LVA: ";
+//	for (u4 i = 0; i < frame.lva.size(); i++) {
+//		os << (i == 0 ? "" : ",\n ") << i << ": " << frame.lva[i];
+//	}
 
 	os << " STACK: ";
 	int i = 0;
 	for (auto t : frame.stack) {
-		os << (i == 0 ? "" : "  ") << t;
+		os << (i == 0 ? "" : "\n  ") << t;
 		i++;
 	}
 	return os << " ";
@@ -240,17 +240,23 @@ static void dotCfg(ostream& os, const ControlFlowGraph& cfg, int methodId) {
 	for (BasicBlock* bb : cfg) {
 		os << "    m" << methodId << bb->name << " [ label = \"<port0> "
 				<< bb->name;
-		os << " | ";
+		os << " |{ ";
 		dotFrame(os, bb->in);
 		os << " | ";
-		dotFrame(os, bb->out);
-		os << "\" ]" << endl;
 
-//		for (auto it = bb->start; it != bb->exit; it++) {
-//			Inst* inst = *it;
-//			printInst(*inst);
-//			os << endl;
-//		}
+
+				for (auto it = bb->start; it != bb->exit; ++it) {
+					Inst* inst = *it;
+					os << *inst << endl;
+					//os << endl;
+				}
+
+
+
+		os << " | ";
+		dotFrame(os, bb->out);
+		os << "}\" ]" << endl;
+
 	}
 
 	for (BasicBlock* bb : cfg) {

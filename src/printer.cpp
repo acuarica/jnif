@@ -245,8 +245,8 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 		os << "[]";
 	}
 
-	os << "init: " << type.init;
-	os << ", id: " << type.typeId;
+	//os << "init: " << type.init;
+	//os << ", id: " << type.typeId;
 	if (type.isTop()) {
 		os << "Top";
 	} else if (type.isIntegral()) {
@@ -262,7 +262,8 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 	} else if (type.isUninitThis()) {
 		os << "Uninitialized this";
 	} else if (type.isObject()) {
-		os << "Object: #" << type.getClassName() << "#@" << type.getCpIndex();
+		//os << "" << type.getClassName() << "&@" << type.getCpIndex();
+		os << "" << type.getClassName() << "&";
 	} else if (type.isUninit()) {
 		u2 offset = type.uninit.label->label()->offset;
 		os << "Uninitialized offset: new offset=" << type.uninit.offset
@@ -354,7 +355,12 @@ std::ostream& operator<<(std::ostream& os, const Method& m) {
 			<< cp.getUtf8(m.descIndex) << "#" << m.descIndex << endl;
 
 	if (m.hasCode()) {
-		os << m.codeAttr()->instList;
+		CodeAttr* c = m.codeAttr();
+		if (c->cfg != nullptr) {
+			os << *c->cfg;
+		} else {
+			os << c->instList;
+		}
 	}
 
 	return os;
@@ -574,8 +580,6 @@ private:
 		line(1) << "Code length: " << c.codeLen << endl;
 
 		inc();
-
-		//c.instList.setLabelIds();
 
 		if (c.cfg != nullptr) {
 			os << *c.cfg;
