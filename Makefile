@@ -59,6 +59,25 @@ $(TESTUNIT_BUILD):
 	mkdir -p $@
 
 #
+# Rules to make $(TESTCOVERAGE)
+#
+TESTCOVERAGE=$(BUILD)/testcoverage.bin
+TESTCOVERAGE_BUILD=$(BUILD)/testcoverage
+TESTCOVERAGE_SRC=src-testcoverage
+TESTCOVERAGE_HPPS=$(wildcard $(TESTCOVERAGE_SRC)/*.hpp)
+TESTCOVERAGE_SRCS=$(wildcard $(TESTCOVERAGE_SRC)/*.cpp)
+TESTCOVERAGE_OBJS=$(TESTCOVERAGE_SRCS:$(TESTCOVERAGE_SRC)/%=$(TESTCOVERAGE_BUILD)/%.o)
+
+$(TESTCOVERAGE): $(TESTCOVERAGE_OBJS) $(LIBJNIF)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+$(TESTCOVERAGE_BUILD)/%.cpp.o: $(TESTCOVERAGE_SRC)/%.cpp $(TESTCOVERAGE_HPPS) | $(TESTCOVERAGE_BUILD)
+	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -c -o $@ $<
+
+$(TESTCOVERAGE_BUILD):
+	mkdir -p $@
+
+#
 # Rules to make $(TESTAGENT)
 #
 TESTAGENT=$(BUILD)/libtestagent.dylib
@@ -130,17 +149,21 @@ $(INSTRSERVER_BUILD):
 
 .PHONY: all testunit start stop testapp dacapo eval docs clean cleaneval
 
-all: $(LIBJNIF) $(TESTUNIT) $(TESTAGENT) $(TESTAPP) $(INSTRSERVER)
+all: $(LIBJNIF) $(TESTUNIT) $(TESTCOVERAGE) $(TESTAGENT) $(TESTAPP) $(INSTRSERVER)
 
 #
-# Rules to run $(TESTUNIT)
+# rununit
 #
+rununit: $(TESTUNIT)
+	$(TESTUNIT)
 
+#
+# runcoverage
+#
 JARS=$(wildcard jars/*.jar)
 DIRS=$(JARS:%.jar=$(BUILD)/%)
-
-testunit: $(TESTUNIT) #$(DIRS)
-	$(TESTUNIT) $(BUILD) > $(TESTUNIT).log
+runcoverage: $(TESTCOVERAGE) $(DIRS)
+	$(TESTCOVERAGE) $(BUILD) $(args)
 
 $(BUILD)/jars/%: jars/%.jar | $(BUILD)/jars
 	unzip $< -d $@

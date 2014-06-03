@@ -3,69 +3,27 @@
  */
 #include <jnif.hpp>
 #include <stdlib.h>
-#include <ftw.h>
 #include <iostream>
 #include <sstream>
 #include <fstream>
 
-static inline int _exception(int) __attribute__((noreturn));
+//static inline int _exception(int) __attribute__((noreturn));
+//
+//static inline int _exception(int) {
+//	exit(1);
+//}
 
-static inline int _exception(int) {
-	exit(1);
-}
-
-#define ASSERT(cond, format, ...) ( (cond) ? 0 : _exception(fprintf(stderr, \
-			"ASSERT | '" #cond "' failed | " format "\n", ##__VA_ARGS__ )))
+//#define ASSERT(cond, format, ...) ( (cond) ? 0 : _exception(fprintf(stderr, \
+//			"ASSERT | '" #cond "' failed | " format "\n", ##__VA_ARGS__ )))
 
 using namespace std;
 using namespace jnif;
 
-class JavaFile {
-public:
-	const u1* const data;
-	const int len;
-	const String name;
-};
-
-list<JavaFile> tests4;
-
-template<typename TFunc>
-static void apply(const char* action, TFunc instr) {
-
-	//int ratio = tests4.size() / 50;
-	int ratio = 100;
-	int count = 0;
-	auto invokeInstr = [&](const JavaFile& jf) {
-		cout << action << ":"<< jf.name << ":" << jf.len << flush;
-		instr(jf);
-
-		count++;
-
-		if (count == ratio) {
-			cerr << ".";
-			count = 0;
-		}
-
-		cout << endl;
-	};
-
-	int i = 0;
-	for (const JavaFile& jf : tests4) {
-		invokeInstr(jf);
-
-		i++;
-
-		if (i == 1000) {
-
-		}
-	}
-}
-
-static string outFileName(const String& className, const char* ext) {
-	stringstream path;
-	path << className << "." << ext;
-	return path.str();
-}
+//static string outFileName(const String& className, const char* ext) {
+//	stringstream path;
+//	path << className << "." << ext;
+//	return path.str();
+//}
 
 class UnitTestClassPath: public IClassPath {
 public:
@@ -78,214 +36,14 @@ public:
 
 static void testPrinterModel() {
 	ClassFile emptyCf("jnif/test/generated/Class1");
-	ofstream os(
-			outFileName("jnif/test/generated/Class1", "model.disasm").c_str());
+	ofstream os;
 	os << emptyCf;
 
 	ClassFile cf2("jnif/test/generated/Class2", "jnif/test/generated/Class");
 	cf2.addMethod("main", "([Ljava/lang/String;)V",
-			METHOD_FINAL | METHOD_PUBLIC);
-	ofstream os2(
-			outFileName("jnif/test/generated/Class2", "model.disasm").c_str());
+			METHOD_STATIC | METHOD_PUBLIC);
+	ofstream os2;
 	os2 << cf2;
-}
-
-static void testParser() {
-	apply("parser", [](const JavaFile& jf) {
-		ClassFile cf(jf.data, jf.len);
-	});
-}
-
-static void testPrinterParser() {
-	apply("printerparser", [](const JavaFile& jf) {
-		ClassFile cf(jf.data, jf.len);
-		ofstream os(outFileName(jf.name, "disasm").c_str());
-		os << cf;
-	});
-}
-
-static void testPrinterParserWithFrames() {
-	apply("p", [](const JavaFile& jf) {
-		ClassFile cf(jf.data, jf.len);
-
-		UnitTestClassPath cp;
-		cf.computeFrames(&cp);
-
-		ofstream os(outFileName(jf.name, "frames.disasm").c_str());
-		os << cf;
-	});
-}
-
-static void testIdentityComputeSize() {
-	apply("parser+computeSize", [](const JavaFile& jf) {
-		ClassFile cf(jf.data, jf.len);
-
-		int newlen = cf.computeSize();
-
-		ASSERT(newlen == jf.len,
-				"Expected class file len %d, actual was %d, on class %s",
-				jf.len, newlen, jf.name.c_str());
-	});
-}
-
-static void testIdentityComputeFrames() {
-	apply("parser+computeFrames", [](const JavaFile& jf) {
-		ClassFile cf(jf.data, jf.len);
-
-		UnitTestClassPath cp;
-		cf.computeFrames(&cp);
-
-		//int newlen = cf.computeSize();
-
-			//ASSERT(newlen == jf.len,
-			//	"Expected class file len %d, actual was %d, on class %s",
-			//jf.len, newlen, jf.name.c_str());
-		});
-}
-
-static void testIdentityParserWriter() {
-	apply("parser+writer", [](const JavaFile& jf) {
-		ClassFile cf(jf.data, jf.len);
-
-		int newlen = cf.computeSize();
-
-		ASSERT(jf.len == newlen, "Expected class file len %d, "
-				"actual was %d, on class %s",
-				jf.len, newlen, jf.name.c_str());
-
-		u1* newdata = new u1[newlen];
-
-		cf.write(newdata, newlen);
-
-		for (int i = 1; i < newlen; i++) {
-			if (jf.data[i] != newdata[i]) {
-				cerr << "Validation failed!" << endl;
-				cf.write(newdata, i+1);
-			}
-
-			ASSERT(jf.data[i] == newdata[i], "error on %d: "
-					"%d:%d:%d != %d:%d:%d @ class: %s", i,
-					jf.data[i-1],jf.data[i],jf.data[i+1],
-					newdata[i-1],newdata[i],newdata[i+1],jf.name.c_str()
-			);
-		}
-
-		delete [] newdata;
-	});
-}
-
-static void testIdentityParserWriterWithFrames() {
-	apply("2", [](const JavaFile& jf) {
-		ClassFile cf(jf.data, jf.len);
-
-		//cf.computeFrames();
-
-			int newlen = cf.computeSize();
-
-			ASSERT(jf.len == newlen, "Expected class file len %d, "
-					"actual was %d, on class %s",
-					jf.len, newlen, jf.name.c_str());
-
-			u1* newdata = new u1[newlen];
-
-			cf.write(newdata, newlen);
-
-			for (int i = 0; i < newlen; i++) {
-				ASSERT(jf.data[i] == newdata[i], "error on %d: "
-						"%d:%d != %d:%d, on class %s", i,
-						jf.data[i],jf.data[i+1],
-						newdata[i],newdata[i+1], jf.name.c_str()
-				);
-			}
-
-			delete [] newdata;
-		});
-}
-static void testNopAdderInstrComputeSizeSize() {
-	apply("NopAdderInstrComputeSizeSize", [](const JavaFile& jf) {
-		ClassFile cf(jf.data, jf.len);
-
-		int methodsWithCode = 0;
-		for (Method* m: cf.methods) {
-			if (m->hasCode()) {
-				InstList& instList =
-				m->instList();
-
-				// If there is a tableswitch or a lookupswitch instruction
-				// bytes added to the instruction flow must be a multiple
-				// of four to keep the padding in this instructions.
-			instList.addZero(OPCODE_nop);
-			instList.addZero(OPCODE_nop);
-			instList.addZero(OPCODE_nop);
-			instList.addZero(OPCODE_nop);
-
-			methodsWithCode++;
-		}
-	}
-
-	int diff = methodsWithCode * 4;
-
-	int newlen = cf.computeSize();
-
-	ASSERT(jf.len + diff == newlen,
-			"Expected class file len %d, actual was %d, on class %s",
-			jf.len+diff, newlen, jf.name.c_str());
-
-});
-}
-
-static void testNopAdderInstr() {
-	apply("2", [](const JavaFile& jf) {
-		ClassFile cf(jf.data, jf.len);
-
-		int methodsWithCode = 0;
-		for (Method* m: cf.methods) {
-			if (m->hasCode()) {
-				InstList& instList =
-				m->instList();
-
-				instList.addZero(OPCODE_nop);
-				instList.addZero(OPCODE_nop);
-				instList.addZero(OPCODE_nop);
-				instList.addZero(OPCODE_nop);
-
-				methodsWithCode++;
-			}
-		}
-
-		int diff = methodsWithCode * 4;
-
-		int newlen = cf.computeSize();
-
-		ASSERT(jf.len + diff == newlen,
-				"Expected class file len %d, actual was %d, on class %s",
-				jf.len, newlen, jf.name.c_str());
-
-		u1* newdata = new u1[newlen];
-		cf.write(newdata, newlen);
-
-		ClassFile newcf(newdata, newlen);
-
-		int newlen2 = cf.computeSize();
-
-		ASSERT(newlen2 == newlen,
-				"Expected class file len %d, actual was %d, on class %s",
-				newlen2, newlen, jf.name.c_str());
-
-		u1* newdata2 = new u1[newlen2];
-		cf.write(newdata2, newlen2);
-
-		for (int i = 0; i < newlen2; i++) {
-			ASSERT(newdata2[i] == newdata[i],
-					"error on %d: %d:%d != %d:%d", i,
-					newdata[i],newdata[i+1],
-					newdata2[i],newdata2[i+1]
-			);
-		}
-
-		delete [] newdata;
-
-	});
 }
 
 static void testException() {
@@ -375,7 +133,6 @@ static void testJoinFrame() {
 	instList.addLabel(tryLabel);
 	instList.addType(OPCODE_new, idx);
 	instList.addZero(OPCODE_dup);
-	instList.addZero(OPCODE_iadd);
 	instList.addInvoke(OPCODE_invokespecial, initidx);
 	instList.addZero(OPCODE_astore_0);
 	instList.addLabel(endLabel);
@@ -405,121 +162,122 @@ static void testJoinFrame() {
 //	cerr << cf2;
 }
 
-static int visitFile(const char* filePath, const struct stat*, int) {
+static void testJoinStack() {
+	ClassFile cf("testunit/Class");
+	ConstIndex emptyString = cf.addString("");
 
-	auto isSuffix = [&](const string& suffix, const string& text) {
-		auto res = std::mismatch(suffix.rbegin(), suffix.rend(), text.rbegin());
-		return res.first == suffix.rend();
-	};
+	Method* m = cf.addMethod("method", "()Ltestunit/Class;", METHOD_PUBLIC);
+	auto cidx = cf.addUtf8("Code");
+	CodeAttr* code = new CodeAttr(cidx, &cf);
+	m->add(code);
+	InstList& instList = m->codeAttr()->instList;
 
-	auto addJavaFile = [&]() {
-		ifstream is(filePath, ios::in | ios::binary | ios::ate);
+	auto idx = cf.addClass("testunit/Class");
+	auto exidx = cf.addClass("java/lang/Throwable");
+	auto useidx = cf.addMethodRef(idx, "use", "(Z)V");
 
-		if (!is.is_open()) {
-			int m;
-			is >> m;
-			cerr << "Erro on opening file: " << m << endl;
-			throw "File not opened!";
-		}
+	auto loopHeader = instList.createLabel();
+	auto loopExit = instList.createLabel();
+	auto ifTrue = instList.createLabel();
+	auto ifEnd = instList.createLabel();
+	auto afterTry = instList.createLabel();
 
-		int fileSize = is.tellg();
-		u1* buffer = new u1[fileSize];
+	auto tryStart = instList.createLabel();
+	tryStart->isTryStart = true;
 
-		is.seekg(0, ios::beg);
-		if (!is.read((char*) buffer, fileSize)) {
-			cerr << "fail to read" << endl;
-			throw "File not opened!";
-		}
+	auto tryEnd = instList.createLabel();
+	tryEnd->isTryEnd = true;
 
-		JavaFile jf= {buffer,fileSize,filePath};
-		tests4.push_back(jf);
-	};
+	auto catchHandler = instList.createLabel();
+	catchHandler->isCatchHandler = true;
 
-	if (isSuffix(".class", string(filePath))) {
-		addJavaFile();
-	}
+	//	   0: (  1) aconst_null
+	//	   1: ( 76) astore_1
+	//	label loopHeader, B: Yes, TS: No, TE: No, C: No
+	//	   2: ( 43) aload_1
+	//	   3: (199) ifnonnull label: loopExit
+	//	label tryStart, B: No, TS: Yes, TE: No, C: No
+	//	   6: ( 42) aload_0
+	//	   7: ( 43) aload_1
+	//	   8: (198) ifnull label: ifTrue
+	//	  11: (  4) iconst_1
+	//	  12: (167) goto label: ifEnd
+	//	label ifTrue, B: Yes, TS: No, TE: No, C: No
+	//	  15: (  3) iconst_0
+	//	label ifEnd, B: Yes, TS: No, TE: No, C: No
+	//	  16: (182) invokevirtual #2 frheapagent/UtilMain.use: (Z)V
+	//	label tryEnd, B: No, TS: No, TE: Yes, C: No
+	//	  19: (167) goto label: afterTry
+	//	label catchHandler, B: No, TS: No, TE: No, C: Yes
+	//	  22: ( 77) astore_2
+	//	label afterTry, B: Yes, TS: No, TE: No, C: No
+	//	  23: ( 18) ldc #4
+	//	  25: ( 76) astore_1
+	//	  26: (167) goto label: loopHeader
+	//	label loopExit, B: Yes, TS: No, TE: No, C: No
+	//	  29: (177) return
 
-	return 0;
+	instList.addZero(OPCODE_aconst_null);
+	instList.addZero(OPCODE_astore_1);
+	instList.addLabel(loopHeader);
+	instList.addZero(OPCODE_aload_1);
+	instList.addJump(OPCODE_ifnonnull, loopExit);
+	instList.addLabel(tryStart);
+	instList.addZero(OPCODE_aload_0);
+	instList.addZero(OPCODE_aload_1);
+	instList.addJump(OPCODE_ifnull, ifTrue);
+	instList.addZero(OPCODE_iconst_1);
+	instList.addJump(OPCODE_goto, ifEnd);
+	instList.addLabel(ifTrue);
+	instList.addZero(OPCODE_iconst_0);
+	instList.addLabel(ifEnd);
+	instList.addInvoke(OPCODE_invokevirtual, useidx);
+	instList.addLabel(tryEnd);
+	instList.addJump(OPCODE_goto, afterTry);
+	instList.addLabel(catchHandler);
+	instList.addZero(OPCODE_astore_2);
+	instList.addLabel(afterTry);
+	instList.addLdc(OPCODE_ldc, emptyString);
+	instList.addZero(OPCODE_astore_1);
+	instList.addJump(OPCODE_goto, loopHeader);
+	instList.addLabel(loopExit);
+	instList.addZero(OPCODE_return);
+
+	CodeExceptionEntry ex;
+	ex.startpc = tryStart;
+	ex.endpc = tryEnd;
+	ex.handlerpc = catchHandler;
+	ex.catchtype = exidx;
+	code->exceptions.push_back(ex);
+
+	UnitTestClassPath cp;
+	cf.computeFrames(&cp);
 }
 
-int main(int argc, const char* argv[]) {
+typedef void (TestFunc)();
 
-#define ENTRY(testName) { &testName, #testName }
+static void run(TestFunc* testFunc, const String& testName) {
+	cerr << "Running test " << testName << " ";
 
-	typedef void (TestFunc)();
-
-	struct TestEntry {
-		TestFunc* testFunc;
-		String testName;
-	};
-
-	auto run = [](TestFunc* testFunc, const String& testName) {
-		cerr << "Running test " << testName << " ";
-
-		try {
-			testFunc();
-		} catch (const JnifException& ex) {
-			cerr << ex << endl;
-			//throw ex;
-			exit(-2);
-		}
-
-		cerr << " [OK]" << endl;
-	};
-
-	run(&testException, "testException");
-	run(&testJoinFrameObjectAndEmpty, "testFrame");
-	run(&testJoinFrameException, "testJoinFrameException");
-	run(&testJoinFrame, "testJoinFrame");
-	run(&testIdentityParserWriter,"testIdentityParserWriter");
-	return 0;
-
-	vector<TestEntry> testEntries = { ENTRY(testPrinterModel),
-	ENTRY(testParser), ENTRY(testPrinterParser),
-	ENTRY(testPrinterParserWithFrames),
-	ENTRY(testIdentityComputeSize),
-	ENTRY(testIdentityComputeFrames),
-	ENTRY(testIdentityParserWriter),
-	ENTRY(testIdentityParserWriterWithFrames),
-	ENTRY(testNopAdderInstrComputeSizeSize),
-	ENTRY(testNopAdderInstr) };
-
-	String classPath;
-	String testName;
-
-	if (argc == 2 && argv[1] == String("--list")) {
-		for (TestEntry& te : testEntries) {
-			cout << te.testName << " ";
-		}
-		cout << endl;
-		return 0;
-	} else if (argc == 2) {
-		classPath = argv[1];
-		//testName = argv[2];
-		cerr << "[Loading classes from " << classPath << "... " << flush;
-
-		ftw(classPath.c_str(), visitFile, 50);
-
-		cerr << "loaded " << tests4.size() << " class(es)]" << endl;
-
-		for (TestEntry& te : testEntries) {
-			//if (testName == te.testName) {
-			run(te.testFunc, te.testName);
-			//return 0;
-			//}
-		}
-
-		return 0;
-		//return 2;
-	} else {
-		cerr << "Usage: " << endl;
-		cerr << "  [1] " << argv[0] << " <classPath> <testName>" << endl;
-		cerr << "  [2] " << argv[0] << " --list" << endl;
-		cerr << "Available tests: " << endl;
-		for (TestEntry& te : testEntries) {
-			cerr << "  " << te.testName << endl;
-		}
-
-		return 1;
+	try {
+		testFunc();
+	} catch (const JnifException& ex) {
+		cerr << ex << endl;
+		exit(42);
 	}
+
+	cerr << " [OK]" << endl;
+}
+
+#define RUN(testName) run(&testName, #testName)
+
+int main(int, const char*[]) {
+	RUN(testPrinterModel);
+	RUN(testException);
+	RUN(testJoinFrameObjectAndEmpty);
+	RUN(testJoinFrameException);
+	RUN(testJoinFrame);
+	RUN(testJoinStack);
+
+	return 0;
 }

@@ -704,6 +704,12 @@ public class HeapTest {
 			indy.getStreams2();
 		}
 
+		try {
+			new UtilMain().runScriptGuts();
+		} catch (Throwable ex) {
+			ex.printStackTrace();
+		}
+
 		System.err.println("Siamo finito dal main!!!");
 	}
 

@@ -51,9 +51,9 @@ public:
 
 	string getCommonSuperClass(const string& className1,
 			const string& className2) {
-//		_TLOG("Common super class: left: %s, right: %s, loader: %s",
-//				className1.c_str(), className2.c_str(),
-//				(loader != NULL ? "object" : "(null)"));
+		_TLOG("Common super class: left: %s, right: %s, loader: %s",
+				className1.c_str(), className2.c_str(),
+				(loader != NULL ? "object" : "(null)"));
 
 		try {
 			loadClassIfNotLoaded(className1);

@@ -5,16 +5,30 @@
 # the appropiate environment.
 #
 
-# Sets JAVA_HOME for a Mac OS X environment
-#JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home
+UNAME=$(shell uname)
 
-# Sets JAVA_HOME for a Linux environment
-#JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+# Sets JAVA_HOME for the current environment
+ifeq ($(UNAME), Darwin)
+  JAVA_HOME=$(shell /usr/libexec/java_home)
+else ifeq ($(UNAME), Linux)
+  JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+else
+  $(error Unrecognized environment. Only supported Darwin and Linux)
+endif
 
-# Useful options for debugging
+#
+# Useful options for debugging.
+#
+
+#
+# Generate no debugging info when compiling java source code.
+#
+#JAVAC=javac -g:none
+
 #JVMARGS+=-Xverify:all
-#JVMARGS+=-Xprof -Xdiag -Xcheck:jni -Xfuture
-#JVMARGS+=-verbose:class1 -verbose:gc -verbose:jni
-
-#ECLIPSE_HOME=/Users/luigi/Programs/eclipse
-#BUILD=/Users/luigi/work/jnif/build
+#JVMARGS+=-Xprof
+#JVMARGS+=-Xdiag
+#JVMARGS+=-Xcheck:jni
+#JVMARGS+=-verbose:jni
+#JVMARGS+=-verbose:class
+#JVMARGS+=-verbose:gc
