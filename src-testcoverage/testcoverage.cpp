@@ -3,10 +3,8 @@
  */
 #include "tests.hpp"
 
-//#include <stdlib.h>
 #include <ftw.h>
 #include <iostream>
-//#include <sstream>
 #include <fstream>
 
 using namespace std;
@@ -77,13 +75,14 @@ int main(int argc, const char* argv[]) {
 	ENTRY(testPrinter),
 	ENTRY(testSize),
 	ENTRY(testWriter),
+	ENTRY(testAnalysis),
+	ENTRY(testAnalysisPrinter),
+	ENTRY(testAnalysisWriter),
 	ENTRY(testNopAdderInstrPrinter),
 	ENTRY(testNopAdderInstrSize),
 	ENTRY(testNopAdderInstrWriter),
-	ENTRY(testAnalysis),
-	ENTRY(testPrinterParserWithFrames),
-	ENTRY(testIdentityComputeFrames),
-	ENTRY(testIdentityWriterWithFrames),
+	ENTRY(testNopAdderInstrAnalysisPrinter),
+	ENTRY(testNopAdderInstrAnalysisWriter),
 
 	};
 

@@ -56,7 +56,7 @@ static int _ReceiveInt(int sockfd) {
 
 static int _FrConnect() {
 	struct addrinfo * addrinfo;
-	int gai_res = getaddrinfo("localhost", "11357", NULL, &addrinfo);
+	int gai_res = getaddrinfo("127.0.0.1", "11357", NULL, &addrinfo);
 	check_std_error(gai_res, "error getaddrinfo");
 
 	int sockfd = socket(addrinfo->ai_family, SOCK_STREAM, 0);
@@ -82,7 +82,6 @@ void InstrClassClientServer(jvmtiEnv* jvmti, unsigned char* data, int len,
 	int sockfd;
 
 	if (tldget()->socketfd == -1) {
-		//_StartServer();
 		tldget()->socketfd = _FrConnect();
 	}
 
