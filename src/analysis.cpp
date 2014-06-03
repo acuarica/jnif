@@ -202,6 +202,14 @@ public:
 		computeState(*handlerBb, frame, instList, cf, code, classPath, method);
 	}
 
+	static bool contains(const CodeExceptionEntry& ex, const Inst* inst) {
+		int start = ex.startpc->label()->_offset;
+		int end = ex.endpc->label()->_offset;
+		int off = inst->_offset;
+
+		return start <= off && off < end;
+	}
+
 	static void computeState(BasicBlock& bb, Frame& how, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
 			Method* method) {
@@ -223,22 +231,9 @@ public:
 		}
 
 		if (change) {
-			auto contains = [](const CodeExceptionEntry& ex, const Inst* inst) {
-				int start = ex.startpc->label()->_offset;
-				int end = ex.endpc->label()->_offset;
-				int off = inst->_offset;
 
-				return start <= off && off < end;
-			};
-
-			auto prepareCatchHandlerFrame = [&](Inst* inst, const Frame& out) {
-				for (const CodeExceptionEntry& ex : code->exceptions) {
-					if (contains(ex, inst)) {
-						visitCatch(ex, instList, cf, code, classPath, bb.cfg,
-								out,method);
-					}
-				}
-			};
+			//auto prepareCatchHandlerFrame = [&](Inst* inst, const Frame& out) {
+			//};
 
 			//bb.out = bb.in;
 			Frame out = bb.in;
@@ -247,7 +242,14 @@ public:
 			for (auto it = bb.start; it != bb.exit; ++it) {
 				Inst* inst = *it;
 				builder.processInst(*inst);
-				prepareCatchHandlerFrame(inst, out);
+				//prepareCatchHandlerFrame(inst, out);
+
+				for (const CodeExceptionEntry& ex : code->exceptions) {
+					if (contains(ex, inst)) {
+						visitCatch(ex, instList, cf, code, classPath, bb.cfg,
+								out, method);
+					}
+				}
 			}
 
 			bb.out = out;
