@@ -9,16 +9,7 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
-UNAME:=$(shell uname)
-
-ifeq ($(UNAME), Linux)
-  #CXXFLAGS+=
-endif
-ifeq ($(UNAME), Darwin)
-  #CXXFLAGS+=-stdlib=libc++
-endif
-
-CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O0 -std=c++11
+CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O0
 
 #
 # Rules to make $(LIBJNIF)
