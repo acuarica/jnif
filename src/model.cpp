@@ -434,7 +434,7 @@ Type Type::fromFieldDesc(const char*& fieldDesc) {
 	return t;
 }
 
-static Type getReturnType(const char* methodDesc) {
+static Type getReturnType(const char*& methodDesc) {
 	if (*methodDesc == 'V') {
 		methodDesc++;
 		return Type::voidType();
@@ -758,7 +758,7 @@ void BasicBlock::addTarget(BasicBlock* target) {
 //	}
 //}
 
-static void addBasicBlock2(InstList::Iterator eit, InstList::Iterator beginBb,
+static void addBasicBlock2(InstList::Iterator eit, InstList::Iterator& beginBb,
 		int& bbid, ControlFlowGraph& cfg) {
 	if (beginBb != eit) {
 		stringstream ss;
@@ -896,8 +896,6 @@ BasicBlock* ControlFlowGraph::findBasicBlockOfLabel(int labelId) const {
 			return bb;
 		}
 	}
-
-	//InstList& il = (InstList&) instList;
 
 	Error::raise("Invalid label id: ", labelId, " for the instruction list: ",
 			", in cfg: ", *this, instList);
