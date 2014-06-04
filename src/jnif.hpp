@@ -2489,7 +2489,7 @@ class InstList {
 public:
 
 	class Iterator {
-		friend InstList;
+		friend class InstList;
 	public:
 
 		Inst* operator*();
