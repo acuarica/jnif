@@ -31,14 +31,11 @@ save <- function(p, d, s, w=12, h=8) {
   null <- dev.off()
 }
 
-#labels <- c('JNIF Empty', 'JNIF Identity', 'JNIF Frames', 
-#            'ASM Empty', 'ASM Identity', 'ASM Frames')
-
 printf('Loading table from %s...', csvfilename);
 csv <- read.csv(csvfilename, strip.white=TRUE, sep=',', header=FALSE);
 colnames(csv) <- c('backend', 'bench', 'run', 'instr', 'stage', 'time');
-csv$backend <- factor(csv$backend, levels=c('runagent', 'runserver'))
-levels(csv$backend) <- c('JNIF', 'ASM')
+csv$backend <- factor(csv$backend, levels=c('runagent', 'instrserver', 'runserver'))
+levels(csv$backend) <- c('JNIF', 'ASM/Server', 'ASM/Client')
 csv$instr <- factor(csv$instr, levels=c('Empty', 'Identity', 'Compute', 'Stats'))
 levels(csv$instr) <- c('Empty', 'Identity', 'Frame', 'Stats')
 
