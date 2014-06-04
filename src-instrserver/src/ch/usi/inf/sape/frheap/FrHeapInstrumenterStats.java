@@ -50,14 +50,18 @@ public class FrHeapInstrumenterStats extends FrHeapInstrumenter {
 					exceptions);
 
 			if (mv != null) {
-				// if (isMainMethod(access, name, desc)) {
-				// mv = new MainMethodTransformer(mv);
-				// }
-				//
-				// if (_className.equals("java/lang/Object")
-				// && name.equals("<init>") && desc.equals("()V")) {
-				// mv = new ObjectInitMethodTransformer(mv);
-				// }
+				if (isMainMethod(access, name, desc)) {
+					mv = new MainMethodTransformer(mv);
+				}
+
+				if (_className.equals("java/lang/Object")
+						&& name.equals("<init>") && desc.equals("()V")) {
+					mv = new ObjectInitMethodTransformer(mv);
+				}
+
+				if (!skipCompute(_className)) {
+					mv = new MethodEntryExit(mv, _className, name);
+				}
 
 				mv = new MethodTransformer(mv);
 			}
@@ -84,8 +88,8 @@ public class FrHeapInstrumenterStats extends FrHeapInstrumenter {
 			super(Opcodes.ASM4, mv);
 		}
 
-		// @Override
-		public void visitCode32() {
+		@Override
+		public void visitCode() {
 			mv.visitCode();
 
 			// Loads this object
@@ -107,8 +111,8 @@ public class FrHeapInstrumenterStats extends FrHeapInstrumenter {
 			super(Opcodes.ASM4, mv);
 		}
 
-		// @Override
-		public void visitIntInsn32(int opcode, int operand) {
+		@Override
+		public void visitIntInsn(int opcode, int operand) {
 			if (opcode == Opcodes.NEWARRAY) {
 				// FORMAT: newarray atype
 				// OPERAND STACK: ... | count: int -> ... | arrayref
@@ -136,8 +140,8 @@ public class FrHeapInstrumenterStats extends FrHeapInstrumenter {
 			}
 		}
 
-		// @Override
-		public void visitTypeInsn32(int opcode, String type) {
+		@Override
+		public void visitTypeInsn(int opcode, String type) {
 			if (opcode == Opcodes.ANEWARRAY) {
 				// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
 				// OPERAND STACK: ... | count: int -> ... | arrayref
@@ -162,76 +166,6 @@ public class FrHeapInstrumenterStats extends FrHeapInstrumenter {
 				// STACK: ... | arrayref
 			} else {
 				mv.visitTypeInsn(opcode, type);
-			}
-		}
-
-		// @Override
-		public void visitMultiANewArrayInsn32(String desc, int dims) {
-			// FORMAT: multianewarray | indexbyte1 | indexbyte2 | dimensions
-			// OPERAND STACK: ... | count1 | [ count2 | ...]] -> ... | arrayref
-
-			// STACK: ... | count1 | [ count2 | [ count3 | ... ]]
-
-			if (dims == 1) {
-				mv.visitInsn(Opcodes.DUP);
-				// STACK: ... | count1 | count1
-
-			} else if (dims == 2) {
-				mv.visitInsn(Opcodes.DUP2);
-				// STACK: ... | count1 | count2 | count1 | count2
-
-			} else {
-				// STACK: ... | count1 | count2 | count3 | [ count4 | ...]
-			}
-
-			mv.visitMultiANewArrayInsn(desc, dims);
-
-			if (dims == 1) {
-				// STACK: ... | count1 | arrayref
-
-				mv.visitInsn(Opcodes.DUP_X1);
-				// STACK: ... | arrayref | count1 | arrayref
-
-				mv.visitLdcInsn(desc);
-				// STACK: ... | arrayref | count1 | arrayref | desc
-
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
-						"multiANewArray1Event",
-						"(ILjava/lang/Object;Ljava/lang/String;)V");
-				// STACK: ... | arrayref
-
-			} else if (dims == 2) {
-				// STACK: ... | count1 | count2 | arrayref
-
-				mv.visitInsn(Opcodes.DUP_X2);
-				// STACK: ... | arrayref | count1 | count2 | arrayref
-
-				mv.visitLdcInsn(desc);
-				// STACK: ... | arrayref | count1 | count2 | arrayref | desc
-
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
-						"multiANewArray2Event",
-						"(IILjava/lang/Object;Ljava/lang/String;)V");
-
-				// STACK: ... | arrayref
-
-			} else {
-				// STACK: ... | arrayref
-
-				mv.visitInsn(Opcodes.DUP);
-				// STACK: ... | arrayref | arrayref
-
-				mv.visitLdcInsn(dims);
-				// STACK: ... | arrayref | arrayref | dims
-
-				mv.visitLdcInsn(desc);
-				// STACK: ... | arrayref | arrayref | dims | desc
-
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
-						"multiANewArrayNEvent",
-						"(Ljava/lang/Object;ILjava/lang/String;)V");
-				// STACK: ... | arrayref
-
 			}
 		}
 
@@ -335,6 +269,41 @@ public class FrHeapInstrumenterStats extends FrHeapInstrumenter {
 		}
 	}
 
+	private class MethodEntryExit extends MethodVisitor {
+
+		private String className;
+		private String methodName;
+
+		public MethodEntryExit(MethodVisitor mv, String className,
+				String methodName) {
+			super(Opcodes.ASM4, mv);
+			this.className = className;
+			this.methodName = methodName;
+		}
+
+		@Override
+		public void visitCode() {
+			mv.visitCode();
+			mv.visitLdcInsn(className);
+			mv.visitLdcInsn(methodName);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
+					"enterMethod", "(Ljava/lang/String;Ljava/lang/String;)V");
+		}
+
+		@Override
+		public void visitInsn(int opcode) {
+			if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)
+					|| opcode == Opcodes.ATHROW) {
+				mv.visitLdcInsn(className);
+				mv.visitLdcInsn(methodName);
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
+						"exitMethod", "(Ljava/lang/String;Ljava/lang/String;)V");
+			}
+
+			mv.visitInsn(opcode);
+		}
+	}
+
 	/**
 	 * 
 	 * @author luigi
@@ -346,15 +315,15 @@ public class FrHeapInstrumenterStats extends FrHeapInstrumenter {
 			super(Opcodes.ASM4, mv);
 		}
 
-		// @Override
-		public void visitCode32() {
+		@Override
+		public void visitCode() {
 			mv.visitCode();
 			mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,
 					"enterMainMethod", "()V");
 		}
 
-		// @Override
-		public void visitInsn32(int opcode) {
+		@Override
+		public void visitInsn(int opcode) {
 			if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)
 					|| opcode == Opcodes.ATHROW) {
 				mv.visitMethodInsn(Opcodes.INVOKESTATIC, config.proxyClass,

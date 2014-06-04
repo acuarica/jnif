@@ -63,7 +63,7 @@ public:
 	 * @param message contains information about exceptional situation.
 	 * @param stackTrace the stack trace where this exception happened.
 	 */
-	JnifException(const String& message, const String& stackTrace) :
+	JnifException(const String& message, const String& stackTrace = "") :
 			_message(message), stackTrace(stackTrace) {
 	}
 
@@ -3067,7 +3067,7 @@ public:
 
 	CodeAttr(u2 nameIndex, ConstPool* constPool) :
 			Attr(ATTR_CODE, nameIndex, 0, constPool), maxStack(0), maxLocals(0), codeLen(
-					0), instList(constPool), cfg(NULL) {
+					-1), instList(constPool), cfg(NULL) {
 	}
 
 	~CodeAttr();
@@ -3435,7 +3435,6 @@ public:
 //		*classFileData = allocFunc(*classFileSize);
 //		write(*classFileData, *classFileSize);
 //	}
-
 	/**
 	 * Export this class file to dot format.
 	 *
