@@ -79,7 +79,7 @@ TESTAGENT_SRCS=$(wildcard $(TESTAGENT_SRC)/*.cpp) $(wildcard $(TESTAGENT_SRC)/fr
 TESTAGENT_OBJS=$(TESTAGENT_SRCS:$(TESTAGENT_SRC)/%=$(TESTAGENT_BUILD)/%.o)
 
 $(TESTAGENT): $(TESTAGENT_OBJS) $(LIBJNIF)
-	$(CXX) $(CXXFLAGS) -fPIC -g -lpthread -shared -lstdc++ -o $@ $^
+	$(CXX) -fPIC -g -lpthread -shared -lstdc++ -o $@ $^ $(CXXFLAGS)
 
 $(TESTAGENT_BUILD)/%.cpp.o: $(TESTAGENT_SRC)/%.cpp $(TESTAGENT_HPPS) | $(TESTAGENT_BUILD)
 	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -Wno-unused-parameter -I$(JAVA_HOME)/include -c -o $@ $<
