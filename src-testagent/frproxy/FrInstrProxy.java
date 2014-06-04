@@ -87,9 +87,15 @@ public class FrInstrProxy {
 	public static native void aastoreEvent(int index, Object newValue,
 			Object thisArray);
 
-	public static native void enterMethod(String className, String methodName);
+	public static void enterMethod(String className, String methodName) {
+		// If not correctly instrumented, it could lead to StackOverflowError. 
+		// System.out.print("s");
+	}
 
-	public static native void exitMethod(String className, String methodName);
+	public static void exitMethod(String className, String methodName) {
+		// If not correctly instrumented, it could lead to StackOverflowError.
+		// System.out.print("x");
+	}
 
 	public static native void enterMainMethod();
 

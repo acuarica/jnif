@@ -9,7 +9,7 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
-CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O3
+CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O3 -Wno-unused-value
 
 #
 # Rules to make $(LIBJNIF)
@@ -347,6 +347,10 @@ run: $(BACKEND)
 
 eclipse:
 	$(ECLIPSE_HOME)/eclipse -vmargs $(JVMARGS)
+
+JRUBY_HOME=/Users/luigi/Downloads/jruby-1.7.12
+jruby:
+	java -Djruby.home=$(JRUBY_HOME) -Djruby.lib=$(JRUBY_HOME)/lib -jar jruby.jar xslt.rb
 
 clean:
 	rm -rf $(BUILD)
