@@ -294,9 +294,16 @@ small-eval: runeval
 large-eval: times=1
 large-eval: backends=runagent runserver
 large-eval: instrs=Empty Identity Compute Stats All
-large-eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow xalan
+large-eval: benchs=avrora batik eclipse fop h2 
 large-eval: SUITE=dacapo
 large-eval: runeval
+
+huge-eval: times=1
+huge-eval: backends=runagent runserver
+huge-eval: instrs=Empty Identity Compute Stats All
+huge-eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow xalan
+huge-eval: SUITE=dacapo
+huge-eval: runeval
 
 full-eval: times=5
 full-eval: backends=runagent runserver
