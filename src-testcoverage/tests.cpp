@@ -100,9 +100,9 @@ void testAnalysisWriter(const JavaFile&, ClassFile& cf) {
 	UnitTestClassPath cp;
 	cf.computeFrames(&cp);
 
-	int newlen;
-	u1* newdata;
-	cf.write(&newdata, &newlen, [](u4 len) {return new u1[len];});
+	int newlen = cf.computeSize();
+	u1* newdata = new u1[newlen];
+	cf.write(newdata, newlen);
 
 	delete[] newdata;
 }
@@ -160,9 +160,9 @@ void testNopAdderInstrAnalysisWriter(const JavaFile&, ClassFile& cf) {
 	UnitTestClassPath cp;
 	cf.computeFrames(&cp);
 
-	int newlen;
-	u1* newdata;
-	cf.write(&newdata, &newlen, [](u4 len) {return new u1[len];});
+	int newlen = cf.computeSize();
+	u1* newdata = new u1[newlen];
+	cf.write(newdata, newlen);
 
 	delete[] newdata;
 }

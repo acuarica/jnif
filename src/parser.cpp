@@ -167,7 +167,7 @@ public:
 			codeLen(codeLen), instList(instList), labels(
 					new LabelInst*[codeLen + 1]) {
 		for (u4 i = 0; i < codeLen + 1; i++) {
-			labels[i] = nullptr;
+			labels[i] = NULL;
 		}
 	}
 
@@ -181,7 +181,7 @@ public:
 				"Invalid position for label: ", labelPos, ", : ", codeLen);
 
 		LabelInst*& lab = labels[labelPos];
-		if (lab == nullptr) {
+		if (lab == NULL) {
 			lab = instList.createLabel();
 		}
 
@@ -205,7 +205,7 @@ public:
 		Error::assert(labelPos < codeLen + 1, "Invalid position for label: ",
 				labelPos);
 
-		return labels[labelPos] != nullptr;
+		return labels[labelPos] != NULL;
 	}
 
 	void putLabelIfExists(u2 labelPos) const {
@@ -613,7 +613,7 @@ private:
 			//	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
 
 			LabelInst* targetLabel = labelManager[offset + targetOffset];
-			Error::check(targetLabel != nullptr, "invalid label");
+			Error::check(targetLabel != NULL, "invalid label");
 
 			return instList.addJump(opcode, targetLabel);
 		} else if (kind == KIND_TABLESWITCH) {
@@ -864,53 +864,56 @@ private:
 		return lvt;
 	}
 
+	static Type parseType(BufferReader& br, const ConstPool& cp,
+			LabelManager& labelManager) {
+		u1 tag = br.readu1();
+
+		switch (tag) {
+			case TYPE_TOP:
+				return Type::topType();
+			case TYPE_INTEGER:
+				return Type::intType();
+			case TYPE_FLOAT:
+				return Type::floatType();
+			case TYPE_LONG:
+				return Type::longType();
+			case TYPE_DOUBLE:
+				return Type::doubleType();
+			case TYPE_NULL:
+				return Type::nullType();
+			case TYPE_UNINITTHIS:
+				return Type::uninitThisType();
+			case TYPE_OBJECT: {
+				u2 cpIndex = br.readu2();
+				Error::check(cp.isClass(cpIndex), "Bad cpindex: ", cpIndex);
+				string className = cp.getClassName(cpIndex);
+				return Type::objectType(className, cpIndex);
+			}
+			case TYPE_UNINIT: {
+				u2 offset = br.readu2();
+				LabelInst* label = labelManager.createLabel(offset);
+				return Type::uninitType(offset, label);
+			}
+		}
+
+		Error::raise("Error on parse smt");
+	}
+	;
+
+	static void parseTs(BufferReader& br, int count, vector<Type>& locs,
+			const ConstPool& cp, LabelManager& labelManager) {
+		for (u1 i = 0; i < count; i++) {
+			Type t = parseType(br, cp, labelManager);
+			locs.push_back(t);
+		}
+	}
+
 	static Attr* parseSmt(BufferReader& br, ConstPool& cp, u2 nameIndex,
 			void* args) {
 
 		LabelManager& labelManager = *(LabelManager*) args;
 
 		SmtAttr* smt = new SmtAttr(nameIndex, &cp);
-
-		auto parseType = [&](BufferReader& br)->Type {
-			u1 tag = br.readu1();
-
-			switch (tag) {
-				case TYPE_TOP:
-				return Type::topType();
-				case TYPE_INTEGER:
-				return Type::intType();
-				case TYPE_FLOAT:
-				return Type::floatType();
-				case TYPE_LONG:
-				return Type::longType();
-				case TYPE_DOUBLE:
-				return Type::doubleType();
-				case TYPE_NULL:
-				return Type::nullType();
-				case TYPE_UNINITTHIS:
-				return Type::uninitThisType();
-				case TYPE_OBJECT: {
-					u2 cpIndex = br.readu2();
-					check(cp.isClass(cpIndex), "Bad cpindex: ", cpIndex);
-					string className = cp.getClassName(cpIndex);
-					return Type::objectType(className, cpIndex);
-				}
-				case TYPE_UNINIT: {
-					u2 offset = br.readu2();
-					LabelInst* label = labelManager.createLabel(offset);
-					return Type::uninitType(offset, label);
-				}
-			}
-
-			Error::raise("Error on parse smt");
-		};
-
-		auto parseTs = [&](int count, vector<Type>& locs) {
-			for (u1 i = 0; i < count; i++) {
-				Type t = parseType(br);
-				locs.push_back(t);
-			}
-		};
 
 		u2 numberOfEntries = br.readu2();
 
@@ -926,7 +929,8 @@ private:
 				//	v.visitFrameSame(frameType);
 				toff += frameType;
 			} else if (64 <= frameType && frameType <= 127) {
-				parseTs(1, e.sameLocals_1_stack_item_frame.stack);
+				parseTs(br, 1, e.sameLocals_1_stack_item_frame.stack, cp,
+						labelManager);
 				//v.visitFrameSameLocals1StackItem(frameType);
 
 				toff += frameType - 64;
@@ -936,7 +940,8 @@ private:
 						offsetDelta;
 
 				toff += e.same_locals_1_stack_item_frame_extended.offset_delta;
-				parseTs(1, e.same_locals_1_stack_item_frame_extended.stack);
+				parseTs(br, 1, e.same_locals_1_stack_item_frame_extended.stack,
+						cp, labelManager);
 			} else if (248 <= frameType && frameType <= 250) {
 				u2 offsetDelta = br.readu2();
 				e.chop_frame.offset_delta = offsetDelta;
@@ -950,7 +955,8 @@ private:
 			} else if (252 <= frameType && frameType <= 254) {
 				u2 offsetDelta = br.readu2();
 				e.append_frame.offset_delta = offsetDelta;
-				parseTs(frameType - 251, e.append_frame.locals);
+				parseTs(br, frameType - 251, e.append_frame.locals, cp,
+						labelManager);
 
 				toff += e.append_frame.offset_delta;
 			} else if (frameType == 255) {
@@ -958,10 +964,12 @@ private:
 				e.full_frame.offset_delta = offsetDelta;
 
 				u2 numberOfLocals = br.readu2();
-				parseTs(numberOfLocals, e.full_frame.locals);
+				parseTs(br, numberOfLocals, e.full_frame.locals, cp,
+						labelManager);
 
 				u2 numberOfStackItems = br.readu2();
-				parseTs(numberOfStackItems, e.full_frame.stack);
+				parseTs(br, numberOfStackItems, e.full_frame.stack, cp,
+						labelManager);
 
 				toff += e.full_frame.offset_delta;
 			}
@@ -969,7 +977,7 @@ private:
 			toff += 1;
 
 //			Inst*& label = labels[toff];
-//			if (label == nullptr) {
+//			if (label == NULL) {
 //				//fprintf(stderr, "WARNING: Label is null in smt at offset %d", toff);
 //				label = new Inst(KIND_LABEL);
 //			}
@@ -986,47 +994,48 @@ private:
 		return smt;
 	}
 
+	static Attr* parseAttr(BufferReader& br, ConstPool& cp, Attrs& as,
+			void* args = NULL) {
+		u2 nameIndex = br.readu2();
+		u4 len = br.readu4();
+		const u1* data = br.pos();
+
+		br.skip(len);
+
+		string attrName = cp.getUtf8(nameIndex);
+
+		if (attrName == "SourceFile") {
+			BufferReader br(data, len);
+			return parseSourceFile(br, nameIndex, &cp);
+		} else if (attrName == "Exceptions") {
+			BufferReader br(data, len);
+			return parseExceptions(br, nameIndex, &cp);
+		} else if (attrName == "Code") {
+			BufferReader br(data, len);
+			return parseCode(br, cp, nameIndex);
+		} else if (attrName == "LineNumberTable") {
+			BufferReader br(data, len);
+			return parseLnt(br, nameIndex, args, &cp);
+		} else if (attrName == "LocalVariableTable") {
+			BufferReader br(data, len);
+			return parseLvt(br, nameIndex, &cp, args);
+		} else if (attrName == "StackMapTable") {
+			BufferReader br(data, len);
+			return parseSmt(br, cp, nameIndex, args);
+		} else if (attrName == "LocalVariableTypeTable") {
+			BufferReader br(data, len);
+			return parseLvtt(br, nameIndex, &cp, args);
+		} else {
+			return new UnknownAttr(nameIndex, len, data, &cp);
+		}
+	}
+
 	static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as,
-			void* args = nullptr) {
-
-		auto parseAttr = [&]() -> Attr* {
-			u2 nameIndex = br.readu2();
-			u4 len = br.readu4();
-			const u1* data = br.pos();
-
-			br.skip(len);
-
-			string attrName = cp.getUtf8(nameIndex);
-
-			if (attrName == "SourceFile") {
-				BufferReader br(data, len);
-				return parseSourceFile(br, nameIndex, &cp);
-			} else if (attrName == "Exceptions") {
-				BufferReader br(data, len);
-				return parseExceptions(br, nameIndex, &cp);
-			} else if (attrName == "Code") {
-				BufferReader br(data, len);
-				return parseCode(br, cp, nameIndex);
-			} else if (attrName == "LineNumberTable") {
-				BufferReader br(data, len);
-				return parseLnt(br, nameIndex, args, &cp);
-			} else if (attrName == "LocalVariableTable") {
-				BufferReader br(data, len);
-				return parseLvt(br, nameIndex, &cp, args);
-			} else if (attrName == "StackMapTable") {
-				BufferReader br(data, len);
-				return parseSmt(br, cp, nameIndex, args);
-			} else if (attrName == "LocalVariableTypeTable") {
-				BufferReader br(data, len);
-				return parseLvtt(br, nameIndex, &cp, args);
-			} else {
-				return new UnknownAttr(nameIndex, len, data, &cp);
-			}
-		};
+			void* args = NULL) {
 
 		u2 attrCount = br.readu2();
 		for (int i = 0; i < attrCount; i++) {
-			Attr* a = parseAttr();
+			Attr* a = parseAttr(br, cp, as, args);
 
 			as.add(a);
 			//a->len = l;

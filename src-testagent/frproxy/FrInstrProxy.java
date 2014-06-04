@@ -89,10 +89,14 @@ public class FrInstrProxy {
 
 	public static native void enterMethod(String className, String methodName);
 
+	public static native void exitMethod(String className, String methodName);
+
 	public static native void enterMainMethod();
 
 	public static native void exitMainMethod();
 
 	public static native void indy(int callSite);
+
+	public static native void opcode(int op);
 
 }

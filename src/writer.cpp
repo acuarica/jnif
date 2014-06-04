@@ -419,18 +419,20 @@ public:
 		}
 	}
 
+	int pos(int offset) {
+		return bw.getOffset() - offset;
+	}
+
 	void writeInstList(InstList& instList) {
 		int offset = bw.getOffset();
-
-		auto pos = [&]() {return bw.getOffset() - offset;};
 
 		for (Inst* instp : instList) {
 			Inst& inst = *instp;
 
-			instp->_offset = pos();
+			instp->_offset = pos(offset);
 
 			if (inst.kind == KIND_LABEL) {
-				inst.label()->offset = pos();
+				inst.label()->offset = pos(offset);
 
 				//fprintf(stderr, "label pos @ write: %d\n", inst.label.offset);
 				continue;
@@ -484,24 +486,24 @@ public:
 					//bw.writeu2(inst.jump.label);
 					//fprintf(stderr, "target offset @ write: %d\n",	inst.jump.label2->label.offset);
 
-					int jumppos = pos() - 1;
+					int jumppos = pos(offset) - 1;
 
 					bw.writeu2(inst.jump()->label2->label()->offset - jumppos);
 					break;
 				}
 				case KIND_TABLESWITCH: {
-					int tspos = pos() - 1;
+					int tspos = pos(offset) - 1;
 
 					//	fprintf(stderr, "writer ts: offset: %d\n", pos());
 
-					int pad = (4 - (pos() % 4)) % 4;
+					int pad = (4 - (pos(offset) % 4)) % 4;
 					for (int i = 0; i < pad; i++) {
 						bw.writeu1(0);
 					}
 
-					bool check = pos() % 4 == 0;
+					bool check = pos(offset) % 4 == 0;
 					Error::assert(check, "Padding offset must be mod 4: %d",
-							pos());
+							pos(offset));
 
 					bw.writeu4(inst.ts()->def->label()->offset - tspos);
 					bw.writeu4(inst.ts()->low);
@@ -518,16 +520,16 @@ public:
 					break;
 				}
 				case KIND_LOOKUPSWITCH: {
-					int lspos = pos() - 1;
+					int lspos = pos(offset) - 1;
 
-					int pad = (4 - (pos() % 4)) % 4;
+					int pad = (4 - (pos(offset) % 4)) % 4;
 					for (int i = 0; i < pad; i++) {
 						bw.writeu1(0);
 					}
 
-					bool check = pos() % 4 == 0;
+					bool check = pos(offset) % 4 == 0;
 					Error::assert(check, "Padding offset must be mod 4: %d",
-							pos());
+							pos(offset));
 
 					bw.writeu4(inst.ls()->defbyte->label()->offset - lspos);
 					bw.writeu4(inst.ls()->npairs);

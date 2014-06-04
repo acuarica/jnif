@@ -17,7 +17,7 @@ class JsrRetNotSupported {
 };
 
 std::ostream& operator<<(std::ostream& os, const Method* m) {
-	if (m == nullptr) {
+	if (m == NULL) {
 		return os << "null method";
 	} else {
 		return os << *m;
@@ -138,7 +138,7 @@ public:
 	}
 
 	static bool join(Frame& frame, Frame& how, IClassPath* classPath,
-			Method* method = nullptr) {
+			Method* method = NULL) {
 		Error::check(frame.stack.size() == how.stack.size(),
 				"Different stack sizes: ", frame.stack.size(), " != ",
 				how.stack.size(), ": #", frame, " != #", how, "Method: ",
@@ -1310,11 +1310,11 @@ public:
 					} else if (s.isSameLocals1StackItem(current, *f)) {
 						if (offsetDelta <= 63) {
 							e.frameType = 64 + offsetDelta;
-							auto t = current.stack.front();
+							const Type& t = current.stack.front();
 							e.sameLocals_1_stack_item_frame.stack.push_back(t);
 						} else {
 							e.frameType = 247;
-							auto t = current.stack.front();
+							const Type& t = current.stack.front();
 							e.same_locals_1_stack_item_frame_extended.stack.push_back(
 									t);
 							e.same_locals_1_stack_item_frame_extended.offset_delta =
@@ -1368,7 +1368,7 @@ void ClassFile::computeFrames(IClassPath* classPath) {
 	for (Method* method : methods) {
 		CodeAttr* code = method->codeAttr();
 
-		if (code != nullptr) {
+		if (code != NULL) {
 			bool hasJsrOrRet = code->instList.hasJsrOrRet();
 			if (hasJsrOrRet) {
 				return;

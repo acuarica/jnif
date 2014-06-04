@@ -74,10 +74,6 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 	}
 }
 
-//typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
-//		const char* className, int* newlen, unsigned char** newdata,
-//		JNIEnv* jni, InstrArgs* args);
-
 typedef struct {
 	InstrFunc* instrFunc;
 	String name;
@@ -87,18 +83,12 @@ InstrFuncEntry instrFuncEntry;
 
 int inLivePhase = 0;
 
-//void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, unsigned char* data,
-//		int len, const char* className, int* newlen, unsigned char** newdata,
-//		JNIEnv* jni, InstrArgs* args);
-
 static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jclass class_being_redefined, jobject loader, const char* name,
 		jobject protection_domain, jint class_data_len,
 		const unsigned char* class_data, jint* new_class_data_len,
 		unsigned char** new_class_data) {
 	_TLOG("CLASSFILELOAD:%s", name);
-
-	//NOTICE("Class: %s, loader: %s", name, loader != NULL? "object" : "(null)");
 
 	if (loader != NULL) {
 		inLivePhase = true;
@@ -113,8 +103,6 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 				(unsigned char*) class_data, class_data_len, name,
 				new_class_data_len, new_class_data, jni, &args);
 
-//		(*instrFunc)(jvmti, (unsigned char*) class_data, class_data_len, name,
-//				new_class_data_len, new_class_data, jni, &args);
 	}
 }
 
@@ -122,11 +110,8 @@ static void JNICALL ClassLoadEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
 		jclass klass) {
 	//char* classsig;
 	//FrGetClassSignature(jvmti, klass, &classsig, NULL);
-
 	//_TLOG("CLASSLOAD:%s", classsig);
-
 	//FrDeallocate(jvmti, classsig);
-
 	//StampClass(jvmti, jni, klass);
 }
 
@@ -198,11 +183,11 @@ static void JNICALL ExceptionEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,
 //	(*jni)->ReleaseStringUTFChars(jni, name, nameutf8);
 
 //	if (inLivePhase) {
-//		jclass clazz = (*jni)->FindClass(jni, "java/lang/Throwable");
-//		jmethodID pstid = (*jni)->GetMethodID(jni, clazz, "printStackTrace",
+//		jclass clazz = jni->FindClass("java/lang/Throwable");
+//		jmethodID pstid = jni->GetMethodID(clazz, "printStackTrace",
 //				"()V");
-//		(*jni)->CallObjectMethod(jni, ex, pstid);
-	//}
+//		jni->CallObjectMethod(ex, pstid);
+//	}
 
 	_TLOG("EXCEPTION");
 }

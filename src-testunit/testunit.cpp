@@ -92,24 +92,24 @@ static void testJoinFrame() {
 	ClassFile cf("testunit/Class");
 	Method* m = cf.addMethod("method", "()Ltestunit/Class;",
 			METHOD_PUBLIC | METHOD_STATIC);
-	auto cidx = cf.addUtf8("Code");
+	ConstIndex cidx = cf.addUtf8("Code");
 	CodeAttr* code = new CodeAttr(cidx, &cf);
 	m->add(code);
 	InstList& instList = m->codeAttr()->instList;
 
-	auto idx = cf.addClass("testunit/Class");
-	auto exidx = cf.addClass("java/lang/Exception");
-	auto initidx = cf.addMethodRef(idx, "<init>", "()V");
+	ConstIndex idx = cf.addClass("testunit/Class");
+	ConstIndex exidx = cf.addClass("java/lang/Exception");
+	ConstIndex initidx = cf.addMethodRef(idx, "<init>", "()V");
 
-	auto l = instList.createLabel();
+	LabelInst* l = instList.createLabel();
 
-	auto tryLabel = instList.createLabel();
+	LabelInst* tryLabel = instList.createLabel();
 	tryLabel->isTryStart = true;
 
-	auto endLabel = instList.createLabel();
+	LabelInst* endLabel = instList.createLabel();
 	endLabel->isTryEnd = true;
 
-	auto handlerLabel = instList.createLabel();
+	LabelInst* handlerLabel = instList.createLabel();
 	handlerLabel->isCatchHandler = true;
 
 	instList.addLabel(tryLabel);

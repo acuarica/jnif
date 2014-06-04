@@ -283,6 +283,10 @@ typedef u2 ConstIndex;
 class ConstClass {
 public:
 
+//	ConstClass(ConstIndex nameIndex) :
+//			nameIndex(nameIndex) {
+//	}
+
 	/**
 	 * The name of the class of this type.
 	 *
@@ -302,6 +306,10 @@ public:
  */
 class ConstMemberRef {
 public:
+
+//	ConstMemberRef(ConstIndex classIndex, ConstIndex nameAndTypeIndex) :
+//			classIndex(classIndex), nameAndTypeIndex(nameAndTypeIndex) {
+//	}
 
 	/**
 	 * Index to the class of this member reference.
@@ -414,6 +422,13 @@ public:
 class ConstUtf8 {
 public:
 
+	ConstUtf8() {
+	}
+
+	ConstUtf8(const String& str) :
+			str(str) {
+	}
+
 	/**
 	 * The string data.
 	 */
@@ -483,7 +498,7 @@ class ConstItem {
 
 public:
 
-	const ConstTag tag;
+	ConstTag tag;
 
 	union {
 		ConstClass clazz;
@@ -508,27 +523,33 @@ private:
 	}
 
 	ConstItem(ConstTag tag, ConstIndex classIndex, ConstIndex nameAndTypeIndex) :
-			tag(tag), memberRef( { classIndex, nameAndTypeIndex }) {
+			tag(tag) {
+		memberRef.classIndex = classIndex;
+		memberRef.nameAndTypeIndex = nameAndTypeIndex;
 	}
 
 	ConstItem(ConstTag tag, int value) :
-			tag(tag), i( { value }) {
+			tag(tag) {
+		i.value = value;
 	}
 
 	ConstItem(ConstTag tag, float value) :
-			tag(tag), f( { value }) {
+			tag(tag) {
+		f.value = value;
 	}
 
 	ConstItem(ConstTag tag, long value) :
-			tag(tag), l( { value }) {
+			tag(tag) {
+		l.value = value;
 	}
 
 	ConstItem(ConstTag tag, double value) :
-			tag(tag), d( { value }) {
+			tag(tag) {
+		d.value = value;
 	}
 
 	ConstItem(ConstTag tag, const String& value) :
-			tag(tag), utf8( { value }) {
+			tag(tag), utf8(value) {
 	}
 
 };
@@ -697,7 +718,9 @@ public:
 	}
 
 	/**
-	 * @returns the ConstIndex of the newly created entry.
+	 * Adds a String item to the Constant Pool using a class entry.
+	 *
+	 * @returns the ConstIndex of the newly created String entry.
 	 */
 	ConstIndex addStringFromClass(ConstIndex classIndex) {
 		ConstIndex classNameIndex = getClassNameIndex(classIndex);
@@ -1349,6 +1372,8 @@ enum Opcode {
 	OPCODE_impdep2 = 0xff
 };
 
+std::ostream& operator <<(std::ostream& os, Opcode opcode);
+
 enum OpKind {
 	KIND_ZERO,
 	KIND_BIPUSH,
@@ -1482,14 +1507,6 @@ public:
 
 	static Type arrayType(const Type& baseType, u4 dims);
 
-	union {
-		struct {
-			short offset;
-			Inst* label;
-			class TypeInst* newinst;
-		} uninit;
-	};
-
 	bool operator==(const Type& other) const {
 		return tag == other.tag
 				&& (tag != TYPE_OBJECT || className == other.className)
@@ -1525,19 +1542,6 @@ public:
 				return false;
 		}
 	}
-
-//
-//	bool isByte() const {
-//		return tag == TYPE_BYTE && !isArray();
-//	}
-//
-//	bool isChar() const {
-//		return tag == TYPE_CHAR && !isArray();
-//	}
-//
-//	bool isShort() const {
-//		return tag == TYPE_SHORT && !isArray();
-//	}
 
 	bool isFloat() const {
 		return tag == TYPE_FLOAT && !isArray();
@@ -1654,6 +1658,14 @@ public:
 	static Type fromMethodDesc(const char* methodDesc,
 			std::vector<Type>* argsType);
 
+	union {
+		struct {
+			short offset;
+			Inst* label;
+			class TypeInst* newinst;
+		} uninit;
+	};
+
 	bool init;
 
 	long typeId;
@@ -1682,9 +1694,19 @@ private:
 					className) {
 	}
 
-	Type(const Type& other, u4 dims) :
-			Type(other) {
+	Type(const Type& other, u4 dims) {
 		this->dims = dims;
+
+		// Type(other)
+		uninit.offset = other.uninit.offset;
+		uninit.label = other.uninit.label;
+		uninit.newinst = other.uninit.newinst;
+
+		init = other.init;
+		typeId = other.typeId;
+		tag = other.tag;
+		classIndex = other.classIndex;
+		className = other.className;
 	}
 
 	static Type _topType;
@@ -2075,12 +2097,12 @@ public:
 private:
 
 	Inst() :
-			opcode(OPCODE_nop), kind(KIND_ZERO), _offset(0), constPool(nullptr), prev(
-					nullptr), next(nullptr) {
+			opcode(OPCODE_nop), kind(KIND_ZERO), _offset(0), constPool(NULL), prev(
+			NULL), next(NULL) {
 	}
 
-	Inst(Opcode opcode, OpKind kind, ConstPool* constPool, Inst* prev = nullptr,
-			Inst* next = nullptr) :
+	Inst(Opcode opcode, OpKind kind, ConstPool* constPool, Inst* prev = NULL,
+			Inst* next = NULL) :
 			opcode(opcode), kind(kind), _offset(0), constPool(constPool), prev(
 					prev), next(next) {
 	}
@@ -2226,16 +2248,18 @@ public:
 private:
 
 	WideInst(Opcode subOpcode, u2 lvindex, ConstPool* constPool) :
-			Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(subOpcode), var(
-					{ lvindex }) {
+			Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(subOpcode) {
 		if (subOpcode == OPCODE_ret) {
 			throw JnifException("Ret found in wide instruction!!!", "no bt");
 		}
+
+		var.lvindex = lvindex;
 	}
 
 	WideInst(u2 index, u2 value, ConstPool* constPool) :
-			Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(OPCODE_iinc), iinc(
-					{ index, value }) {
+			Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(OPCODE_iinc) {
+		iinc.index = index;
+		iinc.value = value;
 	}
 
 };
@@ -2500,25 +2524,25 @@ public:
 		return inst;
 	}
 
-	void addLabel(LabelInst* inst, Inst* pos = nullptr) {
+	void addLabel(LabelInst* inst, Inst* pos = NULL) {
 		addInst(inst, pos);
 	}
 
-	LabelInst* addLabel(Inst* pos = nullptr) {
+	LabelInst* addLabel(Inst* pos = NULL) {
 		LabelInst* inst = createLabel();
 		addInst(inst, pos);
 
 		return inst;
 	}
 
-	ZeroInst* addZero(Opcode opcode, Inst* pos = nullptr) {
+	ZeroInst* addZero(Opcode opcode, Inst* pos = NULL) {
 		ZeroInst* inst = new ZeroInst(opcode, constPool);
 		addInst(inst, pos);
 
 		return inst;
 	}
 
-	PushInst* addBiPush(u1 value, Inst* pos = nullptr) {
+	PushInst* addBiPush(u1 value, Inst* pos = NULL) {
 		PushInst* inst = new PushInst(OPCODE_bipush, KIND_BIPUSH, value,
 				constPool);
 		addInst(inst, pos);
@@ -2526,7 +2550,7 @@ public:
 		return inst;
 	}
 
-	PushInst* addSiPush(u2 value, Inst* pos = nullptr) {
+	PushInst* addSiPush(u2 value, Inst* pos = NULL) {
 		PushInst* inst = new PushInst(OPCODE_sipush, KIND_SIPUSH, value,
 				constPool);
 		addInst(inst, pos);
@@ -2534,14 +2558,14 @@ public:
 		return inst;
 	}
 
-	LdcInst* addLdc(Opcode opcode, ConstIndex valueIndex, Inst* pos = nullptr) {
+	LdcInst* addLdc(Opcode opcode, ConstIndex valueIndex, Inst* pos = NULL) {
 		LdcInst* inst = new LdcInst(opcode, valueIndex, constPool);
 		addInst(inst, pos);
 
 		return inst;
 	}
 
-	VarInst* addVar(Opcode opcode, u1 lvindex, Inst* pos = nullptr) {
+	VarInst* addVar(Opcode opcode, u1 lvindex, Inst* pos = NULL) {
 		VarInst* inst = new VarInst(opcode, lvindex, constPool);
 		addInst(inst, pos);
 
@@ -2552,29 +2576,28 @@ public:
 		return inst;
 	}
 
-	IincInst* addIinc(u1 index, u1 value, Inst* pos = nullptr) {
+	IincInst* addIinc(u1 index, u1 value, Inst* pos = NULL) {
 		IincInst* inst = new IincInst(index, value, constPool);
 		addInst(inst, pos);
 
 		return inst;
 	}
 
-	WideInst* addWideVar(Opcode varOpcode, u2 lvindex, Inst* pos = nullptr) {
+	WideInst* addWideVar(Opcode varOpcode, u2 lvindex, Inst* pos = NULL) {
 		WideInst* inst = new WideInst(varOpcode, lvindex, constPool);
 		addInst(inst, pos);
 
 		return inst;
 	}
 
-	WideInst* addWideIinc(u2 index, u2 value, Inst* pos = nullptr) {
+	WideInst* addWideIinc(u2 index, u2 value, Inst* pos = NULL) {
 		WideInst* inst = new WideInst(index, value, constPool);
 		addInst(inst, pos);
 
 		return inst;
 	}
 
-	JumpInst* addJump(Opcode opcode, LabelInst* targetLabel,
-			Inst* pos = nullptr) {
+	JumpInst* addJump(Opcode opcode, LabelInst* targetLabel, Inst* pos = NULL) {
 		JumpInst* inst = new JumpInst(opcode, targetLabel, constPool);
 		addInst(inst, pos);
 		branchesCount++;
@@ -2589,7 +2612,7 @@ public:
 	}
 
 	FieldInst* addField(Opcode opcode, ConstIndex fieldRefIndex, Inst* pos =
-			nullptr) {
+	NULL) {
 		FieldInst* inst = new FieldInst(opcode, fieldRefIndex, constPool);
 		addInst(inst, pos);
 
@@ -2597,7 +2620,7 @@ public:
 	}
 
 	InvokeInst* addInvoke(Opcode opcode, ConstIndex methodRefIndex, Inst* pos =
-			nullptr) {
+	NULL) {
 		InvokeInst* inst = new InvokeInst(opcode, methodRefIndex, constPool);
 		addInst(inst, pos);
 
@@ -2605,7 +2628,7 @@ public:
 	}
 
 	InvokeInterfaceInst* addInvokeInterface(ConstIndex interMethodRefIndex,
-			u1 count, Inst* pos = nullptr) {
+			u1 count, Inst* pos = NULL) {
 		InvokeInterfaceInst* inst = new InvokeInterfaceInst(interMethodRefIndex,
 				count, constPool);
 		addInst(inst, pos);
@@ -2613,23 +2636,21 @@ public:
 		return inst;
 	}
 
-	InvokeDynamicInst* addInvokeDynamic(ConstIndex callSite,
-			Inst* pos = nullptr) {
+	InvokeDynamicInst* addInvokeDynamic(ConstIndex callSite, Inst* pos = NULL) {
 		InvokeDynamicInst* inst = new InvokeDynamicInst(callSite, constPool);
 		addInst(inst, pos);
 
 		return inst;
 	}
 
-	TypeInst* addType(Opcode opcode, ConstIndex classIndex,
-			Inst* pos = nullptr) {
+	TypeInst* addType(Opcode opcode, ConstIndex classIndex, Inst* pos = NULL) {
 		TypeInst* inst = new TypeInst(opcode, classIndex, constPool);
 		addInst(inst, pos);
 
 		return inst;
 	}
 
-	NewArrayInst* addNewArray(u1 atype, Inst* pos = nullptr) {
+	NewArrayInst* addNewArray(u1 atype, Inst* pos = NULL) {
 		NewArrayInst* inst = new NewArrayInst(OPCODE_newarray, atype,
 				constPool);
 		addInst(inst, pos);
@@ -2638,7 +2659,7 @@ public:
 	}
 
 	MultiArrayInst* addMultiArray(ConstIndex classIndex, u1 dims, Inst* pos =
-			nullptr) {
+	NULL) {
 		MultiArrayInst* inst = new MultiArrayInst(OPCODE_multianewarray,
 				classIndex, dims, constPool);
 		addInst(inst, pos);
@@ -2647,7 +2668,7 @@ public:
 	}
 
 	TableSwitchInst* addTableSwitch(LabelInst* def, int low, int high,
-			Inst* pos = nullptr) {
+			Inst* pos = NULL) {
 		TableSwitchInst* inst = new TableSwitchInst(def, low, high, constPool);
 		addInst(inst, pos);
 		branchesCount++;
@@ -2658,7 +2679,7 @@ public:
 	}
 
 	LookupSwitchInst* addLookupSwitch(LabelInst* def, u4 npairs, Inst* pos =
-			nullptr) {
+	NULL) {
 		LookupSwitchInst* inst = new LookupSwitchInst(def, npairs, constPool);
 		addInst(inst, pos);
 		branchesCount++;
@@ -2702,7 +2723,7 @@ public:
 	}
 
 	Iterator end() const {
-		return Iterator(nullptr, last);
+		return Iterator(NULL, last);
 	}
 
 	ConstPool* const constPool;
@@ -2710,7 +2731,7 @@ public:
 private:
 
 	InstList(ConstPool* constPool) :
-			constPool(constPool), first(nullptr), last(nullptr), _size(0), nextLabelId(
+			constPool(constPool), first(NULL), last(NULL), _size(0), nextLabelId(
 					1), branchesCount(0), jsrOrRet(false) {
 	}
 
@@ -2765,7 +2786,7 @@ private:
 
 	BasicBlock(InstList::Iterator& start, InstList::Iterator& exit,
 			const String& name, class ControlFlowGraph* cfg) :
-			start(start), exit(exit), name(name), next(nullptr), cfg(cfg) {
+			start(start), exit(exit), name(name), next(NULL), cfg(cfg) {
 	}
 
 	std::vector<BasicBlock*> targets;
@@ -3046,7 +3067,7 @@ public:
 
 	CodeAttr(u2 nameIndex, ConstPool* constPool) :
 			Attr(ATTR_CODE, nameIndex, 0, constPool), maxStack(0), maxLocals(0), codeLen(
-					0), instList(constPool), cfg(nullptr) {
+					0), instList(constPool), cfg(NULL) {
 	}
 
 	~CodeAttr();
@@ -3158,7 +3179,7 @@ public:
 			}
 		}
 
-		return nullptr;
+		return NULL;
 	}
 
 	InstList& instList();
@@ -3408,12 +3429,12 @@ public:
 	/**
 	 *
 	 */
-	template<typename TAllocFunc>
-	void write(u1** classFileData, int* classFileSize, TAllocFunc allocFunc) {
-		*classFileSize = computeSize();
-		*classFileData = allocFunc(*classFileSize);
-		write(*classFileData, *classFileSize);
-	}
+//	template<typename TAllocFunc>
+//	void write(u1** classFileData, int* classFileSize, TAllocFunc allocFunc) {
+//		*classFileSize = computeSize();
+//		*classFileData = allocFunc(*classFileSize);
+//		write(*classFileData, *classFileSize);
+//	}
 
 	/**
 	 * Export this class file to dot format.
