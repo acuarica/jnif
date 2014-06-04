@@ -284,6 +284,20 @@ tiny-eval: benchs=avrora batik
 tiny-eval: SUITE=dacapo
 tiny-eval: runeval
 
+small-eval: times=1
+small-eval: backends=runagent runserver
+small-eval: instrs=Empty Identity Compute Stats
+small-eval: benchs=avrora batik eclipse
+small-eval: SUITE=dacapo
+small-eval: runeval
+
+large-eval: times=1
+large-eval: backends=runagent runserver
+large-eval: instrs=Empty Identity Compute Stats
+large-eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan
+large-eval: SUITE=dacapo
+large-eval: runeval
+
 #small-eval: benchs="avrora"
 #small-eval: eval
 
@@ -299,9 +313,11 @@ test-stats: instrs=Stats
 test-stats: test
 
 plots:
-	$(R) --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.$(UNAME).prof
-plotsl:
-	$(R) --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.Linux.prof
+	$(foreach p,$(wildcard $(BUILD)/eval.*.prof),\
+		$(R) --slave --vanilla --file=charts/charts.r --args $(p) ; \
+	)
+#plotsl:
+#	$(R) --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.Linux.prof
 
 docs:
 	doxygen
