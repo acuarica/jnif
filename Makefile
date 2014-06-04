@@ -280,7 +280,8 @@ tiny-eval: times=1
 tiny-eval: backends=runagent runserver
 tiny-eval: instrs=Empty Identity
 tiny-eval: benchs=avrora batik
-tiny-eval: eval
+tiny-eval: SUITE=dacapo
+tiny-eval: runeval
 
 #small-eval: benchs="avrora"
 #small-eval: eval
