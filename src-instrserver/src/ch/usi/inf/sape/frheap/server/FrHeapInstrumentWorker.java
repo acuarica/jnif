@@ -29,7 +29,7 @@ public class FrHeapInstrumentWorker extends Thread {
 		_instr = instr;
 
 		_p = p;
-		_writer = new PrintWriter("build/eval-server-" + p + "-" + tid
+		_writer = new PrintWriter("build/eval-instrserver-" + p + "-" + tid
 				+ ".prof");
 	}
 
