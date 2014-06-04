@@ -157,6 +157,8 @@ jlong StampClass(jvmtiEnv* jvmti, JNIEnv* jni, jclass klass) {
  * object: Non-null valid jobject to stamp.
  */
 jlong StampObject(jvmtiEnv* jvmti, JNIEnv* jni, jobject object) {
+	return -2;
+
 	jlong stamp;
 
 	FrGetTag(jvmti, object, &stamp);

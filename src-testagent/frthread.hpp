@@ -53,7 +53,7 @@ private:
 //				tldget()->prof.precision(15);
 //			}
 
-		if (_prof != nullptr) {
+		if (_prof != NULL) {
 			return;
 		}
 
@@ -62,7 +62,7 @@ private:
 
 		_prof = fopen(ss.str().c_str(), "w+");
 
-		if (_prof == nullptr) {
+		if (_prof == NULL) {
 			perror("Unable to create prof file");
 			exit(1);
 		}

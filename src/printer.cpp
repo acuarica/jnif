@@ -86,14 +86,22 @@ std::ostream& operator<<(std::ostream& os, const ConstTag& tag) {
 	return os << ConstNames[tag];
 }
 
+std::ostream& operator <<(std::ostream& os, Opcode opcode) {
+	Error::assert(opcode >= 0, "");
+	Error::assert(opcode < 256, "");
+
+	os << OPCODES[opcode];
+	return os;
+}
+
+const char* yesNo(bool value) {
+	return value ? "Yes" : "No";
+}
+
 std::ostream& operator<<(std::ostream& os, const Inst& inst) {
-	Error::assert(&inst != nullptr, "Invalid reference for inst");
+	Error::assert(&inst != NULL, "Invalid reference for inst");
 
 	int offset = inst._offset;
-
-	auto yesNo = [&](bool value) {
-		return value? "Yes" : "No";
-	};
 
 	if (inst.kind == KIND_LABEL) {
 		os << "label " << inst.label()->id << ", B: "
@@ -317,28 +325,29 @@ public:
 			value(value), sep(sep) {
 	}
 
+	static void check(MethodFlags accessFlags, const char* name, ostream& out,
+			AccessFlagsPrinter self, bool& empty) {
+		if (self.value & accessFlags) {
+			out << (empty ? "" : self.sep) << name;
+			empty = false;
+		}
+	}
+
 	friend ostream& operator<<(ostream& out, AccessFlagsPrinter self) {
 		bool empty = true;
 
-		auto check = [&](MethodFlags accessFlags, const char* name) {
-			if (self.value & accessFlags) {
-				out << (empty ? "" : self.sep) << name;
-				empty = false;
-			}
-		};
-
-		check(METHOD_PUBLIC, "public");
-		check(METHOD_PRIVATE, "private");
-		check(METHOD_PROTECTED, "protected");
-		check(METHOD_STATIC, "static");
-		check(METHOD_FINAL, "final");
-		check(METHOD_SYNCHRONIZED, "synchronized");
-		check(METHOD_BRIDGE, "bridge");
-		check(METHOD_VARARGS, "varargs");
-		check(METHOD_NATIVE, "native");
-		check(METHOD_ABSTRACT, "abstract");
-		check(METHOD_STRICT, "strict");
-		check(METHOD_SYNTHETIC, "synthetic");
+		check(METHOD_PUBLIC, "public", out, self, empty);
+		check(METHOD_PRIVATE, "private", out, self, empty);
+		check(METHOD_PROTECTED, "protected", out, self, empty);
+		check(METHOD_STATIC, "static", out, self, empty);
+		check(METHOD_FINAL, "final", out, self, empty);
+		check(METHOD_SYNCHRONIZED, "synchronized", out, self, empty);
+		check(METHOD_BRIDGE, "bridge", out, self, empty);
+		check(METHOD_VARARGS, "varargs", out, self, empty);
+		check(METHOD_NATIVE, "native", out, self, empty);
+		check(METHOD_ABSTRACT, "abstract", out, self, empty);
+		check(METHOD_STRICT, "strict", out, self, empty);
+		check(METHOD_SYNTHETIC, "synthetic", out, self, empty);
 
 		return out;
 	}
@@ -356,7 +365,7 @@ std::ostream& operator<<(std::ostream& os, const Method& m) {
 
 	if (m.hasCode()) {
 		CodeAttr* c = m.codeAttr();
-		if (c->cfg != nullptr) {
+		if (c->cfg != NULL) {
 			os << *c->cfg;
 		} else {
 			os << c->instList;
@@ -526,7 +535,7 @@ private:
 		}
 	}
 
-	void printAttrs(const Attrs& attrs, void* args = nullptr) {
+	void printAttrs(const Attrs& attrs, void* args = NULL) {
 		for (Attr* attrp : attrs) {
 			Attr& attr = *attrp;
 
@@ -581,7 +590,7 @@ private:
 
 		inc();
 
-		if (c.cfg != nullptr) {
+		if (c.cfg != NULL) {
 			os << *c.cfg;
 		} else {
 			os << c.instList;
@@ -627,18 +636,18 @@ private:
 		}
 	}
 
+	void parseTs(vector<Type>& locs) {
+		line(2) << "[" << locs.size() << "] ";
+		for (u1 i = 0; i < locs.size(); i++) {
+			Type& vt = locs[i];
+
+			os << vt << " | ";
+		}
+
+		os << endl;
+	}
+
 	void printSmt(SmtAttr& smt) {
-
-		auto parseTs = [&](vector<Type> locs) {
-			line(2) << "["<<locs.size()<<"] ";
-			for (u1 i = 0; i < locs.size(); i++) {
-				Type& vt = locs[i];
-
-				os << vt << " | ";
-			}
-
-			os << endl;
-		};
 
 		line() << "Stack Map Table: " << endl;
 

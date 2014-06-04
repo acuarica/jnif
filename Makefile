@@ -12,10 +12,10 @@ endif
 UNAME:=$(shell uname)
 
 ifeq ($(UNAME), Linux)
-  CXXFLAGS+=
+  #CXXFLAGS+=
 endif
 ifeq ($(UNAME), Darwin)
-  CXXFLAGS+=-stdlib=libc++
+  #CXXFLAGS+=-stdlib=libc++
 endif
 
 CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O0 -std=c++11
@@ -298,6 +298,8 @@ test-stats: test
 
 plots:
 	$(R) --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.$(UNAME).prof
+plotsl:
+	$(R) --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.Linux.prof
 
 docs:
 	doxygen
@@ -305,6 +307,9 @@ docs:
 dots: DOTS=$(shell find build -name *.dot)
 dots: PNGS=$(DOTS:%.dot=%.png)
 dots: $(PNGS)
+
+scp:
+	scp steklov:work/jnif/build/eval.Linux.prof build
 
 $(BUILD)/%.png: $(BUILD)/%.dot
 	dot -Tpng $< > $@

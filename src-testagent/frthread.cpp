@@ -10,14 +10,14 @@
  */
 AGENT_THREAD_LOCAL ThreadLocalData __tld
 = {.threadId = -1, .threadTag = -1, .priority = 0, .isDaemon =
-	false, .socketfd = -1, ._tlog = nullptr, ._prof=nullptr, .classLoadedStack=0, .instrTime=0};
+	false, .socketfd = -1, ._tlog = NULL, ._prof=NULL, .classLoadedStack=0, .instrTime=0};
 
 jint __nextthreadid = 1;
 
 jlong __globaleventno = 0;
 
 void FrOpenTransactionLog(FILE** _log, int tid) {
-	if (*_log != nullptr) {
+	if (*_log != NULL) {
 		return;
 
 	}
@@ -33,7 +33,7 @@ void FrOpenTransactionLog(FILE** _log, int tid) {
 
 	*_log = fopen(filename, "w+");
 
-	if (*_log == nullptr) {
+	if (*_log == NULL) {
 		perror("Unable to create log file");
 
 		//int err = errno;

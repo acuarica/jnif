@@ -18,7 +18,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <mutex>
+//#include <mutex>
 
 #include "jnif.hpp"
 
@@ -36,7 +36,7 @@ public:
 
 	ClassPath(JNIEnv* jni, jobject loader) :
 			jni(jni), loader(loader) {
-		if (proxyClass == nullptr) {
+		if (proxyClass == NULL) {
 			proxyClass = jni->FindClass("frproxy/FrInstrProxy");
 			ASSERT(proxyClass != NULL, "");
 
@@ -149,8 +149,8 @@ private:
 
 };
 
-jclass ClassPath::proxyClass = nullptr;
-jmethodID ClassPath::getResourceId = nullptr;
+jclass ClassPath::proxyClass = NULL;
+jmethodID ClassPath::getResourceId = NULL;
 
 static unsigned char* Allocate(jvmtiEnv* jvmti, jlong size) {
 
@@ -186,14 +186,14 @@ static string outFileName(const char* className, const char* ext,
 }
 
 extern int inLivePhase;
-std::mutex _mutex;
+//std::mutex _mutex;
 
 class LoadClassEvent {
 public:
 
 	LoadClassEvent() {
 		if (tldget()->classLoadedStack == 0) {
-			_mutex.lock();
+			//_mutex.lock();
 			//cerr << "+";
 		}
 
@@ -205,7 +205,7 @@ public:
 
 		if (tldget()->classLoadedStack == 0) {
 			//cerr << "-";
-			_mutex.unlock();
+			//_mutex.unlock();
 		}
 	}
 
@@ -220,7 +220,9 @@ void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv*,
 		InstrArgs* args) {
 	ClassFile cf(data, len);
-	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+	*newlen = cf.computeSize();
+	*newdata = Allocate(jvmti, *newlen);
+	cf.write(*newdata, *newlen);
 }
 
 bool isPrefix(const string& prefix, const string& text) {
@@ -233,7 +235,7 @@ bool skipCompute(const char* className) {
 		return true;
 	}
 
-	if (className != nullptr
+	if (className != NULL
 			&& (isPrefix("java", className) || isPrefix("sun", className))) {
 		return true;
 	}
@@ -256,7 +258,9 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 	ClassPath cp(jni, args->loader);
 	cf.computeFrames(&cp);
 
-	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+	*newlen = cf.computeSize();
+	*newdata = Allocate(jvmti, *newlen);
+	cf.write(*newdata, *newlen);
 }
 
 class Instr {
@@ -359,6 +363,38 @@ public:
 		}
 	}
 
+	static void instrMethodEntryExit(ClassFile& cf, ConstIndex proxyClass) {
+		ConstIndex sid = cf.addMethodRef(proxyClass, "enterMethod",
+				"(Ljava/lang/String;Ljava/lang/String;)V");
+
+		ConstIndex eid = cf.addMethodRef(proxyClass, "exitMethod",
+				"(Ljava/lang/String;Ljava/lang/String;)V");
+
+		ConstIndex classNameIdx = cf.addStringFromClass(cf.thisClassIndex);
+
+		for (Method* m : cf.methods) {
+			if (m->hasCode()) {
+				InstList& instList = m->instList();
+
+				ConstIndex methodIndex = cf.addString(m->nameIndex);
+
+				Inst* p = *instList.begin();
+
+				instList.addLdc(OPCODE_ldc_w, classNameIdx, p);
+				instList.addLdc(OPCODE_ldc_w, methodIndex, p);
+				instList.addInvoke(OPCODE_invokestatic, sid, p);
+
+				for (Inst* inst : instList) {
+					if (inst->isExit()) {
+						instList.addLdc(OPCODE_ldc_w, classNameIdx, inst);
+						instList.addLdc(OPCODE_ldc_w, methodIndex, inst);
+						instList.addInvoke(OPCODE_invokestatic, eid, inst);
+					}
+				}
+			}
+		}
+	}
+
 	static void instrMain(ClassFile& cf, ConstIndex classIndex) {
 		ConstIndex sid = cf.addMethodRef(classIndex, "enterMainMethod", "()V");
 		ConstIndex eid = cf.addMethodRef(classIndex, "exitMainMethod", "()V");
@@ -395,6 +431,30 @@ public:
 			}
 		}
 	}
+
+	static void instrAllOpcodes(ClassFile& cf, ConstIndex proxyClass) {
+		ConstIndex mid = cf.addMethodRef(proxyClass, "opcode", "(I)V");
+
+		for (Method* m : cf.methods) {
+			if (m->hasCode()) {
+				InstList& instList = m->instList();
+
+				for (Inst* inst : instList) {
+//					if (inst->opcode == OPCODE_newarray
+//							|| inst->opcode == OPCODE_anewarray
+//							|| inst->opcode == OPCODE_invokestatic)
+					if (inst->kind != KIND_LABEL) {
+						instList.addZero(OPCODE_nop, inst);
+						//instList.addBiPush(inst->opcode, inst);
+						//instList.addInvoke(OPCODE_invokestatic, mid, inst);
+					}
+				}
+
+				m->codeAttr()->maxStack += 1;
+			}
+		}
+	}
+
 };
 
 void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
@@ -405,20 +465,25 @@ void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
 	ClassFile cf(data, len);
 	classHierarchy.addClass(cf);
 
-	ConstIndex classIndex = cf.addClass("frproxy/FrInstrProxy");
+	ConstIndex proxyClass = cf.addClass("frproxy/FrInstrProxy");
 
-	Instr::instrObjectInit(cf, classIndex);
+	Instr::instrObjectInit(cf, proxyClass);
 	//Instr::instrNewArray(cf, classIndex);
-	Instr::instrANewArray(cf, classIndex);
-	Instr::instrMain(cf, classIndex);
-	Instr::instrIndy(cf, classIndex);
+	Instr::instrANewArray(cf, proxyClass);
+	Instr::instrMain(cf, proxyClass);
+	Instr::instrIndy(cf, proxyClass);
 
 	if (!skipCompute(className)) {
+		Instr::instrMethodEntryExit(cf, proxyClass);
+		Instr::instrAllOpcodes(cf, proxyClass);
+
 		ClassPath cp(jni, args->loader);
 		cf.computeFrames(&cp);
 	}
 
-	cf.write(newdata, newlen, [&](u4 size) {return Allocate(jvmti, size);});
+	*newlen = cf.computeSize();
+	*newdata = Allocate(jvmti, *newlen);
+	cf.write(*newdata, *newlen);
 }
 
 void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,

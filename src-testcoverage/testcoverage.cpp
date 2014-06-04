@@ -12,14 +12,13 @@ using namespace jnif;
 
 list<JavaFile> tests;
 
+static bool isSuffix(const string& suffix, const string& text) {
+	auto res = std::mismatch(suffix.rbegin(), suffix.rend(), text.rbegin());
+	return res.first == suffix.rend();
+}
+
 static int visitFile(const char* filePath, const struct stat*, int) {
-
-	auto isSuffix = [&](const string& suffix, const string& text) {
-		auto res = std::mismatch(suffix.rbegin(), suffix.rend(), text.rbegin());
-		return res.first == suffix.rend();
-	};
-
-	auto addJavaFile = [&]() {
+	if (isSuffix(".class", string(filePath))) {
 		ifstream is(filePath, ios::in | ios::binary | ios::ate);
 
 		if (!is.is_open()) {
@@ -38,40 +37,24 @@ static int visitFile(const char* filePath, const struct stat*, int) {
 			throw "File not opened!";
 		}
 
-		JavaFile jf= {buffer,fileSize,filePath};
+		JavaFile jf = { buffer, fileSize, filePath };
 		tests.push_back(jf);
-	};
-
-	if (isSuffix(".class", string(filePath))) {
-		addJavaFile();
 	}
 
 	return 0;
 }
 
+struct TestEntry {
+	TestFunc* testFunc;
+	String testName;
+};
+
 #define ENTRY(testName) { &testName, #testName }
+#define SIZE(arr) ( sizeof(arr)/sizeof((arr)[0]) )
 
 int main(int argc, const char* argv[]) {
 
-	struct TestEntry {
-		TestFunc* testFunc;
-		String testName;
-	};
-
-	auto run = [](TestFunc* testFunc, const String& testName) {
-		cerr << "Running test " << testName << " ";
-
-		try {
-			apply(cerr, tests, testFunc);
-		} catch (const JnifException& ex) {
-			cerr << ex << endl;
-			exit(-255);
-		}
-
-		cerr << " [OK]" << endl;
-	};
-
-	vector<TestEntry> testEntries = {
+	TestEntry testEntries[] = {
 	ENTRY(testPrinter),
 	ENTRY(testSize),
 	ENTRY(testWriter),
@@ -90,8 +73,8 @@ int main(int argc, const char* argv[]) {
 	String testName;
 
 	if (argc == 2 && argv[1] == String("--list")) {
-		for (TestEntry& te : testEntries) {
-			cout << te.testName << " ";
+		for (int i = 0; i < SIZE(testEntries); i++) {
+			cout << testEntries[i].testName << " ";
 		}
 
 		cout << endl;
@@ -105,9 +88,20 @@ int main(int argc, const char* argv[]) {
 
 		cerr << "loaded " << tests.size() << " class(es)]" << endl;
 
-		for (TestEntry& te : testEntries) {
+		for (int i = 0; i < SIZE(testEntries); i++) {
+			TestEntry& te = testEntries[i];
+
 			if (testName == "" || testName == te.testName) {
-				run(te.testFunc, te.testName);
+				cerr << "Running test " << te.testName << " ";
+
+				try {
+					apply(cerr, tests, te.testFunc);
+				} catch (const JnifException& ex) {
+					cerr << ex << endl;
+					exit(-255);
+				}
+
+				cerr << " [OK]" << endl;
 
 				if (testName == te.testName) {
 					return 0;

@@ -130,7 +130,7 @@ bool ClassHierarchy::isAssignableFrom(const string& sub,
 
 bool ClassHierarchy::isDefined(const String& className) const {
 //	const ClassHierarchy::ClassEntry* e = getEntry(className);
-//	return e != nullptr;
+//	return e != NULL;
 	auto it = getEntry(className);
 	return it != classes.end();
 }
@@ -145,7 +145,7 @@ std::map<String, ClassHierarchy::ClassEntry>::const_iterator ClassHierarchy::get
 //	if (it != classes.end()) {
 //		return &it->second;
 //	} else {
-//		return nullptr;
+//		return NULL;
 //	}
 //	for (const ClassHierarchy::ClassEntry& e : *this) {
 //		if (e.className == className) {
@@ -153,7 +153,7 @@ std::map<String, ClassHierarchy::ClassEntry>::const_iterator ClassHierarchy::get
 //		}
 //	}
 //
-//	return nullptr;
+//	return NULL;
 }
 
 string Version::supportedByJdk() const {
@@ -191,7 +191,7 @@ Attrs::~Attrs() {
 }
 
 CodeAttr::~CodeAttr() {
-	if (cfg != nullptr) {
+	if (cfg != NULL) {
 		delete cfg;
 	}
 }
@@ -271,7 +271,7 @@ void ClassFile::dot(ostream& os) const {
 
 	int methodId = 0;
 	for (const Method* method : methods) {
-		if (method->hasCode() && method->codeAttr()->cfg != nullptr) {
+		if (method->hasCode() && method->codeAttr()->cfg != NULL) {
 			const string& methodName = getUtf8(method->nameIndex);
 			const string& methodDesc = getUtf8(method->descIndex);
 
@@ -365,6 +365,54 @@ Type Type::fromConstClass(const String& className) {
 	}
 }
 
+static Type parseBaseType(const char*& fieldDesc,
+		const char* originalFieldDesc) {
+	switch (*fieldDesc) {
+		case 'Z':
+			return Type::booleanType();
+		case 'B':
+			return Type::byteType();
+		case 'C':
+			return Type::charType();
+		case 'S':
+			return Type::shortType();
+		case 'I':
+			return Type::intType();
+		case 'D':
+			return Type::doubleType();
+		case 'F':
+			return Type::floatType();
+		case 'J':
+			return Type::longType();
+		case 'L': {
+			fieldDesc++;
+
+			const char* classNameStart = fieldDesc;
+			int len = 0;
+			while (*fieldDesc != ';') {
+				Error::check(*fieldDesc != '\0', "");
+				fieldDesc++;
+				len++;
+			}
+
+			string className(classNameStart, len);
+			return Type::objectType(className);
+		}
+		default:
+			Error::raise("Invalid field desc ", originalFieldDesc);
+	}
+}
+
+static Type getType(const char*& fieldDesc, const char* originalFieldDesc,
+		int dims) {
+	Type baseType = parseBaseType(fieldDesc, originalFieldDesc);
+	if (dims == 0) {
+		return baseType;
+	} else {
+		return Type::arrayType(baseType, dims);
+	}
+}
+
 Type Type::fromFieldDesc(const char*& fieldDesc) {
 	const char* originalFieldDesc = fieldDesc;
 
@@ -379,54 +427,20 @@ Type Type::fromFieldDesc(const char*& fieldDesc) {
 
 	Error::check(*fieldDesc != '\0', "");
 
-	auto parseBaseType = [&] () -> Type {
-		switch (*fieldDesc) {
-			case 'Z':
-			return Type::booleanType();
-			case 'B':
-			return Type::byteType();
-			case 'C':
-			return Type::charType();
-			case 'S':
-			return Type::shortType();
-			case 'I':
-			return Type::intType();
-			case 'D':
-			return Type::doubleType();
-			case 'F':
-			return Type::floatType();
-			case 'J':
-			return Type::longType();
-			case 'L': {
-				fieldDesc++;
-
-				const char* classNameStart = fieldDesc;
-				int len = 0;
-				while (*fieldDesc != ';') {
-					Error::check(*fieldDesc != '\0', "");
-					fieldDesc++;
-					len++;
-				}
-
-				string className (classNameStart, len);
-				return Type::objectType(className);
-			}
-			default:
-			Error::raise("Invalid field desc ", originalFieldDesc);
-		}};
-
-	Type t = [&]() {
-		Type baseType = parseBaseType();
-		if (dims == 0) {
-			return baseType;
-		} else {
-			return Type::arrayType(baseType, dims);
-		}
-	}();
+	Type t = getType(fieldDesc, originalFieldDesc, dims);
 
 	fieldDesc++;
 
 	return t;
+}
+
+static Type getReturnType(const char* methodDesc) {
+	if (*methodDesc == 'V') {
+		methodDesc++;
+		return Type::voidType();
+	} else {
+		return Type::fromFieldDesc(methodDesc);
+	}
 }
 
 Type Type::fromMethodDesc(const char* methodDesc, vector<Type>* argsType) {
@@ -451,14 +465,7 @@ Type Type::fromMethodDesc(const char* methodDesc, vector<Type>* argsType) {
 	Error::check(*methodDesc != '\0', "Reached end of string: ",
 			originalMethodDesc);
 
-	Type returnType = [&]() {
-		if (*methodDesc == 'V') {
-			methodDesc++;
-			return Type::voidType();
-		} else {
-			return fromFieldDesc(methodDesc);
-		}
-	}();
+	Type returnType = getReturnType(methodDesc);
 
 	Error::check(*methodDesc == '\0', "Expected end of string: %s",
 			originalMethodDesc);
@@ -638,37 +645,37 @@ void Inst::checkCast(bool cond, const char* kindName) const {
 }
 
 Inst* InstList::Iterator::operator*() {
-	Error::assert(position != nullptr, "Dereferencing * on nullptr");
+	Error::assert(position != NULL, "Dereferencing * on NULL");
 	return position;
 }
 
 Inst* InstList::Iterator::operator->() const {
-	Error::assert(position != nullptr, "Dereferencing -> on nullptr");
+	Error::assert(position != NULL, "Dereferencing -> on NULL");
 
 	return position;
 }
 
 InstList::Iterator& InstList::Iterator::operator++() {
-	Error::assert(position != nullptr, "Doing ++ at nullptr");
+	Error::assert(position != NULL, "Doing ++ at NULL");
 	position = position->next;
 
 	return *this;
 }
 
 InstList::Iterator& InstList::Iterator::operator--() {
-	if (position == nullptr) {
+	if (position == NULL) {
 		position = last;
 	} else {
 		position = position->prev;
 	}
 
-	Error::assert(position != nullptr, "Doing -- at nullptr after last");
+	Error::assert(position != NULL, "Doing -- at NULL after last");
 
 	return *this;
 }
 
 InstList::~InstList() {
-	for (Inst* inst = first; inst != nullptr;) {
+	for (Inst* inst = first; inst != NULL;) {
 		Inst* next = inst->next;
 		delete inst;
 		inst = next;
@@ -676,27 +683,27 @@ InstList::~InstList() {
 }
 
 void InstList::addInst(Inst* inst, Inst* pos) {
-	Error::assert((first == nullptr) == (last == nullptr),
+	Error::assert((first == NULL) == (last == NULL),
 			"Invalid head/tail/size: head: ", first, ", tail: ", last,
 			", size: ", _size);
 
-	Error::assert((first == nullptr) == (_size == 0),
+	Error::assert((first == NULL) == (_size == 0),
 			"Invalid head/tail/size: head: ", first, ", tail: ", last,
 			", size: ", _size);
 
 	Inst* p;
 	Inst* n;
-	if (first == nullptr) {
-		Error::assert(pos == nullptr, "Invalid pos");
+	if (first == NULL) {
+		Error::assert(pos == NULL, "Invalid pos");
 
-		p = nullptr;
-		n = nullptr;
+		p = NULL;
+		n = NULL;
 		//first = inst;
 		//last = inst;
 	} else {
-		if (pos == nullptr) {
+		if (pos == NULL) {
 			p = last;
-			n = nullptr;
+			n = NULL;
 			//last = inst;
 		} else {
 			p = pos->prev;
@@ -707,13 +714,13 @@ void InstList::addInst(Inst* inst, Inst* pos) {
 	inst->prev = p;
 	inst->next = n;
 
-	if (inst->prev != nullptr) {
+	if (inst->prev != NULL) {
 		inst->prev->next = inst;
 	} else {
 		first = inst;
 	}
 
-	if (inst->next != nullptr) {
+	if (inst->next != NULL) {
 		inst->next->prev = inst;
 	} else {
 		last = inst;
@@ -751,60 +758,57 @@ void BasicBlock::addTarget(BasicBlock* target) {
 //	}
 //}
 
+static void addBasicBlock2(InstList::Iterator eit, InstList::Iterator beginBb,
+		int& bbid, ControlFlowGraph& cfg) {
+	if (beginBb != eit) {
+		stringstream ss;
+		ss << "BB" << bbid;
+		String name = ss.str();
+
+		cfg.addBasicBlock(beginBb, eit, name);
+
+		beginBb = eit;
+		bbid++;
+	}
+}
+
 static void buildBasicBlocks(InstList& instList, ControlFlowGraph& cfg) {
 	//setBranchTargets(instList);
 
 	int bbid = 0;
-	auto beginBb = instList.begin();
+	InstList::Iterator beginBb = instList.begin();
 
-	auto getBasicBlockName = [&](int bbid) {
-		stringstream ss;
-		ss << "BB" << bbid;
-
-		return ss.str();
-	};
-
-	auto addBasicBlock2 = [&](InstList::Iterator eit) {
-		if (beginBb != eit) {
-			string name = getBasicBlockName(bbid);
-			cfg.addBasicBlock(beginBb, eit, name);
-
-			beginBb = eit;
-			bbid++;
-		}
-	};
-
-	for (auto it = instList.begin(); it != instList.end(); ++it) {
+	for (InstList::Iterator it = instList.begin(); it != instList.end(); ++it) {
 		Inst* inst = *it;
 
 		if (inst->isLabel()
 				&& (inst->label()->isBranchTarget || inst->label()->isTryStart)) {
-			addBasicBlock2(it);
+			addBasicBlock2(it, beginBb, bbid, cfg);
 		}
 
 		if (inst->isBranch()) {
-			auto eit = it;
+			InstList::Iterator eit = it;
 			++eit;
-			addBasicBlock2(eit);
+			addBasicBlock2(eit, beginBb, bbid, cfg);
 		}
 
 		if (inst->isExit()) {
-			auto eit = it;
+			InstList::Iterator eit = it;
 			++eit;
-			addBasicBlock2(eit);
+			addBasicBlock2(eit, beginBb, bbid, cfg);
 		}
 	}
 }
 
+static void addTarget2(BasicBlock* bb, Inst* inst, ControlFlowGraph& cfg) {
+	Error::assert(inst->isLabel(), "Expected label instruction");
+	int labelId = inst->label()->id;
+	BasicBlock* tbbid = cfg.findBasicBlockOfLabel(labelId);
+	bb->addTarget(tbbid);
+}
+
 static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
 	buildBasicBlocks(instList, cfg);
-
-	auto addTarget2 = [&] (BasicBlock* bb, Inst* inst) {
-		Error::assert(inst->isLabel(), "Expected label instruction");
-		int labelId = inst->label()->id;
-		BasicBlock* tbbid = cfg.findBasicBlockOfLabel(labelId);
-		bb->addTarget(tbbid);
-	};
 
 	for (BasicBlock* bb : cfg) {
 		if (bb->start == instList.end()) {
@@ -824,28 +828,28 @@ static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
 		}
 
 		if (last->isJump()) {
-			addTarget2(bb, last->jump()->label2);
+			addTarget2(bb, last->jump()->label2, cfg);
 
 			if (last->opcode != OPCODE_goto) {
-				Error::assert(bb->next != nullptr, "next bb is null");
+				Error::assert(bb->next != NULL, "next bb is null");
 				bb->addTarget(bb->next);
 			}
 		} else if (last->isTableSwitch()) {
-			addTarget2(bb, last->ts()->def);
+			addTarget2(bb, last->ts()->def, cfg);
 
 			for (Inst* target : last->ts()->targets) {
-				addTarget2(bb, target);
+				addTarget2(bb, target, cfg);
 			}
 		} else if (last->isLookupSwitch()) {
-			addTarget2(bb, last->ls()->defbyte);
+			addTarget2(bb, last->ls()->defbyte, cfg);
 
 			for (Inst* target : last->ls()->targets) {
-				addTarget2(bb, target);
+				addTarget2(bb, target, cfg);
 			}
 		} else if (last->isExit()) {
 			bb->addTarget(cfg.exit);
 		} else {
-			Error::assert(bb->next != nullptr, "next bb is null");
+			Error::assert(bb->next != NULL, "next bb is null");
 			bb->addTarget(bb->next);
 		}
 	}

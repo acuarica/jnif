@@ -10,6 +10,10 @@
 #include "frinstr.hpp"
 #include "frtlog.hpp"
 
+#include <jnif.hpp>
+
+using namespace std;
+using namespace jnif;
 /**
  *
  */
@@ -112,12 +116,21 @@ DEFHANDLER(aastoreEvent) (JNIEnv* jni, jclass proxyClass, jint index,
 
 DEFHANDLER(enterMethod) (JNIEnv* jni, jclass proxyClass, jstring className,
 		jstring methodName) {
-	_TLOG("ENTERMETHOD");
-
 	WITH(jni, className,
 			{ WITH(jni, methodName, {
 
 			_TLOG("ENTERMETHOD:%.*s:%.*s", classNamelen, classNameutf8, methodNamelen,methodNameutf8);
+
+			}); });
+
+}
+
+DEFHANDLER(exitMethod) (JNIEnv* jni, jclass proxyClass, jstring className,
+		jstring methodName) {
+	WITH(jni, className,
+			{ WITH(jni, methodName, {
+
+			_TLOG("EXITMETHOD:%.*s:%.*s", classNamelen, classNameutf8, methodNamelen,methodNameutf8);
 
 			}); });
 
@@ -133,6 +146,12 @@ DEFHANDLER(exitMainMethod) (JNIEnv* jni, jclass proxyClass) {
 
 DEFHANDLER(indy) (JNIEnv* jni, jclass proxyClass, jint callSite) {
 	_TLOG("INDY:%d", callSite);
+}
+
+DEFHANDLER(opcode) (JNIEnv* jni, jclass proxyClass, jint op) {
+	stringstream ss;
+	ss << (Opcode) (unsigned char) op;
+	_TLOG("OPCODE:%s", ss.str().c_str());
 }
 
 static JNINativeMethod methods[] = {
@@ -168,11 +187,16 @@ static JNINativeMethod methods[] = {
 		{ "enterMethod", "(Ljava/lang/String;Ljava/lang/String;)V",
 				(void*) &HANDLER(enterMethod) },
 
+		{ "exitMethod", "(Ljava/lang/String;Ljava/lang/String;)V",
+				(void*) &HANDLER(exitMethod) },
+
 		{ "enterMainMethod", "()V", (void*) &HANDLER(enterMainMethod) },
 
 		{ "exitMainMethod", "()V", (void*) &HANDLER(exitMainMethod) },
 
 		{ "indy", "(I)V", (void*) &HANDLER(indy) },
+
+		{ "opcode", "(I)V", (void*) &HANDLER(opcode) },
 
 };
 void FrSetInstrHandlerNatives(jvmtiEnv* jvmti, JNIEnv* jni, jclass proxyClass) {
