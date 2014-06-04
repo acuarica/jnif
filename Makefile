@@ -169,7 +169,7 @@ $(BUILD)/jars:
 #
 start: CLASSPREFIX=ch.usi.inf.sape.frheap.FrHeapInstrumenter
 start:
-	$(JAVA) -jar $(INSTRSERVER) $(CLASSPREFIX)$(INSTRSERVERCLASS) $(BACKEND),$(APP),$(RUN),$(INSTR) &
+	$(JAVA) -jar $(INSTRSERVER) $(CLASSPREFIX)$(INSTRSERVERCLASS) instrserver,$(APP),$(RUN),$(INSTR) &
 	sleep 2
 
 stop:

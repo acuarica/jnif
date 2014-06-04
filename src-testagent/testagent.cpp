@@ -389,5 +389,8 @@ JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
 	Profiler p(tldget());
 	p.prof(args.runId, "@total", endTime - startTime);
 
+	//		if (args.instrFuncName != "ClientServer") {
+//	}
+
 	_TLOG("Agent unloaded");
 }
