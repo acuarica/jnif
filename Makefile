@@ -223,7 +223,6 @@ scala: APP=scala-$(BENCH)
 scala: | $(DACAPO_SCRATCH)
 scala: $(BACKEND) 
 
-
 runeval:
 	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
 		$(foreach be,$(backends),\
@@ -234,7 +233,9 @@ runeval:
 			)\
 		)\
 	)
-	cat $(BUILD)/eval-runagent-*.prof $(BUILD)/eval-server-*.prof > $(BUILD)/eval.$(UNAME).prof
+	cat $(BUILD)/eval-runagent-*.prof > $(BUILD)/eval.$(UNAME).prof
+	cat $(BUILD)/eval-runserver-*.prof >> $(BUILD)/eval.$(UNAME).prof
+	cat $(BUILD)/eval-instrserver-*.prof >> $(BUILD)/eval.$(UNAME).prof
 
 
 eval-scala: times=1
