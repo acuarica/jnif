@@ -74,7 +74,8 @@ private:
 #ifdef __MACH__
 #define AGENT_THREAD_LOCAL __thread
 #else
-#define AGENT_THREAD_LOCAL thread_local
+//#define AGENT_THREAD_LOCAL thread_local
+#define AGENT_THREAD_LOCAL __thread
 #endif
 
 /**
