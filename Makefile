@@ -9,7 +9,7 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
-CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O0
+CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O3
 
 #
 # Rules to make $(LIBJNIF)
