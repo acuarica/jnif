@@ -66,7 +66,8 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 
 		String clsn = className == NULL ? "null" : className;
 
-		tldget()->prof(args.runId, clsn, instrTime);
+		Profiler p(tldget());
+		p.prof(args.runId, clsn, instrTime);
 
 	} catch (const JnifException& ex) {
 		cerr << ex << endl;
@@ -384,7 +385,8 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
 	endTime = gettime();
 
-	tldget()->prof(args.runId, "@total", endTime - startTime);
+	Profiler p(tldget());
+	p.prof(args.runId, "@total", endTime - startTime);
 
 	_TLOG("Agent unloaded");
 }

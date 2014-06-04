@@ -14,9 +14,9 @@
 /**
  *
  */
-class ThreadLocalData {
-public:
+extern "C" {
 
+struct ThreadLocalData {
 	jint threadId;
 	jlong threadTag;
 	//char name[1024];
@@ -27,48 +27,44 @@ public:
 	FILE* _prof;
 	int classLoadedStack;
 	double instrTime;
+};
 
-//	ThreadLocalData() :
-//			threadId(-1), threadTag(-1), /*name("NOT INIT"),*/priority(0), isDaemon(
-//					false), socketfd(-1), _tlog(nullptr), _prof(nullptr) {
-//	}
+}
+
+class Profiler {
+public:
+
+	ThreadLocalData* tld;
+	Profiler(ThreadLocalData* tld) :
+			tld(tld) {
+	}
 
 	void prof(const std::string& runId, const std::string& className,
 			double time) {
-		if (args.instrFuncName != "ClientServer") {
+//		if (args.instrFuncName != "ClientServer") {
 			open();
 
-			fprintf(_prof, "%s,%s,%f\n", runId.c_str(), className.c_str(),
+			fprintf(tld->_prof, "%s,%s,%f\n", runId.c_str(), className.c_str(),
 					time);
-		}
+	//	}
 	}
 
-private:
-
 	void open() {
-//			if (!tldget()->prof.is_open()) {
-//				stringstream ss;
-//				ss << args.profPath << ".tid-" << tldget()->threadId << ".prof";
-//				tldget()->prof.open(ss.str().c_str());
-//				tldget()->prof.precision(15);
-//			}
-
-		if (_prof != NULL) {
+		if (tld->_prof != NULL) {
 			return;
 		}
 
 		std::stringstream ss;
-		ss << args.profPath << ".tid-" << threadId << ".prof";
+		ss << args.profPath << ".tid-" << tld->threadId << ".prof";
 
-		_prof = fopen(ss.str().c_str(), "w+");
+		tld->_prof = fopen(ss.str().c_str(), "w+");
 
-		if (_prof == NULL) {
+		if (tld->_prof == NULL) {
 			perror("Unable to create prof file");
 			exit(1);
 		}
 
 	}
-
 };
 
 #ifdef __MACH__
