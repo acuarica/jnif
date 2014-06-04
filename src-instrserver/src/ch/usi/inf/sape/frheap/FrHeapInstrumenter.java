@@ -9,4 +9,7 @@ public abstract class FrHeapInstrumenter {
 
 	public FrHeapInstrumentConfig config;
 
+	public static boolean skipCompute(String className) {
+		return className.startsWith("java") || className.startsWith("sun");
+	}
 }

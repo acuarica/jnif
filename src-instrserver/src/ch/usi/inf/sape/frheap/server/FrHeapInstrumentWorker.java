@@ -89,6 +89,7 @@ public class FrHeapInstrumentWorker extends Thread {
 			long endTime = System.nanoTime();
 			instrTime = endTime - startTime;
 		} catch (RuntimeException ex) {
+		//	ex.printStackTrace();
 			return classBytes;
 		}
 

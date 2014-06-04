@@ -473,17 +473,48 @@ void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
 	Instr::instrMain(cf, proxyClass);
 	Instr::instrIndy(cf, proxyClass);
 
-	if (!skipCompute(className)) {
-		Instr::instrMethodEntryExit(cf, proxyClass);
-		Instr::instrAllOpcodes(cf, proxyClass);
+	try {
 
-		ClassPath cp(jni, args->loader);
-		cf.computeFrames(&cp);
+		if (!skipCompute(className)) {
+			Instr::instrMethodEntryExit(cf, proxyClass);
+			Instr::instrAllOpcodes(cf, proxyClass);
+
+			ClassPath cp(jni, args->loader);
+			cf.computeFrames(&cp);
+		}
+
+		*newlen = cf.computeSize();
+		*newdata = Allocate(jvmti, *newlen);
+		cf.write(*newdata, *newlen);
+	} catch (const JnifException& ex) {
+		//cerr << ex;
 	}
+}
 
-	*newlen = cf.computeSize();
-	*newdata = Allocate(jvmti, *newlen);
-	cf.write(*newdata, *newlen);
+void InstrClassAll(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni, InstrArgs* args) {
+	LoadClassEvent m;
+
+	ClassFile cf(data, len);
+	classHierarchy.addClass(cf);
+
+	ConstIndex proxyClass = cf.addClass("frproxy/FrInstrProxy");
+
+	try {
+		if (!skipCompute(className)) {
+			Instr::instrAllOpcodes(cf, proxyClass);
+
+			ClassPath cp(jni, args->loader);
+			cf.computeFrames(&cp);
+		}
+
+		*newlen = cf.computeSize();
+		*newdata = Allocate(jvmti, *newlen);
+		cf.write(*newdata, *newlen);
+	} catch (const JnifException& ex) {
+		//cerr << ex;
+	}
 }
 
 void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,

@@ -253,6 +253,7 @@ static void ParseOptions(const char* commandLineOptions) {
 	extern InstrFunc InstrClassIdentity;
 	extern InstrFunc InstrClassCompute;
 	extern InstrFunc InstrClassStats;
+	extern InstrFunc InstrClassAll;
 	extern InstrFunc InstrClassPrint;
 	extern InstrFunc InstrClassDot;
 	extern InstrFunc InstrClassClientServer;
@@ -266,6 +267,8 @@ static void ParseOptions(const char* commandLineOptions) {
 	{ &InstrClassCompute, "Compute" },
 
 	{ &InstrClassStats, "Stats" },
+
+	{ &InstrClassAll, "All" },
 
 	{ &InstrClassPrint, "Print" },
 

@@ -591,6 +591,13 @@ public:
 
 		attr.codeLen = bw.getOffset() - offset;
 
+		//if (attr.codeLen != -1) {
+			Error::check(attr.codeLen != 0, "Method code must not be zero");
+			Error::check(attr.codeLen < 65536,
+					"Method code must be less than 65536 but it is equals to ",
+					attr.codeLen);
+		//}
+
 		u2 esize = attr.exceptions.size();
 		bw.writeu2(esize);
 		for (u4 i = 0; i < esize; i++) {
