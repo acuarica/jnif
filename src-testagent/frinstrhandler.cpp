@@ -113,28 +113,28 @@ DEFHANDLER(aastoreEvent) (JNIEnv* jni, jclass proxyClass, jint index,
 
 	_TLOG("AASTORE:%d:%ld:%ld", index, thisArrayStamp, newValueStamp);
 }
-
-DEFHANDLER(enterMethod) (JNIEnv* jni, jclass proxyClass, jstring className,
-		jstring methodName) {
-	WITH(jni, className,
-			{ WITH(jni, methodName, {
-
-			_TLOG("ENTERMETHOD:%.*s:%.*s", classNamelen, classNameutf8, methodNamelen,methodNameutf8);
-
-			}); });
-
-}
-
-DEFHANDLER(exitMethod) (JNIEnv* jni, jclass proxyClass, jstring className,
-		jstring methodName) {
-	WITH(jni, className,
-			{ WITH(jni, methodName, {
-
-			_TLOG("EXITMETHOD:%.*s:%.*s", classNamelen, classNameutf8, methodNamelen,methodNameutf8);
-
-			}); });
-
-}
+//
+//DEFHANDLER(enterMethod) (JNIEnv* jni, jclass proxyClass, jstring className,
+//		jstring methodName) {
+//	WITH(jni, className,
+//			{ WITH(jni, methodName, {
+//
+//			_TLOG("ENTERMETHOD:%.*s:%.*s", classNamelen, classNameutf8, methodNamelen,methodNameutf8);
+//
+//			}); });
+//
+//}
+//
+//DEFHANDLER(exitMethod) (JNIEnv* jni, jclass proxyClass, jstring className,
+//		jstring methodName) {
+//	WITH(jni, className,
+//			{ WITH(jni, methodName, {
+//
+//			_TLOG("EXITMETHOD:%.*s:%.*s", classNamelen, classNameutf8, methodNamelen,methodNameutf8);
+//
+//			}); });
+//
+//}
 
 DEFHANDLER(enterMainMethod) (JNIEnv* jni, jclass proxyClass) {
 	_TLOG("ENTERMAIN");
@@ -154,51 +154,30 @@ DEFHANDLER(opcode) (JNIEnv* jni, jclass proxyClass, jint op) {
 	_TLOG("OPCODE:%s", ss.str().c_str());
 }
 
+#define NATIVE(name, desc) { (char*) #name, (char*) desc, (void *) &HANDLER(name) }
+
 static JNINativeMethod methods[] = {
+NATIVE(alloc, "(Ljava/lang/Object;)V"),
+NATIVE(newArrayEvent, "(ILjava/lang/Object;I)V"),
+NATIVE(aNewArrayEvent, "(ILjava/lang/Object;Ljava/lang/String;)V"),
+NATIVE(multiANewArray1Event,
+		"(ILjava/lang/Object;Ljava/lang/String;)V"),
+NATIVE(multiANewArray2Event,
+		"(IILjava/lang/Object;Ljava/lang/String;)V"),
+NATIVE(multiANewArrayNEvent,
+		"(Ljava/lang/Object;ILjava/lang/String;)V"),
+NATIVE(putFieldEvent,
+		"(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)V"),
+NATIVE(putStaticEvent,
+		"(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)V"),
+NATIVE(aastoreEvent, "(ILjava/lang/Object;Ljava/lang/Object;)V"),
+//NATIVE(enterMethod, "(Ljava/lang/String;Ljava/lang/String;)V"),
+//NATIVE(exitMethod, "(Ljava/lang/String;Ljava/lang/String;)V"),
+NATIVE(enterMainMethod, "()V"),
+NATIVE(exitMainMethod, "()V"),
+NATIVE(indy, "(I)V"),
+NATIVE(opcode, "(I)V") };
 
-{ (char*) "alloc", (char*) "(Ljava/lang/Object;)V", (void *) &HANDLER(alloc) },
-
-		{ "newArrayEvent", "(ILjava/lang/Object;I)V", (void *) &HANDLER(
-				newArrayEvent) },
-
-		{ "aNewArrayEvent", "(ILjava/lang/Object;Ljava/lang/String;)V",
-				(void *) &HANDLER(aNewArrayEvent) },
-
-		{ "multiANewArray1Event", "(ILjava/lang/Object;Ljava/lang/String;)V",
-				(void*) &HANDLER(multiANewArray1Event) },
-
-		{ "multiANewArray2Event", "(IILjava/lang/Object;Ljava/lang/String;)V",
-				(void*) &HANDLER(multiANewArray2Event) },
-
-		{ "multiANewArrayNEvent", "(Ljava/lang/Object;ILjava/lang/String;)V",
-				(void*) &HANDLER(multiANewArrayNEvent) },
-
-		{ "putFieldEvent",
-				"(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)V",
-				(void*) &HANDLER(putFieldEvent) },
-
-		{ "putStaticEvent",
-				"(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)V",
-				(void*) &HANDLER(putStaticEvent) },
-
-		{ "aastoreEvent", "(ILjava/lang/Object;Ljava/lang/Object;)V",
-				(void*) &HANDLER(aastoreEvent) },
-
-		{ "enterMethod", "(Ljava/lang/String;Ljava/lang/String;)V",
-				(void*) &HANDLER(enterMethod) },
-
-		{ "exitMethod", "(Ljava/lang/String;Ljava/lang/String;)V",
-				(void*) &HANDLER(exitMethod) },
-
-		{ "enterMainMethod", "()V", (void*) &HANDLER(enterMainMethod) },
-
-		{ "exitMainMethod", "()V", (void*) &HANDLER(exitMainMethod) },
-
-		{ "indy", "(I)V", (void*) &HANDLER(indy) },
-
-		{ "opcode", "(I)V", (void*) &HANDLER(opcode) },
-
-};
 void FrSetInstrHandlerNatives(jvmtiEnv* jvmti, JNIEnv* jni, jclass proxyClass) {
 
 	jint res = jni->RegisterNatives(proxyClass, methods,

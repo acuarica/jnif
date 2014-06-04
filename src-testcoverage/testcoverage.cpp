@@ -73,7 +73,7 @@ int main(int argc, const char* argv[]) {
 	String testName;
 
 	if (argc == 2 && argv[1] == String("--list")) {
-		for (int i = 0; i < SIZE(testEntries); i++) {
+		for (u4 i = 0; i < SIZE(testEntries); i++) {
 			cout << testEntries[i].testName << " ";
 		}
 
@@ -88,7 +88,7 @@ int main(int argc, const char* argv[]) {
 
 		cerr << "loaded " << tests.size() << " class(es)]" << endl;
 
-		for (int i = 0; i < SIZE(testEntries); i++) {
+		for (u4 i = 0; i < SIZE(testEntries); i++) {
 			TestEntry& te = testEntries[i];
 
 			if (testName == "" || testName == te.testName) {
