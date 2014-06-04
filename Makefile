@@ -276,6 +276,15 @@ eval: runeval
 #	)
 #	cat $(BUILD)/eval-*.prof > $(BUILD)/eval.prof
 
+tiny-eval: times=1
+tiny-eval: backends=runagent runserver
+tiny-eval: instrs=Empty Identity
+tiny-eval: benchs=avrora batik
+tiny-eval: eval
+
+#small-eval: benchs="avrora"
+#small-eval: eval
+
 test: times=1
 test: backends=runagent
 test: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan  #tradebeans tradesoap
