@@ -21,6 +21,7 @@
 #include <sstream>
 #include <fstream>
 
+#include <time.h>
 #include <ctime>
 #include <sys/time.h>
 
