@@ -238,9 +238,9 @@ runeval:
 	cat $(BUILD)/eval-instrserver-*.prof >> $(BUILD)/eval.$(UNAME).prof
 
 
-eval-scala: times=1
+eval-scala: times=5
 eval-scala: backends=runagent runserver
-eval-scala: instrs=Empty Identity Compute
+eval-scala: instrs=Empty Identity Compute Stats All
 eval-scala: benchs=actors apparat dummy factorie kiama scalac scaladoc scalap scalariform scalatest scalaxb specs tmt
 eval-scala: SUITE=scala
 eval-scala: runeval
