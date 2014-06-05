@@ -13,7 +13,7 @@ public class FrHeapInstrumentSocket {
 	private final DataOutputStream os;
 
 	public FrHeapInstrumentSocket(Socket clientSocket) throws IOException {
-		//clientSocket.setTcpNoDelay(true);
+		clientSocket.setTcpNoDelay(true);
 
 		is = new DataInputStream(clientSocket.getInputStream());
 		os = new DataOutputStream(clientSocket.getOutputStream());

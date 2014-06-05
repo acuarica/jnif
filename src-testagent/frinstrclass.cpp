@@ -18,7 +18,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-//#include <mutex>
+#include <mutex>
 
 #include "jnif.hpp"
 
@@ -186,14 +186,14 @@ static string outFileName(const char* className, const char* ext,
 }
 
 extern int inLivePhase;
-//std::mutex _mutex;
+std::mutex _mutex;
 
 class LoadClassEvent {
 public:
 
 	LoadClassEvent() {
 		if (tldget()->classLoadedStack == 0) {
-			//_mutex.lock();
+			_mutex.lock();
 			//cerr << "+";
 		}
 
@@ -205,7 +205,7 @@ public:
 
 		if (tldget()->classLoadedStack == 0) {
 			//cerr << "-";
-			//_mutex.unlock();
+			_mutex.unlock();
 		}
 	}
 
