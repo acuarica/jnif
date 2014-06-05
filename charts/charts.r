@@ -19,8 +19,12 @@ rename <- function(v) {
 }
 
 argv <- commandArgs(trailingOnly = TRUE)
-csvfilename <- '../build/eval.prof'
-csvfilename <- argv[1]
+
+if (interactive()) {
+  csvfilename <- '../build/eval.Linux.steklov.prof'
+} else {
+  csvfilename <- argv[1]
+}
 
 path <- file_path_sans_ext(csvfilename)
 save <- function(p, d, s, w=12, h=8) {
@@ -34,10 +38,14 @@ save <- function(p, d, s, w=12, h=8) {
 printf('Loading table from %s...', csvfilename);
 csv <- read.csv(csvfilename, strip.white=TRUE, sep=',', header=FALSE);
 colnames(csv) <- c('backend', 'bench', 'run', 'instr', 'stage', 'time');
+
+csv <- subset(csv, bench != 'tomcat')
+csv <- subset(csv, !is.na(time))
+
 csv$backend <- factor(csv$backend, levels=c('runagent', 'instrserver', 'runserver'))
 levels(csv$backend) <- c('JNIF', 'ASM/Server', 'ASM/Client')
-csv$instr <- factor(csv$instr, levels=c('Empty', 'Identity', 'Compute', 'Stats'))
-levels(csv$instr) <- c('Empty', 'Identity', 'Frame', 'Stats')
+csv$instr <- factor(csv$instr, levels=c('Empty', 'Identity', 'Compute', 'Stats', 'All'))
+levels(csv$instr) <- c('Empty', 'Identity', 'Frame', 'Stats', 'All')
 
 csv.classes <- subset(csv, !(stage %in% '@total'))
 csv.classes <- dcast(csv.classes, backend+bench+run+instr~'count', value.var='time', fun.aggregate=length)

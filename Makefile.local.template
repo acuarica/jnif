@@ -17,6 +17,7 @@ ifeq ($(UNAME), Darwin)
 else ifeq ($(UNAME), Linux)
   CXXFLAGS+=-std=c++0x
   CXXFLAGS+=-lrt
+  CXXFLAGS+=-D USE_MUTEX
   JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
   R=R
 else

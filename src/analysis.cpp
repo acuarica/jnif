@@ -846,9 +846,19 @@ public:
 			case OPCODE_impdep2:
 				Error::raise("goto_w, jsr_w breakpoint not implemented");
 				break;
-			case OPCODE_invokedynamic:
-				Error::raise("invoke dynamic instances not implemented");
+			case OPCODE_invokedynamic: {
+				ConstIndex callSite = inst.indy()->callSite();
+				const ConstInvokeDynamic& dyn = cp.getInvokeDynamic(callSite);
+
+				String name;
+				String desc;
+				cp.getNameAndType(dyn.nameAndTypeIndex, &name, &desc);
+
+				invoke("invokedynamic call site", name, desc, false, false);
+
+				//Error::raise("invoke dynamic instances not implemented");
 				break;
+			}
 			default:
 				Error::raise("unknown opcode not implemented: ", inst.opcode);
 		}
