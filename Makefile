@@ -337,8 +337,11 @@ dots: DOTS=$(shell find build -name *.dot)
 dots: PNGS=$(DOTS:%.dot=%.png)
 dots: $(PNGS)
 
-scp:
-	scp steklov:work/jnif/build/eval.Linux.prof build
+scp-steklov:
+	scp steklov:work/jnif/build/eval.Linux.prof build/eval.Linux.steklov.prof
+
+scp-w620:
+	scp w620:work/jnif/build/eval.Linux.prof build/eval.Linux.w620.prof
 
 $(BUILD)/%.png: $(BUILD)/%.dot
 	dot -Tpng $< > $@
@@ -348,9 +351,8 @@ run: $(BACKEND)
 eclipse:
 	$(ECLIPSE_HOME)/eclipse -vmargs $(JVMARGS)
 
-JRUBY_HOME=/Users/luigi/Downloads/jruby-1.7.12
 jruby:
-	java -Djruby.home=$(JRUBY_HOME) -Djruby.lib=$(JRUBY_HOME)/lib -jar jruby.jar xslt.rb
+	java -Djruby.compile.invokedynamic=true $(JVMARGS) -jar jars/jruby-mvm.jar
 
 clean:
 	rm -rf $(BUILD)

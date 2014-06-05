@@ -18,7 +18,10 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+
+#ifdef USE_MUTEX
 #include <mutex>
+#endif
 
 #include "jnif.hpp"
 
@@ -186,14 +189,19 @@ static string outFileName(const char* className, const char* ext,
 }
 
 extern int inLivePhase;
+
+#ifdef USE_MUTEX
 std::mutex _mutex;
+#endif
 
 class LoadClassEvent {
 public:
 
 	LoadClassEvent() {
 		if (tldget()->classLoadedStack == 0) {
+#ifdef USE_MUTEX
 			_mutex.lock();
+#endif
 			//cerr << "+";
 		}
 
@@ -205,7 +213,10 @@ public:
 
 		if (tldget()->classLoadedStack == 0) {
 			//cerr << "-";
+#ifdef USE_MUTEX
 			_mutex.unlock();
+#endif
+
 		}
 	}
 
@@ -424,6 +435,8 @@ public:
 
 				for (Inst* inst : instList) {
 					if (inst->isInvokeDynamic()) {
+						cerr << "asdafasdf" << endl;
+						throw JnifException("Indy found");
 						instList.addSiPush(inst->indy()->callSite(), inst);
 						instList.addInvoke(OPCODE_invokestatic, mid, inst);
 					}

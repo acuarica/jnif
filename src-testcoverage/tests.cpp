@@ -59,7 +59,7 @@ public:
 };
 
 void testPrinter(const JavaFile&, ClassFile& cf) {
-	fstream os;
+	ofstream os;
 	os << cf;
 }
 

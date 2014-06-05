@@ -929,6 +929,11 @@ public:
 		*desc = getUtf8(descIndex);
 	}
 
+	const ConstInvokeDynamic& getInvokeDynamic(ConstIndex index) const {
+		const ConstItem* e = _getEntry(index, CONST_INVOKEDYNAMIC, "Indy");
+		return e->invokedynamic;
+	}
+
 	ConstIndex getIndexOfUtf8(const char* utf8);
 
 	ConstIndex putUtf8(const char* utf8) {
