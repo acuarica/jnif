@@ -65,10 +65,10 @@ static int _FrConnect() {
 	int conn_res = connect(sockfd, addrinfo->ai_addr, addrinfo->ai_addrlen);
 	check_std_error(conn_res, "error connect");
 
-	//int flag = 1;
-//	int set_res = setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag,
-//			sizeof(int));
-//	check_std_error(set_res, "error setsockopt");
+	int flag = 1;
+	int set_res = setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag,
+			sizeof(int));
+	check_std_error(set_res, "error setsockopt");
 
 	freeaddrinfo(addrinfo);
 

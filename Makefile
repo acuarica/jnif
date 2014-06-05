@@ -301,14 +301,14 @@ large-eval: runeval
 huge-eval: times=1
 huge-eval: backends=runagent runserver
 huge-eval: instrs=Empty Identity Compute Stats All
-huge-eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow xalan
+huge-eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan
 huge-eval: SUITE=dacapo
 huge-eval: runeval
 
 full-eval: times=5
 full-eval: backends=runagent runserver
 full-eval: instrs=Empty Identity Compute Stats All
-full-eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow xalan
+full-eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan
 full-eval: SUITE=dacapo
 full-eval: runeval
 
