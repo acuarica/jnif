@@ -9,7 +9,7 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
-CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O3 -Wno-unused-value
+CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O0 -Wno-unused-value
 
 #
 # Rules to make $(LIBJNIF)
@@ -36,7 +36,7 @@ $(LIBJNIF_BUILD):
 TESTUNIT=$(BUILD)/testunit.bin
 TESTUNIT_BUILD=$(BUILD)/testunit
 TESTUNIT_SRC=src-testunit
-TESTUNIT_HPPS=$(wildcard $(TESTUNIT_SRC)/*.hpp)
+TESTUNIT_HPPS=$(wildcard $(TESTUNIT_SRC)/*.hpp) $(LIBJNIF_HPPS)
 TESTUNIT_SRCS=$(wildcard $(TESTUNIT_SRC)/*.cpp)
 TESTUNIT_OBJS=$(TESTUNIT_SRCS:$(TESTUNIT_SRC)/%=$(TESTUNIT_BUILD)/%.o)
 
@@ -55,7 +55,7 @@ $(TESTUNIT_BUILD):
 TESTCOVERAGE=$(BUILD)/testcoverage.bin
 TESTCOVERAGE_BUILD=$(BUILD)/testcoverage
 TESTCOVERAGE_SRC=src-testcoverage
-TESTCOVERAGE_HPPS=$(wildcard $(TESTCOVERAGE_SRC)/*.hpp)
+TESTCOVERAGE_HPPS=$(wildcard $(TESTCOVERAGE_SRC)/*.hpp) $(LIBJNIF_HPPS)
 TESTCOVERAGE_SRCS=$(wildcard $(TESTCOVERAGE_SRC)/*.cpp)
 TESTCOVERAGE_OBJS=$(TESTCOVERAGE_SRCS:$(TESTCOVERAGE_SRC)/%=$(TESTCOVERAGE_BUILD)/%.o)
 
@@ -74,7 +74,7 @@ $(TESTCOVERAGE_BUILD):
 TESTAGENT=$(BUILD)/libtestagent.dylib
 TESTAGENT_BUILD=$(BUILD)/libtestagent
 TESTAGENT_SRC=src-testagent
-TESTAGENT_HPPS=$(wildcard $(TESTAGENT_SRC)/*.hpp)
+TESTAGENT_HPPS=$(wildcard $(TESTAGENT_SRC)/*.hpp) $(LIBJNIF_HPPS)
 TESTAGENT_SRCS=$(wildcard $(TESTAGENT_SRC)/*.cpp) $(wildcard $(TESTAGENT_SRC)/frproxy/*.java)
 TESTAGENT_OBJS=$(TESTAGENT_SRCS:$(TESTAGENT_SRC)/%=$(TESTAGENT_BUILD)/%.o)
 
@@ -262,7 +262,7 @@ eval-scala: runeval
 
 eval: times=1
 eval: backends=runagent runserver
-eval: instrs=Empty Identity Compute Stats
+eval: instrs=Empty Identity Compute Stats All
 eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan  #tradebeans tradesoap
 eval: SUITE=dacapo
 eval: runeval
@@ -312,10 +312,27 @@ full-eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflo
 full-eval: SUITE=dacapo
 full-eval: runeval
 
+#jruby-eval: 
+jruby-eval: times=1
+jruby-eval: backends=runagent runserver
+jruby-eval: instrs=Empty Identity Compute #Stats All
+jruby-eval:
+	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
+		$(foreach be,$(backends),\
+			$(foreach i,$(instrs),\
+				&& $(MAKE) run CMD=jruby BACKEND=$(be) RUN=$(r) INSTR=$(i) APP=jruby-mvm \
+			)\
+		)\
+	)
+	cat $(BUILD)/eval-runagent-*.prof > $(BUILD)/eval2-jruby-$(UNAME).prof
+	cat $(BUILD)/eval-runserver-*.prof >> $(BUILD)/eval2-jruby-$(UNAME).prof
+	cat $(BUILD)/eval-instrserver-*.prof >> $(BUILD)/eval2-jruby-$(UNAME).prof
+
 test: times=1
 test: backends=runagent
 test: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan  #tradebeans tradesoap
-test: eval
+test: SUITE=dacapo
+test: runeval
 
 test-compute: instrs=Compute
 test-compute: test
@@ -324,7 +341,7 @@ test-stats: instrs=Stats
 test-stats: test
 
 plots:
-	$(foreach p,$(wildcard $(BUILD)/eval.*.prof),\
+	$(foreach p,$(wildcard $(BUILD)/eval2-*.prof),\
 		$(R) --slave --vanilla --file=charts/charts.r --args $(p) ; \
 	)
 #plotsl:

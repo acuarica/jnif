@@ -222,11 +222,10 @@ public:
 		return labels[labelPos];
 	}
 
-private:
-
 	u4 codeLen;
 
 	InstList& instList;
+private:
 
 	LabelInst** labels;
 };
@@ -234,22 +233,34 @@ private:
 class BootstrapMethodsAttrParser {
 public:
 
-	void parse(BufferReader& br) {
-//		u2 num_bootstrap_methods =br.readu2();
-//
-//		for (u2 i = 0; i < num_bootstrap_methods; i++) {
-//		       u2 bootstrap_method_ref = br.readu2();
-//		        u2 num_bootstrap_arguments= br.readu2();
-//		        u2 bootstrap_arguments[num_bootstrap_arguments];
-//		    bootstrap_methods[num_bootstrap_methods];
-//		}
+	BootstrapMethodsAttrParser(ClassFile& cf) :
+			_cf(cf) {
 	}
+
+	void parse(BufferReader& br) {
+		u2 num_bootstrap_methods = br.readu2();
+
+		for (u2 i = 0; i < num_bootstrap_methods; i++) {
+			u2 bootstrap_method_ref = br.readu2();
+			u2 num_bootstrap_arguments = br.readu2();
+
+			for (u2 arg = 0; i < num_bootstrap_arguments; arg++) {
+				u2 bootstrap_argument = br.readu2();
+			}
+		}
+	}
+
+private:
+
+	ClassFile& _cf;
 };
 
 class ClassParser: private Error {
 public:
 
-	static void parseClassFile(const u1* fileImage, const int fileImageLen,
+	TypeFactory _typeFactory;
+
+	void parseClassFile(const u1* fileImage, const int fileImageLen,
 			ClassFile& cf) {
 		BufferReader br(fileImage, fileImageLen);
 
@@ -300,7 +311,7 @@ public:
 
 private:
 
-	static void parseConstPool(BufferReader& br, ConstPool& cp) {
+	void parseConstPool(BufferReader& br, ConstPool& cp) {
 		u2 count = br.readu2();
 
 		for (int i = 1; i < count; i++) {
@@ -405,7 +416,7 @@ private:
 		}
 	}
 
-	static Attr* parseSourceFile(BufferReader& br, ConstIndex nameIndex,
+	Attr* parseSourceFile(BufferReader& br, ConstIndex nameIndex,
 			ConstPool* constPool) {
 		u2 sourceFileIndex = br.readu2();
 
@@ -414,7 +425,7 @@ private:
 		return attr;
 	}
 
-	static Attr* parseExceptions(BufferReader& br, ConstIndex nameIndex,
+	Attr* parseExceptions(BufferReader& br, ConstIndex nameIndex,
 			ConstPool* constPool) {
 		u2 len = br.readu2();
 
@@ -430,7 +441,7 @@ private:
 		return attr;
 	}
 
-	static void parseInstTargets(BufferReader& br, LabelManager& labelManager) {
+	void parseInstTargets(BufferReader& br, LabelManager& labelManager) {
 		while (!br.eor()) {
 			int offset = br.offset();
 
@@ -542,7 +553,7 @@ private:
 		}
 	}
 
-	static Inst* parseInst(BufferReader& br, InstList& instList,
+	Inst* parseInst(BufferReader& br, InstList& instList,
 			const LabelManager& labelManager) {
 		int offset = br.offset();
 
@@ -714,7 +725,7 @@ private:
 		}
 	}
 
-	static void parseInstList(BufferReader& br, InstList& instList,
+	void parseInstList(BufferReader& br, InstList& instList,
 			const LabelManager& labelManager) {
 		while (!br.eor()) {
 			int offset = br.offset();
@@ -723,7 +734,7 @@ private:
 		}
 	}
 
-	static Attr* parseCode(BufferReader& br, ConstPool& cp, u2 nameIndex) {
+	Attr* parseCode(BufferReader& br, ConstPool& cp, u2 nameIndex) {
 
 		CodeAttr* ca = new CodeAttr(nameIndex, &cp);
 
@@ -784,7 +795,7 @@ private:
 		return ca;
 	}
 
-	static Attr* parseLnt(BufferReader& br, u2 nameIndex, void* args,
+	Attr* parseLnt(BufferReader& br, u2 nameIndex, void* args,
 			ConstPool* constPool) {
 		LabelManager& labelManager = *(LabelManager*) args;
 
@@ -808,7 +819,7 @@ private:
 		return lnt;
 	}
 
-	static Attr* parseLvt(BufferReader& br, u2 nameIndex, ConstPool* constPool,
+	Attr* parseLvt(BufferReader& br, u2 nameIndex, ConstPool* constPool,
 			void* args) {
 		LabelManager& labelManager = *(LabelManager*) args;
 
@@ -825,6 +836,17 @@ private:
 
 			e.startPc = startPc;
 			e.len = br.readu2();
+			//u2 len = e.len;
+			//u2 endPc = startPc + len;
+			//labelManager
+			//Error::check(endPc <= labelManager.codeLen, "inv endPc");
+			//Error::check(endPc <= labelManager.codeLen, "inv endPc");
+
+			//e.endPcLabel = labelManager.createLabel(endPc);
+			//Error::assert(e.endPcLabel != NULL, "asdf");
+			//Error::assert(e.endPcLabel->label()->id >= 1, "1");
+			//Error::assert(e.endPcLabel->label()->id <= 65536, "65536");
+
 			e.varNameIndex = br.readu2();
 			e.varDescIndex = br.readu2();
 			e.index = br.readu2();
@@ -835,7 +857,7 @@ private:
 		return lvt;
 	}
 
-	static Attr* parseLvtt(BufferReader& br, u2 nameIndex, ConstPool* constPool,
+	Attr* parseLvtt(BufferReader& br, u2 nameIndex, ConstPool* constPool,
 			void* args) {
 		LabelManager& labelManager = *(LabelManager*) args;
 
@@ -864,43 +886,42 @@ private:
 		return lvt;
 	}
 
-	static Type parseType(BufferReader& br, const ConstPool& cp,
+	Type parseType(BufferReader& br, const ConstPool& cp,
 			LabelManager& labelManager) {
 		u1 tag = br.readu1();
 
 		switch (tag) {
 			case TYPE_TOP:
-				return Type::topType();
+				return _typeFactory.topType();
 			case TYPE_INTEGER:
-				return Type::intType();
+				return _typeFactory.intType();
 			case TYPE_FLOAT:
-				return Type::floatType();
+				return _typeFactory.floatType();
 			case TYPE_LONG:
-				return Type::longType();
+				return _typeFactory.longType();
 			case TYPE_DOUBLE:
-				return Type::doubleType();
+				return _typeFactory.doubleType();
 			case TYPE_NULL:
-				return Type::nullType();
+				return _typeFactory.nullType();
 			case TYPE_UNINITTHIS:
-				return Type::uninitThisType();
+				return _typeFactory.uninitThisType();
 			case TYPE_OBJECT: {
 				u2 cpIndex = br.readu2();
 				Error::check(cp.isClass(cpIndex), "Bad cpindex: ", cpIndex);
 				string className = cp.getClassName(cpIndex);
-				return Type::objectType(className, cpIndex);
+				return _typeFactory.objectType(className, cpIndex);
 			}
 			case TYPE_UNINIT: {
 				u2 offset = br.readu2();
 				LabelInst* label = labelManager.createLabel(offset);
-				return Type::uninitType(offset, label);
+				return _typeFactory.uninitType(offset, label);
 			}
 		}
 
 		Error::raise("Error on parse smt");
 	}
-	;
 
-	static void parseTs(BufferReader& br, int count, vector<Type>& locs,
+	void parseTs(BufferReader& br, int count, vector<Type>& locs,
 			const ConstPool& cp, LabelManager& labelManager) {
 		for (u1 i = 0; i < count; i++) {
 			Type t = parseType(br, cp, labelManager);
@@ -908,8 +929,7 @@ private:
 		}
 	}
 
-	static Attr* parseSmt(BufferReader& br, ConstPool& cp, u2 nameIndex,
-			void* args) {
+	Attr* parseSmt(BufferReader& br, ConstPool& cp, u2 nameIndex, void* args) {
 
 		LabelManager& labelManager = *(LabelManager*) args;
 
@@ -994,8 +1014,8 @@ private:
 		return smt;
 	}
 
-	static Attr* parseAttr(BufferReader& br, ConstPool& cp, Attrs& as,
-			void* args = NULL) {
+	Attr* parseAttr(BufferReader& br, ConstPool& cp, Attrs& as, void* args =
+	NULL) {
 		u2 nameIndex = br.readu2();
 		u4 len = br.readu4();
 		const u1* data = br.pos();
@@ -1030,8 +1050,8 @@ private:
 		}
 	}
 
-	static void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as,
-			void* args = NULL) {
+	void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as, void* args =
+	NULL) {
 
 		u2 attrCount = br.readu2();
 		for (int i = 0; i < attrCount; i++) {
@@ -1051,7 +1071,8 @@ ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
 //	cerr << sizeof(Frame) << endl;
 //	exit(1);
 
-	ClassParser::parseClassFile(classFileData, classFileLen, *this);
+	ClassParser parser;
+	parser.parseClassFile(classFileData, classFileLen, *this);
 }
 
 }

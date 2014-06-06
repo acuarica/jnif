@@ -114,6 +114,22 @@ class ParserException: public JnifException {
 public:
 };
 
+class WriterException: public JnifException {
+public:
+
+	WriterException(const String& message, const String& stackTrace) :
+			JnifException(message, stackTrace) {
+	}
+};
+
+class InvalidMethodLengthException: public WriterException {
+public:
+	InvalidMethodLengthException(const String& message,
+			const String& stackTrace) :
+			WriterException(message, stackTrace) {
+	}
+};
+
 /**
  * This class contains static method to facilitate error handling mechanism.
  */
@@ -1454,68 +1470,18 @@ enum TypeTag {
  * Verification type class
  */
 class Type {
+	friend class TypeFactory;
+
 public:
-
-	static const Type& topType() {
-		return _topType;
-	}
-
-	static const Type& intType() {
-		return _intType;
-	}
-
-	static const Type& floatType() {
-		return _floatType;
-	}
-
-	static const Type& longType() {
-		return _longType;
-	}
-
-	static const Type& doubleType() {
-		return _doubleType;
-	}
-
-	static const Type& booleanType() {
-		return _booleanType;
-	}
-
-	static const Type& byteType() {
-		return _byteType;
-	}
-
-	static const Type& charType() {
-		return _charType;
-	}
-
-	static const Type& shortType() {
-		return _shortType;
-	}
-
-	static const Type& nullType() {
-		return _nullType;
-	}
-
-	static const Type& uninitThisType() {
-		return _uninitThisType;
-	}
-
-	static Type objectType(const String& className, u2 cpindex = 0);
-
-	static Type uninitType(short offset, class Inst* label) {
-		return Type(TYPE_UNINIT, offset, label);
-	}
-
-	static Type voidType() {
-		return Type(TYPE_VOID);
-	}
-
-	static Type arrayType(const Type& baseType, u4 dims);
 
 	bool operator==(const Type& other) const {
 		return tag == other.tag
 				&& (tag != TYPE_OBJECT || className == other.className)
 				&& dims == other.dims;
+	}
+
+	friend bool operator!=(const Type& lhs, const Type& rhs) {
+		return !(lhs == rhs);
 	}
 
 	bool isTop() const {
@@ -1585,7 +1551,8 @@ public:
 	}
 
 	bool isOneWord() const {
-		return isIntegral() || isFloat() || isNull() || isObject();
+		return isIntegral() || isFloat() || isNull() || isObject()
+				|| isUninitThis();
 	}
 
 	bool isTwoWord() const {
@@ -1623,7 +1590,7 @@ public:
 	 *
 	 * @returns the element type of this array.
 	 */
-	Type elementType() const;
+	Type elementType(class TypeFactory& typeFactory) const;
 
 	/**
 	 * Removes the any dimension on this type. This type has to be an array
@@ -1635,54 +1602,28 @@ public:
 	 * @returns the base type of this type. The result ensures that is not an
 	 * array type.
 	 */
-	Type stripArrayType() const;
-
-	/**
-	 * Parses the const class name.
-	 *
-	 * @param className the class name to parse.
-	 * @returns the type that represents the class name.
-	 */
-	static Type fromConstClass(const String& className);
-
-	/**
-	 * Parses a field descriptor.
-	 *
-	 * @param fieldDesc the field descriptor to parse.
-	 * @returns the type that represents the field descriptor.
-	 */
-	static Type fromFieldDesc(const char*& fieldDesc);
-
-	/**
-	 * Parses a method descriptor.
-	 *
-	 * @param methodDesc the method descriptor to parse.
-	 * @param argsType collection of method arguments of methodDesc.
-	 * @returns the type that represents the return type of methodDesc.
-	 */
-	static Type fromMethodDesc(const char* methodDesc,
-			std::vector<Type>* argsType);
+	Type stripArrayType(class TypeFactory& typeFactory) const;
 
 	union {
-		struct {
+		mutable struct {
 			short offset;
-			Inst* label;
+			class Inst* label;
 			class TypeInst* newinst;
 		} uninit;
 	};
 
-	bool init;
+	mutable bool init;
 
-	long typeId;
+	mutable long typeId;
 
 	static long nextTypeId;
-
-private:
 
 	TypeTag tag;
 	u4 dims;
 	u2 classIndex;
 	String className;
+
+private:
 
 	Type(TypeTag tag) :
 			init(true), typeId(0), tag(tag), dims(0), classIndex(0) {
@@ -1714,6 +1655,93 @@ private:
 		className = other.className;
 	}
 
+};
+
+class TypeFactory {
+	friend class Type;
+public:
+
+	~TypeFactory();
+
+	const Type& topType() {
+		return _topType;
+	}
+
+	const Type& intType() {
+		return _intType;
+	}
+
+	const Type& floatType() {
+		return _floatType;
+	}
+
+	const Type& longType() {
+		return _longType;
+	}
+
+	const Type& doubleType() {
+		return _doubleType;
+	}
+
+	const Type& booleanType() {
+		return _booleanType;
+	}
+
+	const Type& byteType() {
+		return _byteType;
+	}
+
+	const Type& charType() {
+		return _charType;
+	}
+
+	const Type& shortType() {
+		return _shortType;
+	}
+
+	const Type& nullType() {
+		return _nullType;
+	}
+
+	const Type& voidType() {
+		return _voidType;
+	}
+
+	Type uninitThisType();
+
+	Type uninitType(short offset, class Inst* label);
+
+	Type objectType(const String& className, u2 cpindex = 0);
+
+	Type arrayType(const Type& baseType, u4 dims);
+
+	/**
+	 * Parses the const class name.
+	 *
+	 * @param className the class name to parse.
+	 * @returns the type that represents the class name.
+	 */
+	Type fromConstClass(const String& className);
+
+	/**
+	 * Parses a field descriptor.
+	 *
+	 * @param fieldDesc the field descriptor to parse.
+	 * @returns the type that represents the field descriptor.
+	 */
+	Type fromFieldDesc(const char*& fieldDesc);
+
+	/**
+	 * Parses a method descriptor.
+	 *
+	 * @param methodDesc the method descriptor to parse.
+	 * @param argsType collection of method arguments of methodDesc.
+	 * @returns the type that represents the return type of methodDesc.
+	 */
+	Type fromMethodDesc(const char* methodDesc, std::vector<Type>* argsType);
+
+private:
+
 	static Type _topType;
 	static Type _intType;
 	static Type _floatType;
@@ -1724,7 +1752,19 @@ private:
 	static Type _charType;
 	static Type _shortType;
 	static Type _nullType;
-	static Type _uninitThisType;
+	static Type _voidType;
+
+	Type _parseBaseType(const char*& fieldDesc, const char* originalFieldDesc);
+
+	Type _getType(const char*& fieldDesc, const char* originalFieldDesc,
+			int dims);
+
+	Type _getReturnType(const char*& methodDesc);
+
+	Type _addType(const Type& type);
+
+	//std::list<Type*> _typePool;
+
 };
 
 /**
@@ -1736,8 +1776,8 @@ class Frame {
 
 public:
 
-	Frame() :
-			valid(false), topsErased(false) {
+	Frame(TypeFactory* typeFactory) :
+			valid(false), topsErased(false), _typeFactory(typeFactory) {
 	}
 
 	Type pop();
@@ -1773,30 +1813,30 @@ public:
 	}
 
 	void pushInt() {
-		push(Type::intType());
+		push(_typeFactory->intType());
 	}
 	void pushLong() {
-		push(Type::topType());
-		push(Type::longType());
+		push(_typeFactory->topType());
+		push(_typeFactory->longType());
 	}
 	void pushFloat() {
-		push(Type::floatType());
+		push(_typeFactory->floatType());
 	}
 	void pushDouble() {
-		push(Type::topType());
-		push(Type::doubleType());
+		push(_typeFactory->topType());
+		push(_typeFactory->doubleType());
 	}
 
 	void pushRef(const String& className) {
-		push(Type::objectType(className));
+		push(_typeFactory->objectType(className));
 	}
 
 	void pushArray(const Type& type, u4 dims) {
-		push(Type::arrayType(type, dims));
+		push(_typeFactory->arrayType(type, dims));
 	}
 
 	void pushNull() {
-		push(Type::nullType());
+		push(_typeFactory->nullType());
 	}
 
 	const Type& getVar(u4 lvindex) {
@@ -1808,23 +1848,23 @@ public:
 	void setVar2(u4 lvindex, const Type& t);
 
 	void setIntVar(u4 lvindex) {
-		setVar(&lvindex, Type::intType());
+		setVar(&lvindex, _typeFactory->intType());
 	}
 
 	void setLongVar(u4 lvindex) {
-		setVar(&lvindex, Type::longType());
+		setVar(&lvindex, _typeFactory->longType());
 	}
 
 	void setFloatVar(u4 lvindex) {
-		setVar(&lvindex, Type::floatType());
+		setVar(&lvindex, _typeFactory->floatType());
 	}
 
 	void setDoubleVar(u4 lvindex) {
-		setVar(&lvindex, Type::doubleType());
+		setVar(&lvindex, _typeFactory->doubleType());
 	}
 
 	void setRefVar(u4 lvindex, const String& className) {
-		setVar(&lvindex, Type::objectType(className));
+		setVar(&lvindex, _typeFactory->objectType(className));
 	}
 
 	void setRefVar(u4 lvindex, const Type& type);
@@ -1850,6 +1890,8 @@ public:
 private:
 
 	void _setVar(u4 lvindex, const Type& t);
+
+	TypeFactory* _typeFactory;
 
 };
 
@@ -2110,6 +2152,9 @@ private:
 			Inst* next = NULL) :
 			opcode(opcode), kind(kind), _offset(0), constPool(constPool), prev(
 					prev), next(next) {
+	}
+
+	virtual ~Inst() {
 	}
 
 	template<typename TKind>
@@ -2525,6 +2570,8 @@ public:
 
 	LabelInst* createLabel() {
 		LabelInst* inst = new LabelInst(constPool, nextLabelId);
+		_labelPool.push_back(inst);
+
 		nextLabelId++;
 		return inst;
 	}
@@ -2754,6 +2801,8 @@ private:
 	int branchesCount;
 
 	bool jsrOrRet;
+
+	std::list<LabelInst*> _labelPool;
 };
 
 /**
@@ -2790,8 +2839,10 @@ public:
 private:
 
 	BasicBlock(InstList::Iterator& start, InstList::Iterator& exit,
-			const String& name, class ControlFlowGraph* cfg) :
-			start(start), exit(exit), name(name), next(NULL), cfg(cfg) {
+			const String& name, class ControlFlowGraph* cfg,
+			TypeFactory& typeFactory) :
+			start(start), exit(exit), name(name), in(&typeFactory), out(
+					&typeFactory), next(NULL), cfg(cfg) {
 	}
 
 	std::vector<BasicBlock*> targets;
@@ -2811,7 +2862,7 @@ public:
 
 	const InstList& instList;
 
-	ControlFlowGraph(InstList& instList);
+	ControlFlowGraph(InstList& instList, TypeFactory& typeFactory);
 
 	~ControlFlowGraph();
 
@@ -2855,6 +2906,8 @@ private:
 	BasicBlock* addConstBb(InstList& instList, const char* name) {
 		return addBasicBlock(instList.end(), instList.end(), name);
 	}
+
+	TypeFactory& _typeFactory;
 
 };
 
@@ -2959,6 +3012,8 @@ public:
 	struct LvEntry {
 		u2 startPc;
 		Inst* startPcLabel;
+
+		Inst* endPcLabel;
 
 		u2 len;
 		u2 varNameIndex;
@@ -3201,6 +3256,11 @@ public:
 		String name = constPool->getUtf8(nameIndex);
 		return hasCode() && name == "<init>";
 	}
+
+//	bool isClassInit() const {
+//		String name = constPool->getUtf8(nameIndex);
+//		return hasCode() && name == "<clinit>";
+//	}
 
 	bool isMain() const {
 		String name = constPool->getUtf8(nameIndex);
@@ -3488,7 +3548,7 @@ public:
 	public:
 		String className;
 		String superClassName;
-		std::vector<String> interfaces;
+		//std::vector<String> interfaces;
 	};
 
 	/**

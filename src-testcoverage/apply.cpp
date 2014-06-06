@@ -21,6 +21,7 @@ void apply(ostream& os, const std::list<JavaFile>& tests, TestFunc instr) {
 			throw ex;
 		}
 
+
 		i++;
 		if (i % 1000 == 0) {
 			os << ".";

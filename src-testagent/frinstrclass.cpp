@@ -126,22 +126,25 @@ private:
 
 		jobject res = jni->CallStaticObjectMethod(proxyClass, getResourceId,
 				targetName, loader);
-		if (res != NULL) {
-			ASSERT(res != NULL,
-					"loadClassAsResource: getResource returned null");
 
-			jsize len = jni->GetArrayLength((jarray) res);
-			//	_TLOG("loadClassAsResource: resource len: %d", len);
-
-			u1* bytes = (u1*) jni->GetByteArrayElements((jbyteArray) res, NULL);
-			ASSERT(bytes != NULL, "loadClassAsResource: ");
-
-			ClassFile cf(bytes, len);
-			classHierarchy.addClass(cf);
-		} else {
+		if (res == NULL) {
 			WARN("Class not found: %s", className.c_str());
 			throw ClassNotLoadedException();
 		}
+
+		jsize len = jni->GetArrayLength((jarray) res);
+
+		u1* bytes = (u1*) jni->GetByteArrayElements((jbyteArray) res, NULL);
+		ASSERT(bytes != NULL, "loadClassAsResource: ");
+
+		ClassFile cf(bytes, len);
+
+		jni->ReleaseByteArrayElements((jbyteArray) res, (jbyte*) bytes,
+		JNI_ABORT);
+		jni->DeleteLocalRef(res);
+		jni->DeleteLocalRef(targetName);
+
+		classHierarchy.addClass(cf);
 	}
 
 	JNIEnv* jni;
@@ -268,6 +271,9 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 
 	ClassPath cp(jni, args->loader);
 	cf.computeFrames(&cp);
+
+//	ofstream os(outFileName(className, "compute.disasm").c_str());
+//	os << cf;
 
 	*newlen = cf.computeSize();
 	*newdata = Allocate(jvmti, *newlen);
@@ -435,8 +441,8 @@ public:
 
 				for (Inst* inst : instList) {
 					if (inst->isInvokeDynamic()) {
-						cerr << "asdafasdf" << endl;
-						throw JnifException("Indy found");
+						//cerr << "asdafasdf" << endl;
+						//throw JnifException("Indy found");
 						instList.addSiPush(inst->indy()->callSite(), inst);
 						instList.addInvoke(OPCODE_invokestatic, mid, inst);
 					}
@@ -446,7 +452,7 @@ public:
 	}
 
 	static void instrAllOpcodes(ClassFile& cf, ConstIndex proxyClass) {
-		ConstIndex mid = cf.addMethodRef(proxyClass, "opcode", "(I)V");
+//		ConstIndex mid = cf.addMethodRef(proxyClass, "opcode", "(I)V");
 
 		for (Method* m : cf.methods) {
 			if (m->hasCode()) {
@@ -487,7 +493,6 @@ void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
 	Instr::instrIndy(cf, proxyClass);
 
 	try {
-
 		if (!skipCompute(className)) {
 			Instr::instrMethodEntryExit(cf, proxyClass);
 			Instr::instrAllOpcodes(cf, proxyClass);
@@ -499,8 +504,8 @@ void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
 		*newlen = cf.computeSize();
 		*newdata = Allocate(jvmti, *newlen);
 		cf.write(*newdata, *newlen);
-	} catch (const JnifException& ex) {
-		//cerr << ex;
+	} catch (const InvalidMethodLengthException& ex) {
+		cerr << "Class not instrumented: " << ex.message() << endl;
 	}
 }
 

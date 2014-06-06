@@ -57,15 +57,15 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		InstrArgs* args2) {
 
 	try {
+		String clsn = className == NULL ? "null" : className;
 
 		double start = gettime();
-		(*instrFunc)(jvmti, data, len, className, newlen, newdata, jni, args2);
+		(*instrFunc)(jvmti, data, len, clsn.c_str(), newlen, newdata, jni,
+				args2);
 		double end = gettime();
 
 		double instrTime = end - start;
 //		tldget()->instrTime += end - start;
-
-		String clsn = className == NULL ? "null" : className;
 
 		Profiler p(tldget());
 		p.prof(args.runId, clsn, instrTime);

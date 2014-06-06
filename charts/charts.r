@@ -5,23 +5,23 @@ suppressPackageStartupMessages(library("tools"))
 
 printf <- function(format, ...) print(sprintf(format, ...))
 
-rename <- function(v) {
-  result <- vector(length=length(v))
-  for ( ii in 1:length(v)) {
-    name <- v[ii]
-    if (name == "Empty") result[ii] <- "Empty"
-    else if (name == "Identity") result[ii] <- "JNIF Identity"
-    else if (name == "Compute") result[ii] <- "JNIF Frames"
-    else if (name == "ClientServer") result[ii] <- "ASM Frames"
-    else result[ii] <- name
-  }
-  return (result)
-}
+#rename <- function(v) {
+#  result <- vector(length=length(v))
+#  for ( ii in 1:length(v)) {
+#    name <- v[ii]
+#    if (name == "Empty") result[ii] <- "Empty"
+ #   else if (name == "Identity") result[ii] <- "JNIF Identity"
+  #  else if (name == "Compute") result[ii] <- "JNIF Frames"
+   # else if (name == "ClientServer") result[ii] <- "ASM Frames"
+  #  else result[ii] <- name
+  #}
+  #return (result)
+#}
 
 argv <- commandArgs(trailingOnly = TRUE)
 
 if (interactive()) {
-  csvfilename <- '../build/eval.Linux.steklov.prof'
+  csvfilename <- '../build/eval-scala.prof'
 } else {
   csvfilename <- argv[1]
 }
@@ -39,13 +39,13 @@ printf('Loading table from %s...', csvfilename);
 csv <- read.csv(csvfilename, strip.white=TRUE, sep=',', header=FALSE);
 colnames(csv) <- c('backend', 'bench', 'run', 'instr', 'stage', 'time');
 
-csv <- subset(csv, bench != 'tomcat')
+csv <- subset(csv, bench != 'dacapo-tomcat')
 csv <- subset(csv, !is.na(time))
 
 csv$backend <- factor(csv$backend, levels=c('runagent', 'instrserver', 'runserver'))
-levels(csv$backend) <- c('JNIF', 'ASM/Server', 'ASM/Client')
+levels(csv$backend) <- c('JNIF', 'ASM Server', 'ASM Server on Client')
 csv$instr <- factor(csv$instr, levels=c('Empty', 'Identity', 'Compute', 'Stats', 'All'))
-levels(csv$instr) <- c('Empty', 'Identity', 'Frame', 'Stats', 'All')
+levels(csv$instr) <- c('Empty', 'Identity', 'Compute Frames', 'Allocations', 'Nop Padding')
 
 csv.classes <- subset(csv, !(stage %in% '@total'))
 csv.classes <- dcast(csv.classes, backend+bench+run+instr~'count', value.var='time', fun.aggregate=length)
@@ -62,8 +62,8 @@ colnames(csv.total) <- c('backend', 'bench', 'run', 'instr', 'total');
 csv.all <- merge(csv.instrumentation, csv.total, by=c('backend', 'bench', 'run', 'instr'))
 csv.all <- melt(csv.all, id.vars=c('backend', 'bench', 'run', 'instr'), variable.name='stage', value.name='time')
 
-theme.config.top <- theme(axis.text.x=element_text(angle=35, hjust=1), legend.box="horizontal", legend.position="top")
-theme.config.right <- theme(axis.text.x=element_text(angle=35, hjust=1), legend.box="horizontal", legend.position="right")
+theme.config.top <- theme(axis.text.x=element_text(angle=25, hjust=1), legend.box="horizontal", legend.position="top")
+theme.config.right <- theme(axis.text.x=element_text(angle=25, hjust=1), legend.box="horizontal", legend.position="right")
 
 # Classes per benchmark
 p <-
@@ -94,7 +94,8 @@ csv.mean <- dcast(csv, backend+bench+instr~'time', value.var='time', fun.aggrega
 
 p <-
   ggplot(csv.mean)+facet_grid(instr~backend)+geom_boxplot(aes(bench, time, color=bench))+
-  labs(x="Instrumentation kind", y="Average Instrumentation Time (in seconds)", title='Average Instrumentation Time')+theme.config.top
+  labs(x="Instrumentation kind", y="Average Instrumentation Time (in seconds)", title='Average Instrumentation Time')+
+  theme.config.right
 save(p, path, "mean")
 
 #csv.stats$diff <- csv.stats[["ASM Frames"]] - csv.stats[["JNIF Frames"]]

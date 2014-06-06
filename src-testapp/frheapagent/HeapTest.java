@@ -6,10 +6,23 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.*;
 import frheapagent.j8.*;
+import java.lang.invoke.*;
 
 public class HeapTest {
 
 	private boolean isCourseText;
+
+	public static class Signature {
+		public static void exclude() {
+			for (int i = 0; i < 5; i++) {
+			}
+
+			List<String> names = null;
+
+			for (int i = 0; i < 5; i++) {
+			}
+		}
+	}
 
 	private static boolean eq(Object o1, Object o2) {
 		return o1 == null ? o2 == null : o1.equals(o2);
@@ -709,6 +722,8 @@ public class HeapTest {
 		} catch (Throwable ex) {
 			ex.printStackTrace();
 		}
+
+		new Signature();
 
 		System.err.println("Siamo finito dal main!!!");
 	}

@@ -55,7 +55,7 @@ struct TestEntry {
 int main(int argc, const char* argv[]) {
 
 	TestEntry testEntries[] = {
-	ENTRY(testPrinter),
+	//ENTRY(testPrinter),
 	ENTRY(testSize),
 	ENTRY(testWriter),
 	ENTRY(testAnalysis),
