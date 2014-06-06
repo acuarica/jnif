@@ -267,6 +267,9 @@ public:
 	}
 
 	void writeLvt(LvtAttr& attr) {
+		bw.writeu2(0);
+		return;
+
 		u2 count = attr.lvt.size();
 
 		bw.writeu2(count);
@@ -274,10 +277,16 @@ public:
 		for (u4 i = 0; i < count; i++) {
 			LvtAttr::LvEntry& lve = attr.lvt[i];
 
-			//bw.writeu2(lve.startPc);
-			bw.writeu2(lve.startPcLabel->label()->offset);
+			u2 startPc = lve.startPcLabel->label()->offset;
+			//u2 endPc = lve.endPcLabel->label()->offset;
 
+			//bw.writeu2(lve.startPc);
+			bw.writeu2(startPc);
+
+			//u2 len = endPc - startPc;
 			bw.writeu2(lve.len);
+			//bw.writeu2(len);
+
 			bw.writeu2(lve.varNameIndex);
 			bw.writeu2(lve.varDescIndex);
 			bw.writeu2(lve.index);
@@ -592,10 +601,14 @@ public:
 		attr.codeLen = bw.getOffset() - offset;
 
 		//if (attr.codeLen != -1) {
+		try {
 			Error::check(attr.codeLen != 0, "Method code must not be zero");
 			Error::check(attr.codeLen < 65536,
 					"Method code must be less than 65536 but it is equals to ",
 					attr.codeLen);
+		} catch (const JnifException& ex) {
+			throw InvalidMethodLengthException(ex.message(), ex.stackTrace);
+		}
 		//}
 
 		u2 esize = attr.exceptions.size();
@@ -615,6 +628,7 @@ public:
 		bw.writeu2(attrs.size());
 
 		for (u4 i = 0; i < attrs.size(); i++) {
+
 			Attr& attr = *attrs.attrs[i];
 
 			bw.writeu2(attr.nameIndex);

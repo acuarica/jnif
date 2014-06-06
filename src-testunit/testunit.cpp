@@ -10,6 +10,8 @@
 using namespace std;
 using namespace jnif;
 
+TypeFactory tf;
+
 class UnitTestClassPath: public IClassPath {
 public:
 
@@ -45,20 +47,20 @@ static void testException() {
 static void testJoinFrameObjectAndEmpty() {
 	UnitTestClassPath cp;
 
-	const Type& s = Type::objectType("TypeS");
-	const Type& t = Type::objectType("TypeT");
+	const Type& s = tf.objectType("TypeS");
+	const Type& t = tf.objectType("TypeT");
 
-	Frame lhs;
+	Frame lhs(&tf);
 	lhs.setVar2(0, s);
 	lhs.setVar2(1, t);
 
-	Frame rhs;
+	Frame rhs(&tf);
 	rhs.setVar2(0, s);
 
 	lhs.join(rhs, &cp);
 
-	Frame res;
-	res.lva.resize(2, Type::topType());
+	Frame res(&tf);
+	res.lva.resize(2, tf.topType());
 	res.setVar2(0, s);
 
 	Error::assertEquals(res, lhs);
@@ -67,20 +69,20 @@ static void testJoinFrameObjectAndEmpty() {
 static void testJoinFrameException() {
 	UnitTestClassPath cp;
 
-	const Type& classType = Type::objectType("testunit/Class");
-	const Type& exType = Type::objectType("java/lang/Exception");
+	const Type& classType = tf.objectType("testunit/Class");
+	const Type& exType = tf.objectType("java/lang/Exception");
 
-	Frame lhs;
-	lhs.setVar2(0, Type::nullType());
+	Frame lhs(&tf);
+	lhs.setVar2(0, tf.nullType());
 	lhs.setVar2(1, exType);
 
-	Frame rhs;
+	Frame rhs(&tf);
 	rhs.setVar2(0, classType);
 
 	lhs.join(rhs, &cp);
 
-	Frame res;
-	res.lva.resize(2, Type::topType());
+	Frame res(&tf);
+	res.lva.resize(2, tf.topType());
 	res.setVar2(0, classType);
 
 	Error::assertEquals(res, lhs);

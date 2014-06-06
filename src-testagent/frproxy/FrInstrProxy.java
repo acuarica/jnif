@@ -88,12 +88,12 @@ public class FrInstrProxy {
 			Object thisArray);
 
 	public static void enterMethod(String className, String methodName) {
-		// If not correctly instrumented, it could lead to StackOverflowError. 
+		// If not instrumented properly, it could lead to StackOverflowError. 
 		// System.out.print("s");
 	}
 
 	public static void exitMethod(String className, String methodName) {
-		// If not correctly instrumented, it could lead to StackOverflowError.
+		// If not instrumented properly, it could lead to StackOverflowError.
 		// System.out.print("x");
 	}
 
