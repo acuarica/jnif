@@ -19,9 +19,7 @@
 #include <sstream>
 #include <fstream>
 
-#ifdef USE_MUTEX
 #include <mutex>
-#endif
 
 #include "jnif.hpp"
 
@@ -31,39 +29,94 @@ using namespace jnif;
 ClassHierarchy classHierarchy;
 
 class ClassNotLoadedException {
+public:
+
+	ClassNotLoadedException(const String& className) :
+			className(className) {
+	}
+
+	String className;
 
 };
+
+class TooEarlyException {
+public:
+
+	TooEarlyException(const String& className) :
+			className(className) {
+	}
+
+	const String className;
+
+};
+
+bool isPrefix(const string& prefix, const string& text) {
+	auto res = std::mismatch(prefix.begin(), prefix.end(), text.begin());
+	return res.first == prefix.end();
+}
+
+bool inLivePhase = false;
+
+bool skipCompute(const char* className) {
+//	if (!init) {
+	//	return true;
+	//}
+
+	if (className != NULL
+			&& (isPrefix("java/", className) || isPrefix("suqn", className))) {
+		return true;
+	}
+
+	return false;
+}
 
 class ClassPath: public IClassPath {
 public:
 
-	ClassPath(JNIEnv* jni, jobject loader) :
+	ClassPath(const char*, JNIEnv* jni, jobject loader) :
 			jni(jni), loader(loader) {
-		if (proxyClass == NULL) {
-			proxyClass = jni->FindClass("frproxy/FrInstrProxy");
-			ASSERT(proxyClass != NULL, "");
 
-			getResourceId = jni->GetStaticMethodID(proxyClass, "getResource",
-					"(Ljava/lang/String;Ljava/lang/ClassLoader;)[B");
-			ASSERT(getResourceId != NULL, "");
-
-			proxyClass = (jclass) jni->NewGlobalRef(proxyClass);
-			ASSERT(proxyClass != NULL, "");
+		if (loader != NULL) {
+			inLivePhase = true;
 		}
+
+//		if (proxyClass == NULL) {
+//			proxyClass = jni->FindClass("frproxy/FrInstrProxy");
+//			ASSERT(proxyClass != NULL, "");
+//
+//			getResourceId = jni->GetStaticMethodID(proxyClass, "getResource",
+//					"(Ljava/lang/String;Ljava/lang/ClassLoader;)[B");
+//			ASSERT(getResourceId != NULL, "");
+//
+//			proxyClass = (jclass) jni->NewGlobalRef(proxyClass);
+//			ASSERT(proxyClass != NULL, "");
+//		}
 	}
 
-	string getCommonSuperClass(const string& className1,
-			const string& className2) {
+	String getCommonSuperClass(const String& className1,
+			const String& className2) {
 		_TLOG("Common super class: left: %s, right: %s, loader: %s",
 				className1.c_str(), className2.c_str(),
 				(loader != NULL ? "object" : "(null)"));
+
+		if (!inLivePhase) {
+			///String res = "java/lang/Object";
+			//WARN("Too early for Class : %s", className);
+			return "java/lang/Object";
+		}
+
+		//if (isPrefix("java/", className) || isPrefix("suqn", className)) {
+		//WARN("class in java lang: %s", className);
+		//return "java/lang/Object";
+		//throw TooEarlyException(className);
+		//}
 
 		try {
 			loadClassIfNotLoaded(className1);
 			loadClassIfNotLoaded(className2);
 
-			string sup = className1;
-			const string& sub = className2;
+			String sup = className1;
+			const String& sub = className2;
 
 			while (!isAssignableFrom(sub, sup)) {
 				loadClassIfNotLoaded(sup);
@@ -79,8 +132,13 @@ public:
 			//_TLOG("Common super class found: %s", sup.c_str());
 
 			return sup;
+//		} catch (const TooEarlyException& e) {
+			//		String res = "java/lang/Object";
+			//	WARN("Too early for Class : %s", e.className.c_str());
+			//	return res;
 		} catch (const ClassNotLoadedException& e) {
-			string res = "java/lang/Object";
+			String res = "java/lang/Object";
+			WARN("Class not found: %s", e.className.c_str());
 //			_TLOG(
 //					"Class not loaded while looking the common super class between %s and %s, returning %s",
 //					className1.c_str(), className2.c_str(), res.c_str());
@@ -102,15 +160,29 @@ public:
 		return false;
 	}
 
+	static void initProxyClass(JNIEnv* jni) {
+		if (proxyClass == NULL) {
+			proxyClass = jni->FindClass("frproxy/FrInstrProxy");
+			ASSERT(proxyClass != NULL, "");
+
+			getResourceId = jni->GetStaticMethodID(proxyClass, "getResource",
+					"(Ljava/lang/String;Ljava/lang/ClassLoader;)[B");
+			ASSERT(getResourceId != NULL, "");
+
+			proxyClass = (jclass) jni->NewGlobalRef(proxyClass);
+			ASSERT(proxyClass != NULL, "");
+		}
+	}
+
 private:
 
-	void loadClassIfNotLoaded(const string& className) {
+	void loadClassIfNotLoaded(const String& className) {
 		if (!classHierarchy.isDefined(className)) {
 			loadClassAsResource(className);
 		}
 	}
 
-	void loadClassAsResource(const string& className) {
+	void loadClassAsResource(const String& className) {
 //		_TLOG("loadClassAsResource: Trying to load class %s as a resource...",
 //				className.c_str());
 
@@ -121,6 +193,10 @@ private:
 //				"getResource", "(Ljava/lang/String;Ljava/lang/ClassLoader;)[B");
 //		ASSERT(getResourceId != NULL, "");
 
+//if (skipCompute(className.c_str()))
+
+		ClassPath::initProxyClass(jni);
+
 		jstring targetName = jni->NewStringUTF(className.c_str());
 		ASSERT(targetName != NULL, "loadClassAsResource: ");
 
@@ -128,8 +204,7 @@ private:
 				targetName, loader);
 
 		if (res == NULL) {
-			WARN("Class not found: %s", className.c_str());
-			throw ClassNotLoadedException();
+			throw ClassNotLoadedException(className);
 		}
 
 		jsize len = jni->GetArrayLength((jarray) res);
@@ -147,12 +222,12 @@ private:
 		classHierarchy.addClass(cf);
 	}
 
+	//const char* className;
 	JNIEnv* jni;
 	jobject loader;
 
 	static jclass proxyClass;
 	static jmethodID getResourceId;
-
 };
 
 jclass ClassPath::proxyClass = NULL;
@@ -191,20 +266,16 @@ static string outFileName(const char* className, const char* ext,
 	return path.str();
 }
 
-extern int inLivePhase;
-
-#ifdef USE_MUTEX
 std::mutex _mutex;
-#endif
 
 class LoadClassEvent {
 public:
 
 	LoadClassEvent() {
 		if (tldget()->classLoadedStack == 0) {
-#ifdef USE_MUTEX
+
 			_mutex.lock();
-#endif
+
 			//cerr << "+";
 		}
 
@@ -216,10 +287,8 @@ public:
 
 		if (tldget()->classLoadedStack == 0) {
 			//cerr << "-";
-#ifdef USE_MUTEX
-			_mutex.unlock();
-#endif
 
+			_mutex.unlock();
 		}
 	}
 
@@ -239,24 +308,6 @@ void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 	cf.write(*newdata, *newlen);
 }
 
-bool isPrefix(const string& prefix, const string& text) {
-	auto res = std::mismatch(prefix.begin(), prefix.end(), text.begin());
-	return res.first == prefix.end();
-}
-
-bool skipCompute(const char* className) {
-	if (!inLivePhase) {
-		return true;
-	}
-
-	if (className != NULL
-			&& (isPrefix("java", className) || isPrefix("sun", className))) {
-		return true;
-	}
-
-	return false;
-}
-
 void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args) {
@@ -265,15 +316,8 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 	ClassFile cf(data, len);
 	classHierarchy.addClass(cf);
 
-	if (skipCompute(className)) {
-		return;
-	}
-
-	ClassPath cp(jni, args->loader);
+	ClassPath cp(cf.getThisClassName(), jni, args->loader);
 	cf.computeFrames(&cp);
-
-//	ofstream os(outFileName(className, "compute.disasm").c_str());
-//	os << cf;
 
 	*newlen = cf.computeSize();
 	*newdata = Allocate(jvmti, *newlen);
@@ -381,6 +425,7 @@ public:
 	}
 
 	static void instrMethodEntryExit(ClassFile& cf, ConstIndex proxyClass) {
+		//if  ( cf.getThisClassName())
 		ConstIndex sid = cf.addMethodRef(proxyClass, "enterMethod",
 				"(Ljava/lang/String;Ljava/lang/String;)V");
 
@@ -490,16 +535,14 @@ void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
 	//Instr::instrNewArray(cf, classIndex);
 	Instr::instrANewArray(cf, proxyClass);
 	Instr::instrMain(cf, proxyClass);
-	Instr::instrIndy(cf, proxyClass);
+	//Instr::instrIndy(cf, proxyClass);
+
+	//Instr::instrMethodEntryExit(cf, proxyClass);
+	//Instr::instrAllOpcodes(cf, proxyClass);
 
 	try {
-		if (!skipCompute(className)) {
-			Instr::instrMethodEntryExit(cf, proxyClass);
-			Instr::instrAllOpcodes(cf, proxyClass);
-
-			ClassPath cp(jni, args->loader);
-			cf.computeFrames(&cp);
-		}
+		ClassPath cp(cf.getThisClassName(), jni, args->loader);
+		cf.computeFrames(&cp);
 
 		*newlen = cf.computeSize();
 		*newdata = Allocate(jvmti, *newlen);
@@ -519,13 +562,11 @@ void InstrClassAll(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 	ConstIndex proxyClass = cf.addClass("frproxy/FrInstrProxy");
 
-	try {
-		if (!skipCompute(className)) {
-			Instr::instrAllOpcodes(cf, proxyClass);
+	Instr::instrAllOpcodes(cf, proxyClass);
 
-			ClassPath cp(jni, args->loader);
-			cf.computeFrames(&cp);
-		}
+	try {
+		ClassPath cp(cf.getThisClassName(), jni, args->loader);
+		cf.computeFrames(&cp);
 
 		*newlen = cf.computeSize();
 		*newdata = Allocate(jvmti, *newlen);

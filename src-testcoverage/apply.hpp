@@ -28,7 +28,7 @@ public:
 
 };
 
-typedef void (TestFunc)(const JavaFile& jf, jnif::ClassFile& cf);
+typedef void (TestFunc)(const JavaFile& jf);
 
 void apply(std::ostream& os, const std::list<JavaFile>& tests, TestFunc instr);
 
