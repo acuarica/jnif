@@ -59,9 +59,9 @@ public class FrHeapInstrumenterStats extends FrHeapInstrumenter {
 					mv = new ObjectInitMethodTransformer(mv);
 				}
 
-				if (!skipCompute(_className)) {
-					mv = new MethodEntryExit(mv, _className, name);
-				}
+			//	if (!skipCompute(_className)) {
+				//	mv = new MethodEntryExit(mv, _className, name);
+				//}
 
 				mv = new MethodTransformer(mv);
 			}
@@ -111,8 +111,8 @@ public class FrHeapInstrumenterStats extends FrHeapInstrumenter {
 			super(Opcodes.ASM4, mv);
 		}
 
-		@Override
-		public void visitIntInsn(int opcode, int operand) {
+		//@Override
+		public void visitIntInsn32(int opcode, int operand) {
 			if (opcode == Opcodes.NEWARRAY) {
 				// FORMAT: newarray atype
 				// OPERAND STACK: ... | count: int -> ... | arrayref

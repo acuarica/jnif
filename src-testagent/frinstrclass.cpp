@@ -50,7 +50,7 @@ public:
 
 };
 
-bool isPrefix(const string& prefix, const string& text) {
+bool isPrefix(const String& prefix, const String& text) {
 	auto res = std::mismatch(prefix.begin(), prefix.end(), text.begin());
 	return res.first == prefix.end();
 }
