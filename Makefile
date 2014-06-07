@@ -152,7 +152,7 @@ $(INSTRSERVER_BUILD):
 # PHONY rules
 #
 
-.PHONY: all testunit start stop testapp dacapo eval docs clean cleaneval
+.PHONY: all testunit start stop testapp dacapo docs clean cleaneval
 
 all: $(LIBJNIF) $(TESTUNIT) $(TESTCOVERAGE) $(TESTAGENT) $(TESTAPP) $(INSTRSERVER)
 
