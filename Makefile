@@ -212,9 +212,6 @@ dacapo: APP=dacapo-$(BENCH)
 dacapo: | $(DACAPO_SCRATCH)
 dacapo: $(BACKEND)
 
-#dacapo-avrora:
-#dacapo-avrora: dacapo
-
 $(DACAPO_SCRATCH):
 	mkdir -p $@
 
@@ -240,107 +237,19 @@ runeval:
 	rm $(BUILD)/eval-runserver-*.prof
 	rm $(BUILD)/eval-instrserver-*.prof
 
+eval-dacapo: times=5
+eval-dacapo: backends=runagent runserver
+eval-dacapo: instrs=Empty Identity Compute Stats All
+eval-dacapo: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan
+eval-dacapo: SUITE=dacapo
+eval-dacapo: runeval
+
 eval-scala: times=5
 eval-scala: backends=runagent runserver
 eval-scala: instrs=Empty Identity Compute Stats All
 eval-scala: benchs=actors apparat dummy factorie kiama scalac scaladoc scalap scalariform scalatest scalaxb specs tmt
 eval-scala: SUITE=scala
 eval-scala: runeval
-#	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
-#		$(foreach be,$(backends),\
-#			$(foreach i,$(instrs),\
-#				$(foreach b,$(benchs),\
-#					&& $(MAKE) scala BACKEND=$(be) RUN=$(r) INSTR=$(i) BENCH=$(b) \
-#				)\
-#			)\
-#		)\
-#	)
-#	cat $(BUILD)/eval-runagent-*.prof $(BUILD)/eval-server-*.prof > $(BUILD)/eval.prof
-
-#
-# eval
-#
-#Print ObjectInit NewArray ANewArray Main
-
-eval: times=1
-eval: backends=runagent runserver
-eval: instrs=Empty Identity Compute Stats All
-eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan  #tradebeans tradesoap
-eval: SUITE=dacapo
-eval: runeval
-#	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
-#		$(foreach be,$(backends),\
-#			$(foreach i,$(instrs),\
-#				$(foreach b,$(benchs),\
-#					&& $(MAKE) dacapo BACKEND=$(be) RUN=$(r) INSTR=$(i) BENCH=$(b) \
-#				)\
-#			)\
-#		)\
-#	)
-#	cat $(BUILD)/eval-*.prof > $(BUILD)/eval.prof
-
-tiny-eval: times=1
-tiny-eval: backends=runagent runserver
-tiny-eval: instrs=Empty Identity
-tiny-eval: benchs=avrora
-tiny-eval: SUITE=dacapo
-tiny-eval: runeval
-
-small-eval: times=1
-small-eval: backends=runagent runserver
-small-eval: instrs=Identity Compute #Stats
-small-eval: benchs=avrora batik eclipse fop h2
-small-eval: SUITE=dacapo
-small-eval: runeval
-
-large-eval: times=1
-large-eval: backends=runagent runserver
-large-eval: instrs=Empty Identity Compute Stats All
-large-eval: benchs=avrora batik eclipse fop h2 
-large-eval: SUITE=dacapo
-large-eval: runeval
-
-huge-eval: times=1
-huge-eval: backends=runagent runserver
-huge-eval: instrs=Empty Identity Compute Stats All
-huge-eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan
-huge-eval: SUITE=dacapo
-huge-eval: runeval
-
-full-eval: times=5
-full-eval: backends=runagent runserver
-full-eval: instrs=Empty Identity Compute Stats All
-full-eval: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan
-full-eval: SUITE=dacapo
-full-eval: runeval
-
-#jruby-eval: 
-jruby-eval: times=1
-jruby-eval: backends=runagent runserver
-jruby-eval: instrs=Empty Identity Compute #Stats All
-jruby-eval:
-	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
-		$(foreach be,$(backends),\
-			$(foreach i,$(instrs),\
-				&& $(MAKE) run CMD=jruby BACKEND=$(be) RUN=$(r) INSTR=$(i) APP=jruby-mvm \
-			)\
-		)\
-	)
-	cat $(BUILD)/eval-runagent-*.prof > $(BUILD)/eval2-jruby-$(UNAME).prof
-	cat $(BUILD)/eval-runserver-*.prof >> $(BUILD)/eval2-jruby-$(UNAME).prof
-	cat $(BUILD)/eval-instrserver-*.prof >> $(BUILD)/eval2-jruby-$(UNAME).prof
-
-test: times=1
-test: backends=runagent
-test: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan  #tradebeans tradesoap
-test: SUITE=dacapo
-test: runeval
-
-test-compute: instrs=Compute
-test-compute: test
-
-test-stats: instrs=Stats
-test-stats: test
 
 PROFS=$(wildcard $(BUILD)/*.prof)
 PLOTDONES=$(PROFS:%=%.done) 
