@@ -267,9 +267,6 @@ public:
 	}
 
 	void writeLvt(LvtAttr& attr) {
-		bw.writeu2(0);
-		return;
-
 		u2 count = attr.lvt.size();
 
 		bw.writeu2(count);

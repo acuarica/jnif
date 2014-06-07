@@ -9,7 +9,7 @@ ifneq (, $(wildcard Makefile.local))
 include Makefile.local
 endif
 
-CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O0 -Wno-unused-value
+CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O3 -Wno-unused-value
 
 #
 # Rules to make $(LIBJNIF)
@@ -236,7 +236,9 @@ runeval:
 	cat $(BUILD)/eval-runagent-*.prof > $(BUILD)/eval.$(UNAME).prof
 	cat $(BUILD)/eval-runserver-*.prof >> $(BUILD)/eval.$(UNAME).prof
 	cat $(BUILD)/eval-instrserver-*.prof >> $(BUILD)/eval.$(UNAME).prof
-
+	rm $(BUILD)/eval-runagent-*.prof
+	rm $(BUILD)/eval-runserver-*.prof
+	rm $(BUILD)/eval-instrserver-*.prof
 
 eval-scala: times=5
 eval-scala: backends=runagent runserver
@@ -280,14 +282,14 @@ eval: runeval
 tiny-eval: times=1
 tiny-eval: backends=runagent runserver
 tiny-eval: instrs=Empty Identity
-tiny-eval: benchs=avrora batik
+tiny-eval: benchs=avrora
 tiny-eval: SUITE=dacapo
 tiny-eval: runeval
 
 small-eval: times=1
 small-eval: backends=runagent runserver
-small-eval: instrs=Empty Identity Compute Stats
-small-eval: benchs=avrora batik eclipse
+small-eval: instrs=Identity Compute #Stats
+small-eval: benchs=avrora batik eclipse fop h2
 small-eval: SUITE=dacapo
 small-eval: runeval
 
@@ -340,12 +342,13 @@ test-compute: test
 test-stats: instrs=Stats
 test-stats: test
 
-plots:
-	$(foreach p,$(wildcard $(BUILD)/eval2-*.prof),\
-		$(R) --slave --vanilla --file=charts/charts.r --args $(p) ; \
-	)
-#plotsl:
-#	$(R) --slave --vanilla --file=charts/charts.r --args $(BUILD)/eval.Linux.prof
+PROFS=$(wildcard $(BUILD)/*.prof)
+PLOTDONES=$(PROFS:%=%.done) 
+plots: $(PLOTDONES)
+
+$(BUILD)/%.done: $(BUILD)/% charts/charts.r
+	$(R) --slave --vanilla --file=charts/charts.r --args $<
+	touch $@
 
 docs:
 	doxygen
@@ -353,6 +356,8 @@ docs:
 dots: DOTS=$(shell find build -name *.dot)
 dots: PNGS=$(DOTS:%.dot=%.png)
 dots: $(PNGS)
+
+scp: scp-steklov scp-w620
 
 scp-steklov:
 	scp steklov:work/jnif/build/eval.Linux.prof build/eval.Linux.steklov.prof

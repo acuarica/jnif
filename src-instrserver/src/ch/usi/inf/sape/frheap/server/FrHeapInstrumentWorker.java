@@ -83,15 +83,16 @@ public class FrHeapInstrumentWorker extends Thread {
 		byte[] res;
 		long instrTime;
 
+		long startTime = System.nanoTime();
 		try {
-			long startTime = System.nanoTime();
 			res = _instr.instrumentClass(classBytes, className);
-			long endTime = System.nanoTime();
-			instrTime = endTime - startTime;
 		} catch (RuntimeException ex) {
-		//	ex.printStackTrace();
-			return classBytes;
+			// ex.printStackTrace();
+			res = classBytes;
+			// return classBytes;
 		}
+		long endTime = System.nanoTime();
+		instrTime = endTime - startTime;
 
 		prof(className, instrTime);
 

@@ -30,13 +30,6 @@
 #include <mach/mach.h>
 #endif
 
-using namespace std;
-using namespace jnif;
-
-typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
-		const char* className, int* newlen, unsigned char** newdata,
-		JNIEnv* jni, InstrArgs* args);
-
 double gettime() {
 #ifdef __MACH__
 	host_name_port_t self = mach_host_self();
@@ -51,6 +44,13 @@ double gettime() {
 #endif
 	return ts.tv_sec + ts.tv_nsec * 1e-9;
 }
+
+using namespace std;
+using namespace jnif;
+
+typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
+		const char* className, int* newlen, unsigned char** newdata,
+		JNIEnv* jni, InstrArgs* args);
 
 void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
@@ -83,8 +83,6 @@ typedef struct {
 
 InstrFuncEntry instrFuncEntry;
 
-int inLivePhase = 0;
-
 static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		jclass class_being_redefined, jobject loader, const char* name,
 		jobject protection_domain, jint class_data_len,
@@ -92,20 +90,18 @@ static void JNICALL ClassFileLoadEvent(jvmtiEnv* jvmti, JNIEnv* jni,
 		unsigned char** new_class_data) {
 	_TLOG("CLASSFILELOAD:%s", name);
 
-	if (loader != NULL) {
-		inLivePhase = true;
+	if (FrIsProxyClassName(name)) {
+		return;
 	}
 
-	if (!FrIsProxyClassName(name)) {
-		InstrArgs args;
-		args.loader = loader;
-		args.instrName = instrFuncEntry.name;
+	InstrArgs args;
+	args.loader = loader;
+	args.instrName = instrFuncEntry.name;
 
-		InvokeInstrFunc(instrFuncEntry.instrFunc, jvmti,
-				(unsigned char*) class_data, class_data_len, name,
-				new_class_data_len, new_class_data, jni, &args);
+	InvokeInstrFunc(instrFuncEntry.instrFunc, jvmti,
+			(unsigned char*) class_data, class_data_len, name,
+			new_class_data_len, new_class_data, jni, &args);
 
-	}
 }
 
 static void JNICALL ClassLoadEvent(jvmtiEnv *jvmti, JNIEnv* jni, jthread thread,

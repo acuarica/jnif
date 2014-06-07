@@ -58,18 +58,23 @@ public:
 	}
 };
 
-void testPrinter(const JavaFile&, ClassFile& cf) {
+void testPrinter(const JavaFile& jf) {
+	ClassFile cf(jf.data, jf.len);
 	ofstream os;
 	os << cf;
 }
 
-void testSize(const JavaFile& jf, ClassFile& cf) {
+void testSize(const JavaFile& jf) {
+	ClassFile cf(jf.data, jf.len);
+
 	int newlen = cf.computeSize();
 
 	Error::assertEquals(newlen, jf.len);
 }
 
-void testWriter(const JavaFile& jf, ClassFile& cf) {
+void testWriter(const JavaFile& jf) {
+	ClassFile cf(jf.data, jf.len);
+
 	int newlen = cf.computeSize();
 
 	Error::assertEquals(newlen, jf.len);
@@ -83,12 +88,16 @@ void testWriter(const JavaFile& jf, ClassFile& cf) {
 	delete[] newdata;
 }
 
-void testAnalysis(const JavaFile&, ClassFile& cf) {
+void testAnalysis(const JavaFile& jf) {
+	ClassFile cf(jf.data, jf.len);
+
 	UnitTestClassPath cp;
 	cf.computeFrames(&cp);
 }
 
-void testAnalysisPrinter(const JavaFile&, ClassFile& cf) {
+void testAnalysisPrinter(const JavaFile& jf) {
+	ClassFile cf(jf.data, jf.len);
+
 	UnitTestClassPath cp;
 	cf.computeFrames(&cp);
 
@@ -96,7 +105,9 @@ void testAnalysisPrinter(const JavaFile&, ClassFile& cf) {
 	os << cf;
 }
 
-void testAnalysisWriter(const JavaFile&, ClassFile& cf) {
+void testAnalysisWriter(const JavaFile& jf) {
+	ClassFile cf(jf.data, jf.len);
+
 	UnitTestClassPath cp;
 	cf.computeFrames(&cp);
 
@@ -107,20 +118,26 @@ void testAnalysisWriter(const JavaFile&, ClassFile& cf) {
 	delete[] newdata;
 }
 
-void testNopAdderInstrPrinter(const JavaFile&, ClassFile& cf) {
+void testNopAdderInstrPrinter(const JavaFile& jf) {
+	ClassFile cf(jf.data, jf.len);
+
 	NopAdderInstr instr(cf);
 	fstream os;
 	os << cf;
 }
 
-void testNopAdderInstrSize(const JavaFile& jf, ClassFile& cf) {
+void testNopAdderInstrSize(const JavaFile& jf) {
+	ClassFile cf(jf.data, jf.len);
+
 	NopAdderInstr instr(cf);
 	int newlen = cf.computeSize();
 
 	Error::assertEquals(jf.len + instr.diff, newlen);
 }
 
-void testNopAdderInstrWriter(const JavaFile& jf, ClassFile& cf) {
+void testNopAdderInstrWriter(const JavaFile& jf) {
+	ClassFile cf(jf.data, jf.len);
+
 	NopAdderInstr instr(cf);
 
 	int newlen = cf.computeSize();
@@ -144,7 +161,9 @@ void testNopAdderInstrWriter(const JavaFile& jf, ClassFile& cf) {
 	delete[] newdata;
 }
 
-void testNopAdderInstrAnalysisPrinter(const JavaFile&, ClassFile& cf) {
+void testNopAdderInstrAnalysisPrinter(const JavaFile& jf) {
+	ClassFile cf(jf.data, jf.len);
+
 	NopAdderInstr instr(cf);
 
 	UnitTestClassPath cp;
@@ -154,7 +173,9 @@ void testNopAdderInstrAnalysisPrinter(const JavaFile&, ClassFile& cf) {
 	os << cf;
 }
 
-void testNopAdderInstrAnalysisWriter(const JavaFile&, ClassFile& cf) {
+void testNopAdderInstrAnalysisWriter(const JavaFile& jf) {
+	ClassFile cf(jf.data, jf.len);
+
 	NopAdderInstr instr(cf);
 
 	UnitTestClassPath cp;

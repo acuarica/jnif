@@ -77,7 +77,7 @@ save(p, path, "classes")
 p <-
   ggplot(csv.instrumentation)+facet_wrap(~bench, scales="free")+
   geom_boxplot(aes(instr, instrumentation, color=backend))+
-  labs(x="Library", y = "Instrumentation time (in seconds)", title='Instrumentation time')+
+  labs(x="", y = "Instrumentation time (in seconds)", title='Instrumentation time')+
   theme.config.top
 save(p, path, "instr")
 
@@ -85,7 +85,7 @@ save(p, path, "instr")
 p <-
   ggplot(csv.all)+facet_wrap(~bench, scales="free")+
   geom_boxplot(aes(instr, time, color=stage, fill=backend))+
-  labs(x="Library", y = "Instrumentation and total time (in seconds)", title='Instrumentation and total time')+
+  labs(x="", y = "Instrumentation and total time (in seconds)", title='Instrumentation and total time')+
   theme.config.top
 save(p, path, "all")
 
