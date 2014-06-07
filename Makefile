@@ -5,8 +5,22 @@ JAVA=java
 JAVAC=javac
 JAR=jar
 
+UNAME=$(shell uname)
+
 ifneq (, $(wildcard Makefile.local))
 include Makefile.local
+endif
+
+ifeq ($(UNAME), Darwin)
+  CXXFLAGS+=-std=c++11
+  CXXFLAGS+=-stdlib=libc++
+  R=r
+else ifeq ($(UNAME), Linux)
+  CXXFLAGS+=-std=c++0x
+  CXXFLAGS+=-lrt
+  R=R
+else
+  $(error Unrecognized environment. Only supported Darwin and Linux)
 endif
 
 CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O3 -Wno-unused-value
@@ -239,14 +253,14 @@ runeval:
 
 eval-dacapo: times=5
 eval-dacapo: backends=runagent runserver
-eval-dacapo: instrs=Empty Identity Compute Stats All
+eval-dacapo: instrs=All Stats Compute Identity Empty
 eval-dacapo: benchs=avrora batik eclipse fop h2 jython luindex lusearch pmd sunflow tomcat xalan
 eval-dacapo: SUITE=dacapo
 eval-dacapo: runeval
 
 eval-scala: times=5
 eval-scala: backends=runagent runserver
-eval-scala: instrs=Empty Identity Compute Stats All
+eval-scala: instrs=All Stats Compute Identity Empty
 eval-scala: benchs=actors apparat dummy factorie kiama scalac scaladoc scalap scalariform scalatest scalaxb specs tmt
 eval-scala: SUITE=scala
 eval-scala: runeval
