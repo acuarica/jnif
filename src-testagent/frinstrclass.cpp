@@ -562,7 +562,9 @@ void InstrClassAll(jvmtiEnv* jvmti, unsigned char* data, int len,
 
 	ConstIndex proxyClass = cf.addClass("frproxy/FrInstrProxy");
 
-	Instr::instrAllOpcodes(cf, proxyClass);
+	if (!isPrefix("java/lang/", cf.getThisClassName())) {
+		Instr::instrAllOpcodes(cf, proxyClass);
+	}
 
 	try {
 		ClassPath cp(cf.getThisClassName(), jni, args->loader);
