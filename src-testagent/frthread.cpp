@@ -8,8 +8,8 @@
 /**
  *
  */
-AGENT_THREAD_LOCAL ThreadLocalData __tld = { -1, -1, 0, false, -1, NULL, NULL,
-		0, 0 };
+AGENT_THREAD_LOCAL ThreadLocalData __tld =
+		{ -1, -1, 0, false, -1, NULL, NULL, 0 };
 
 //= {.threadId = -1, .threadTag = -1, .priority = 0, .isDaemon =
 //	false, .socketfd = -1, ._tlog = NULL, ._prof=NULL, .classLoadedStack=0, .instrTime=0};

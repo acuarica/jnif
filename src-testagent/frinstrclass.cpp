@@ -21,7 +21,9 @@
 
 #include <mutex>
 
-#include "jnif.hpp"
+#include <jnif.hpp>
+
+#include "testagent.hpp"
 
 using namespace std;
 using namespace jnif;
@@ -95,6 +97,8 @@ public:
 
 	String getCommonSuperClass(const String& className1,
 			const String& className2) {
+		ProfEntry __pe(getProf(), "@getCommonSuperClass");
+
 		_TLOG("Common super class: left: %s, right: %s, loader: %s",
 				className1.c_str(), className2.c_str(),
 				(loader != NULL ? "object" : "(null)"));
@@ -183,6 +187,8 @@ private:
 	}
 
 	void loadClassAsResource(const String& className) {
+		ProfEntry __pe(getProf(), "@loadClassAsResource");
+
 //		_TLOG("loadClassAsResource: Trying to load class %s as a resource...",
 //				className.c_str());
 
@@ -311,17 +317,42 @@ void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv* jni,
 		InstrArgs* args) {
+	double start;
+
+	start = ProfEntry::getTime();
 	LoadClassEvent m;
+	getProf().prof("@LoadClassEvent:Mutex", ProfEntry::getTime() - start);
 
+	start = ProfEntry::getTime();
 	ClassFile cf(data, len);
-	classHierarchy.addClass(cf);
+	getProf().prof("@ClassParser", ProfEntry::getTime() - start);
 
-	ClassPath cp(cf.getThisClassName(), jni, args->loader);
-	cf.computeFrames(&cp);
+	{
+		ProfEntry __pe(getProf(), "@classHierarchy.addClass");
+		classHierarchy.addClass(cf);
+	}
 
-	*newlen = cf.computeSize();
-	*newdata = Allocate(jvmti, *newlen);
-	cf.write(*newdata, *newlen);
+	{
+		ProfEntry __pe(getProf(), "@computeFrames");
+		ClassPath cp(cf.getThisClassName(), jni, args->loader);
+		cf.computeFrames(&cp);
+	}
+
+	stats.loadedClasses++;
+
+	for (const Method* m : cf.methods) {
+		if (m->hasCode()) {
+			CodeAttr* c = m->codeAttr();
+			stats.exceptionEntries += c->exceptions.size();
+		}
+	}
+
+	{
+		ProfEntry __pe(getProf(), "@write");
+		*newlen = cf.computeSize();
+		*newdata = Allocate(jvmti, *newlen);
+		cf.write(*newdata, *newlen);
+	}
 }
 
 class Instr {

@@ -199,6 +199,8 @@ runagent: LOGDIR=$(BUILD)/run/$(APP)/log/$(INSTR).$(APP)
 runagent: PROF=$(BUILD)/eval-$(BACKEND)-$(APP)-$(RUN)-$(INSTR)
 runagent: JVMARGS+=-agentpath:$(TESTAGENT)=$(FUNC):$(PROF):$(LOGDIR)/:$(BACKEND),$(APP),$(RUN),$(INSTR)
 runagent: logdir $(TESTAGENT) $(CMD)
+	cat $(PROF).tid-*.prof > $(PROF).prof
+	rm $(PROF).tid-*.prof
 
 logdir:
 	mkdir -p $(LOGDIR)
@@ -206,6 +208,7 @@ logdir:
 runserver: INSTRSERVERCLASS=$(INSTR)
 runserver: FUNC=ClientServer
 runserver: $(INSTRSERVER) start runagent stop
+	#cat $(BUILD)/eval-instrserver-instrserver,$(APP),$(RUN),$(INSTR)-*.prof > $(BUILD)/eval.$(UNAME).prof
 
 RUN=4
 INSTR=Compute

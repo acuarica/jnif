@@ -11,6 +11,8 @@
 
 #include "testagent.hpp"
 
+#include "../src-include/Profiler.hpp"
+
 /**
  *
  */
@@ -26,44 +28,9 @@ struct ThreadLocalData {
 	FILE* _tlog;
 	FILE* _prof;
 	int classLoadedStack;
-	double instrTime;
 };
 
 }
-
-class Profiler {
-public:
-
-	ThreadLocalData* tld;
-	Profiler(ThreadLocalData* tld) :
-			tld(tld) {
-	}
-
-	void prof(const std::string& runId, const std::string& className,
-			double time) {
-		open();
-
-		fprintf(tld->_prof, "%s,%s,%f\n", runId.c_str(), className.c_str(),
-				time);
-	}
-
-	void open() {
-		if (tld->_prof != NULL) {
-			return;
-		}
-
-		std::stringstream ss;
-		ss << args.profPath << ".tid-" << tld->threadId << ".prof";
-
-		tld->_prof = fopen(ss.str().c_str(), "w+");
-
-		if (tld->_prof == NULL) {
-			perror("Unable to create prof file");
-			exit(1);
-		}
-
-	}
-};
 
 #ifdef __MACH__
 #define AGENT_THREAD_LOCAL __thread
@@ -89,6 +56,10 @@ inline static ThreadLocalData* tldget() {
 	}
 
 	return &__tld;
+}
+
+inline Profiler getProf() {
+	return Profiler(&tldget()->_prof, tldget()->threadId, args.runId.c_str());
 }
 
 #endif

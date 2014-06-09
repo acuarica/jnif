@@ -29,4 +29,12 @@ struct InstrArgs {
 	std::string instrName;
 };
 
+struct Stats {
+	long loadedClasses;
+	long exceptionEntries;
+
+};
+
+extern Stats stats;
+
 #endif

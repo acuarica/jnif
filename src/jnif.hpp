@@ -970,6 +970,8 @@ private:
 	 * inclusive, because the null entry (index 0) is added by default.
 	 */
 	ConstPool() {
+		entries.reserve(4096);
+
 		ConstItem nullEntry(CONST_NULLENTRY);
 		entries.push_back(nullEntry);
 	}
@@ -1778,6 +1780,7 @@ public:
 
 	Frame(TypeFactory* typeFactory) :
 			valid(false), topsErased(false), _typeFactory(typeFactory) {
+		lva.reserve(256);
 	}
 
 	Type pop();

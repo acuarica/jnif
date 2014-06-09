@@ -21,32 +21,10 @@
 #include <sstream>
 #include <fstream>
 
-#include <time.h>
-#include <ctime>
-#include <sys/time.h>
-
-#ifdef __MACH__
-#include <mach/clock.h>
-#include <mach/mach.h>
-#endif
-
-double gettime() {
-#ifdef __MACH__
-	host_name_port_t self = mach_host_self();
-	clock_serv_t cclock;
-	host_get_clock_service(self, REALTIME_CLOCK, &cclock);
-	mach_timespec_t ts;
-	clock_get_time(cclock, &ts);
-	mach_port_deallocate(self, cclock);
-#else
-	struct timespec ts;
-	clock_gettime( CLOCK_MONOTONIC, &ts );
-#endif
-	return ts.tv_sec + ts.tv_nsec * 1e-9;
-}
-
 using namespace std;
 using namespace jnif;
+
+Stats stats;
 
 typedef void (InstrFunc)(jvmtiEnv* jvmti, unsigned char* data, int len,
 		const char* className, int* newlen, unsigned char** newdata,
@@ -57,19 +35,12 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 		InstrArgs* args2) {
 
 	try {
-		String clsn = className == NULL ? "null" : className;
+		const char* clsn = className == NULL ? "null" : className;
 
-		double start = gettime();
-		(*instrFunc)(jvmti, data, len, clsn.c_str(), newlen, newdata, jni,
-				args2);
-		double end = gettime();
-
-		double instrTime = end - start;
-//		tldget()->instrTime += end - start;
-
-		Profiler p(tldget());
-		p.prof(args.runId, clsn, instrTime);
-
+		{
+			ProfEntry __pe(getProf(), clsn);
+			(*instrFunc)(jvmti, data, len, clsn, newlen, newdata, jni, args2);
+		}
 	} catch (const JnifException& ex) {
 		cerr << ex << endl;
 		throw ex;
@@ -310,7 +281,7 @@ double startTime, endTime;
 
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 		void* reserved) {
-	startTime = gettime();
+	startTime = ProfEntry::getTime();
 
 	ParseOptions(options);
 
@@ -383,13 +354,12 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char* options,
 }
 
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM* jvm) {
-	endTime = gettime();
+	endTime = ProfEntry::getTime();
 
-	Profiler p(tldget());
-	p.prof(args.runId, "@total", endTime - startTime);
+	getProf().prof("@total", endTime - startTime);
 
-	//		if (args.instrFuncName != "ClientServer") {
-//	}
+	getProf().prof("#loadedClasses", stats.loadedClasses);
+	getProf().prof("#exceptionEntries", stats.exceptionEntries);
 
 	_TLOG("Agent unloaded");
 }
