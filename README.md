@@ -13,12 +13,12 @@ without connecting to another JVM and without perturbing the observed JVM.
 JNIF includes a data-flow analysis for stack map generation, 
 a complication necessary for any library that provides editing and encoding 
 support for modern JVMs with split-time verification.
-It is written in C++11 [5], 
+It is written in C++11, 
 in an object-oriented style similar to Java-based class rewriting APIs.
 
 # Documentation
 
-The complete API documentation is available online at.
+The complete API documentation is available online at
 
 http://acuarica.bitbucket.org/jnif/docs/
 
@@ -26,7 +26,7 @@ http://acuarica.bitbucket.org/jnif/docs/
 
 JNIF can be used both in stand-alone tools or embedded inside a JVMTI agent.
 
-Listing~\ref{usage-decode-encode} shows how to read and write a class file.
+The following listing shows how to read and write a class file.
 
 
 	// Decode the binary data into a ClassFile object
@@ -49,10 +49,10 @@ Listing~\ref{usage-decode-encode} shows how to read and write a class file.
 	delete [] newdata;
 
 
-
 JNIF's **ClassFile** class provides fields and methods for analyzing and 
 editing a Java class.
-Listing~\ref{usage-print1} shows how to traverse all methods in a class
+
+The following listing shows how to traverse all methods in a class
 to dump their names and descriptors.
 
 	for (jnif::Method* m : cf.methods) {
@@ -63,9 +63,9 @@ to dump their names and descriptors.
 	}
 
 
-Listing~\ref{usage-edit} shows how to find all constructors in a class
+The following listing shows how to find all constructors in a class
 and how to inject instrumentation, in the form of a call to a static method
-\texttt{static void alloc(Object o)} of an analysis class,
+**static void alloc(Object o)** of an analysis class,
 at the beginning of each constructor.
 
 	ConstIndex mid = cf.addMethodRef(classIndex, "alloc", "(Ljava/lang/Object;)V");
@@ -80,7 +80,7 @@ at the beginning of each constructor.
 	  }
 	}
 
-
 Besides providing access to all members of a class,
 **ClassFile** also provides access to the constant pool
 via methods like **getUtf8()** and **addMethodRef()**.
+
