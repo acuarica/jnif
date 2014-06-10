@@ -3,84 +3,84 @@ Java Native Instrumentation Framework
 
 # Introduction
 
-Why instrument?
-*  Better control
-*  Aspect programming
-*  and?
+JNIF is the first native Java bytecode rewriting library.
+JNIF is a C++ library for decoding, analyzing, editing, 
+and encoding Java bytecode.
+The main benefit of JNIF is that it can be plugged into a JVMTI agent for 
+instrumenting all classes in a JVM transparently, i.e., 
+without connecting to another JVM and without perturbing the observed JVM.
+
+JNIF includes a data-flow analysis for stack map generation, 
+a complication necessary for any library that provides editing and encoding 
+support for modern JVMs with split-time verification.
+It is written in C++11 [5], 
+in an object-oriented style similar to Java-based class rewriting APIs.
 
 # Documentation
 
-The JNIF documentation is hosted on:
+The complete API documentation is available online at.
 
 http://acuarica.bitbucket.org/jnif/docs/
 
-# Related work
+# Usage
 
-Jnif uses a clean object model to represent the java class files. Modyfing the
-class files is just matter of modifying the object models and then serializer
-and deserializer to convert to a memory buffer and send to the jvm ready to 
-execution.
+JNIF can be used both in stand-alone tools or embedded inside a JVMTI agent.
 
-Ability to **instrument** the JVM by only adding a small agent.
+Listing~\ref{usage-decode-encode} shows how to read and write a class file.
 
 
-Usually to instrument the *JVM* another JVM is needed.
-To instrument regular applications this is just fine,
-but when you need to instrument the java library itself you encounter 
-bootstrap problems.
-That is why a native approach is more accurate.
+	// Decode the binary data into a ClassFile object
+	const char* data = ...;
+	int len = ...;
+	jnif::ClassFile cf(data, len);
 
-Instrumentation and client code are more coupled, this is how it should be.
+	// Analyze or edit the ClassFile
+	...
 
-It allows to simplify the development because you do not need a TCP 
-connection to instrument code on other JVM process.
-Lowoverhead agent.
-Modular parser, you pay what you need. Full power of templates for better 
-performance.
+	// Encode the ClassFile into binary
+	int newlen = cf.computeSize();
+	u1* newdata = new u1[newlen];
+	cf.write(newdata, newlen);
 
+	// Use newdata and newlen
+	...
 
-Since the instrumentation should be really really fast, and therefore having a 
-negligent overhead,
-* it could be added in production environments?
-* and also it will be more benefitial in debuggers and profilers where you may 
-instrument on demand. 
-
-# Development
-
-Goals:
-* Modular parser/writer using templates. no more modular!
-  Each attribute kind can be plugged into the main parser.
-* Zero-memory footprint.
-  The API is built so that it uses zero dynamic memory, i.e., no calls to 
-  malloc/new! to gain more performance and memory consumption.
+	// Free the new binary
+	delete [] newdata;
 
 
-# Evaluation
 
-## TODO: try to come up with an performance evaluation 
-(maybe against asm, disl, bcel) also with gui apps 
-like eclipse, netbeans.
+JNIF's **ClassFile** class provides fields and methods for analyzing and 
+editing a Java class.
+Listing~\ref{usage-print1} shows how to traverse all methods in a class
+to dump their names and descriptors.
 
-## And also with java agent, i.e., agent with a premain method.
- 
-## try diffents kind of instrumentations, e.g., instrument heap graph, 
-i.e., all allocations (by bytecode, reflection and native).
-
-## Features TODO:
-- Control flow graph statically.
-- Control flow graph dynamically.
-- Object tagging/identification.
+	for (jnif::Method* m : cf.methods) {
+	  cout << "Method: ";
+	  cout << cf.getUtf8(m->nameIndex);
+	  cout << cf.getUtf8(m->descIndex);
+	  cout << endl;
+	}
 
 
-- Compare also with an javagent(premain) made with ASM.
+Listing~\ref{usage-edit} shows how to find all constructors in a class
+and how to inject instrumentation, in the form of a call to a static method
+\texttt{static void alloc(Object o)} of an analysis class,
+at the beginning of each constructor.
 
-## 
-# Conclusions
+	ConstIndex mid = cf.addMethodRef(classIndex, "alloc", "(Ljava/lang/Object;)V");
+
+	for (Method* method : cf.methods) {
+	  if (method->isInit()) {
+	    InstList& instList = method->instList();
+	
+	    Inst* p = *instList.begin();
+	    instList.addZero(OPCODE_aload_0, p);
+	    instList.addInvoke(OPCODE_invokestatic, mid, p);
+	  }
+	}
 
 
-# References
-
-1. ASM
-
-TODO:
-Implement the agent in several JVMs, at least Oracle, Jikes and IBM.
+Besides providing access to all members of a class,
+**ClassFile** also provides access to the constant pool
+via methods like **getUtf8()** and **addMethodRef()**.
