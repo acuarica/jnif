@@ -1182,12 +1182,15 @@ public:
 
 			//bb.out = bb.in;
 			Frame out = bb.in;
+			//Frame outp = out;
 
 			SmtBuilder builder(out, cf, method, typeFactory);
 			for (InstList::Iterator it = bb.start; it != bb.exit; ++it) {
 				Inst* inst = *it;
 				builder.processInst(*inst);
 				//prepareCatchHandlerFrame(inst, out);
+
+				//join(typeFactory, outp, out, classPath, method);
 
 				for (const CodeExceptionEntry& ex : code->exceptions) {
 					if (contains(ex, inst)) {

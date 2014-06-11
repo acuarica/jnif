@@ -271,8 +271,10 @@ public:
 		check(magic == CLASSFILE_MAGIC,
 				"Invalid magic number. Expected 0xcafebabe, found: ", magic);
 
-		cf.version.minorVersion = br.readu2();
-		cf.version.majorVersion = br.readu2();
+		u2 minorVersion = br.readu2();
+		u2 majorVersion = br.readu2();
+
+		cf.version = Version(majorVersion, minorVersion);
 
 		parseConstPool(br, cf);
 
@@ -419,7 +421,7 @@ private:
 	}
 
 	Attr* parseSourceFile(BufferReader& br, ConstIndex nameIndex,
-			ConstPool* constPool) {
+			ClassFile* constPool) {
 		u2 sourceFileIndex = br.readu2();
 
 		Attr* attr = new SourceFileAttr(nameIndex, sourceFileIndex, constPool);
@@ -428,7 +430,7 @@ private:
 	}
 
 	Attr* parseExceptions(BufferReader& br, ConstIndex nameIndex,
-			ConstPool* constPool) {
+			ClassFile* constPool) {
 		u2 len = br.readu2();
 
 		std::vector<ConstIndex> es;
@@ -736,7 +738,7 @@ private:
 		}
 	}
 
-	Attr* parseCode(BufferReader& br, ConstPool& cp, u2 nameIndex) {
+	Attr* parseCode(BufferReader& br, ClassFile& cp, u2 nameIndex) {
 
 		CodeAttr* ca = new CodeAttr(nameIndex, &cp);
 
@@ -798,7 +800,7 @@ private:
 	}
 
 	Attr* parseLnt(BufferReader& br, u2 nameIndex, void* args,
-			ConstPool* constPool) {
+			ClassFile* constPool) {
 		LabelManager& labelManager = *(LabelManager*) args;
 
 		u2 lntlen = br.readu2();
@@ -821,7 +823,7 @@ private:
 		return lnt;
 	}
 
-	Attr* parseLvt(BufferReader& br, u2 nameIndex, ConstPool* constPool,
+	Attr* parseLvt(BufferReader& br, u2 nameIndex, ClassFile* constPool,
 			void* args) {
 		LabelManager& labelManager = *(LabelManager*) args;
 
@@ -859,7 +861,7 @@ private:
 		return lvt;
 	}
 
-	Attr* parseLvtt(BufferReader& br, u2 nameIndex, ConstPool* constPool,
+	Attr* parseLvtt(BufferReader& br, u2 nameIndex, ClassFile* constPool,
 			void* args) {
 		LabelManager& labelManager = *(LabelManager*) args;
 
@@ -931,7 +933,7 @@ private:
 		}
 	}
 
-	Attr* parseSmt(BufferReader& br, ConstPool& cp, u2 nameIndex, void* args) {
+	Attr* parseSmt(BufferReader& br, ClassFile& cp, u2 nameIndex, void* args) {
 
 		LabelManager& labelManager = *(LabelManager*) args;
 
@@ -1016,7 +1018,7 @@ private:
 		return smt;
 	}
 
-	Attr* parseAttr(BufferReader& br, ConstPool& cp, Attrs&, void* args =
+	Attr* parseAttr(BufferReader& br, ClassFile& cp, Attrs&, void* args =
 	NULL) {
 		u2 nameIndex = br.readu2();
 		u4 len = br.readu4();
@@ -1052,7 +1054,7 @@ private:
 		}
 	}
 
-	void parseAttrs(BufferReader& br, ConstPool& cp, Attrs& as, void* args =
+	void parseAttrs(BufferReader& br, ClassFile& cp, Attrs& as, void* args =
 	NULL) {
 
 		u2 attrCount = br.readu2();

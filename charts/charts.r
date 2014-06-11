@@ -5,19 +5,6 @@ suppressPackageStartupMessages(library("tools"))
 
 printf <- function(format, ...) print(sprintf(format, ...))
 
-#rename <- function(v) {
-#  result <- vector(length=length(v))
-#  for ( ii in 1:length(v)) {
-#    name <- v[ii]
-#    if (name == "Empty") result[ii] <- "Empty"
- #   else if (name == "Identity") result[ii] <- "JNIF Identity"
-  #  else if (name == "Compute") result[ii] <- "JNIF Frames"
-   # else if (name == "ClientServer") result[ii] <- "ASM Frames"
-  #  else result[ii] <- name
-  #}
-  #return (result)
-#}
-
 argv <- commandArgs(trailingOnly = TRUE)
 
 if (interactive()) {
@@ -56,13 +43,11 @@ csv.instrumentation <- dcast(csv.instrumentation, backend+bench+run+instr~'time'
 colnames(csv.instrumentation) <- c('backend', 'bench', 'run', 'instr', 'instrumentation');
 
 # Total times
-csv.totals <- subset(csv, grepl('@', stage) & !(stage %in% '@total'))
-csv.totals <- dcast(csv.totals, backend+bench+run+instr~stage, value.var='time', fun.aggregate=sum)
-csv.totals <- merge(csv.totals, csv.instrumentation, by=c('backend', 'bench', 'run', 'instr'), all=TRUE)
-csv.totals <- melt(csv.totals, id.vars=c('backend', 'bench', 'run', 'instr'), variable.name='stage', value.name='time')
+#csv.totals <- subset(csv, grepl('@', stage) & !(stage %in% '@total'))
+#csv.totals <- dcast(csv.totals, backend+bench+run+instr~stage, value.var='time', fun.aggregate=sum)
+#csv.totals <- merge(csv.totals, csv.instrumentation, by=c('backend', 'bench', 'run', 'instr'), all=TRUE)
+#csv.totals <- melt(csv.totals, id.vars=c('backend', 'bench', 'run', 'instr'), variable.name='stage', value.name='time')
 
-# Show totals
-#csv.totals
 
 # Plots
 

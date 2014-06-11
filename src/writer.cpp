@@ -119,8 +119,8 @@ public:
 	void writeClassFile(ClassFile& cf) {
 		bw.writeu4(CLASSFILE_MAGIC);
 
-		bw.writeu2(cf.version.minorVersion);
-		bw.writeu2(cf.version.majorVersion);
+		bw.writeu2(cf.version.minorVersion());
+		bw.writeu2(cf.version.majorVersion());
 
 		writeConstPool(cf);
 
@@ -604,7 +604,7 @@ public:
 					"Method code must be less than 65536 but it is equals to ",
 					attr.codeLen);
 		} catch (const JnifException& ex) {
-			throw InvalidMethodLengthException(ex.message(), ex.stackTrace);
+			throw InvalidMethodLengthException(ex.message(), ex.stackTrace());
 		}
 		//}
 

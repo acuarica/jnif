@@ -21,6 +21,16 @@ public:
 
 };
 
+static void testEmptyModel() {
+	ClassFile cf("jnif/EmptyModel");
+
+	//Error::assertEquals(String("jnif/EmptyModel"), cf.getThisClassName());
+	Error::assertEquals(String("java/lang/Object"), cf.getSuperClassName());
+	Error::assertEquals(Version(51, 0), cf.version);
+
+	//Error::assertEquals(String("java/lang/Object"), cf.());
+}
+
 static void testPrinterModel() {
 	ClassFile emptyCf("jnif/test/generated/Class1");
 	ofstream os;
@@ -247,7 +257,7 @@ static void run(TestFunc* testFunc, const String& testName) {
 		testFunc();
 	} catch (const JnifException& ex) {
 		cerr << ex << endl;
-		exit(42);
+		exit(1);
 	}
 
 	cerr << " [OK]" << endl;
@@ -256,6 +266,7 @@ static void run(TestFunc* testFunc, const String& testName) {
 #define RUN(testName) run(&testName, #testName)
 
 int main(int, const char*[]) {
+	RUN(testEmptyModel);
 	RUN(testPrinterModel);
 	RUN(testException);
 	RUN(testJoinFrameObjectAndEmpty);

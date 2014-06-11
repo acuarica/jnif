@@ -5,7 +5,9 @@
  *      Author: luigi
  */
 
-#include "jnif.hpp"
+#include "Type.hpp"
+#include "Error.hpp"
+#include "TypeFactory.hpp"
 
 namespace jnif {
 

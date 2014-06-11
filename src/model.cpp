@@ -15,6 +15,24 @@ using namespace std;
 
 namespace jnif {
 
+bool Method::isInit() const {
+	String name = constPool->getUtf8(nameIndex);
+	return hasCode() && name == "<init>";
+}
+
+bool Method::isMain() const {
+	String name = constPool->getUtf8(nameIndex);
+	String desc = constPool->getUtf8(descIndex);
+
+	return hasCode() && name == "main" && isStatic() && isPublic()
+			&& desc == "([Ljava/lang/String;)V";
+}
+
+String Member::getName() const {
+	String name = constPool->getUtf8(nameIndex);
+	return name;
+}
+
 void Error::_backtrace(std::ostream& os) {
 	void* array[20];
 	size_t size;
@@ -30,50 +48,6 @@ void Error::_backtrace(std::ostream& os) {
 	free(symbols);
 }
 
-ConstIndex ConstPool::getIndexOfUtf8(const char* utf8) {
-	auto it = utf8s.find(utf8);
-	if (it != utf8s.end()) {
-		ConstIndex idx = it->second;
-		Error::assert(getUtf8(idx) != utf8, "Error on get index of utf8");
-		return idx;
-	} else {
-		return NULLENTRY;
-	}
-
-//		ConstPool& cp = *this;
-//		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
-//			ConstIndex i = *it;
-//			//ConstPool::Tag tag = cp.getTag(i);
-//
-//			//const Entry* entry = &cp.entries[i];
-//
-//			if (isUtf8(i) && getUtf8(i) == String(utf8)) {
-//				return i;
-//			}
-//		}
-//
-//		return NULLENTRY;
-}
-
-const ConstItem* ConstPool::_getEntry(ConstIndex i) const {
-	Error::check(i > NULLENTRY, "Null access to constant pool: index = ", i);
-	Error::check(i < entries.size(), "Index out of bounds: index = ", i);
-
-	const ConstItem* entry = &entries[i];
-
-	return entry;
-}
-
-const ConstItem* ConstPool::_getEntry(ConstIndex index, u1 tag,
-		const char* message) const {
-	const ConstItem* entry = _getEntry(index);
-
-	Error::check(entry->tag == tag, "Invalid constant ", message,
-			", expected: ", (int) tag, ", actual: ", (int) entry->tag);
-
-	return entry;
-}
-
 InstList& Method::instList() {
 	for (Attr* attr : attrs) {
 		if (attr->kind == ATTR_CODE) {
@@ -82,106 +56,6 @@ InstList& Method::instList() {
 	}
 
 	Error::raise("ERROR! get inst list");
-}
-
-void ClassHierarchy::addClass(const ClassFile& classFile) {
-	ClassEntry e;
-	e.className = classFile.getThisClassName();
-
-	if (classFile.superClassIndex == ConstPool::NULLENTRY) {
-		Error::check(e.className == "java/lang/Object",
-				"invalid class name for null super class: ", e.className,
-				"asdfasf");
-		e.superClassName = "0";
-	} else {
-		e.superClassName = classFile.getClassName(classFile.superClassIndex);
-	}
-
-	//for (ConstIndex interIndex : classFile.interfaces) {
-	//const string& interName = classFile.getClassName(interIndex);
-	//e.interfaces.push_back(interName);
-	//}
-
-	classes[e.className] = e;
-	//classes.push_front(e);
-}
-
-const String& ClassHierarchy::getSuperClass(const String& className) const {
-	auto it = getEntry(className);
-	Error::assert(it != classes.end(), "Class not defined");
-
-	return it->second.superClassName;
-}
-
-bool ClassHierarchy::isAssignableFrom(const string& sub,
-		const string& sup) const {
-
-	string cls = sub;
-	while (cls != "0") {
-		if (cls == sup) {
-			return true;
-		}
-
-		cls = getSuperClass(cls);
-	}
-
-	return false;
-}
-
-bool ClassHierarchy::isDefined(const String& className) const {
-//	const ClassHierarchy::ClassEntry* e = getEntry(className);
-//	return e != NULL;
-	auto it = getEntry(className);
-	return it != classes.end();
-}
-
-std::map<String, ClassHierarchy::ClassEntry>::const_iterator ClassHierarchy::getEntry(
-		const String& className) const {
-
-	auto it = classes.find(className);
-
-	return it;
-
-//	if (it != classes.end()) {
-//		return &it->second;
-//	} else {
-//		return NULL;
-//	}
-//	for (const ClassHierarchy::ClassEntry& e : *this) {
-//		if (e.className == className) {
-//			return &e;
-//		}
-//	}
-//
-//	return NULL;
-}
-
-string Version::supportedByJdk() const {
-	if (Version(45, 3) <= *this && *this < Version(45, 0)) {
-		return "1.0.2";
-	} else if (Version(45, 0) <= *this && *this <= Version(45, 65535)) {
-		return "1.1.*";
-	} else {
-		u2 k = majorVersion - 44;
-		stringstream ss;
-		ss << "1." << k;
-		return ss.str();
-	}
-}
-
-std::ostream& operator<<(std::ostream& os, const ClassHierarchy&) {
-//	for (const ClassHierarchy::ClassEntry& e : ch) {
-//		os << "Class: " << e.className << ", ";
-//		os << "Super: " << e.superClassName << ", ";
-//		os << "Interfaces: { ";
-//		for (const string& interName : e.interfaces) {
-//			os << interName << " ";
-//		}
-//
-//		os << " }" << endl;
-//	}
-
-	return os;
 }
 
 Attrs::~Attrs() {
@@ -194,30 +68,6 @@ CodeAttr::~CodeAttr() {
 	if (cfg != NULL) {
 		delete cfg;
 	}
-}
-
-ClassFile::~ClassFile() {
-	for (Field* field : fields) {
-		delete field;
-	}
-
-	for (Method* method : methods) {
-		delete method;
-	}
-}
-
-Field* ClassFile::addField(ConstIndex nameIndex, ConstIndex descIndex,
-		u2 accessFlags) {
-	Field* field = new Field(accessFlags, nameIndex, descIndex, this);
-	fields.push_back(field);
-	return field;
-}
-
-Method* ClassFile::addMethod(ConstIndex nameIndex, ConstIndex descIndex,
-		u2 accessFlags) {
-	Method* method = new Method(accessFlags, nameIndex, descIndex, this);
-	methods.push_back(method);
-	return method;
 }
 
 static ostream& dotFrame(ostream& os, const Frame& frame) {

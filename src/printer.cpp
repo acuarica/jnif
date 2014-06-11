@@ -76,7 +76,7 @@ const char* OPCODES[] = { "nop", "aconst_null", "iconst_m1", "iconst_0",
 
 std::ostream& operator<<(std::ostream& os, const JnifException& ex) {
 	os << "Error: JNIF Exception: " << ex.message() << " @ " << endl;
-	os << ex.stackTrace;
+	os << ex.stackTrace();
 
 	return os;
 
@@ -732,12 +732,6 @@ private:
 		return os;
 	}
 };
-
-ostream& operator<<(ostream& os, const Version& version) {
-	os << version.majorVersion << "." << version.minorVersion;
-	os << " (supported by JDK " << version.supportedByJdk() << ")";
-	return os;
-}
 
 ostream& operator<<(ostream& os, const ClassFile& cf) {
 	ClassPrinter cp(cf, os, 0);

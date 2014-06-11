@@ -23,7 +23,9 @@ else
   $(error Unrecognized environment. Only supported Darwin and Linux)
 endif
 
-CXXFLAGS+=-fPIC -W -g -Wall -Wextra -O3 -Wno-unused-value
+CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O4 -Wno-unused-value
+#-Weverything -Wno-padded
+
 
 #
 # Rules to make $(LIBJNIF)
@@ -38,8 +40,11 @@ LIBJNIF_OBJS=$(LIBJNIF_SRCS:$(LIBJNIF_SRC)/%=$(LIBJNIF_BUILD)/%.o)
 $(LIBJNIF): $(LIBJNIF_OBJS)
 	$(AR) cr $@ $^
 
-$(LIBJNIF_BUILD)/%.cpp.o: $(LIBJNIF_SRC)/%.cpp $(LIBJNIF_HPPS) | $(LIBJNIF_BUILD)
+#$(LIBJNIF_BUILD)/%.cpp.o: $(LIBJNIF_SRC)/%.cpp $(LIBJNIF_HPPS) | $(LIBJNIF_BUILD)
+$(LIBJNIF_BUILD)/%.cpp.o: $(LIBJNIF_SRC)/%.cpp | $(LIBJNIF_BUILD)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+-include $(LIBJNIF_BUILD)/*.cpp.d
 
 $(LIBJNIF_BUILD):
 	mkdir -p $@

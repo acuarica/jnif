@@ -4,7 +4,8 @@
  *  Created on: Jun 6, 2014
  *      Author: luigi
  */
-#include "jnif.hpp"
+#include "Frame.hpp"
+#include "Error.hpp"
 
 namespace jnif {
 
