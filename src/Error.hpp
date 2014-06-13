@@ -8,6 +8,8 @@
 #ifndef JNIF_ERROR_HPP
 #define JNIF_ERROR_HPP
 
+#include "base.hpp"
+
 #include <sstream>
 
 namespace jnif {

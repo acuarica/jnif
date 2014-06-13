@@ -23,7 +23,7 @@ else
   $(error Unrecognized environment. Only supported Darwin and Linux)
 endif
 
-CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O4 -Wno-unused-value
+CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O0 -Wno-unused-value
 #-Weverything -Wno-padded
 
 
