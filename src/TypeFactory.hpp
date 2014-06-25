@@ -17,59 +17,57 @@ class TypeFactory {
 	friend class Type;
 public:
 
-	~TypeFactory();
-
-	const Type& topType() {
+	static const Type& topType() {
 		return _topType;
 	}
 
-	const Type& intType() {
+	static const Type& intType() {
 		return _intType;
 	}
 
-	const Type& floatType() {
+	static const Type& floatType() {
 		return _floatType;
 	}
 
-	const Type& longType() {
+	static const Type& longType() {
 		return _longType;
 	}
 
-	const Type& doubleType() {
+	static const Type& doubleType() {
 		return _doubleType;
 	}
 
-	const Type& booleanType() {
+	static const Type& booleanType() {
 		return _booleanType;
 	}
 
-	const Type& byteType() {
+	static const Type& byteType() {
 		return _byteType;
 	}
 
-	const Type& charType() {
+	static const Type& charType() {
 		return _charType;
 	}
 
-	const Type& shortType() {
+	static const Type& shortType() {
 		return _shortType;
 	}
 
-	const Type& nullType() {
+	static const Type& nullType() {
 		return _nullType;
 	}
 
-	const Type& voidType() {
+	static const Type& voidType() {
 		return _voidType;
 	}
 
-	Type uninitThisType();
+	static Type uninitThisType();
 
-	Type uninitType(short offset, class Inst* label);
+	static Type uninitType(short offset, class Inst* label);
 
-	Type objectType(const String& className, u2 cpindex = 0);
+	static Type objectType(const String& className, u2 cpindex = 0);
 
-	Type arrayType(const Type& baseType, u4 dims);
+	static Type arrayType(const Type& baseType, u4 dims);
 
 	/**
 	 * Parses the const class name.
@@ -77,7 +75,7 @@ public:
 	 * @param className the class name to parse.
 	 * @returns the type that represents the class name.
 	 */
-	Type fromConstClass(const String& className);
+	static Type fromConstClass(const String& className);
 
 	/**
 	 * Parses a field descriptor.
@@ -85,7 +83,7 @@ public:
 	 * @param fieldDesc the field descriptor to parse.
 	 * @returns the type that represents the field descriptor.
 	 */
-	Type fromFieldDesc(const char*& fieldDesc);
+	static Type fromFieldDesc(const char*& fieldDesc);
 
 	/**
 	 * Parses a method descriptor.
@@ -94,7 +92,8 @@ public:
 	 * @param argsType collection of method arguments of methodDesc.
 	 * @returns the type that represents the return type of methodDesc.
 	 */
-	Type fromMethodDesc(const char* methodDesc, std::vector<Type>* argsType);
+	static Type fromMethodDesc(const char* methodDesc,
+			std::vector<Type>* argsType);
 
 private:
 
@@ -110,16 +109,15 @@ private:
 	static Type _nullType;
 	static Type _voidType;
 
-	Type _parseBaseType(const char*& fieldDesc, const char* originalFieldDesc);
+	static Type _parseBaseType(const char*& fieldDesc,
+			const char* originalFieldDesc);
 
-	Type _getType(const char*& fieldDesc, const char* originalFieldDesc,
+	static Type _getType(const char*& fieldDesc, const char* originalFieldDesc,
 			int dims);
 
-	Type _getReturnType(const char*& methodDesc);
+	static Type _getReturnType(const char*& methodDesc);
 
-	Type _addType(const Type& type);
-
-	//std::list<Type*> _typePool;
+	static Type _addType(const Type& type);
 
 };
 

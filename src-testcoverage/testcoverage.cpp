@@ -53,21 +53,20 @@ struct TestEntry {
 #define SIZE(arr) ( sizeof(arr)/sizeof((arr)[0]) )
 
 int main(int argc, const char* argv[]) {
-
 	TestEntry testEntries[] = {
 	//ENTRY(testPrinter),
-	ENTRY(testSize),
-	ENTRY(testWriter),
-	ENTRY(testAnalysis),
-	ENTRY(testAnalysisPrinter),
-	ENTRY(testAnalysisWriter),
-	ENTRY(testNopAdderInstrPrinter),
-	ENTRY(testNopAdderInstrSize),
-	ENTRY(testNopAdderInstrWriter),
-	ENTRY(testNopAdderInstrAnalysisPrinter),
-	ENTRY(testNopAdderInstrAnalysisWriter),
+			ENTRY(testSize),
+			ENTRY(testWriter),
+			ENTRY(testAnalysis),
+			ENTRY(testAnalysisPrinter),
+			ENTRY(testAnalysisWriter),
+			ENTRY(testNopAdderInstrPrinter),
+			ENTRY(testNopAdderInstrSize),
+			ENTRY(testNopAdderInstrWriter),
+			ENTRY(testNopAdderInstrAnalysisPrinter),
+			ENTRY(testNopAdderInstrAnalysisWriter),
 
-	};
+			};
 
 	String classPath;
 	String testName;

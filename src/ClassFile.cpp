@@ -4,9 +4,17 @@
  *  Created on: Jun 10, 2014
  *      Author: luigi
  */
-
 #include "ClassFile.hpp"
 #include "Error.hpp"
+#include "parser/BufferReader.hpp"
+#include "parser/ClassParser.hpp"
+#include "parser/CodeAttrParser.hpp"
+#include "parser/ExceptionsAttrParser.hpp"
+#include "parser/LineNumberTableAttrParser.hpp"
+#include "parser/LocalVariableTableAttrParser.hpp"
+#include "parser/LocalVariableTypeTableAttrParser.hpp"
+#include "parser/StackMapTableAttrParser.hpp"
+#include "parser/SourceFileAttrParser.hpp"
 
 namespace jnif {
 
@@ -36,6 +44,21 @@ InstList& Method::instList() {
 	}
 
 	Error::raise("ERROR! get inst list");
+}
+
+ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
+		version(0, 0), accessFlags(0), thisClassIndex(0), superClassIndex(0) {
+
+	BufferReader br(classFileData, classFileLen);
+	ClassParser<AttrsParser<SourceFileAttrParser>,
+			AttrsParser<
+					CodeAttrParser<LineNumberTableAttrParser,
+							LocalVariableTableAttrParser,
+							LocalVariableTypeTableAttrParser,
+							StackMapTableAttrParser>, ExceptionsAttrParser>,
+
+			AttrsParser<> > parser;
+	parser.parse(br, *this);
 }
 
 ClassFile::~ClassFile() {

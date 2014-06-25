@@ -10,12 +10,6 @@
 
 namespace jnif {
 
-TypeFactory::~TypeFactory() {
-//	for (Type* t : _typePool) {
-//		delete t;
-//	}
-}
-
 Type TypeFactory::uninitThisType() {
 	Type type = Type(TYPE_UNINITTHIS);
 

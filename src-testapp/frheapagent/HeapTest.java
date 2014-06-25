@@ -662,7 +662,21 @@ public class HeapTest {
 		use(f);
 	}
 
+	public static class Student {
+		public String toString() {
+			return "hola";
+		}
+	}
+
 	public static void main(String[] args) throws IOException {
+		List<Student> myList = new ArrayList<Student>();
+		for (Object st : myList) {
+			System.out.println(st);
+		}
+		for (Student st : myList) {
+			System.out.println(st);
+		}
+
 		System.err.println("Siamo arrivati al main!!!");
 
 		new Throwable().printStackTrace();

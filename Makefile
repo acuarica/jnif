@@ -78,11 +78,15 @@ TESTCOVERAGE_HPPS=$(wildcard $(TESTCOVERAGE_SRC)/*.hpp) $(LIBJNIF_HPPS)
 TESTCOVERAGE_SRCS=$(wildcard $(TESTCOVERAGE_SRC)/*.cpp)
 TESTCOVERAGE_OBJS=$(TESTCOVERAGE_SRCS:$(TESTCOVERAGE_SRC)/%=$(TESTCOVERAGE_BUILD)/%.o)
 
+$(TESTCOVERAGE): CXXFLAGS+=-lz
 $(TESTCOVERAGE): $(TESTCOVERAGE_OBJS) $(LIBJNIF)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 $(TESTCOVERAGE_BUILD)/%.cpp.o: $(TESTCOVERAGE_SRC)/%.cpp $(TESTCOVERAGE_HPPS) | $(TESTCOVERAGE_BUILD)
 	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -c -o $@ $<
+
+$(TESTCOVERAGE_BUILD)/%.c.o: $(TESTCOVERAGE_SRC)/%.c | $(TESTCOVERAGE_BUILD)
+	$(CC) -c -o $@ $<
 
 $(TESTCOVERAGE_BUILD):
 	mkdir -p $@
@@ -175,7 +179,8 @@ DIRS=$(JARS:%.jar=$(BUILD)/%)
 runcoverage: cp=$(BUILD)
 runcoverage: test=
 runcoverage: $(TESTCOVERAGE) $(DIRS)
-	$(TESTCOVERAGE) $(cp) $(test)
+	$(TESTCOVERAGE) -l jars/rt.jar
+#$(cp) $(test)
 
 $(BUILD)/jars/%: jars/%.jar | $(BUILD)/jars
 	unzip $< -d $@
