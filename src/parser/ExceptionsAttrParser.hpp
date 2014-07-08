@@ -10,6 +10,9 @@
 
 namespace jnif {
 
+/**
+ * The ExceptionsAttrParser parses the Exceptions attribute of a method.
+ */
 class ExceptionsAttrParser {
 public:
 
