@@ -22,12 +22,51 @@ The complete API documentation is available online at
 
 http://acuarica.bitbucket.org/jnif/docs/
 
-# Usage
+# Getting started
 
 JNIF can be used both in stand-alone tools or embedded inside a JVMTI agent.
 
-The following listing shows how to read and write a class file.
+# Usage
 
+This section shows common use cases of the JNIF library, 
+such as writing instrumentation code and analyzing class files, 
+thus giving an overview of the library. 
+We present the examples in an incremental fashion, 
+adding complexity in each example.
+
+In order to be able to work with class files, first they must me parsed. 
+Given a memoery buffer with a class file and its length, 
+the following snippet shows how to parse it.
+
+	const char* data = ...;
+	int len = ...;
+
+	jnif::ClassFile cf(data, len);
+
+JNIF's **ClassFile** class provides fields and methods for analyzing and 
+editing a Java class. 
+It contains the definition of each method and field declared in the Java class. 
+
+Once a class file is correctly parsed and loaded it can be manipulated using 
+the methods and fields in **ClassFile**. 
+For instance, in order to write back the parsed class file in a new buffer, 
+the write method is used in conjunction with the **computeSize** method as 
+shown below.
+
+	const char* data = ...;
+	int len = ...;
+	jnif::ClassFile cf(data, len);
+	int newlen = cf.computeSize();
+	u1* newdata = new u1[newlen];
+	cf.write(newdata, newlen);
+
+	// Use newdata and newlen
+
+	delete [] newdata;
+
+
+Putting all together, 
+the following listing shows how to read and write a class file.
 
 	// Decode the binary data into a ClassFile object
 	const char* data = ...;
@@ -49,11 +88,16 @@ The following listing shows how to read and write a class file.
 	delete [] newdata;
 
 
-JNIF's **ClassFile** class provides fields and methods for analyzing and 
-editing a Java class.
-
-The following listing shows how to traverse all methods in a class
+The **ClassFile** class has a collection of fields and methods which can 
+be used to discover the members of the class file. 
+The snippet below shows how to traverse all methods in a class
 to dump their names and descriptors.
+Note that every **jnif** class overloads the \**operator<<** in order 
+send it to an std::ostream.
+
+	const char* data = ...;
+	int len = ...;
+	jnif::ClassFile cf(data, len);
 
 	for (jnif::Method* m : cf.methods) {
 	  cout << "Method: ";
@@ -62,8 +106,8 @@ to dump their names and descriptors.
 	  cout << endl;
 	}
 
-
-The following listing shows how to find all constructors in a class
+The following listing shows how to find all constructors 
+(named **<init>** at Java bytecode level) in a class
 and how to inject instrumentation, in the form of a call to a static method
 **static void alloc(Object o)** of an analysis class,
 at the beginning of each constructor.
@@ -80,7 +124,40 @@ at the beginning of each constructor.
 	  }
 	}
 
+Another common use case is to instrument every method entry and exit. 
+In order to do so, it is possible to add the instrumentation code at the 
+beginning of the instruction list to detect the method entry. 
+To detect method exit, 
+it is necessary to look for instructions that terminate the current method 
+execution, i.e., 
+xRETURN family and ATHROW as showed in the following snippet.
+
+	ConstIndex sid = cf.addMethodRef(proxyClass, "enterMethod",
+					"(Ljava/lang/String;Ljava/lang/String;)V");
+	ConstIndex eid = cf.addMethodRef(proxyClass, "exitMethod",
+					"(Ljava/lang/String;Ljava/lang/String;)V");
+	ConstIndex classNameIdx = cf.addStringFromClass(cf.thisClassIndex);
+	
+	...
+	
+	InstList& instList = method->instList();
+	
+	ConstIndex methodIndex = cf.addString(m->nameIndex);
+	
+	Inst* p = *instList.begin();
+	
+	instList.addLdc(OPCODE_ldc_w, classNameIdx, p);
+	instList.addLdc(OPCODE_ldc_w, methodIndex, p);
+	instList.addInvoke(OPCODE_invokestatic, sid, p);
+	
+	for (Inst* inst : instList) {
+		if (inst->isExit()) {
+			instList.addLdc(OPCODE_ldc_w, classNameIdx, inst);
+			instList.addLdc(OPCODE_ldc_w, methodIndex, inst);
+			instList.addInvoke(OPCODE_invokestatic, eid, inst);
+		}
+	}
+
 Besides providing access to all members of a class,
 **ClassFile** also provides access to the constant pool
 via methods like **getUtf8()** and **addMethodRef()**.
-
