@@ -20,8 +20,8 @@ public:
 
 	/**
 	 * Constructs a BufferReader from a memory buffer and its size.
-	 * The @ref buffer must be an accessible and readable memory location
-	 * at least of size @ref len.
+	 * The buffer must be an accessible and readable memory location
+	 * at least of the specified size.
 	 *
 	 * @param buffer The memory buffer to read from.
 	 * @param size The size of the buffer in bytes.

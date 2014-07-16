@@ -21,7 +21,7 @@ in an object-oriented style similar to Java-based class rewriting APIs.
 
 The complete API documentation is available online at
 
-http://acuarica.bitbucket.org/jnif/docs/
+http://acuarica.bitbucket.org/jnif/
 
 # Installation
 
@@ -108,7 +108,7 @@ The **ClassFile** class has a collection of fields and methods which can
 be used to discover the members of the class file. 
 The snippet below shows how to traverse all methods in a class
 to dump their names and descriptors.
-Note that every **jnif** class overloads the **operator<<** in order 
+Note that every **jnif** class overloads the **operator&lt;&lt;** in order 
 send it to an **std::ostream**.
 
 	const char* data = ...;
@@ -123,7 +123,7 @@ send it to an **std::ostream**.
 	}
 
 The following listing shows how to find all constructors 
-(named **<init>** at Java bytecode level) in a class
+(named **&lt;init&gt;** at Java bytecode level) in a class
 and how to inject instrumentation, in the form of a call to a static method
 **static void alloc(Object o)** of an analysis class,
 at the beginning of each constructor.
@@ -177,3 +177,28 @@ xRETURN family and ATHROW as showed in the following snippet.
 Besides providing access to all members of a class,
 **ClassFile** also provides access to the constant pool
 via methods like **getUtf8()** and **addMethodRef()**.
+
+# Test and evaluation
+
+To run these evaluations, a Makefile script is provided in the git repository.
+These tasks take care of the compilation of the JNIF library and also 
+all java files needed. 
+The repository is self-contained, 
+no need to download dacapo benchmarks separately.
+
+	> make testapp
+
+To run a particular dacapo benchmark with default settings:
+
+	> make dacapo BENCH=avrora
+
+To run a full evaluation with all dacapo benchmarks in all configuration a 
+task -eval- is provided. 
+You can set how many times run each configuration with the variable times, like
+
+	> make eval times=5
+
+Finally, there is a task to create plots for the evaluation. 
+This task needs R with the package ggplot2.
+
+	> make plots
