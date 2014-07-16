@@ -9,6 +9,7 @@ and encoding Java bytecode.
 The main benefit of JNIF is that it can be plugged into a JVMTI agent for 
 instrumenting all classes in a JVM transparently, i.e., 
 without connecting to another JVM and without perturbing the observed JVM.
+Besides, JNIF can be used in stand-alone tools as well.
 
 JNIF includes a data-flow analysis for stack map generation, 
 a complication necessary for any library that provides editing and encoding 
@@ -22,11 +23,26 @@ The complete API documentation is available online at
 
 http://acuarica.bitbucket.org/jnif/docs/
 
+# Installation
+
+The JNIF library can be used as a static library which can be then linked 
+with your project.
+
+To compile JNIF it is enough to "make" the library
+
+	make
+
+All sources of JNIF are contained in the "src" folder.
+
+To use JNIF classes, the header file **jnif.hpp** must be included.
+
+	#include <jnif.hpp>
+
+Make sure to add the **src** folder to the include search directories so 
+your compiler can found JNIF's headers, i.e., with the **-I** compiler flag 
+and then link your project against the **libjnif.a**.
+
 # Getting started
-
-JNIF can be used both in stand-alone tools or embedded inside a JVMTI agent.
-
-# Usage
 
 This section shows common use cases of the JNIF library, 
 such as writing instrumentation code and analyzing class files, 
@@ -92,8 +108,8 @@ The **ClassFile** class has a collection of fields and methods which can
 be used to discover the members of the class file. 
 The snippet below shows how to traverse all methods in a class
 to dump their names and descriptors.
-Note that every **jnif** class overloads the \**operator<<** in order 
-send it to an std::ostream.
+Note that every **jnif** class overloads the **operator<<** in order 
+send it to an **std::ostream**.
 
 	const char* data = ...;
 	int len = ...;
