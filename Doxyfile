@@ -58,8 +58,7 @@ PROJECT_LOGO =
 # entered, it will be relative to the location where doxygen was started. If
 # left blank the current directory will be used.
 
-#OUTPUT_DIRECTORY = build/docs
-OUTPUT_DIRECTORY = ../acuarica.bitbucket.org/jnif/docs
+OUTPUT_DIRECTORY = ../acuarica.bitbucket.org/jnif
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create 4096 sub-
 # directories (in 2 levels) under the output directory of each output format and
@@ -756,8 +755,7 @@ WARN_LOGFILE =
 # spaces.
 # Note: If this tag is empty the current directory is searched.
 
-INPUT = README.md src/jnif.hpp
-#src src-test-agent src-test-unit
+INPUT = README.md src
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -1713,206 +1711,6 @@ LATEX_SOURCE_CODE = NO
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
 LATEX_BIB_STYLE = plain
-
-#---------------------------------------------------------------------------
-# Configuration options related to the RTF output
-#---------------------------------------------------------------------------
-
-# If the GENERATE_RTF tag is set to YES doxygen will generate RTF output. The
-# RTF output is optimized for Word 97 and may not look too pretty with other RTF
-# readers/editors.
-# The default value is: NO.
-
-GENERATE_RTF = NO
-
-# The RTF_OUTPUT tag is used to specify where the RTF docs will be put. If a
-# relative path is entered the value of OUTPUT_DIRECTORY will be put in front of
-# it.
-# The default directory is: rtf.
-# This tag requires that the tag GENERATE_RTF is set to YES.
-
-RTF_OUTPUT = rtf
-
-# If the COMPACT_RTF tag is set to YES doxygen generates more compact RTF
-# documents. This may be useful for small projects and may help to save some
-# trees in general.
-# The default value is: NO.
-# This tag requires that the tag GENERATE_RTF is set to YES.
-
-COMPACT_RTF = NO
-
-# If the RTF_HYPERLINKS tag is set to YES, the RTF that is generated will
-# contain hyperlink fields. The RTF file will contain links (just like the HTML
-# output) instead of page references. This makes the output suitable for online
-# browsing using Word or some other Word compatible readers that support those
-# fields.
-#
-# Note: WordPad (write) and others do not support links.
-# The default value is: NO.
-# This tag requires that the tag GENERATE_RTF is set to YES.
-
-RTF_HYPERLINKS = NO
-
-# Load stylesheet definitions from file. Syntax is similar to doxygen's config
-# file, i.e. a series of assignments. You only have to provide replacements,
-# missing definitions are set to their default value.
-#
-# See also section "Doxygen usage" for information on how to generate the
-# default style sheet that doxygen normally uses.
-# This tag requires that the tag GENERATE_RTF is set to YES.
-
-RTF_STYLESHEET_FILE = 
-
-# Set optional variables used in the generation of an RTF document. Syntax is
-# similar to doxygen's config file. A template extensions file can be generated
-# using doxygen -e rtf extensionFile.
-# This tag requires that the tag GENERATE_RTF is set to YES.
-
-RTF_EXTENSIONS_FILE = 
-
-#---------------------------------------------------------------------------
-# Configuration options related to the man page output
-#---------------------------------------------------------------------------
-
-# If the GENERATE_MAN tag is set to YES doxygen will generate man pages for
-# classes and files.
-# The default value is: NO.
-
-GENERATE_MAN = NO
-
-# The MAN_OUTPUT tag is used to specify where the man pages will be put. If a
-# relative path is entered the value of OUTPUT_DIRECTORY will be put in front of
-# it. A directory man3 will be created inside the directory specified by
-# MAN_OUTPUT.
-# The default directory is: man.
-# This tag requires that the tag GENERATE_MAN is set to YES.
-
-MAN_OUTPUT = man
-
-# The MAN_EXTENSION tag determines the extension that is added to the generated
-# man pages. In case the manual section does not start with a number, the number
-# 3 is prepended. The dot (.) at the beginning of the MAN_EXTENSION tag is
-# optional.
-# The default value is: .3.
-# This tag requires that the tag GENERATE_MAN is set to YES.
-
-MAN_EXTENSION = .3
-
-# If the MAN_LINKS tag is set to YES and doxygen generates man output, then it
-# will generate one additional man file for each entity documented in the real
-# man page(s). These additional files only source the real man page, but without
-# them the man command would be unable to find the correct page.
-# The default value is: NO.
-# This tag requires that the tag GENERATE_MAN is set to YES.
-
-MAN_LINKS = NO
-
-#---------------------------------------------------------------------------
-# Configuration options related to the XML output
-#---------------------------------------------------------------------------
-
-# If the GENERATE_XML tag is set to YES doxygen will generate an XML file that
-# captures the structure of the code including all documentation.
-# The default value is: NO.
-
-GENERATE_XML = NO
-
-# The XML_OUTPUT tag is used to specify where the XML pages will be put. If a
-# relative path is entered the value of OUTPUT_DIRECTORY will be put in front of
-# it.
-# The default directory is: xml.
-# This tag requires that the tag GENERATE_XML is set to YES.
-
-XML_OUTPUT = xml
-
-# The XML_SCHEMA tag can be used to specify a XML schema, which can be used by a
-# validating XML parser to check the syntax of the XML files.
-# This tag requires that the tag GENERATE_XML is set to YES.
-
-XML_SCHEMA = 
-
-# The XML_DTD tag can be used to specify a XML DTD, which can be used by a
-# validating XML parser to check the syntax of the XML files.
-# This tag requires that the tag GENERATE_XML is set to YES.
-
-XML_DTD = 
-
-# If the XML_PROGRAMLISTING tag is set to YES doxygen will dump the program
-# listings (including syntax highlighting and cross-referencing information) to
-# the XML output. Note that enabling this will significantly increase the size
-# of the XML output.
-# The default value is: YES.
-# This tag requires that the tag GENERATE_XML is set to YES.
-
-XML_PROGRAMLISTING = YES
-
-#---------------------------------------------------------------------------
-# Configuration options related to the DOCBOOK output
-#---------------------------------------------------------------------------
-
-# If the GENERATE_DOCBOOK tag is set to YES doxygen will generate Docbook files
-# that can be used to generate PDF.
-# The default value is: NO.
-
-GENERATE_DOCBOOK = NO
-
-# The DOCBOOK_OUTPUT tag is used to specify where the Docbook pages will be put.
-# If a relative path is entered the value of OUTPUT_DIRECTORY will be put in
-# front of it.
-# The default directory is: docbook.
-# This tag requires that the tag GENERATE_DOCBOOK is set to YES.
-
-DOCBOOK_OUTPUT = docbook
-
-#---------------------------------------------------------------------------
-# Configuration options for the AutoGen Definitions output
-#---------------------------------------------------------------------------
-
-# If the GENERATE_AUTOGEN_DEF tag is set to YES doxygen will generate an AutoGen
-# Definitions (see http://autogen.sf.net) file that captures the structure of
-# the code including all documentation. Note that this feature is still
-# experimental and incomplete at the moment.
-# The default value is: NO.
-
-GENERATE_AUTOGEN_DEF = NO
-
-#---------------------------------------------------------------------------
-# Configuration options related to the Perl module output
-#---------------------------------------------------------------------------
-
-# If the GENERATE_PERLMOD tag is set to YES doxygen will generate a Perl module
-# file that captures the structure of the code including all documentation.
-#
-# Note that this feature is still experimental and incomplete at the moment.
-# The default value is: NO.
-
-GENERATE_PERLMOD = NO
-
-# If the PERLMOD_LATEX tag is set to YES doxygen will generate the necessary
-# Makefile rules, Perl scripts and LaTeX code to be able to generate PDF and DVI
-# output from the Perl module output.
-# The default value is: NO.
-# This tag requires that the tag GENERATE_PERLMOD is set to YES.
-
-PERLMOD_LATEX = NO
-
-# If the PERLMOD_PRETTY tag is set to YES the Perl module output will be nicely
-# formatted so it can be parsed by a human reader. This is useful if you want to
-# understand what is going on. On the other hand, if this tag is set to NO the
-# size of the Perl module output will be much smaller and Perl will parse it
-# just the same.
-# The default value is: YES.
-# This tag requires that the tag GENERATE_PERLMOD is set to YES.
-
-PERLMOD_PRETTY = YES
-
-# The names of the make variables in the generated doxyrules.make file are
-# prefixed with the string contained in PERLMOD_MAKEVAR_PREFIX. This is useful
-# so different doxyrules.make files included by the same Makefile don't
-# overwrite each other's variables.
-# This tag requires that the tag GENERATE_PERLMOD is set to YES.
-
-PERLMOD_MAKEVAR_PREFIX = 
 
 #---------------------------------------------------------------------------
 # Configuration options related to the preprocessor
