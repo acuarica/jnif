@@ -283,14 +283,24 @@ PLOTDONES=$(PROFS:%=%.done)
 plots: $(PLOTDONES)
 
 $(BUILD)/%.done: $(BUILD)/% charts/charts.r
-	$(R) --slave --vanilla --file=charts/charts.r --args $<
+	$(R) --slave --vanilla --file=charts/charts.r --args $<	
 	touch $@
 
+PDFS=$(wildcard $(BUILD)/*.pdf)
+EPDFS=$(PDFS:%.pdf=%-embed.pdf)
+ 
+embed: $(EPDFS)
+
+$(BUILD)/%-embed.pdf: $(BUILD)/%.pdf charts/charts.r
+	gs -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dSubsetFonts=true -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=$@ -c ".setpdfwrite <</NeverEmbed [ ]>> setdistillerparams" -f $<
+	
 docs:
 	doxygen
 
-dots: DOTS=$(shell find build -name *.dot)
-dots: PNGS=$(DOTS:%.dot=%.png)
+#dots: 
+DOTS=$(shell find build -name *.dot)
+#dots: 
+PNGS=$(DOTS:%.dot=%.png)
 dots: $(PNGS)
 
 scp: scp-steklov scp-w620
@@ -302,7 +312,7 @@ scp-w620:
 	scp w620:work/jnif/build/eval.Linux.prof build/eval.Linux.w620.prof
 
 $(BUILD)/%.png: $(BUILD)/%.dot
-	dot -Tpng $< > $@
+	-dot -Tpng $< > $@
 
 run: $(BACKEND)
 
