@@ -68,7 +68,7 @@ theme.config.right <- theme(axis.text.x=element_text(angle=25, hjust=1), legend.
 # Instrumentation
 p <-
   ggplot(csv.instrumentation)+facet_wrap(~bench, ncol=4, scales="free")+
-  geom_boxplot(aes(instr, instrumentation, colour=backend))+scale_colour_grey(start = 0.2, end = 0.8)+
+  geom_boxplot(aes(instr, instrumentation, colour=backend))+scale_colour_grey(start = 0.1, end = 0.7)+
   labs(x="", y = "Instrumentation time (in seconds)")+theme.config.top
 save(p, path, "instr", w=12, h=16)
 
