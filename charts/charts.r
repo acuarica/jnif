@@ -51,10 +51,43 @@ colnames(csv.instrumentation) <- c('backend', 'bench', 'run', 'instr', 'instrume
 
 # Plots
 
-theme.config.top <- theme(axis.text.x=element_text(angle=25, hjust=1), legend.box="horizontal", legend.position="top", 
-                          panel.background = element_rect(fill = "white", colour = NA), panel.border = element_rect(fill = NA, colour = "grey50"), 
-                          panel.grid.major = element_line(colour = "grey90", size = 0.2), 
-                          panel.grid.minor = element_line(colour = "grey98", size = 0.5) )
+#theme.config.top <- theme(axis.text.x=element_text(angle=25, hjust=1), legend.box="horizontal", legend.position="top", 
+#                          panel.background = element_rect(fill = "white", colour = NA), panel.border = element_rect(fill = NA, colour = "grey50"), 
+#                          panel.grid.major = element_line(colour = "grey90", size = 0.2), 
+#                          panel.grid.minor = element_line(colour = "grey98", size = 0.5) )
+
+theme.config.bw <- function(base_size = 12) { theme(
+    axis.line = element_blank(),
+    axis.text.x = element_text(size = base_size * 0.8, lineheight = 0.9, colour = "black", vjust = 1, angle=20, hjust=1),
+    axis.text.y = element_text(size = base_size * 0.8, lineheight = 0.9, colour = "black", hjust = 1),
+    axis.ticks = element_line(colour = "black"),
+    axis.title.x = element_text(size = base_size, vjust = 0.5),
+    axis.title.y = element_text(size = base_size, angle = 90, vjust = 0.5),
+    #axis.ticks.length = unit(0.15, "cm"),
+    #axis.ticks.margin = unit(0.1, "cm"),
+    
+    legend.box="horizontal", legend.position="top", 
+    legend.background = element_rect(colour=NA), 
+    legend.key =        element_rect(fill = NA, colour = "black", size = 0.25),
+    #legend.key.size =   unit(1.2, "lines"),
+    legend.text =       element_text(size = base_size * 0.8),
+    legend.title =      element_text(size = base_size * 0.8, face = "bold", hjust = 0),
+    
+    panel.background = element_rect(fill = NA, colour = "black", size = 0.25), 
+    panel.border = element_blank(),
+    panel.grid.major = element_line(colour = "black", size = 0.05),
+    panel.grid.minor = element_line(colour = "black", size = 0.05),
+    #panel.margin =      unit(0.25, "lines"),
+    
+    strip.background = element_rect(fill = NA, colour = NA), 
+    strip.text.x = element_text(colour = "black", size = base_size * 0.8),
+    strip.text.y = element_text(colour = "black", size = base_size * 0.8, angle = -90),
+    
+    plot.background = element_rect(colour = NA, fill = "white"),
+    plot.title = element_text(size = base_size * 1.2)
+    #plot.margin =       unit(c(1, 1, 0.5, 0.5), "lines")
+) }
+
 theme.config.right <- theme(axis.text.x=element_text(angle=25, hjust=1), legend.box="horizontal", legend.position="right")
 
 # Classes per benchmark
@@ -69,7 +102,7 @@ theme.config.right <- theme(axis.text.x=element_text(angle=25, hjust=1), legend.
 p <-
   ggplot(csv.instrumentation)+facet_wrap(~bench, ncol=4, scales="free")+
   geom_boxplot(aes(instr, instrumentation, colour=backend))+scale_colour_grey(start = 0.1, end = 0.7)+
-  labs(x="", y = "Instrumentation time (in seconds)")+theme.config.top
+  labs(x="", y = "Instrumentation time (in seconds)")+theme.config.bw()
 save(p, path, "instr", w=12, h=16)
 
 # Total times
