@@ -88,10 +88,12 @@ Method* ClassFile::addMethod(ConstIndex nameIndex, ConstIndex descIndex,
 }
 
 static std::ostream& dotFrame(std::ostream& os, const Frame& frame) {
-//	os << " LVA: ";
-//	for (u4 i = 0; i < frame.lva.size(); i++) {
-//		os << (i == 0 ? "" : ",\n ") << i << ": " << frame.lva[i];
-//	}
+	os << " LVA: ";
+	for (u4 i = 0; i < frame.lva.size(); i++) {
+		os << (i == 0 ? "" : ",\n ") << i << ": " << frame.lva[i];
+	}
+
+	os << std::endl;
 
 	os << " STACK: ";
 	int i = 0;

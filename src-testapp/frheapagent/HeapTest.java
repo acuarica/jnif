@@ -629,32 +629,32 @@ public class HeapTest {
 	// return res;
 	// }
 
-	public static class TestExc1 extends Exception {
-	}
-
-	public static class TestExc2 extends Exception {
-	}
-
-	public static void tryItOut() throws TestExc1, TestExc2 {
-	}
-
-	public static void handleExc1(Exception e) {
-	}
-
-	public static void handleExc2(Exception e) {
-	}
-
-	public static void nestedCatch0() {
-		try {
-			try {
-				tryItOut();
-			} catch (TestExc1 e) {
-				handleExc1(e);
-			}
-		} catch (TestExc2 e) {
-			handleExc2(e);
-		}
-	}
+//	public static class TestExc1 extends Exception {
+//	}
+//
+//	public static class TestExc2 extends Exception {
+//	}
+//
+//	public static void tryItOut() throws TestExc1, TestExc2 {
+//	}
+//
+//	public static void handleExc1(Exception e) {
+//	}
+//
+//	public static void handleExc2(Exception e) {
+//	}
+//
+//	public static void nestedCatch0() {
+//		try {
+//			try {
+//				tryItOut();
+//			} catch (TestExc1 e) {
+//				handleExc1(e);
+//			}
+//		} catch (TestExc2 e) {
+//			handleExc2(e);
+//		}
+//	}
 
 	public static void useFloat0() {
 		float f = 14;
@@ -667,7 +667,7 @@ public class HeapTest {
 			return "hola";
 		}
 	}
-
+	
 	public static void main(String[] args) throws IOException {
 		List<Student> myList = new ArrayList<Student>();
 		for (Object st : myList) {

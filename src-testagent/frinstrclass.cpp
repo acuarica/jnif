@@ -617,8 +617,17 @@ void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
 }
 
 void InstrClassDot(jvmtiEnv*, u1* data, int len, const char* className, int*,
-		u1**, JNIEnv*, InstrArgs* args) {
+		u1**, JNIEnv* jni, InstrArgs* args) {
 	ClassFile cf(data, len);
+
+	if (isPrefix("java", cf.getThisClassName())
+			|| isPrefix("sun", cf.getThisClassName())) {
+		return;
+	}
+
+	ClassPath cp(cf.getThisClassName(), jni, args->loader);
+	cf.computeFrames(&cp);
+
 	ofstream os(outFileName(className, "dot").c_str());
 	cf.dot(os);
 }
