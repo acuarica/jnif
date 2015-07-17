@@ -1,0 +1,5 @@
+<project name="prj1" basedir=".">
+	<target name="dist" description="Makes jar file.">
+		<jar destfile="jnif-instrserver.jar" basedir="bin"/>
+	</target>
+</project>
