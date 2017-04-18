@@ -21,7 +21,7 @@ in an object-oriented style similar to Java-based class rewriting APIs.
 
 The complete API documentation is available online at
 
-http://acuarica.bitbucket.org/jnif/
+http://acuarica.bitbucket.io/jnif/
 
 # Installation
 
