@@ -560,10 +560,10 @@ public:
 				invokeSpecial(inst.invoke()->methodRefIndex);
 				break;
 			case OPCODE_invokestatic:
-				invokeMethod(inst.invoke()->methodRefIndex, false, false);
+				invokeStatic(inst.invoke()->methodRefIndex);
 				break;
 			case OPCODE_invokeinterface:
-				invokeInterface(inst.invokeinterface()->interMethodRefIndex);
+				invokeInterface(inst.invokeinterface()->interMethodRefIndex, true);
 				break;
 			case OPCODE_new:
 				newinst(*inst.type());
@@ -791,14 +791,32 @@ private:
 	}
 
 	void invokeSpecial(u2 methodRefIndex) {
-		invokeMethod(methodRefIndex, true, true);
+    ConstTag tag = cp.getTag(methodRefIndex);
+    Error::check(tag == CONST_METHODREF || tag == CONST_INTERMETHODREF,
+                 "INVOKESPECIAL index must be either a method or an interface method symbolic reference");
+    if (tag == CONST_METHODREF) {
+      invokeMethod(methodRefIndex, true, true);
+    } else {
+      invokeInterface(methodRefIndex, true);
+    }
 	}
 
-	void invokeInterface(u2 interMethodRefIndex) {
+	void invokeInterface(u2 interMethodRefIndex, bool popThis) {
 		String className, name, desc;
 		cp.getInterMethodRef(interMethodRefIndex, &className, &name, &desc);
-		invoke(className, name, desc, true, false);
+		invoke(className, name, desc, popThis, false);
 	}
+
+  void invokeStatic(u2 methodRefIndex) {
+    ConstTag tag = cp.getTag(methodRefIndex);
+    Error::check(tag == CONST_METHODREF || tag == CONST_INTERMETHODREF,
+                 "INVOKESPECIAL index must be either a method or an interface method symbolic reference");
+    if (tag == CONST_METHODREF) {
+      invokeMethod(methodRefIndex, false, false);
+    } else {
+      invokeInterface(methodRefIndex, false);
+    }
+  }
 
 	void invoke(const String& className, const String& name, const String& desc,
 			bool popThis, bool isSpecial) {
