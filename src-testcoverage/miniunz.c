@@ -55,10 +55,6 @@
 
 #include "unzip.h"
 
-#define CASESENSITIVITY (0)
-#define WRITEBUFFERSIZE (8192)
-#define MAXFILENAME (256)
-
 #ifdef _WIN32
 #define USEWIN32IOAPI
 #include "iowin32.h"
@@ -112,18 +108,6 @@ void change_file_date(const char *filename, uLong dosdate, tm_unz tmu_date) {
 
 /* mymkdir and change_file_date are not 100 % portable
  As I don't know well Unix, I wait feedback for the unix portion */
-
-int mymkdir(const char* dirname) {
-	int ret = 0;
-#ifdef _WIN32
-	ret = _mkdir(dirname);
-#elif unix
-	ret = mkdir (dirname,0775);
-#elif __APPLE__
-	ret = mkdir(dirname, 0775);
-#endif
-	return ret;
-}
 
 int makedir(char *newdir) {
 	char *buffer;

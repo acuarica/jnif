@@ -78,7 +78,7 @@ TESTCOVERAGE_HPPS=$(wildcard $(TESTCOVERAGE_SRC)/*.hpp) $(LIBJNIF_HPPS)
 TESTCOVERAGE_SRCS=$(wildcard $(TESTCOVERAGE_SRC)/*.cpp)
 TESTCOVERAGE_OBJS=$(TESTCOVERAGE_SRCS:$(TESTCOVERAGE_SRC)/%=$(TESTCOVERAGE_BUILD)/%.o)
 
-$(TESTCOVERAGE): CXXFLAGS+=-lz
+$(TESTCOVERAGE): CXXFLAGS+=-lz -lsqlite3
 $(TESTCOVERAGE): $(TESTCOVERAGE_OBJS) $(LIBJNIF)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
@@ -179,8 +179,7 @@ DIRS=$(JARS:%.jar=$(BUILD)/%)
 runcoverage: cp=$(BUILD)
 runcoverage: test=
 runcoverage: $(TESTCOVERAGE) $(DIRS)
-	$(TESTCOVERAGE) -l jars/rt.jar
-#$(cp) $(test)
+	$(TESTCOVERAGE) /Volumes/Data/work/mavends/out/mavenindex.sqlite3 /Volumes/Data/work/mavends/cache/repo "select max(idate), * from artifact_jar group by groupid, artifactid" /Volumes/Data/work/mavends/out/mavenclass.sqlite3
 
 $(BUILD)/jars/%: jars/%.jar | $(BUILD)/jars
 	unzip $< -d $@
@@ -218,7 +217,8 @@ logdir:
 runserver: INSTRSERVERCLASS=$(INSTR)
 runserver: FUNC=ClientServer
 runserver: $(INSTRSERVER) start runagent stop
-	#cat $(BUILD)/eval-instrserver-instrserver,$(APP),$(RUN),$(INSTR)-*.prof > $(BUILD)/eval.$(UNAME).prof
+
+#cat $(BUILD)/eval-instrserver-instrserver,$(APP),$(RUN),$(INSTR)-*.prof > $(BUILD)/eval.$(UNAME).prof
 
 RUN=4
 INSTR=Compute
@@ -279,21 +279,21 @@ eval-scala: SUITE=scala
 eval-scala: runeval
 
 PROFS=$(wildcard $(BUILD)/*.prof)
-PLOTDONES=$(PROFS:%=%.done) 
+PLOTDONES=$(PROFS:%=%.done)
 plots: $(PLOTDONES)
 
 $(BUILD)/%.done: $(BUILD)/% charts/charts.r
-	$(R) --slave --vanilla --file=charts/charts.r --args $<	
+	$(R) --slave --vanilla --file=charts/charts.r --args $<
 	touch $@
 
 PDFS=$(wildcard $(BUILD)/*.pdf)
 EPDFS=$(PDFS:%.pdf=%-embed.pdf)
- 
+
 embed: $(EPDFS)
 
 $(BUILD)/%-embed.pdf: $(BUILD)/%.pdf charts/charts.r
 	gs -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dSubsetFonts=true -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=$@ -c ".setpdfwrite <</NeverEmbed [ ]>> setdistillerparams" -f $<
-	
+
 docs:
 	doxygen
 
