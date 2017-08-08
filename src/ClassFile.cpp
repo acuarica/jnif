@@ -18,6 +18,10 @@
 
 namespace jnif {
 
+Method::~Method() {
+  Error::trace("Method::~Method");
+}
+
 bool Method::isInit() const {
 	String name = constPool->getUtf8(nameIndex);
 	return hasCode() && name == "<init>";
@@ -62,27 +66,27 @@ ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
 }
 
 ClassFile::~ClassFile() {
-//	for (Field* field : fields) {
-//		delete field;
-//	}
-//
-//	for (Method* method : methods) {
-//		delete method;
-//	}
+  Error::trace("~ClassFile");
+
+	for (Field* field : fields) {
+		field->~Field();
+	}
+
+	for (Method* method : methods) {
+		method->~Method();
+	}
 }
 
 Field* ClassFile::addField(ConstIndex nameIndex, ConstIndex descIndex,
 		u2 accessFlags) {
-	void* buf = _arena.alloc(sizeof(Field));
-	Field* field = new (buf) Field(accessFlags, nameIndex, descIndex, this);
+	Field* field = _arena.create<Field>(accessFlags, nameIndex, descIndex, this);
 	fields.push_back(field);
 	return field;
 }
 
 Method* ClassFile::addMethod(ConstIndex nameIndex, ConstIndex descIndex,
 		u2 accessFlags) {
-	void* buf = _arena.alloc(sizeof(Method));
-	Method* method = new (buf) Method(accessFlags, nameIndex, descIndex, this);
+	Method* method = _arena.create<Method>(accessFlags, nameIndex, descIndex, this);
 	methods.push_back(method);
 	return method;
 }

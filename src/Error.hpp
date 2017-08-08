@@ -11,6 +11,9 @@
 #include "base.hpp"
 
 #include <sstream>
+#include <iostream>
+
+// #define TRACE
 
 namespace jnif {
 
@@ -21,18 +24,15 @@ class Error {
 public:
 
 	template<typename ... TArgs>
-	static void raise(const TArgs& ... args) __attribute__((noreturn));
+	static void raise(const TArgs& ... args) __attribute__((noreturn)) {
+    std::stringstream message;
+    _format(message, args...);
 
-//	template<typename ... TArgs>
-//	static void raise(const TArgs& ... args) __attribute__((noreturn)) {
-//		std::stringstream message;
-//		_raise(message, args...);
-//
-//		std::stringstream stackTrace;
-//		_backtrace(stackTrace);
-//
-//		throw JnifException(message.str(), stackTrace.str());
-//	}
+    std::stringstream stackTrace;
+    _backtrace(stackTrace);
+
+    throw JnifException(message.str(), stackTrace.str());
+  }
 
 	template<typename ... TArgs>
 	static inline void assert(bool cond, const TArgs& ... args) {
@@ -55,32 +55,33 @@ public:
 		}
 	}
 
+#ifdef TRACE
+	template<typename ... TArgs>
+	static void trace(const TArgs& ... args) {
+    _format(std::cerr, args...);
+    std::cerr << std::endl;
+  }
+#else
+	template<typename ... TArgs>
+	static void trace(const TArgs& ... ) {
+  }
+#endif
+
 private:
 
 	static void _backtrace(std::ostream& os);
 
-	static inline void _raise(std::ostream&) {
+	static inline void _format(std::ostream&) {
 	}
 
 	template<typename TArg, typename ... TArgs>
-	static inline void _raise(std::ostream& os, const TArg& arg,
+	static inline void _format(std::ostream& os, const TArg& arg,
 			const TArgs& ... args) {
 		os << arg;
-		_raise(os, args...);
+		_format(os, args...);
 	}
 
 };
-
-template<typename ... TArgs>
-void Error::raise(const TArgs& ... args) {
-	std::stringstream message;
-	_raise(message, args...);
-
-	std::stringstream stackTrace;
-	_backtrace(stackTrace);
-
-	throw JnifException(message.str(), stackTrace.str());
-}
 
 }
 

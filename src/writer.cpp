@@ -154,7 +154,7 @@ public:
 			writeAttrs(*m);
 		}
 
-		writeAttrs(cf);
+		writeAttrs(cf.attrs);
 	}
 
 	void writeConstPool(const ConstPool& cp) {

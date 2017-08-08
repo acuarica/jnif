@@ -15,11 +15,11 @@ public:
 
 	static constexpr const char* AttrName = "SourceFile";
 
-	Attr* parse(BufferReader& br, ClassFile& constPool, ConstIndex nameIndex,
+	Attr* parse(BufferReader& br, ClassFile& cp, ConstIndex nameIndex,
 			void*) {
 		u2 sourceFileIndex = br.readu2();
 
-		Attr* attr = new SourceFileAttr(nameIndex, sourceFileIndex, &constPool);
+		Attr* attr = cp._arena.create<SourceFileAttr>(nameIndex, sourceFileIndex, &cp);
 
 		return attr;
 	}

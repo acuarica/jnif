@@ -17,8 +17,7 @@ public:
 
 	static constexpr const char* AttrName = "StackMapTable";
 
-	Type parseType(BufferReader& br, const ConstPool& cp,
-			LabelManager& labelManager) {
+	Type parseType(BufferReader& br, const ConstPool& cp, LabelManager& labelManager) {
 		u1 tag = br.readu1();
 
 		switch (tag) {
@@ -61,10 +60,8 @@ public:
 	}
 
 	Attr* parse(BufferReader& br, ClassFile& cp, u2 nameIndex, void* args) {
-
 		LabelManager& labelManager = *(LabelManager*) args;
-
-		SmtAttr* smt = new SmtAttr(nameIndex, &cp);
+		SmtAttr* smt = cp._arena.create<SmtAttr>(nameIndex, &cp);
 
 		u2 numberOfEntries = br.readu2();
 
@@ -77,22 +74,17 @@ public:
 			e.frameType = frameType;
 
 			if (0 <= frameType && frameType <= 63) {
-				//	v.visitFrameSame(frameType);
 				toff += frameType;
 			} else if (64 <= frameType && frameType <= 127) {
-				parseTs(br, 1, e.sameLocals_1_stack_item_frame.stack, cp,
-						labelManager);
-				//v.visitFrameSameLocals1StackItem(frameType);
+				parseTs(br, 1, e.sameLocals_1_stack_item_frame.stack, cp, labelManager);
 
 				toff += frameType - 64;
 			} else if (frameType == 247) {
 				u2 offsetDelta = br.readu2();
-				e.same_locals_1_stack_item_frame_extended.offset_delta =
-						offsetDelta;
+				e.same_locals_1_stack_item_frame_extended.offset_delta = offsetDelta;
 
 				toff += e.same_locals_1_stack_item_frame_extended.offset_delta;
-				parseTs(br, 1, e.same_locals_1_stack_item_frame_extended.stack,
-						cp, labelManager);
+				parseTs(br, 1, e.same_locals_1_stack_item_frame_extended.stack, cp, labelManager);
 			} else if (248 <= frameType && frameType <= 250) {
 				u2 offsetDelta = br.readu2();
 				e.chop_frame.offset_delta = offsetDelta;
@@ -106,8 +98,7 @@ public:
 			} else if (252 <= frameType && frameType <= 254) {
 				u2 offsetDelta = br.readu2();
 				e.append_frame.offset_delta = offsetDelta;
-				parseTs(br, frameType - 251, e.append_frame.locals, cp,
-						labelManager);
+				parseTs(br, frameType - 251, e.append_frame.locals, cp, labelManager);
 
 				toff += e.append_frame.offset_delta;
 			} else if (frameType == 255) {
@@ -115,25 +106,15 @@ public:
 				e.full_frame.offset_delta = offsetDelta;
 
 				u2 numberOfLocals = br.readu2();
-				parseTs(br, numberOfLocals, e.full_frame.locals, cp,
-						labelManager);
+				parseTs(br, numberOfLocals, e.full_frame.locals, cp, labelManager);
 
 				u2 numberOfStackItems = br.readu2();
-				parseTs(br, numberOfStackItems, e.full_frame.stack, cp,
-						labelManager);
+				parseTs(br, numberOfStackItems, e.full_frame.stack, cp, labelManager);
 
 				toff += e.full_frame.offset_delta;
 			}
 
 			toff += 1;
-
-//			Inst*& label = labels[toff];
-//			if (label == NULL) {
-//				//fprintf(stderr, "WARNING: Label is null in smt at offset %d", toff);
-//				label = new Inst(KIND_LABEL);
-//			}
-
-//Error::check(labelManager.hasLabel(toff), "invalid toff for label");
 
 			LabelInst* label = labelManager.createLabel(toff);
 

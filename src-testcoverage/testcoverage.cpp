@@ -52,81 +52,76 @@ struct TestEntry {
 #define ENTRY(testName) { &testName, #testName }
 #define SIZE(arr) ( sizeof(arr)/sizeof((arr)[0]) )
 
-// int main(int argc, const char* argv[]) {
-int main32(int , const char* []) {
+int main(int argc, const char* argv[]) {
+	TestEntry testEntries[] = {
+    ENTRY(testPrinter),
+    ENTRY(testSize),
+    ENTRY(testWriter),
+    ENTRY(testAnalysis),
+    ENTRY(testAnalysisPrinter),
+    ENTRY(testAnalysisWriter),
+    ENTRY(testNopAdderInstrPrinter),
+    ENTRY(testNopAdderInstrSize),
+    ENTRY(testNopAdderInstrWriter),
+    ENTRY(testNopAdderInstrAnalysisPrinter),
+    ENTRY(testNopAdderInstrAnalysisWriter)
+  };
 
-  return 0;
+	String classPath;
+	String testName;
 
-	// TestEntry testEntries[] = {
-	// //ENTRY(testPrinter),
-	// 		ENTRY(testSize),
-	// 		ENTRY(testWriter),
-	// 		ENTRY(testAnalysis),
-	// 		ENTRY(testAnalysisPrinter),
-	// 		ENTRY(testAnalysisWriter),
-	// 		ENTRY(testNopAdderInstrPrinter),
-	// 		ENTRY(testNopAdderInstrSize),
-	// 		ENTRY(testNopAdderInstrWriter),
-	// 		ENTRY(testNopAdderInstrAnalysisPrinter),
-	// 		ENTRY(testNopAdderInstrAnalysisWriter),
+	if (argc == 2 && argv[1] == String("--list")) {
+		for (u4 i = 0; i < SIZE(testEntries); i++) {
+			cout << testEntries[i].testName << " ";
+		}
 
-	// 		};
+		cout << endl;
+		return 0;
+	} else if (argc >= 2) {
+		classPath = argv[1];
+		testName = argc >= 3 ? argv[2] : "";
 
-	// String classPath;
-	// String testName;
+		cerr << "[Loading classes from " << classPath << "... " << flush;
+		ftw(classPath.c_str(), visitFile, 50);
 
-	// if (argc == 2 && argv[1] == String("--list")) {
-	// 	for (u4 i = 0; i < SIZE(testEntries); i++) {
-	// 		cout << testEntries[i].testName << " ";
-	// 	}
+		cerr << "loaded " << tests.size() << " class(es)]" << endl;
 
-	// 	cout << endl;
-	// 	return 0;
-	// } else if (argc >= 2) {
-	// 	classPath = argv[1];
-	// 	testName = argc >= 3 ? argv[2] : "";
+		for (u4 i = 0; i < SIZE(testEntries); i++) {
+			TestEntry& te = testEntries[i];
 
-	// 	cerr << "[Loading classes from " << classPath << "... " << flush;
-	// 	ftw(classPath.c_str(), visitFile, 50);
+			if (testName == "" || testName == te.testName) {
+				cerr << "Running test " << te.testName << " ";
 
-	// 	cerr << "loaded " << tests.size() << " class(es)]" << endl;
+				try {
+					apply(cerr, tests, te.testFunc);
+				} catch (const JnifException& ex) {
+					cerr << ex << endl;
+					exit(-255);
+				}
 
-	// 	for (u4 i = 0; i < SIZE(testEntries); i++) {
-	// 		TestEntry& te = testEntries[i];
+				cerr << " [OK]" << endl;
 
-	// 		if (testName == "" || testName == te.testName) {
-	// 			cerr << "Running test " << te.testName << " ";
+				if (testName == te.testName) {
+					return 0;
+				};
+			}
+		}
 
-	// 			try {
-	// 				apply(cerr, tests, te.testFunc);
-	// 			} catch (const JnifException& ex) {
-	// 				cerr << ex << endl;
-	// 				exit(-255);
-	// 			}
+		if (testName != "") {
+			cerr << "Test " << testName << " not found." << endl;
+			return 4;
+		}
 
-	// 			cerr << " [OK]" << endl;
+		return 0;
+	} else {
+		cerr << "Usage: " << endl;
+		cerr << "  [1] " << argv[0] << " <classPath> <testName>" << endl;
+		cerr << "  [2] " << argv[0] << " --list" << endl;
+		cerr << "Available tests: " << endl;
+		for (TestEntry& te : testEntries) {
+			cerr << "  " << te.testName << endl;
+		}
 
-	// 			if (testName == te.testName) {
-	// 				return 0;
-	// 			};
-	// 		}
-	// 	}
-
-	// 	if (testName != "") {
-	// 		cerr << "Test " << testName << " not found." << endl;
-	// 		return 4;
-	// 	}
-
-	// 	return 0;
-	// } else {
-	// 	cerr << "Usage: " << endl;
-	// 	cerr << "  [1] " << argv[0] << " <classPath> <testName>" << endl;
-	// 	cerr << "  [2] " << argv[0] << " --list" << endl;
-	// 	cerr << "Available tests: " << endl;
-	// 	for (TestEntry& te : testEntries) {
-	// 		cerr << "  " << te.testName << endl;
-	// 	}
-
-	// 	return 1;
-	// }
+		return 1;
+	}
 }

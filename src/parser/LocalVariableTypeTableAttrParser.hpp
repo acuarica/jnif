@@ -15,13 +15,13 @@ public:
 
 	static constexpr const char* AttrName = "LocalVariableTypeTable";
 
-	Attr* parse(BufferReader& br, ClassFile& constPool, ConstIndex nameIndex,
+	Attr* parse(BufferReader& br, ClassFile& cp, ConstIndex nameIndex,
 			void* args) {
 		LabelManager& labelManager = *(LabelManager*) args;
 
 		u2 count = br.readu2();
 
-		LvtAttr* lvt = new LvtAttr(ATTR_LVTT, nameIndex, &constPool);
+		LvtAttr* lvt = cp._arena.create<LvtAttr>(ATTR_LVTT, nameIndex, &cp);
 
 		for (u2 i = 0; i < count; i++) {
 			LvtAttr::LvEntry e;

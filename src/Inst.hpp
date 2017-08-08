@@ -288,14 +288,11 @@ public:
 private:
 
 	Inst() :
-			opcode(OPCODE_nop), kind(KIND_ZERO), _offset(0), constPool(NULL), prev(
-			NULL), next(NULL) {
+			opcode(OPCODE_nop), kind(KIND_ZERO), _offset(0), constPool(NULL), prev(NULL), next(NULL) {
 	}
 
-	Inst(Opcode opcode, OpKind kind, ClassFile* constPool, Inst* prev = NULL,
-			Inst* next = NULL) :
-			opcode(opcode), kind(kind), _offset(0), constPool(constPool), prev(
-					prev), next(next) {
+	Inst(Opcode opcode, OpKind kind, ClassFile* constPool, Inst* prev = NULL, Inst* next = NULL) :
+			opcode(opcode), kind(kind), _offset(0), constPool(constPool), prev(prev), next(next) {
 	}
 
 	virtual ~Inst();
@@ -322,6 +319,14 @@ class LabelInst: public Inst {
 	friend class InstList;
 public:
 
+	LabelInst(ClassFile* constPool, int id) :
+			Inst(OPCODE_nop, KIND_LABEL, constPool), offset(0), deltaOffset(0), id(
+					id), isBranchTarget(false), isTryStart(false), isTryEnd(
+					false), isCatchHandler(false) {
+	}
+
+	~LabelInst();
+
 	u2 offset;
 	u2 deltaOffset;
 	int id;
@@ -329,16 +334,6 @@ public:
 	bool isTryStart;
 	bool isTryEnd;
 	bool isCatchHandler;
-
-private:
-
-	virtual ~LabelInst();
-
-	LabelInst(ClassFile* constPool, int id) :
-			Inst(OPCODE_nop, KIND_LABEL, constPool), offset(0), deltaOffset(0), id(
-					id), isBranchTarget(false), isTryStart(false), isTryEnd(
-					false), isCatchHandler(false) {
-	}
 
 };
 
@@ -348,13 +343,13 @@ private:
 class ZeroInst: public Inst {
 	friend class InstList;
 
-private:
+public:
 
 	ZeroInst(Opcode opcode, ClassFile* constPool) :
 			Inst(opcode, KIND_ZERO, constPool) {
 	}
 
-	virtual ~ZeroInst();
+	~ZeroInst();
 };
 
 /**
@@ -364,13 +359,12 @@ class PushInst: public Inst {
 	friend class InstList;
 
 public:
-	int value;
-
-private:
 
 	PushInst(Opcode opcode, OpKind kind, int value, ClassFile* constPool) :
 			Inst(opcode, kind, constPool), value(value) {
 	}
+
+	int value;
 };
 
 /**
@@ -380,13 +374,12 @@ class LdcInst: public Inst {
 	friend class InstList;
 
 public:
-	ConstIndex valueIndex;
-
-private:
 
 	LdcInst(Opcode opcode, ConstIndex valueIndex, ClassFile* constPool) :
 			Inst(opcode, KIND_LDC, constPool), valueIndex(valueIndex) {
 	}
+
+	ConstIndex valueIndex;
 };
 
 /**
@@ -396,13 +389,12 @@ class VarInst: public Inst {
 	friend class InstList;
 
 public:
-	u1 lvindex;
-
-private:
 
 	VarInst(Opcode opcode, u1 lvindex, ClassFile* constPool) :
 			Inst(opcode, KIND_VAR, constPool), lvindex(lvindex) {
 	}
+
+	u1 lvindex;
 };
 
 /**
@@ -412,14 +404,13 @@ class IincInst: public Inst {
 	friend class InstList;
 
 public:
-	u1 index;
-	u1 value;
-
-private:
 
 	IincInst(u1 index, u1 value, ClassFile* constPool) :
 			Inst(OPCODE_iinc, KIND_IINC, constPool), index(index), value(value) {
 	}
+
+	u1 index;
+	u1 value;
 
 };
 
@@ -430,6 +421,22 @@ class WideInst: public Inst {
 	friend class InstList;
 
 public:
+
+	WideInst(Opcode subOpcode, u2 lvindex, ClassFile* constPool) :
+    Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(subOpcode) {
+		if (subOpcode == OPCODE_ret) {
+			throw JnifException("Ret found in wide instruction!!!", "no bt");
+		}
+
+		var.lvindex = lvindex;
+	}
+
+	WideInst(u2 index, u2 value, ClassFile* constPool) :
+    Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(OPCODE_iinc) {
+		iinc.index = index;
+		iinc.value = value;
+	}
+
 	Opcode subOpcode;
 
 	union {
@@ -442,23 +449,6 @@ public:
 		} iinc;
 	};
 
-private:
-
-	WideInst(Opcode subOpcode, u2 lvindex, ClassFile* constPool) :
-			Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(subOpcode) {
-		if (subOpcode == OPCODE_ret) {
-			throw JnifException("Ret found in wide instruction!!!", "no bt");
-		}
-
-		var.lvindex = lvindex;
-	}
-
-	WideInst(u2 index, u2 value, ClassFile* constPool) :
-			Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(OPCODE_iinc) {
-		iinc.index = index;
-		iinc.value = value;
-	}
-
 };
 
 /**
@@ -469,13 +459,13 @@ class JumpInst: public Inst {
 
 public:
 
-	Inst* label2;
-
-private:
 
 	JumpInst(Opcode opcode, LabelInst* targetLabel, ClassFile* constPool) :
 			Inst(opcode, KIND_JUMP, constPool), label2(targetLabel) {
 	}
+
+	Inst* label2;
+
 };
 
 /**
@@ -485,13 +475,13 @@ class FieldInst: public Inst {
 	friend class InstList;
 
 public:
-	ConstIndex fieldRefIndex;
-
-private:
 
 	FieldInst(Opcode opcode, ConstIndex fieldRefIndex, ClassFile* constPool) :
 			Inst(opcode, KIND_FIELD, constPool), fieldRefIndex(fieldRefIndex) {
 	}
+
+	ConstIndex fieldRefIndex;
+
 };
 
 /**
@@ -501,13 +491,13 @@ class InvokeInst: public Inst {
 	friend class InstList;
 
 public:
-	ConstIndex methodRefIndex;
-
-private:
 
 	InvokeInst(Opcode opcode, ConstIndex methodRefIndex, ClassFile* constPool) :
 			Inst(opcode, KIND_INVOKE, constPool), methodRefIndex(methodRefIndex) {
 	}
+
+	ConstIndex methodRefIndex;
+
 };
 
 /**
@@ -517,16 +507,16 @@ class InvokeInterfaceInst: public Inst {
 	friend class InstList;
 
 public:
-	u2 interMethodRefIndex;
-	u1 count;
-
-private:
 
 	InvokeInterfaceInst(ConstIndex interMethodRefIndex, u1 count,
 			ClassFile* constPool) :
 			Inst(OPCODE_invokeinterface, KIND_INVOKEINTERFACE, constPool), interMethodRefIndex(
 					interMethodRefIndex), count(count) {
 	}
+
+	u2 interMethodRefIndex;
+	u1 count;
+
 };
 
 /**
@@ -537,6 +527,10 @@ class InvokeDynamicInst: public Inst {
 
 public:
 
+	InvokeDynamicInst(ConstIndex callSite, ClassFile* constPool) :
+    Inst(OPCODE_invokedynamic, KIND_INVOKEDYNAMIC, constPool), _callSite(callSite) {
+	}
+
 	/**
 	 * Returns the call site for this invokedynamic instruction.
 	 */
@@ -545,11 +539,6 @@ public:
 	}
 
 private:
-
-	InvokeDynamicInst(ConstIndex callSite, ClassFile* constPool) :
-			Inst(OPCODE_invokedynamic, KIND_INVOKEDYNAMIC, constPool), _callSite(
-					callSite) {
-	}
 
 	ConstIndex _callSite;
 };
@@ -562,16 +551,14 @@ class TypeInst: public Inst {
 
 public:
 
+	TypeInst(Opcode opcode, ConstIndex classIndex, ClassFile* constPool) :
+			Inst(opcode, KIND_TYPE, constPool), classIndex(classIndex) {
+	}
+
 	/**
 	 * Index in the constant pool of a class entry.
 	 */
 	ConstIndex classIndex;
-
-private:
-
-	TypeInst(Opcode opcode, ConstIndex classIndex, ClassFile* constPool) :
-			Inst(opcode, KIND_TYPE, constPool), classIndex(classIndex) {
-	}
 
 };
 
@@ -582,13 +569,12 @@ class NewArrayInst: public Inst {
 	friend class InstList;
 
 public:
-	u1 atype;
-
-private:
 
 	NewArrayInst(Opcode opcode, u1 atype, ClassFile* constPool) :
 			Inst(opcode, KIND_NEWARRAY, constPool), atype(atype) {
 	}
+
+	u1 atype;
 
 };
 
@@ -599,16 +585,14 @@ class MultiArrayInst: public Inst {
 	friend class InstList;
 
 public:
-	ConstIndex classIndex;
-	u1 dims;
-
-private:
 
 	MultiArrayInst(Opcode opcode, ConstIndex classIndex, u1 dims,
 			ClassFile* constPool) :
-			Inst(opcode, KIND_MULTIARRAY, constPool), classIndex(classIndex), dims(
-					dims) {
+			Inst(opcode, KIND_MULTIARRAY, constPool), classIndex(classIndex), dims(dims) {
 	}
+
+	ConstIndex classIndex;
+	u1 dims;
 
 };
 
@@ -634,6 +618,8 @@ private:
 			Inst(opcode, kind, constPool) {
 	}
 
+  ~SwitchInst();
+
 };
 
 /**
@@ -644,16 +630,15 @@ class TableSwitchInst: public SwitchInst {
 
 public:
 
+	TableSwitchInst(LabelInst* def, int low, int high, ClassFile* constPool) :
+    SwitchInst(OPCODE_tableswitch, KIND_TABLESWITCH, constPool), def(def), low(low), high(high) {
+	}
+
+  ~TableSwitchInst();
+
 	Inst* def;
 	int low;
 	int high;
-
-private:
-
-	TableSwitchInst(LabelInst* def, int low, int high, ClassFile* constPool) :
-			SwitchInst(OPCODE_tableswitch, KIND_TABLESWITCH, constPool), def(
-					def), low(low), high(high) {
-	}
 
 };
 
@@ -664,17 +649,17 @@ class LookupSwitchInst: public SwitchInst {
 	friend class InstList;
 
 public:
+
+	LookupSwitchInst(LabelInst* def, u4 npairs, ClassFile* constPool) :
+    SwitchInst(OPCODE_lookupswitch, KIND_LOOKUPSWITCH, constPool), defbyte(def), npairs(npairs) {
+	}
+
+  ~LookupSwitchInst();
+
 	Inst* defbyte;
 	u4 npairs;
 	std::vector<u4> keys;
-	//std::vector<Inst*> targets;
 
-private:
-
-	LookupSwitchInst(LabelInst* def, u4 npairs, ClassFile* constPool) :
-			SwitchInst(OPCODE_lookupswitch, KIND_LOOKUPSWITCH, constPool), defbyte(
-					def), npairs(npairs) {
-	}
 };
 
 std::ostream& operator<<(std::ostream& os, const Inst& inst);

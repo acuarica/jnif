@@ -53,7 +53,7 @@ public:
 			Attr* attr = *it;
 			if (attr->kind == ATTR_SMT) {
 				code->attrs.attrs.erase(it);
-				delete attr;
+				// delete attr;
 				break;
 			}
 		}

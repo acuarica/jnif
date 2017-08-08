@@ -5,10 +5,11 @@
  *      Author: luigi
  */
 #include "Arena.hpp"
-//#include "Error.hpp"
+#include "Error.hpp"
 #include <stdlib.h>
+#include <stdio.h>
 
-#define BLOCK_SIZE (1024*1024)
+constexpr int BLOCK_SIZE = 1024*1024;
 
 namespace jnif {
 
@@ -17,14 +18,18 @@ public:
 
 	Block(Block* next) :
 			_next(next), _buffer(malloc(BLOCK_SIZE)), _position(0) {
+    Error::check(_buffer != NULL, "Block alloc is NULL");
 	}
 
 	~Block() {
+    Error::trace("Block::~Block");
 		free(_buffer);
 	}
 
 	void* alloc(int size) {
-		if (_position + size <= (BLOCK_SIZE)) {
+    Error::assert(size <= BLOCK_SIZE, "Size too large to be allocated in a block: ", size);
+
+		if (_position + size <= BLOCK_SIZE) {
 			void* offset = (char*) _buffer + _position;
 			_position += size;
 			return offset;
@@ -43,12 +48,15 @@ Arena::Arena() :
 }
 
 Arena::~Arena() {
+  Error::trace("Arena::~Arena");
+
 	for (Block* block = _head; block != NULL;) {
-		free(block->_buffer);
 		Block* next = block->_next;
-		free(block);
+		delete block;
 		block = next;
 	}
+
+  Error::trace("END Arena::~Arena");
 }
 
 void* Arena::alloc(int size) {
@@ -58,15 +66,9 @@ void* Arena::alloc(int size) {
 		res = _head->alloc(size);
 	}
 
-	//Error::assert(res != NULL, "alloc == NULL");
+	Error::assert(res != NULL, "alloc == NULL");
 
 	return res;
-}
-
-template<typename T, typename ... TArgs>
-T* Arena::create(const TArgs& ... args) {
-	void* buf = alloc(sizeof(T));
-	return new (buf) T(args ...);
 }
 
 }

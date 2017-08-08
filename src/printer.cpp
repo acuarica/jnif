@@ -88,7 +88,6 @@ std::ostream& operator<<(std::ostream& os, const ConstTag& tag) {
 
 std::ostream& operator <<(std::ostream& os, Opcode opcode) {
 	Error::assert(opcode >= 0, "");
-	Error::assert(opcode < 256, "");
 
 	os << OPCODES[opcode];
 	return os;
@@ -99,8 +98,6 @@ const char* yesNo(bool value) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Inst& inst) {
-	Error::assert(&inst != NULL, "Invalid reference for inst");
-
 	int offset = inst._offset;
 
 	if (inst.kind == KIND_LABEL) {
@@ -253,8 +250,6 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 		os << "[]";
 	}
 
-	//os << "init: " << type.init;
-	//os << ", id: " << type.typeId;
 	if (type.isTop()) {
 		os << "Top";
 	} else if (type.isIntegral()) {
@@ -270,7 +265,6 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 	} else if (type.isUninitThis()) {
 		os << "Uninitialized this";
 	} else if (type.isObject()) {
-		//os << "" << type.getClassName() << "&@" << type.getCpIndex();
 		os << "" << type.getClassName() << "&";
 	} else if (type.isUninit()) {
 		u2 offset = type.uninit.label->label()->offset;
@@ -283,39 +277,6 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 	}
 
 	return os;
-
-//	switch (type.tag) {
-//		case Type::TYPE_TOP:
-//			return os << "Top";
-//		case Type::TYPE_INTEGER:
-//			return os << "Int";
-//		case Type::TYPE_FLOAT:
-//			return os << "Float";
-//		case Type::TYPE_LONG:
-//			return os << "Long";
-//		case Type::TYPE_DOUBLE:
-//			return os << "Double";
-//		case Type::TYPE_NULL:
-//			return os << "Null";
-//		case Type::TYPE_UNINITTHIS:
-//			return os << "Uninitialized this";
-//		case Type::TYPE_OBJECT:
-//			return os << "Object:" << type.getClassName() << ";";
-//		case Type::TYPE_UNINIT:
-//			return os << "Uninitialized offset";
-//		case Type::TYPE_VOID:
-//			return os << "Void";
-//		case Type::TYPE_BOOLEAN:
-//			return os << "Boolean";
-//		case Type::TYPE_BYTE:
-//			return os << "Byte";
-//		case Type::TYPE_CHAR:
-//			return os << "Char";
-//		case Type::TYPE_SHORT:
-//			return os << "Short";
-//	}
-
-//	return os << "UNKNOWN TYPE!!!";
 }
 
 class AccessFlagsPrinter {
@@ -438,7 +399,7 @@ public:
 		}
 		dec();
 
-		printAttrs(cf);
+		printAttrs(cf.attrs);
 
 		dec();
 	}

@@ -115,7 +115,7 @@ ControlFlowGraph::ControlFlowGraph(InstList& instList, TypeFactory& typeFactory)
 }
 
 ControlFlowGraph::~ControlFlowGraph() {
-	//cerr << "~cfg";
+  Error::trace("~ControlFlowGraph");
 
 	for (auto bb : *this) {
 		delete bb;

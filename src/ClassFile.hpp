@@ -10,9 +10,8 @@
 
 #include "ConstPool.hpp"
 #include "Version.hpp"
-#include "CodeAttr.hpp"
+#include "Attr.hpp"
 #include "Inst.hpp"
-
 #include "Arena.hpp"
 
 namespace jnif {
@@ -71,6 +70,13 @@ class Method: public Member {
 
 public:
 
+	Method(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex,
+         ClassFile* constPool) :
+    Member(accessFlags, nameIndex, descIndex, constPool) {
+	}
+
+  ~Method();
+
 	bool hasCode() const {
 		for (Attr* attr : attrs) {
 			if (attr->kind == ATTR_CODE) {
@@ -110,13 +116,6 @@ public:
 	 */
 	friend std::ostream& operator<<(std::ostream& os, const Method& m);
 
-private:
-
-	Method(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex,
-			ClassFile* constPool) :
-			Member(accessFlags, nameIndex, descIndex, constPool) {
-	}
-
 };
 
 class IClassPath {
@@ -141,19 +140,19 @@ enum Magic {
 /**
  * Models a Java Class File following the specification of the JVM version 7.
  */
-class ClassFile: public ConstPool, public Attrs {
+class ClassFile: public ConstPool {
 public:
 
 	/**
 	 * Constructs a default class file given the class name, the super class
 	 * name and the access flags.
 	 */
-	ClassFile(const char* className, const char* superClassName =
-			"java/lang/Object", u2 accessFlags = CLASS_PUBLIC, u2 majorVersion =
-			51, u2 minorVersion = 0) :
-			version(majorVersion, minorVersion), accessFlags(accessFlags), thisClassIndex(
-					addClass(className)), superClassIndex(
-					addClass(superClassName)) {
+	ClassFile(const char* className, const char* superClassName = "java/lang/Object", u2 accessFlags = CLASS_PUBLIC, u2 majorVersion = 51, u2 minorVersion = 0) :
+			version(majorVersion, minorVersion),
+      accessFlags(accessFlags),
+      thisClassIndex(addClass(className)),
+      superClassIndex(addClass(superClassName))
+  {
 	}
 
 	/**
@@ -259,21 +258,13 @@ public:
 	void write(u1* classFileData, int classFileLen);
 
 	/**
-	 *
-	 */
-//	template<typename TAllocFunc>
-//	void write(u1** classFileData, int* classFileSize, TAllocFunc allocFunc) {
-//		*classFileSize = computeSize();
-//		*classFileData = allocFunc(*classFileSize);
-//		write(*classFileData, *classFileSize);
-//	}
-	/**
 	 * Export this class file to dot format.
 	 *
 	 * @see www.graphviz.org
 	 */
 	void dot(std::ostream& os) const;
 
+  // Must be the first member, as it is needed for the destructors of the other members.
 	Arena _arena;
 
 	Version version;
@@ -283,6 +274,7 @@ public:
 	std::vector<ConstIndex> interfaces;
 	std::vector<Field*> fields;
 	std::vector<Method*> methods;
+  Attrs attrs;
 };
 
 std::ostream& operator<<(std::ostream& os, const ClassFile& classFile);

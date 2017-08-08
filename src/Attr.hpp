@@ -31,8 +31,6 @@ public:
 	u4 len;
 	ClassFile* const constPool;
 
-//	virtual void accept(Visitor* v) = 0;
-
 	virtual ~Attr() {
 	}
 
@@ -57,7 +55,7 @@ public:
 	Attrs() {
 	}
 
-	~Attrs();
+	virtual ~Attrs();
 
 	Attr* add(Attr* attr) {
 		attrs.push_back(attr);
@@ -104,9 +102,6 @@ public:
 			Attr(ATTR_UNKNOWN, nameIndex, len, constPool), data(data) {
 	}
 
-//	void accept(Visitor* v) {
-//		v->visit(*this);
-//	}
 };
 
 /**
@@ -265,8 +260,7 @@ public:
 
 	SourceFileAttr(ConstIndex nameIndex, ConstIndex sourceFileIndex,
 			ClassFile* constPool) :
-			Attr(ATTR_SOURCEFILE, nameIndex, 2, constPool), sourceFileIndex(
-					sourceFileIndex) {
+			Attr(ATTR_SOURCEFILE, nameIndex, 2, constPool), sourceFileIndex(sourceFileIndex) {
 	}
 
 };

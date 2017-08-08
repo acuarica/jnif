@@ -12,12 +12,16 @@ using namespace std;
 namespace jnif {
 
 Attrs::~Attrs() {
+  Error::trace("~Attrs");
+
 	for (Attr* attr : attrs) {
-		delete attr;
+		attr->~Attr();
 	}
 }
 
 CodeAttr::~CodeAttr() {
+  Error::trace("~CodeAttr");
+
 	if (cfg != NULL) {
 		delete cfg;
 	}

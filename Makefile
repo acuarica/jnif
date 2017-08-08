@@ -23,9 +23,7 @@ else
   $(error Unrecognized environment. Only supported Darwin and Linux)
 endif
 
-CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O0 -Wno-unused-value
-#-Weverything -Wno-padded
-
+CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O0
 
 #
 # Rules to make $(LIBJNIF)
@@ -40,7 +38,6 @@ LIBJNIF_OBJS=$(LIBJNIF_SRCS:$(LIBJNIF_SRC)/%=$(LIBJNIF_BUILD)/%.o)
 $(LIBJNIF): $(LIBJNIF_OBJS)
 	$(AR) cr $@ $^
 
-#$(LIBJNIF_BUILD)/%.cpp.o: $(LIBJNIF_SRC)/%.cpp $(LIBJNIF_HPPS) | $(LIBJNIF_BUILD)
 $(LIBJNIF_BUILD)/%.cpp.o: $(LIBJNIF_SRC)/%.cpp | $(LIBJNIF_BUILD)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
@@ -69,7 +66,7 @@ $(TESTUNIT_BUILD):
 	mkdir -p $@
 
 #
-# Rules to make $(TESTCOVERAGE)
+# Rules for testcoverage
 #
 TESTCOVERAGE=$(BUILD)/testcoverage.bin
 TESTCOVERAGE_BUILD=$(BUILD)/testcoverage
@@ -78,17 +75,53 @@ TESTCOVERAGE_HPPS=$(wildcard $(TESTCOVERAGE_SRC)/*.hpp) $(LIBJNIF_HPPS)
 TESTCOVERAGE_SRCS=$(wildcard $(TESTCOVERAGE_SRC)/*.cpp)
 TESTCOVERAGE_OBJS=$(TESTCOVERAGE_SRCS:$(TESTCOVERAGE_SRC)/%=$(TESTCOVERAGE_BUILD)/%.o)
 
-$(TESTCOVERAGE): CXXFLAGS+=-lz -lsqlite3
+# JARS=$(wildcard jars/*.jar)
+# DIRS=$(JARS:%.jar=$(BUILD)/%)
+# runcoverage: cp=$(BUILD)
+# runcoverage: test=
+runcoverage: $(TESTCOVERAGE) # $(DIRS)
+	$(TESTCOVERAGE) classes
+
+# $(BUILD)/jars/%: jars/%.jar | $(BUILD)/jars
+# unzip $< -d $@
+
+# $(BUILD)/jars:
+# mkdir -p $@
+
+testcoverage: $(TESTCOVERAGE)
+
 $(TESTCOVERAGE): $(TESTCOVERAGE_OBJS) $(LIBJNIF)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(LDFLAGS) -o $@ $^
 
 $(TESTCOVERAGE_BUILD)/%.cpp.o: $(TESTCOVERAGE_SRC)/%.cpp $(TESTCOVERAGE_HPPS) | $(TESTCOVERAGE_BUILD)
 	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -c -o $@ $<
 
-$(TESTCOVERAGE_BUILD)/%.c.o: $(TESTCOVERAGE_SRC)/%.c | $(TESTCOVERAGE_BUILD)
-	$(CC) -c -o $@ $<
-
 $(TESTCOVERAGE_BUILD):
+	mkdir -p $@
+
+#
+# Rules for testmaven
+#
+TESTMAVEN=$(BUILD)/testmaven.bin
+TESTMAVEN_BUILD=$(BUILD)/testmaven
+TESTMAVEN_SRC=src-testmaven
+TESTMAVEN_HPPS=$(wildcard $(TESTMAVEN_SRC)/*.hpp) $(LIBJNIF_HPPS)
+TESTMAVEN_SRCS=$(wildcard $(TESTMAVEN_SRC)/*.cpp)
+TESTMAVEN_OBJS=$(TESTMAVEN_SRCS:$(TESTMAVEN_SRC)/%=$(TESTMAVEN_BUILD)/%.o)
+
+runmaven: $(TESTMAVEN)
+	$(TESTMAVEN) /Volumes/Data/work/mavends/out/mavenindex.sqlite3 /Volumes/Data/work/mavends/cache/repo "select max(idate), * from artifact_jar group by groupid, artifactid" /Volumes/Data/work/mavends/out/mavenclass.sqlite3
+
+testmaven: $(TESTMAVEN)
+
+$(TESTMAVEN): LDFLAGS+=-lz -lsqlite3
+$(TESTMAVEN): $(TESTMAVEN_OBJS) $(LIBJNIF)
+	$(CXX) $(LDFLAGS) -o $@ $^
+
+$(TESTMAVEN_BUILD)/%.cpp.o: $(TESTMAVEN_SRC)/%.cpp $(TESTMAVEN_HPPS) | $(TESTMAVEN_BUILD)
+	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -c -o $@ $<
+
+$(TESTMAVEN_BUILD):
 	mkdir -p $@
 
 #
@@ -172,22 +205,6 @@ rununit: $(TESTUNIT)
 	$(TESTUNIT)
 
 #
-# runcoverage
-#
-JARS=$(wildcard jars/*.jar)
-DIRS=$(JARS:%.jar=$(BUILD)/%)
-runcoverage: cp=$(BUILD)
-runcoverage: test=
-runcoverage: $(TESTCOVERAGE) $(DIRS)
-	$(TESTCOVERAGE) /Volumes/Data/work/mavends/out/mavenindex.sqlite3 /Volumes/Data/work/mavends/cache/repo "select max(idate), * from artifact_jar group by groupid, artifactid" /Volumes/Data/work/mavends/out/mavenclass.sqlite3
-
-$(BUILD)/jars/%: jars/%.jar | $(BUILD)/jars
-	unzip $< -d $@
-
-$(BUILD)/jars:
-	mkdir -p $@
-
-#
 # Rules to run $(INSTRSERVER)
 #
 start: CLASSPREFIX=ch.usi.inf.sape.frheap.FrHeapInstrumenter
@@ -245,7 +262,7 @@ $(DACAPO_SCRATCH):
 scala: JARAPP=jars/scala-benchmark-suite-0.1.0-20120216.103539-3.jar --scratch-directory $(DACAPO_SCRATCH) $(BENCH)
 scala: APP=scala-$(BENCH)
 scala: | $(DACAPO_SCRATCH)
-scala: $(BACKEND) 
+scala: $(BACKEND)
 
 runeval:
 	$(MAKE) cleaneval $(foreach r,$(shell seq 1 $(times)),\
@@ -297,9 +314,9 @@ $(BUILD)/%-embed.pdf: $(BUILD)/%.pdf charts/charts.r
 docs:
 	doxygen
 
-#dots: 
+#dots:
 DOTS=$(shell find build -name *.dot)
-#dots: 
+#dots:
 PNGS=$(DOTS:%.dot=%.png)
 dots: $(PNGS)
 

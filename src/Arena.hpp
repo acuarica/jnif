@@ -19,7 +19,16 @@ public:
 	void* alloc(int size);
 
 	template<typename T, typename ... TArgs>
-	T* create(const TArgs& ... args);
+  T* create(const TArgs& ... args) {
+    void* buf = alloc(sizeof(T));
+    return new (buf) T(args ...);
+  }
+
+	template<typename T>
+  T* newArray(int size) {
+    void* buf = alloc(sizeof(T) * size);
+    return new (buf) T[size];
+  }
 
 private:
 

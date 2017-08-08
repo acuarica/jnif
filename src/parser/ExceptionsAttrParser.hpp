@@ -18,7 +18,7 @@ public:
 
 	static constexpr const char* AttrName = "Exceptions";
 
-	Attr* parse(BufferReader& br, ClassFile& constPool, ConstIndex nameIndex,
+	Attr* parse(BufferReader& br, ClassFile& cp, ConstIndex nameIndex,
 			void*) {
 		u2 len = br.readu2();
 
@@ -29,7 +29,7 @@ public:
 			es.push_back(exceptionIndex);
 		}
 
-		Attr* attr = new ExceptionsAttr(nameIndex, &constPool, es);
+		Attr* attr = cp._arena.create<ExceptionsAttr>(nameIndex, &cp, es);
 
 		return attr;
 	}

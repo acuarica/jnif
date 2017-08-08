@@ -14,15 +14,17 @@ class LabelManager {
 public:
 
 	LabelManager(u4 codeLen, InstList& instList) :
-			codeLen(codeLen), instList(instList), labels(
-					new LabelInst*[codeLen + 1]) {
+			codeLen(codeLen),
+      instList(instList),
+      labels(instList.constPool->_arena.newArray<LabelInst*>(codeLen + 1))
+  {
 		for (u4 i = 0; i < codeLen + 1; i++) {
 			labels[i] = NULL;
 		}
 	}
 
 	~LabelManager() {
-		delete[] labels;
+    // Error::trace("~LabelManager");
 	}
 
 	LabelInst* createLabel(int labelPos) {

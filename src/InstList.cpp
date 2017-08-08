@@ -41,23 +41,17 @@ InstList::Iterator& InstList::Iterator::operator--() {
 }
 
 InstList::~InstList() {
-//	for (Inst* inst = first; inst != NULL;) {
-//		Inst* next = inst->next;
-//		if (!inst->isLabel()) {
-//			delete inst;
-//		}
-//		inst = next;
-//	}
+  Error::trace("~InstList");
 
-//for (LabelInst* inst : _labelPool) {
-//		delete inst;
-	//}
+	for (Inst* inst = first; inst != NULL;) {
+		Inst* next = inst->next;
+    inst->~Inst();
+		inst = next;
+	}
 }
 
 LabelInst* InstList::createLabel() {
-	//LabelInst* inst = new LabelInst(constPool, nextLabelId);
 	LabelInst* inst = _create<LabelInst>(constPool, nextLabelId);
-	//_labelPool.push_back(inst);
 
 	nextLabelId++;
 	return inst;
@@ -151,64 +145,49 @@ JumpInst* InstList::addJump(Opcode opcode, LabelInst* targetLabel, Inst* pos) {
 	return inst;
 }
 
-FieldInst* InstList::addField(Opcode opcode, ConstIndex fieldRefIndex,
-		Inst* pos) {
+FieldInst* InstList::addField(Opcode opcode, ConstIndex fieldRefIndex, Inst* pos) {
 	FieldInst* inst = _create<FieldInst>(opcode, fieldRefIndex, constPool);
 	addInst(inst, pos);
-
 	return inst;
 }
 
-InvokeInst* InstList::addInvoke(Opcode opcode, ConstIndex methodRefIndex,
-		Inst* pos) {
+InvokeInst* InstList::addInvoke(Opcode opcode, ConstIndex methodRefIndex, Inst* pos) {
 	InvokeInst* inst = _create<InvokeInst>(opcode, methodRefIndex, constPool);
 	addInst(inst, pos);
-
 	return inst;
 }
 
-InvokeInterfaceInst* InstList::addInvokeInterface(
-		ConstIndex interMethodRefIndex, u1 count, Inst* pos) {
-	InvokeInterfaceInst* inst = _create<InvokeInterfaceInst>(
-			interMethodRefIndex, count, constPool);
+InvokeInterfaceInst* InstList::addInvokeInterface(ConstIndex interMethodRefIndex, u1 count, Inst* pos) {
+	InvokeInterfaceInst* inst = _create<InvokeInterfaceInst>(interMethodRefIndex, count, constPool);
 	addInst(inst, pos);
-
 	return inst;
 }
 
 InvokeDynamicInst* InstList::addInvokeDynamic(ConstIndex callSite, Inst* pos) {
 	InvokeDynamicInst* inst = _create<InvokeDynamicInst>(callSite, constPool);
 	addInst(inst, pos);
-
 	return inst;
 }
 
 TypeInst* InstList::addType(Opcode opcode, ConstIndex classIndex, Inst* pos) {
 	TypeInst* inst = _create<TypeInst>(opcode, classIndex, constPool);
 	addInst(inst, pos);
-
 	return inst;
 }
 
 NewArrayInst* InstList::addNewArray(u1 atype, Inst* pos) {
-	NewArrayInst* inst = _create<NewArrayInst>(OPCODE_newarray, atype,
-			constPool);
+	NewArrayInst* inst = _create<NewArrayInst>(OPCODE_newarray, atype, constPool);
 	addInst(inst, pos);
-
 	return inst;
 }
 
-MultiArrayInst* InstList::addMultiArray(ConstIndex classIndex, u1 dims,
-		Inst* pos) {
-	MultiArrayInst* inst = _create<MultiArrayInst>(OPCODE_multianewarray,
-			classIndex, dims, constPool);
+MultiArrayInst* InstList::addMultiArray(ConstIndex classIndex, u1 dims, Inst* pos) {
+	MultiArrayInst* inst = _create<MultiArrayInst>(OPCODE_multianewarray, classIndex, dims, constPool);
 	addInst(inst, pos);
-
 	return inst;
 }
 
-TableSwitchInst* InstList::addTableSwitch(LabelInst* def, int low, int high,
-		Inst* pos) {
+TableSwitchInst* InstList::addTableSwitch(LabelInst* def, int low, int high, Inst* pos) {
 	TableSwitchInst* inst = _create<TableSwitchInst>(def, low, high, constPool);
 	addInst(inst, pos);
 	branchesCount++;
@@ -218,8 +197,7 @@ TableSwitchInst* InstList::addTableSwitch(LabelInst* def, int low, int high,
 	return inst;
 }
 
-LookupSwitchInst* InstList::addLookupSwitch(LabelInst* def, u4 npairs,
-		Inst* pos) {
+LookupSwitchInst* InstList::addLookupSwitch(LabelInst* def, u4 npairs, Inst* pos) {
 	LookupSwitchInst* inst = _create<LookupSwitchInst>(def, npairs, constPool);
 	addInst(inst, pos);
 	branchesCount++;
@@ -229,16 +207,9 @@ LookupSwitchInst* InstList::addLookupSwitch(LabelInst* def, u4 npairs,
 	return inst;
 }
 
-template<typename T, typename ... TArgs>
-T* InstList::_create(const TArgs& ... args) {
-	void* buf = constPool->_arena.alloc(sizeof(T));
-	return new (buf) T(args ...);
-
-	//return constPool->_arena.create<TInst, TArgs ...>(args ...);
-	//void* buf = _arena.alloc(sizeof(TInst));
-	//return new (buf) TInst(args ...);
-	//return new (_arena) TInst(args ...);
-	//return new TInst(args ...);
+template<typename TInst, typename ... TArgs>
+TInst* InstList::_create(const TArgs& ... args) {
+  return constPool->_arena.create<TInst>(args ...);
 }
 
 void InstList::addInst(Inst* inst, Inst* pos) {
@@ -289,4 +260,3 @@ void InstList::addInst(Inst* inst, Inst* pos) {
 }
 
 }
-

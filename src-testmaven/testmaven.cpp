@@ -64,21 +64,47 @@ int do_extract_currentfile(unzFile uf) {
   if (err < 0) {
     printf("error %d with zipfile in unzReadCurrentFile\n",err);
   } else if (err == size) {
-    // try {
-      // ClassFile cf(buf, size);
+    try {
+      ClassFile cf(buf, size);
 
-      // sqlite3_bind_text(insclass, 1, cf.getThisClassName(), -1, SQLITE_STATIC);
-      // sqlite3_bind_int(insclass, 2, 21);
-      // sqlite3_bind_int(insclass, 3, 21);
-      // sqlite3_bind_int(insclass, 4, 21);
-      // sqlite3_bind_int(insclass, 5, 21);
-      // sqlite3_bind_int(insclass, 6, 21);
+      sqlite3_bind_text(insclass, 1, cf.getThisClassName(), -1, SQLITE_STATIC);
+      sqlite3_bind_int(insclass, 2, 0);
+      sqlite3_bind_int(insclass, 3, 21);
+      sqlite3_bind_int(insclass, 4, 21);
+      sqlite3_bind_int(insclass, 5, 21);
+      sqlite3_bind_int(insclass, 6, 21);
 
-      // sqlite3_step(insclass);
-      // sqlite3_reset(insclass);
-    // } catch (const JnifException& e) {
-      // cerr << e << endl;
-    // }
+      sqlite3_step(insclass);
+      sqlite3_reset(insclass);
+
+      for (Method* m : cf.methods) {
+        sqlite3_bind_int(insmethod, 1, 21);
+        sqlite3_bind_int(insmethod, 2, 21);
+        sqlite3_bind_text(insmethod, 3, m->getName().c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_int(insmethod, 4, 21);
+        sqlite3_bind_int(insmethod, 5, 21);
+        sqlite3_bind_int(insmethod, 6, 21);
+
+        sqlite3_step(insmethod);
+        sqlite3_reset(insmethod);
+
+        if (m->hasCode()) {
+          CodeAttr* code = m->codeAttr();
+          for (Inst* inst : code->instList) {
+            stringstream ss;
+            ss << *inst;
+            sqlite3_bind_int(inscode, 1, 42);
+            sqlite3_bind_int(inscode, 2, inst->opcode);
+            sqlite3_bind_text(inscode, 3, ss.str().c_str(), -1, SQLITE_STATIC);
+
+            sqlite3_step(inscode);
+            sqlite3_reset(inscode);
+          }
+        }
+      }
+    } catch (const JnifException& e) {
+      cerr << e << endl;
+    }
 
     err = UNZ_OK;
   } else {
@@ -114,43 +140,47 @@ void do_extract(unzFile uf) {
         if (i + 1 < gi.number_entry) {
             err = unzGoToNextFile(uf);
             if (err != UNZ_OK) {
-                printf("error %d with zipfile in unzGoToNextFile\n",err);
-                break;
+              fprintf(stderr, "error %d with zipfile in unzGoToNextFile\n",err);
+              break;
             }
         }
     }
 
     int classesc = gi.number_entry;
     sqlite3_bind_int(insjar, 3, classesc);
-    // printf("%d entries]\n", classesc);
+    fprintf(stderr, "%d classes]\n", classesc);
 }
 
 static int jarc = 0;
 
-static int callback(void* repo, int, char** argv, char**) {
+static int process(const char* repo, const char* path, const char* id){
   jarc++;
 
-  string jarpath = string((char*)repo) + "/" + argv[3];
+  string jarpath = string(repo) + "/" + path;
 
-  sqlite3_bind_text(insjar, 1, argv[2], -1, SQLITE_STATIC);
-  sqlite3_bind_text(insjar, 2, argv[3], -1, SQLITE_STATIC);
+  sqlite3_bind_text(insjar, 1, id, -1, SQLITE_STATIC);
+  sqlite3_bind_text(insjar, 2, path, -1, SQLITE_STATIC);
 
-  // printf("[#%d %s ...", jarc, jarpath.c_str());
+  fprintf(stderr, "[#%d %s ...", jarc, path);
 
   unzFile uf = unzOpen64(jarpath.c_str());
 
   if (uf == NULL) {
-    printf("CANTOPEN]\n");
+    fprintf(stderr, "CANTOPEN]\n");
     sqlite3_bind_text(insjar, 3, "CANTOPEN", -1, SQLITE_STATIC);
   } else {
     do_extract(uf);
     unzClose(uf);
   }
 
-  // sqlite3_step(insjar);
-  // sqlite3_reset(insjar);
+  sqlite3_step(insjar);
+  sqlite3_reset(insjar);
 
   return 0;
+}
+
+static int callback(void* repo, int, char** argv, char**) {
+  return process((const char*)repo, argv[3], argv[2]);
 }
 
 int main(int argc, const char* argv[]) {
@@ -162,10 +192,10 @@ int main(int argc, const char* argv[]) {
     return 1;
   }
 
-  printf("Maven Index DB: %s\n", argv[1]);
-  printf("Maven Repo: %s\n", argv[2]);
-  printf("Select Artifacts Query: %s\n", argv[3]);
-  printf("Maven Class DB: %s\n", argv[4]);
+  printf("* Maven Index DB: %s\n", argv[1]);
+  printf("* Maven Repo: %s\n", argv[2]);
+  printf("* Select Artifacts Query: %s\n", argv[3]);
+  printf("* Maven Class DB: %s\n", argv[4]);
 
   int rc = sqlite3_open(argv[1], &db);
   if (rc != SQLITE_OK) {
@@ -189,7 +219,6 @@ int main(int argc, const char* argv[]) {
   sqlite3_prepare_v2(bytecodedb, "insert into class (version, access, classname, signature, superclass, interfaces) values (?1, ?2, ?3, ?4, ?5, ?6)", -1, &insclass, NULL);
   sqlite3_prepare_v2(bytecodedb, "insert into method (classid, access, methodname, methoddesc, signature, exceptions) values (?1, ?2, ?3, ?4, ?5, ?6)", -1, &insmethod, NULL);
   sqlite3_prepare_v2(bytecodedb, "insert into code (methodid, opcode, args) values (?1, ?2, ?3)", -1, &inscode, NULL);
-
 
   rc = sqlite3_exec(db, argv[3], callback, (void*)argv[2], &zErrMsg);
   if (rc != SQLITE_OK) {

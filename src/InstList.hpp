@@ -63,24 +63,15 @@ public:
 	WideInst* addWideVar(Opcode varOpcode, u2 lvindex, Inst* pos = NULL);
 	WideInst* addWideIinc(u2 index, u2 value, Inst* pos = NULL);
 	JumpInst* addJump(Opcode opcode, LabelInst* targetLabel, Inst* pos = NULL);
-	FieldInst* addField(Opcode opcode, ConstIndex fieldRefIndex, Inst* pos =
-	NULL);
-	InvokeInst* addInvoke(Opcode opcode, ConstIndex methodRefIndex, Inst* pos =
-	NULL);
-	InvokeInterfaceInst* addInvokeInterface(ConstIndex interMethodRefIndex,
-			u1 count, Inst* pos = NULL);
+	FieldInst* addField(Opcode opcode, ConstIndex fieldRefIndex, Inst* pos = NULL);
+	InvokeInst* addInvoke(Opcode opcode, ConstIndex methodRefIndex, Inst* pos = NULL);
+	InvokeInterfaceInst* addInvokeInterface(ConstIndex interMethodRefIndex, u1 count, Inst* pos = NULL);
 	InvokeDynamicInst* addInvokeDynamic(ConstIndex callSite, Inst* pos = NULL);
 	TypeInst* addType(Opcode opcode, ConstIndex classIndex, Inst* pos = NULL);
-
 	NewArrayInst* addNewArray(u1 atype, Inst* pos = NULL);
-	MultiArrayInst* addMultiArray(ConstIndex classIndex, u1 dims, Inst* pos =
-	NULL);
-
-	TableSwitchInst* addTableSwitch(LabelInst* def, int low, int high,
-			Inst* pos = NULL);
-
-	LookupSwitchInst* addLookupSwitch(LabelInst* def, u4 npairs, Inst* pos =
-	NULL);
+	MultiArrayInst* addMultiArray(ConstIndex classIndex, u1 dims, Inst* pos = NULL);
+	TableSwitchInst* addTableSwitch(LabelInst* def, int low, int high, Inst* pos = NULL);
+	LookupSwitchInst* addLookupSwitch(LabelInst* def, u4 npairs, Inst* pos = NULL);
 
 	bool hasBranches() const {
 		return branchesCount > 0;
@@ -107,9 +98,8 @@ public:
 private:
 
 	InstList(ClassFile* constPool) :
-			constPool(constPool), first(NULL), last(NULL), _size(0), nextLabelId(
-					1), branchesCount(0), jsrOrRet(false) {
-	}
+    constPool(constPool), first(NULL),last(NULL),_size(0),nextLabelId(1), branchesCount(0), jsrOrRet(false) {
+  }
 
 	~InstList();
 
@@ -128,8 +118,6 @@ private:
 
 	template<typename TInst, typename ... TArgs>
 	TInst* _create(const TArgs& ... args);
-
-//std::list<LabelInst*> _labelPool;
 
 };
 

@@ -17,13 +17,13 @@ public:
 
 	static constexpr const char* AttrName = "LineNumberTable";
 
-	Attr* parse(BufferReader& br, ClassFile& constPool, ConstIndex nameIndex,
+	Attr* parse(BufferReader& br, ClassFile& cp, ConstIndex nameIndex,
 			void* args) {
 		LabelManager& labelManager = *(LabelManager*) args;
 
 		u2 lntlen = br.readu2();
 
-		LntAttr* lnt = new LntAttr(nameIndex, &constPool);
+		LntAttr* lnt = cp._arena.create<LntAttr>(nameIndex, &cp);
 
 		for (int i = 0; i < lntlen; i++) {
 			LntAttr::LnEntry e;

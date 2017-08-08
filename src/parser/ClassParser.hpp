@@ -98,11 +98,12 @@ public:
 			u2 descIndex = br.readu2();
 
 			Method* m = cf.addMethod(nameIndex, descIndex, accessFlags);
+      Error::trace("Method ", m->getName());
 
 			MethodAttrsParser().parse(br, cf, *m);
 		}
 
-		ClassAttrsParser().parse(br, cf, cf);
+		ClassAttrsParser().parse(br, cf, cf.attrs);
 	}
 
 private:

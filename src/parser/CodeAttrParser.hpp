@@ -116,12 +116,10 @@ public:
 					break;
 				case KIND_JUMP: {
 					short targetOffset = br.readu2();
-
 					short labelpos = offset + targetOffset;
-					Error::assert(labelpos >= 0,
-							"invalid target for jump: must be >= 0");
-					Error::assert(labelpos < br.size(),
-							"invalid target for jump");
+
+					Error::assert(labelpos >= 0, "invalid target for jump: must be >= 0");
+					Error::assert(labelpos < br.size(), "invalid target for jump");
 
 					labelManager.createLabel(labelpos);
 					break;
@@ -143,9 +141,7 @@ public:
 					int low = br.readu4();
 					int high = br.readu4();
 
-					Error::assert(low <= high,
-							"low (%d) must be less or equal than high (%d)",
-							low, high);
+					Error::assert(low <= high, "low (%d) must be less or equal than high (%d)", low, high);
 
 					for (int i = 0; i < high - low + 1; i++) {
 						int targetOffset = br.readu4();
@@ -364,7 +360,7 @@ public:
 
 	Attr* parse(BufferReader& br, ClassFile& cp, u2 nameIndex, void* ) {
 
-		CodeAttr* ca = new CodeAttr(nameIndex, &cp);
+		CodeAttr* ca = cp._arena.create<CodeAttr>(nameIndex, &cp);
 
 		ca->maxStack = br.readu2();
 		ca->maxLocals = br.readu2();
@@ -396,24 +392,18 @@ public:
 			Error::check(startPc < endPc, "");
 			Error::check(endPc <= ca->codeLen, "");
 			Error::check(handlerPc < ca->codeLen, "");
-			Error::check(
-					catchType == ConstPool::NULLENTRY || cp.isClass(catchType),
-					"");
+			Error::check(catchType == ConstPool::NULLENTRY || cp.isClass(catchType), "");
 
 			CodeExceptionEntry e;
-			e.startpc = labelManager.createExceptionLabel(startPc, true, false,
-					false);
-			e.endpc = labelManager.createExceptionLabel(endPc, false, true,
-					false);
-			e.handlerpc = labelManager.createExceptionLabel(handlerPc, false,
-					false, true);
+			e.startpc = labelManager.createExceptionLabel(startPc, true, false, false);
+			e.endpc = labelManager.createExceptionLabel(endPc, false, true, false);
+			e.handlerpc = labelManager.createExceptionLabel(handlerPc, false, false, true);
 			e.catchtype = catchType;
 
 			ca->exceptions.push_back(e);
 		}
 
-		AttrsParser<TAttrParserList ...>().parse(br, cp, ca->attrs,
-				&labelManager);
+		AttrsParser<TAttrParserList ...>().parse(br, cp, ca->attrs, &labelManager);
 
 		{
 			BufferReader br(codeBuf, codeLen);
