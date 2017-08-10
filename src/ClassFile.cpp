@@ -15,6 +15,7 @@
 #include "parser/LocalVariableTypeTableAttrParser.hpp"
 #include "parser/StackMapTableAttrParser.hpp"
 #include "parser/SourceFileAttrParser.hpp"
+#include "parser/SignatureAttrParser.hpp"
 
 namespace jnif {
 
@@ -35,9 +36,14 @@ bool Method::isMain() const {
 			&& desc == "([Ljava/lang/String;)V";
 }
 
-String Member::getName() const {
-	String name = constPool->getUtf8(nameIndex);
+const char* Member::getName() const {
+	const char* name = constPool->getUtf8(nameIndex);
 	return name;
+}
+
+const char* Member::getDesc() const {
+	const char* desc = constPool->getUtf8(descIndex);
+	return desc;
 }
 
 InstList& Method::instList() {
@@ -51,17 +57,24 @@ InstList& Method::instList() {
 }
 
 ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
-		version(0, 0), accessFlags(0), thisClassIndex(0), superClassIndex(0) {
+  version(0, 0), accessFlags(0), thisClassIndex(0), superClassIndex(0), sig(&attrs) {
 
 	BufferReader br(classFileData, classFileLen);
-	ClassParser<AttrsParser<SourceFileAttrParser>,
-			AttrsParser<
-					CodeAttrParser<LineNumberTableAttrParser,
-							LocalVariableTableAttrParser,
-							LocalVariableTypeTableAttrParser,
-							StackMapTableAttrParser>, ExceptionsAttrParser>,
-
-			AttrsParser<> > parser;
+	ClassParser<
+    AttrsParser<
+      SourceFileAttrParser,
+      SignatureAttrParser>,
+    AttrsParser<
+      CodeAttrParser<
+        LineNumberTableAttrParser,
+        LocalVariableTableAttrParser,
+        LocalVariableTypeTableAttrParser,
+        StackMapTableAttrParser>,
+      ExceptionsAttrParser,
+      SignatureAttrParser>,
+    AttrsParser<
+      SignatureAttrParser>
+    > parser;
 	parser.parse(br, *this);
 }
 

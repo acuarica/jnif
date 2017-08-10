@@ -142,7 +142,7 @@ public:
 			bw.writeu2(f->nameIndex);
 			bw.writeu2(f->descIndex);
 
-			writeAttrs(*f);
+			writeAttrs(f->attrs);
 		}
 
 		bw.writeu2(cf.methods.size());
@@ -151,7 +151,7 @@ public:
 			bw.writeu2(m->nameIndex);
 			bw.writeu2(m->descIndex);
 
-			writeAttrs(*m);
+			writeAttrs(m->attrs);
 		}
 
 		writeAttrs(cf.attrs);
@@ -292,6 +292,10 @@ public:
 
 	void writeSourceFile(SourceFileAttr& attr) {
 		bw.writeu2(attr.sourceFileIndex);
+	}
+
+	void writeSignature(SignatureAttr& attr) {
+		bw.writeu2(attr.signatureIndex);
 	}
 
 	void writeSmt(SmtAttr& attr) {
@@ -641,6 +645,9 @@ public:
 				case ATTR_SOURCEFILE:
 					writeSourceFile((SourceFileAttr&) attr);
 					break;
+      case ATTR_SIGNATURE:
+        writeSignature((SignatureAttr&) attr);
+        break;
 				case ATTR_CODE:
 					writeCode((CodeAttr&) attr);
 					break;

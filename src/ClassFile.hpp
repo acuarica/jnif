@@ -16,6 +16,38 @@
 
 namespace jnif {
 
+class Signature {
+public:
+
+  Signature(const Attrs* attrs) : attrs(attrs) {
+  }
+
+	bool hasSignature() const {
+		for (Attr* attr : *attrs) {
+			if (attr->kind == ATTR_SIGNATURE) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	const char* signature() const {
+		for (Attr* attr : *attrs) {
+			if (attr->kind == ATTR_SIGNATURE) {
+				return ((SignatureAttr*) attr)->signature();
+			}
+		}
+
+		return NULL;
+	}
+
+private:
+
+  const Attrs* attrs;
+
+};
+
 /**
  * Represent a member of a class. This the base class for Field and
  * Method classes.
@@ -23,7 +55,7 @@ namespace jnif {
  * @see Field
  * @see Method
  */
-class Member: public Attrs {
+class Member {
 public:
 
 	friend class Field;
@@ -35,15 +67,21 @@ public:
 	ConstIndex nameIndex;
 	ConstIndex descIndex;
 	ClassFile* const constPool;
+  Attrs attrs;
+  Signature sig;
 
-	String getName() const;
+	const char* getName() const;
+  const char* getDesc() const;
 
 private:
 
-	Member(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex,
-			ClassFile* constPool) :
-			accessFlags(accessFlags), nameIndex(nameIndex), descIndex(
-					descIndex), constPool(constPool) {
+	Member(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
+			accessFlags(accessFlags),
+      nameIndex(nameIndex),
+      descIndex(descIndex),
+      constPool(constPool),
+      sig(&attrs)
+  {
 	}
 };
 
@@ -55,8 +93,7 @@ class Field: public Member {
 
 public:
 
-	Field(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex,
-			ClassFile* constPool) :
+	Field(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
 			Member(accessFlags, nameIndex, descIndex, constPool) {
 	}
 
@@ -70,8 +107,7 @@ class Method: public Member {
 
 public:
 
-	Method(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex,
-         ClassFile* constPool) :
+	Method(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
     Member(accessFlags, nameIndex, descIndex, constPool) {
 	}
 
@@ -151,7 +187,8 @@ public:
 			version(majorVersion, minorVersion),
       accessFlags(accessFlags),
       thisClassIndex(addClass(className)),
-      superClassIndex(addClass(superClassName))
+      superClassIndex(addClass(superClassName)),
+      sig(&attrs)
   {
 	}
 
@@ -190,8 +227,7 @@ public:
 	 * @param accessFlags the access flags of the field to add.
 	 * @returns the newly created field.
 	 */
-	Field* addField(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags =
-			FIELD_PUBLIC);
+	Field* addField(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags = FIELD_PUBLIC);
 
 	/**
 	 * Adds a new field to this class file by passing directly the name
@@ -202,8 +238,7 @@ public:
 	 * @param accessFlags the access flags of the field to add.
 	 * @returns the newly created field.
 	 */
-	Field* addField(const char* fieldName, const char* fieldDesc,
-			u2 accessFlags = FIELD_PUBLIC) {
+	Field* addField(const char* fieldName, const char* fieldDesc, u2 accessFlags = FIELD_PUBLIC) {
 		ConstIndex nameIndex = addUtf8(fieldName);
 		ConstIndex descIndex = addUtf8(fieldDesc);
 
@@ -220,8 +255,7 @@ public:
 	 * @param accessFlags the access flags of the field to add.
 	 * @returns the newly created method.
 	 */
-	Method* addMethod(ConstIndex nameIndex, ConstIndex descIndex,
-			u2 accessFlags = METHOD_PUBLIC);
+	Method* addMethod(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags = METHOD_PUBLIC);
 
 	/**
 	 * Adds a new method to this class file by passing directly the name
@@ -232,8 +266,7 @@ public:
 	 * @param accessFlags the access flags of the method to add.
 	 * @returns the newly created method.
 	 */
-	Method* addMethod(const char* methodName, const char* methodDesc,
-			u2 accessFlags = METHOD_PUBLIC) {
+	Method* addMethod(const char* methodName, const char* methodDesc, u2 accessFlags = METHOD_PUBLIC) {
 		ConstIndex nameIndex = addUtf8(methodName);
 		ConstIndex descIndex = addUtf8(methodDesc);
 
@@ -275,6 +308,7 @@ public:
 	std::vector<Field*> fields;
 	std::vector<Method*> methods;
   Attrs attrs;
+  Signature sig;
 };
 
 std::ostream& operator<<(std::ostream& os, const ClassFile& classFile);

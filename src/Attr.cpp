@@ -27,4 +27,12 @@ CodeAttr::~CodeAttr() {
 	}
 }
 
+const char* SourceFileAttr::sourceFile() const {
+  return constPool->getUtf8(sourceFileIndex);
+}
+
+const char* SignatureAttr::signature() const {
+  return constPool->getUtf8(signatureIndex);
+}
+
 }

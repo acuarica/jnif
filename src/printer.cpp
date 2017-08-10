@@ -385,7 +385,7 @@ public:
 					<< f->nameIndex << ": " << cf.getUtf8(f->descIndex) << "#"
 					<< f->descIndex << endl;
 
-			printAttrs(*f);
+			printAttrs(f->attrs);
 		}
 		dec();
 
@@ -395,7 +395,7 @@ public:
 		for (Method* m : cf.methods) {
 			line() << *m;
 
-			printAttrs(*m, m);
+			printAttrs(m->attrs, m);
 		}
 		dec();
 
@@ -507,6 +507,9 @@ private:
 				case ATTR_SOURCEFILE:
 					printSourceFile((SourceFileAttr&) attr);
 					break;
+      case ATTR_SIGNATURE:
+        printSignature((SignatureAttr&) attr);
+        break;
 				case ATTR_CODE:
 					printCode((CodeAttr&) attr, (Method*) args);
 					break;
@@ -530,9 +533,11 @@ private:
 	}
 
 	void printSourceFile(SourceFileAttr& attr) {
-		const string& sourceFileName = cf.getUtf8(attr.sourceFileIndex);
-		line() << "Source file: " << sourceFileName << "#"
-				<< attr.sourceFileIndex << endl;
+		line() << "Source file: " << attr.sourceFile() << "#" << attr.sourceFileIndex << endl;
+	}
+
+	void printSignature(SignatureAttr& attr) {
+		line() << "Signature: " << attr.signature() << "#" << attr.signatureIndex << endl;
 	}
 
 	void printUnknown(UnknownAttr& attr) {

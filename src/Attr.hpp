@@ -5,8 +5,8 @@
  *      Author: luigi
  */
 
-#ifndef JNIF_CODEATTR_HPP
-#define JNIF_CODEATTR_HPP
+#ifndef JNIF_ATTR_HPP
+#define JNIF_ATTR_HPP
 
 #include "Inst.hpp"
 #include "InstList.hpp"
@@ -262,6 +262,24 @@ public:
 			ClassFile* constPool) :
 			Attr(ATTR_SOURCEFILE, nameIndex, 2, constPool), sourceFileIndex(sourceFileIndex) {
 	}
+
+  const char* sourceFile() const;
+
+};
+
+/**
+ *
+ */
+class SignatureAttr: public Attr {
+public:
+
+  const ConstIndex signatureIndex;
+
+  SignatureAttr(ConstIndex nameIndex, ConstIndex signatureIndex, ClassFile* constPool) :
+			Attr(ATTR_SIGNATURE, nameIndex, 2, constPool), signatureIndex(signatureIndex) {
+  }
+
+  const char* signature() const;
 
 };
 

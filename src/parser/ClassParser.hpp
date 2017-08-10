@@ -88,7 +88,7 @@ public:
 
 			Field* f = cf.addField(nameIndex, descIndex, accessFlags);
 
-			FieldAttrsParser().parse(br, cf, *f);
+			FieldAttrsParser().parse(br, cf, f->attrs);
 		}
 
 		u2 methodCount = br.readu2();
@@ -100,7 +100,7 @@ public:
 			Method* m = cf.addMethod(nameIndex, descIndex, accessFlags);
       Error::trace("Method ", m->getName());
 
-			MethodAttrsParser().parse(br, cf, *m);
+			MethodAttrsParser().parse(br, cf, m->attrs);
 		}
 
 		ClassAttrsParser().parse(br, cf, cf.attrs);
