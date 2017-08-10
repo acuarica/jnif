@@ -108,9 +108,13 @@ TESTMAVEN_SRC=src-testmaven
 TESTMAVEN_HPPS=$(wildcard $(TESTMAVEN_SRC)/*.hpp) $(LIBJNIF_HPPS)
 TESTMAVEN_SRCS=$(wildcard $(TESTMAVEN_SRC)/*.cpp)
 TESTMAVEN_OBJS=$(TESTMAVEN_SRCS:$(TESTMAVEN_SRC)/%=$(TESTMAVEN_BUILD)/%.o)
+MAVEN_INDEX=/Volumes/Data/work/mavends/out/mavenindex.sqlite3
+MAVEN_REPO=/Volumes/Data/work/mavends/cache/repo
+SELECT_ARTS="select max(idate), * from artifact_jar group by groupid, artifactid"
+MAVEN_CLASS=/Volumes/Data/work/mavends/out/mavenclass.sqlite3
 
 runmaven: $(TESTMAVEN)
-	$(TESTMAVEN) /Volumes/Data/work/mavends/out/mavenindex.sqlite3 /Volumes/Data/work/mavends/cache/repo "select max(idate), * from artifact_jar group by groupid, artifactid" /Volumes/Data/work/mavends/out/mavenclass.sqlite3
+	$(TESTMAVEN) $(MAVEN_INDEX) $(MAVEN_REPO) $(SELECT_ARTS) $(MAVEN_CLASS)
 
 testmaven: $(TESTMAVEN)
 
