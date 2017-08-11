@@ -149,7 +149,7 @@ ConstIndex ConstPool::getIndexOfUtf8(const char* utf8) {
 	auto it = utf8s.find(utf8);
 	if (it != utf8s.end()) {
 		ConstIndex idx = it->second;
-		Error::assert(getUtf8(idx) != utf8, "Error on get index of utf8");
+		JnifError::assert(getUtf8(idx) != utf8, "Error on get index of utf8");
 		return idx;
 	} else {
 		return NULLENTRY;
@@ -157,8 +157,8 @@ ConstIndex ConstPool::getIndexOfUtf8(const char* utf8) {
 }
 
 const ConstItem* ConstPool::_getEntry(ConstIndex i) const {
-	Error::check(i > NULLENTRY, "Null access to constant pool: index = ", i);
-	Error::check(i < entries.size(), "Index out of bounds: index = ", i);
+	JnifError::check(i > NULLENTRY, "Null access to constant pool: index = ", i);
+	JnifError::check(i < entries.size(), "Index out of bounds: index = ", i);
 
 	const ConstItem* entry = &entries[i];
 
@@ -169,7 +169,7 @@ const ConstItem* ConstPool::_getEntry(ConstIndex index, u1 tag,
 		const char* message) const {
 	const ConstItem* entry = _getEntry(index);
 
-	Error::check(entry->tag == tag, "Invalid constant ", message,
+	JnifError::check(entry->tag == tag, "Invalid constant ", message,
 			", expected: ", (int) tag, ", actual: ", (int) entry->tag);
 
 	return entry;

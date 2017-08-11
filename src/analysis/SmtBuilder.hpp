@@ -607,7 +607,7 @@ public:
 			case OPCODE_breakpoint:
 			case OPCODE_impdep1:
 			case OPCODE_impdep2:
-				Error::raise("goto_w, jsr_w breakpoint not implemented");
+				JnifError::raise("goto_w, jsr_w breakpoint not implemented");
 				break;
 			case OPCODE_invokedynamic: {
 				ConstIndex callSite = inst.indy()->callSite();
@@ -626,7 +626,7 @@ public:
 				break;
 			}
 			default:
-				Error::raise("unknown opcode not implemented: ", inst.opcode);
+				JnifError::raise("unknown opcode not implemented: ", inst.opcode);
 		}
 	}
 
@@ -640,7 +640,7 @@ private:
 		Type::nextTypeId++;
 
 		t.uninit.newinst = &inst;
-		Error::check(!t.isArray(), "New with array: ", t);
+		JnifError::check(!t.isArray(), "New with array: ", t);
 		frame.push(t);
 	}
 
@@ -663,7 +663,7 @@ private:
 			frame.pushNull();
 		} else {
 			const Type& elementType = arrayType.elementType(_typeFactory);
-			Error::check(elementType.isObject(), "Not an object:", elementType);
+			JnifError::check(elementType.isObject(), "Not an object:", elementType);
 			frame.push(elementType);
 		}
 	}
@@ -684,7 +684,7 @@ private:
 				frame.pushRef("java/lang/String");
 				break;
 			default:
-				Error::raise("Invalid tag entry: ", tag);
+				JnifError::raise("Invalid tag entry: ", tag);
 		}
 	}
 
@@ -698,7 +698,7 @@ private:
 				frame.pushDouble();
 				break;
 			default:
-				Error::raise("Invalid constant for ldc2_w");
+				JnifError::raise("Invalid constant for ldc2_w");
 		}
 	}
 
@@ -736,7 +736,7 @@ private:
 
 	void astore(int lvindex) {
 		Type refType = frame.popRef();
-		Error::check(!refType.isTop(), "astore: Setting variable index ",
+		JnifError::check(!refType.isTop(), "astore: Setting variable index ",
 				lvindex, " to Top", refType, " in frame ", frame);
 
 		frame.setRefVar(lvindex, refType);
@@ -744,32 +744,32 @@ private:
 
 	void iload(u4 lvindex, int offset = 0) {
 		const Type& type = frame.getVar(lvindex);
-		Error::check(type.isIntegral(), "iload: ", type, " at index ", lvindex,
+		JnifError::check(type.isIntegral(), "iload: ", type, " at index ", lvindex,
 				":offset:", offset, " for ", _m);
 		frame.pushInt();
 	}
 
 	void fload(u4 lvindex) {
 		const Type& type = frame.getVar(lvindex);
-		Error::check(type.isFloat(), "fload: ", type, " @ ", lvindex);
+		JnifError::check(type.isFloat(), "fload: ", type, " @ ", lvindex);
 		frame.pushFloat();
 	}
 
 	void lload(u4 lvindex) {
 		const Type& type = frame.getVar(lvindex);
-		Error::check(type.isLong(), "lload: ", type, " @ ", lvindex);
+		JnifError::check(type.isLong(), "lload: ", type, " @ ", lvindex);
 		frame.pushLong();
 	}
 
 	void dload(u4 lvindex) {
 		const Type& type = frame.getVar(lvindex);
-		Error::check(type.isDouble(), "dload: ", type, " @ ", lvindex);
+		JnifError::check(type.isDouble(), "dload: ", type, " @ ", lvindex);
 		frame.pushDouble();
 	}
 
 	void aload(u4 lvindex) {
 		const Type& type = frame.getVar(lvindex);
-		Error::check(type.isObject() || type.isNull() || type.isUninitThis(),
+		JnifError::check(type.isObject() || type.isNull() || type.isUninitThis(),
 				"Bad ref var at index[", lvindex, "]: ", type, " @ frame: ",
 				frame);
 		frame.pushType(type);
@@ -792,7 +792,7 @@ private:
 
 	void invokeSpecial(u2 methodRefIndex) {
     ConstTag tag = cp.getTag(methodRefIndex);
-    Error::check(tag == CONST_METHODREF || tag == CONST_INTERMETHODREF,
+    JnifError::check(tag == CONST_METHODREF || tag == CONST_INTERMETHODREF,
                  "INVOKESPECIAL index must be either a method or an interface method symbolic reference");
     if (tag == CONST_METHODREF) {
       invokeMethod(methodRefIndex, true, true);
@@ -809,7 +809,7 @@ private:
 
   void invokeStatic(u2 methodRefIndex) {
     ConstTag tag = cp.getTag(methodRefIndex);
-    Error::check(tag == CONST_METHODREF || tag == CONST_INTERMETHODREF,
+    JnifError::check(tag == CONST_METHODREF || tag == CONST_INTERMETHODREF,
                  "INVOKESPECIAL index must be either a method or an interface method symbolic reference");
     if (tag == CONST_METHODREF) {
       invokeMethod(methodRefIndex, false, false);
@@ -826,28 +826,28 @@ private:
 
 		for (int i = argsType.size() - 1; i >= 0; i--) {
 			const Type& argType = argsType[i];
-			Error::check(argType.isOneOrTwoWord(),
+			JnifError::check(argType.isOneOrTwoWord(),
 					"Invalid arg type in method");
 			frame.popType(argType);
 		}
 
 		if (popThis) {
 			Type t = frame.popRef();
-			//Error::check(t.iso)
+			//JnifError::check(t.iso)
 			if (isSpecial && name == "<init>") {
-				Error::check(t.typeId > 0, "inv typeId: ", t.typeId, t);
-				Error::check(!t.init, "Object is already init: ", t, ", ",
+				JnifError::check(t.typeId > 0, "inv typeId: ", t.typeId, t);
+				JnifError::check(!t.init, "Object is already init: ", t, ", ",
 						className, ".", name, desc, ", frame: ", frame);
 
 				t.init = true;
 
 				for (Type& tr : frame.lva) {
 					if (tr.typeId == t.typeId) {
-//						Error::check(!tr.init,
+//						JnifError::check(!tr.init,
 //								"Object is already init in lva: ", tr, ", ",
 //								className, ".", name, desc, ", ", t);
-						Error::check(tr.className != "", "empty clsname lva");
-						Error::check(tr.className == t.className,
+						JnifError::check(tr.className != "", "empty clsname lva");
+						JnifError::check(tr.className == t.className,
 								"!= clsname lva");
 
 						tr.init = true;
@@ -858,11 +858,11 @@ private:
 
 				for (Type& tr : frame.stack) {
 					if (tr.typeId == t.typeId) {
-//						Error::check(!tr.init,
+//						JnifError::check(!tr.init,
 //								"Object is already init in stack: ", tr, ", ",
 //								className, ".", name, desc, ", ", t);
-						Error::check(tr.className != "", "empty clsname stack");
-						Error::check(tr.className == t.className,
+						JnifError::check(tr.className != "", "empty clsname stack");
+						JnifError::check(tr.className == t.className,
 								"!= clsname stack");
 
 						tr.init = true;
@@ -875,7 +875,7 @@ private:
 		}
 
 		if (!returnType.isVoid()) {
-			Error::assert(returnType.isOneOrTwoWord(), "Ret type: ",
+			JnifError::assert(returnType.isOneOrTwoWord(), "Ret type: ",
 					returnType);
 			frame.pushType(returnType);
 		}
@@ -893,7 +893,7 @@ private:
 
 	void multianewarray(Inst& inst) {
 		u1 dims = inst.multiarray()->dims;
-		Error::check(dims >= 1, "invalid dims: ", dims);
+		JnifError::check(dims >= 1, "invalid dims: ", dims);
 
 		for (int i = 0; i < dims; i++) {
 			frame.popIntegral();
@@ -943,7 +943,7 @@ private:
 				iinc(inst.wide()->iinc.index);
 				break;
 			default:
-				Error::raise("Unsupported wide opcode: ",
+				JnifError::raise("Unsupported wide opcode: ",
 						inst.wide()->subOpcode);
 		}
 
@@ -969,7 +969,7 @@ private:
 				return _typeFactory.doubleType();
 		}
 
-		Error::raise("invalid atype: ", atype);
+		JnifError::raise("invalid atype: ", atype);
 	}
 
 	Frame& frame;

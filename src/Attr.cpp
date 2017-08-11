@@ -12,7 +12,7 @@ using namespace std;
 namespace jnif {
 
 Attrs::~Attrs() {
-  Error::trace("~Attrs");
+  JnifError::trace("~Attrs");
 
 	for (Attr* attr : attrs) {
 		attr->~Attr();
@@ -20,7 +20,7 @@ Attrs::~Attrs() {
 }
 
 CodeAttr::~CodeAttr() {
-  Error::trace("~CodeAttr");
+  JnifError::trace("~CodeAttr");
 
 	if (cfg != NULL) {
 		delete cfg;

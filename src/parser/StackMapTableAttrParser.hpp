@@ -37,7 +37,7 @@ public:
 				return TypeFactory::uninitThisType();
 			case TYPE_OBJECT: {
 				u2 cpIndex = br.readu2();
-				Error::check(cp.isClass(cpIndex), "Bad cpindex: ", cpIndex);
+				JnifError::check(cp.isClass(cpIndex), "Bad cpindex: ", cpIndex);
 				String className = cp.getClassName(cpIndex);
 				return TypeFactory::objectType(className, cpIndex);
 			}
@@ -48,7 +48,7 @@ public:
 			}
 		}
 
-		Error::raise("Error on parse smt");
+		JnifError::raise("Error on parse smt");
 	}
 
 	void parseTs(BufferReader& br, int count, std::vector<Type>& locs,

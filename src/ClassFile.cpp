@@ -20,7 +20,7 @@
 namespace jnif {
 
 Method::~Method() {
-  Error::trace("Method::~Method");
+  JnifError::trace("Method::~Method");
 }
 
 bool Method::isInit() const {
@@ -53,7 +53,7 @@ InstList& Method::instList() {
 		}
 	}
 
-	Error::raise("ERROR! get inst list");
+	JnifError::raise("ERROR! get inst list");
 }
 
 ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
@@ -79,7 +79,7 @@ ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
 }
 
 ClassFile::~ClassFile() {
-  Error::trace("~ClassFile");
+  JnifError::trace("~ClassFile");
 
 	for (Field* field : fields) {
 		field->~Field();

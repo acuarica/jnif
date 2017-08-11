@@ -28,8 +28,8 @@ public:
 	}
 
 	LabelInst* createLabel(int labelPos) {
-		Error::check(0 <= labelPos, "Invalid position for label: ", labelPos);
-		Error::check((u4) labelPos < codeLen + 1,
+		JnifError::check(0 <= labelPos, "Invalid position for label: ", labelPos);
+		JnifError::check((u4) labelPos < codeLen + 1,
 				"Invalid position for label: ", labelPos, ", : ", codeLen);
 
 		LabelInst*& lab = labels[labelPos];
@@ -42,7 +42,7 @@ public:
 
 	LabelInst* createExceptionLabel(u2 labelPos, bool isTryStart, bool isTryEnd,
 			bool isCatchHandler) {
-		Error::check(labelPos != codeLen || isTryEnd,
+		JnifError::check(labelPos != codeLen || isTryEnd,
 				"Only tryEnd can have a labelPos equal to codeLen.");
 
 		LabelInst* label = createLabel(labelPos);
@@ -54,7 +54,7 @@ public:
 	}
 
 	bool hasLabel(u2 labelPos) const {
-		Error::assert(labelPos < codeLen + 1, "Invalid position for label: ",
+		JnifError::assert(labelPos < codeLen + 1, "Invalid position for label: ",
 				labelPos);
 
 		return labels[labelPos] != NULL;
@@ -69,7 +69,7 @@ public:
 	}
 
 	LabelInst* operator[](u2 labelPos) const {
-		Error::assert(hasLabel(labelPos), "No label in position: ", labelPos);
+		JnifError::assert(hasLabel(labelPos), "No label in position: ", labelPos);
 
 		return labels[labelPos];
 	}

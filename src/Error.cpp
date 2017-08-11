@@ -13,7 +13,7 @@
 
 namespace jnif {
 
-void Error::_backtrace(std::ostream& os) {
+void _backtrace(std::ostream& os) {
 	void* array[20];
 	size_t size;
 

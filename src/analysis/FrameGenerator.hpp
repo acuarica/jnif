@@ -26,7 +26,7 @@ public:
 			type.setCpIndex(index);
 
 			if (!type.init) {
-				Error::assert(type.uninit.newinst->isType(), "It is not type");
+				JnifError::assert(type.uninit.newinst->isType(), "It is not type");
 				LabelInst* l = instList.addLabel(type.uninit.newinst);
 				//cerr << instList << endl;
 				//type.uninit.label = l;
@@ -188,7 +188,7 @@ public:
 									offsetDelta;
 						}
 					} else if ((diff = s.isChopAppend(current, *f)) != 0) {
-						Error::assert(diff != 0 && diff >= -3 && diff <= 3);
+						JnifError::assert(diff != 0 && diff >= -3 && diff <= 3);
 
 						e.frameType = 251 + diff;
 						if (diff > 0) {

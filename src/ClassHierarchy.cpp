@@ -19,7 +19,7 @@ void ClassHierarchy::addClass(const ClassFile& classFile) {
 	e.className = classFile.getThisClassName();
 
 	if (classFile.superClassIndex == ConstPool::NULLENTRY) {
-		Error::check(e.className == "java/lang/Object",
+		JnifError::check(e.className == "java/lang/Object",
 				"invalid class name for null super class: ", e.className,
 				"asdfasf");
 		e.superClassName = "0";
@@ -38,7 +38,7 @@ void ClassHierarchy::addClass(const ClassFile& classFile) {
 
 const String& ClassHierarchy::getSuperClass(const String& className) const {
 	auto it = getEntry(className);
-	Error::assert(it != classes.end(), "Class not defined");
+	JnifError::assert(it != classes.end(), "Class not defined");
 
 	return it->second.superClassName;
 }

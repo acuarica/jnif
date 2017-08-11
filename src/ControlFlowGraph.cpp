@@ -53,7 +53,7 @@ static void buildBasicBlocks(InstList& instList, ControlFlowGraph& cfg) {
 }
 
 static void addTarget2(BasicBlock* bb, Inst* inst, ControlFlowGraph& cfg) {
-	Error::assert(inst->isLabel(), "Expected label instruction");
+	JnifError::assert(inst->isLabel(), "Expected label instruction");
 	int labelId = inst->label()->id;
 	BasicBlock* tbbid = cfg.findBasicBlockOfLabel(labelId);
 	bb->addTarget(tbbid);
@@ -64,14 +64,14 @@ static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
 
 	for (BasicBlock* bb : cfg) {
 		if (bb->start == instList.end()) {
-			Error::assert(bb->name == "Entry" || bb->name == "Exit", "");
-			Error::assert(bb->exit == instList.end(), "");
+			JnifError::assert(bb->name == "Entry" || bb->name == "Exit", "");
+			JnifError::assert(bb->exit == instList.end(), "");
 			continue;
 		}
 
 		InstList::Iterator e = bb->exit;
 		--e;
-		Error::assert(e != instList.end(), "");
+		JnifError::assert(e != instList.end(), "");
 
 		Inst* last = *e;
 
@@ -83,7 +83,7 @@ static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
 			addTarget2(bb, last->jump()->label2, cfg);
 
 			if (last->opcode != OPCODE_goto) {
-				Error::assert(bb->next != NULL, "next bb is null");
+				JnifError::assert(bb->next != NULL, "next bb is null");
 				bb->addTarget(bb->next);
 			}
 		} else if (last->isTableSwitch()) {
@@ -101,7 +101,7 @@ static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
 		} else if (last->isExit()) {
 			bb->addTarget(cfg.exit);
 		} else {
-			Error::assert(bb->next != NULL, "next bb is null");
+			JnifError::assert(bb->next != NULL, "next bb is null");
 			bb->addTarget(bb->next);
 		}
 	}
@@ -115,7 +115,7 @@ ControlFlowGraph::ControlFlowGraph(InstList& instList, TypeFactory& typeFactory)
 }
 
 ControlFlowGraph::~ControlFlowGraph() {
-  Error::trace("~ControlFlowGraph");
+  JnifError::trace("~ControlFlowGraph");
 
 	for (auto bb : *this) {
 		delete bb;
@@ -140,8 +140,8 @@ BasicBlock* ControlFlowGraph::addBasicBlock(InstList::Iterator start,
 BasicBlock* ControlFlowGraph::findBasicBlockOfLabel(int labelId) const {
 	for (BasicBlock* bb : *this) {
 		if (bb->start == instList.end()) {
-			Error::assert(bb->name == "Entry" || bb->name == "Exit", "");
-			Error::assert(bb->exit == instList.end(), "");
+			JnifError::assert(bb->name == "Entry" || bb->name == "Exit", "");
+			JnifError::assert(bb->exit == instList.end(), "");
 			continue;
 		}
 
@@ -151,7 +151,7 @@ BasicBlock* ControlFlowGraph::findBasicBlockOfLabel(int labelId) const {
 		}
 	}
 
-	Error::raise("Invalid label id: ", labelId, " for the instruction list: ",
+	JnifError::raise("Invalid label id: ", labelId, " for the instruction list: ",
 			", in cfg: ", *this, instList);
 }
 

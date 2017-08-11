@@ -17,9 +17,12 @@
 
 namespace jnif {
 
+void _backtrace(std::ostream& os);
+
 /**
  * This class contains static method to facilitate error handling mechanism.
  */
+template<typename TException>
 class Error {
 public:
 
@@ -31,7 +34,7 @@ public:
     std::stringstream stackTrace;
     _backtrace(stackTrace);
 
-    throw JnifException(message.str(), stackTrace.str());
+    throw TException(message.str(), stackTrace.str());
   }
 
 	template<typename ... TArgs>
@@ -69,8 +72,6 @@ public:
 
 private:
 
-	static void _backtrace(std::ostream& os);
-
 	static inline void _format(std::ostream&) {
 	}
 
@@ -81,6 +82,9 @@ private:
 		_format(os, args...);
 	}
 
+};
+
+class JnifError: public Error<JnifException> {
 };
 
 }

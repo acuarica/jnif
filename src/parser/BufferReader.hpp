@@ -49,7 +49,7 @@ public:
 	}
 
 	u1 readu1() {
-		Error::check(off + 1 <= _size, "Invalid read");
+		JnifError::check(off + 1 <= _size, "Invalid read");
 
 		u1 result = buffer[off];
 
@@ -59,7 +59,7 @@ public:
 	}
 
 	u2 readu2() {
-		Error::check(off + 2 <= _size, "Invalid read 2");
+		JnifError::check(off + 2 <= _size, "Invalid read 2");
 
 		u1 r0 = buffer[off + 0];
 		u1 r1 = buffer[off + 1];
@@ -72,7 +72,7 @@ public:
 	}
 
 	u4 readu4() {
-		Error::check(off + 4 <= _size, "Invalid read 4");
+		JnifError::check(off + 4 <= _size, "Invalid read 4");
 		//if (off >= 256 ) Error::raise()
 
 		u1 r0 = buffer[off + 0];
@@ -89,7 +89,7 @@ public:
 
 	void skip(int count) {
 		const char* const m = "Invalid read: %d (offset: %d)";
-		Error::check(off + count <= _size, m, count, off);
+		JnifError::check(off + count <= _size, m, count, off);
 
 		off += count;
 	}

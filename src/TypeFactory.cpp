@@ -22,7 +22,7 @@ Type TypeFactory::uninitType(short offset, class Inst* label) {
 }
 
 Type TypeFactory::objectType(const String& className, u2 cpindex) {
-	Error::check(!className.empty(),
+	JnifError::check(!className.empty(),
 			"Expected non-empty class name for object type");
 
 	Type type = Type(TYPE_OBJECT, className, cpindex);
@@ -31,11 +31,11 @@ Type TypeFactory::objectType(const String& className, u2 cpindex) {
 
 Type TypeFactory::arrayType(const Type& baseType, u4 dims) {
 	//u4 d = baseType.dims + dims;
-	Error::check(dims > 0, "Invalid dims: ", dims);
-	Error::check(dims <= 255, "Invalid dims: ", dims);
-	Error::check(!baseType.isTop(), "Cannot construct an array type of ", dims,
+	JnifError::check(dims > 0, "Invalid dims: ", dims);
+	JnifError::check(dims <= 255, "Invalid dims: ", dims);
+	JnifError::check(!baseType.isTop(), "Cannot construct an array type of ", dims,
 			" dimension(s) using as a base type Top (", baseType, ")");
-//		Error::check(!baseType.isArray(), "base type is already an array: ",
+//		JnifError::check(!baseType.isArray(), "base type is already an array: ",
 //				baseType);
 
 	Type type = Type(baseType, dims);
@@ -43,12 +43,12 @@ Type TypeFactory::arrayType(const Type& baseType, u4 dims) {
 }
 
 Type TypeFactory::fromConstClass(const String& className) {
-	Error::assert(!className.empty(), "Invalid string class");
+	JnifError::assert(!className.empty(), "Invalid string class");
 
 	if (className[0] == '[') {
 		const char* classNamePtr = className.c_str();
 		const Type& arrayType = fromFieldDesc(classNamePtr);
-		Error::assert(arrayType.isArray(), "Not an array: ", arrayType);
+		JnifError::assert(arrayType.isArray(), "Not an array: ", arrayType);
 		return arrayType;
 	} else {
 		return objectType(className);
@@ -80,7 +80,7 @@ Type TypeFactory::_parseBaseType(const char*& fieldDesc,
 			const char* classNameStart = fieldDesc;
 			int len = 0;
 			while (*fieldDesc != ';') {
-				Error::check(*fieldDesc != '\0', "");
+				JnifError::check(*fieldDesc != '\0', "");
 				fieldDesc++;
 				len++;
 			}
@@ -89,7 +89,7 @@ Type TypeFactory::_parseBaseType(const char*& fieldDesc,
 			return objectType(className);
 		}
 		default:
-			Error::raise("Invalid field desc ", originalFieldDesc);
+			JnifError::raise("Invalid field desc ", originalFieldDesc);
 	}
 }
 
@@ -108,14 +108,14 @@ Type TypeFactory::fromFieldDesc(const char*& fieldDesc) {
 
 	int dims = 0;
 	while (*fieldDesc == '[') {
-		Error::check(*fieldDesc != '\0',
+		JnifError::check(*fieldDesc != '\0',
 				"Reach end of string while searching for array. Field descriptor: ",
 				originalFieldDesc);
 		fieldDesc++;
 		dims++;
 	}
 
-	Error::check(*fieldDesc != '\0', "");
+	JnifError::check(*fieldDesc != '\0', "");
 
 	const Type& t = _getType(fieldDesc, originalFieldDesc, dims);
 
@@ -137,28 +137,28 @@ Type TypeFactory::fromMethodDesc(const char* methodDesc,
 		std::vector<Type>* argsType) {
 	const char* originalMethodDesc = methodDesc;
 
-	Error::check(*methodDesc == '(', "Invalid beginning of method descriptor: ",
+	JnifError::check(*methodDesc == '(', "Invalid beginning of method descriptor: ",
 			originalMethodDesc);
 	methodDesc++;
 
 	while (*methodDesc != ')') {
-		Error::check(*methodDesc != '\0', "Reached end of string: ",
+		JnifError::check(*methodDesc != '\0', "Reached end of string: ",
 				originalMethodDesc);
 
 		const Type& t = fromFieldDesc(methodDesc);
 		argsType->push_back(t);
 	}
 
-	Error::check(*methodDesc == ')', "Expected ')' in method descriptor: ",
+	JnifError::check(*methodDesc == ')', "Expected ')' in method descriptor: ",
 			originalMethodDesc);
 	methodDesc++;
 
-	Error::check(*methodDesc != '\0', "Reached end of string: ",
+	JnifError::check(*methodDesc != '\0', "Reached end of string: ",
 			originalMethodDesc);
 
 	const Type& returnType = _getReturnType(methodDesc);
 
-	Error::check(*methodDesc == '\0', "Expected end of string: %s",
+	JnifError::check(*methodDesc == '\0', "Expected end of string: %s",
 			originalMethodDesc);
 
 	return returnType;

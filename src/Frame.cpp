@@ -10,7 +10,7 @@
 namespace jnif {
 
 Type Frame::pop() {
-	Error::check(stack.size() > 0, "Trying to pop in an empty stack.");
+	JnifError::check(stack.size() > 0, "Trying to pop in an empty stack.");
 
 	Type t = stack.front();
 	stack.pop_front();
@@ -19,7 +19,7 @@ Type Frame::pop() {
 
 Type Frame::popOneWord() {
 	Type t = pop();
-	Error::check(t.isOneWord() || t.isTop(), "Type is not one word type: ", t,
+	JnifError::check(t.isOneWord() || t.isTop(), "Type is not one word type: ", t,
 			", frame: ", *this);
 	return t;
 }
@@ -28,7 +28,7 @@ Type Frame::popTwoWord() {
 	Type t1 = pop();
 	Type t2 = pop();
 
-	Error::check(
+	JnifError::check(
 			(t1.isOneWord() && t2.isOneWord())
 					|| (t1.isTwoWord() && t2.isTop()),
 			"Invalid types on top of the stack for pop2: ", t1, t2, *this);
@@ -39,25 +39,25 @@ Type Frame::popTwoWord() {
 
 Type Frame::popIntegral() {
 	Type t = popOneWord();
-	Error::assert(t.isIntegral(), "Invalid integral type on top of stack: ", t);
+	JnifError::assert(t.isIntegral(), "Invalid integral type on top of stack: ", t);
 	return t;
 }
 
 Type Frame::popFloat() {
 	Type t = popOneWord();
-	Error::assert(t.isFloat(), "invalid float type on top of the stack");
+	JnifError::assert(t.isFloat(), "invalid float type on top of the stack");
 	return t;
 }
 
 Type Frame::popLong() {
 	Type t = popTwoWord();
-	Error::check(t.isLong(), "invalid long type on top of the stack");
+	JnifError::check(t.isLong(), "invalid long type on top of the stack");
 	return t;
 }
 
 Type Frame::popDouble() {
 	Type t = popTwoWord();
-	Error::check(t.isDouble(), "Invalid double type on top of the stack: ", t);
+	JnifError::check(t.isDouble(), "Invalid double type on top of the stack: ", t);
 
 	return t;
 }
@@ -74,7 +74,7 @@ void Frame::popType(const Type& type) {
 	} else if (type.isObject()) {
 		popRef();
 	} else {
-		Error::raise("invalid pop type: ", type);
+		JnifError::raise("invalid pop type: ", type);
 	}
 }
 
@@ -92,12 +92,12 @@ void Frame::pushType(const Type& type) {
 	} else if (type.isObject() || type.isUninitThis()) {
 		push(type);
 	} else {
-		Error::raise("invalid push type: ", type);
+		JnifError::raise("invalid push type: ", type);
 	}
 }
 
 void Frame::setVar(u4* lvindex, const Type& t) {
-	Error::assert(t.isOneOrTwoWord(),
+	JnifError::assert(t.isOneOrTwoWord(),
 			"Setting var on non one-two word uninit this");
 
 	if (t.isOneWord()) {
@@ -115,13 +115,13 @@ void Frame::setVar2(u4 lvindex, const Type& t) {
 }
 
 void Frame::setRefVar(u4 lvindex, const Type& type) {
-	Error::check(type.isObject() || type.isNull() || type.isUninitThis(),
+	JnifError::check(type.isObject() || type.isNull() || type.isUninitThis(),
 			"Type must be object type: ", type);
 	setVar(&lvindex, type);
 }
 
 void Frame::cleanTops() {
-	Error::assert(!topsErased, "tops already erased: ", topsErased);
+	JnifError::assert(!topsErased, "tops already erased: ", topsErased);
 
 	for (u4 i = 0; i < lva.size(); i++) {
 		Type t = lva[i];
@@ -130,7 +130,7 @@ void Frame::cleanTops() {
 
 			// workaround!!!
 			if (top.isTop()) {
-				Error::assert(top.isTop(), "Not top for two word: index: ", i,
+				JnifError::assert(top.isTop(), "Not top for two word: index: ", i,
 						", top: ", top, " for ", t, " in ", *this);
 				lva.erase(lva.begin() + i + 1);
 			}
@@ -149,7 +149,7 @@ void Frame::cleanTops() {
 }
 
 void Frame::_setVar(u4 lvindex, const Type& t) {
-	Error::check(lvindex < 256 * 256, "Index too large for LVA: ", lvindex);
+	JnifError::check(lvindex < 256 * 256, "Index too large for LVA: ", lvindex);
 
 	if (lvindex >= lva.size()) {
 		lva.resize(lvindex + 1, _typeFactory->topType());

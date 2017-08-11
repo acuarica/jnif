@@ -12,13 +12,13 @@
 namespace jnif {
 
 u2 Type::getCpIndex() const {
-	Error::check(isObject(), "Type is not object type to get cp index: ",
+	JnifError::check(isObject(), "Type is not object type to get cp index: ",
 			*this);
 	return classIndex;
 }
 
 String Type::getClassName() const {
-	Error::check(isObject(), "Type is not object type to get class name: ",
+	JnifError::check(isObject(), "Type is not object type to get class name: ",
 			*this);
 	if (isArray()) {
 		std::stringstream ss;
@@ -39,14 +39,14 @@ String Type::getClassName() const {
 }
 
 Type Type::elementType(TypeFactory& typeFactory) const {
-	Error::check(isArray(), "Type is not array: ", *this);
+	JnifError::check(isArray(), "Type is not array: ", *this);
 
 	Type type = Type(*this, dims - 1);
 	return typeFactory._addType(type);
 }
 
 Type Type::stripArrayType(TypeFactory& typeFactory) const {
-	Error::check(isArray(), "Type is not array: ", *this);
+	JnifError::check(isArray(), "Type is not array: ", *this);
 
 	Type type = Type(*this, 0);
 	return typeFactory._addType(type);

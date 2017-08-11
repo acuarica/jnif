@@ -60,7 +60,7 @@ public:
 	void parse(BufferReader& br, ClassFile& cf) {
 		u4 magic = br.readu4();
 
-		Error::check(magic == CLASSFILE_MAGIC,
+		JnifError::check(magic == CLASSFILE_MAGIC,
 				"Invalid magic number. Expected 0xcafebabe, found: ", magic);
 
 		u2 minorVersion = br.readu2();
@@ -98,7 +98,7 @@ public:
 			u2 descIndex = br.readu2();
 
 			Method* m = cf.addMethod(nameIndex, descIndex, accessFlags);
-      Error::trace("Method ", m->getName());
+      JnifError::trace("Method ", m->getName());
 
 			MethodAttrsParser().parse(br, cf, m->attrs);
 		}
@@ -208,7 +208,7 @@ private:
 					break;
 				}
 				default:
-					Error::raise("Error while reading tag: ", tag);
+					JnifError::raise("Error while reading tag: ", tag);
 			}
 		}
 	}

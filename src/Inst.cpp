@@ -10,31 +10,31 @@
 namespace jnif {
 
 Inst::~Inst() {
-  Error::trace("~Inst");
+  JnifError::trace("~Inst");
 }
 
 LabelInst::~LabelInst() {
-  Error::trace("~LabelInst");
+  JnifError::trace("~LabelInst");
 }
 
 ZeroInst::~ZeroInst() {
-  Error::trace("~ZeroInst");
+  JnifError::trace("~ZeroInst");
 }
 
 SwitchInst::~SwitchInst() {
-  Error::trace("~SwitchInst");
+  JnifError::trace("~SwitchInst");
 }
 
 TableSwitchInst::~TableSwitchInst() {
-  Error::trace("~TableSwitchInst");
+  JnifError::trace("~TableSwitchInst");
 }
 
 LookupSwitchInst::~LookupSwitchInst() {
-  Error::trace("~LookupSwitchInst");
+  JnifError::trace("~LookupSwitchInst");
 }
 
 void Inst::checkCast(bool cond, const char* kindName) const {
-	Error::assert(cond, "Inst is not a ", kindName, ": ", *this);
+	JnifError::assert(cond, "Inst is not a ", kindName, ": ", *this);
 }
 
 }

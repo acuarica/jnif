@@ -11,18 +11,18 @@
 namespace jnif {
 
 Inst* InstList::Iterator::operator*() {
-	Error::assert(position != NULL, "Dereferencing * on NULL");
+	JnifError::assert(position != NULL, "Dereferencing * on NULL");
 	return position;
 }
 
 Inst* InstList::Iterator::operator->() const {
-	Error::assert(position != NULL, "Dereferencing -> on NULL");
+	JnifError::assert(position != NULL, "Dereferencing -> on NULL");
 
 	return position;
 }
 
 InstList::Iterator& InstList::Iterator::operator++() {
-	Error::assert(position != NULL, "Doing ++ at NULL");
+	JnifError::assert(position != NULL, "Doing ++ at NULL");
 	position = position->next;
 
 	return *this;
@@ -35,13 +35,13 @@ InstList::Iterator& InstList::Iterator::operator--() {
 		position = position->prev;
 	}
 
-	Error::assert(position != NULL, "Doing -- at NULL after last");
+	JnifError::assert(position != NULL, "Doing -- at NULL after last");
 
 	return *this;
 }
 
 InstList::~InstList() {
-  Error::trace("~InstList");
+  JnifError::trace("~InstList");
 
 	for (Inst* inst = first; inst != NULL;) {
 		Inst* next = inst->next;
@@ -213,18 +213,18 @@ TInst* InstList::_create(const TArgs& ... args) {
 }
 
 void InstList::addInst(Inst* inst, Inst* pos) {
-	Error::assert((first == NULL) == (last == NULL),
+	JnifError::assert((first == NULL) == (last == NULL),
 			"Invalid head/tail/size: head: ", first, ", tail: ", last,
 			", size: ", _size);
 
-	Error::assert((first == NULL) == (_size == 0),
+	JnifError::assert((first == NULL) == (_size == 0),
 			"Invalid head/tail/size: head: ", first, ", tail: ", last,
 			", size: ", _size);
 
 	Inst* p;
 	Inst* n;
 	if (first == NULL) {
-		Error::assert(pos == NULL, "Invalid pos");
+		JnifError::assert(pos == NULL, "Invalid pos");
 
 		p = NULL;
 		n = NULL;

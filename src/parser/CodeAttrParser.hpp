@@ -118,8 +118,8 @@ public:
 					short targetOffset = br.readu2();
 					short labelpos = offset + targetOffset;
 
-					Error::assert(labelpos >= 0, "invalid target for jump: must be >= 0");
-					Error::assert(labelpos < br.size(), "invalid target for jump");
+					JnifError::assert(labelpos >= 0, "invalid target for jump: must be >= 0");
+					JnifError::assert(labelpos < br.size(), "invalid target for jump");
 
 					labelManager.createLabel(labelpos);
 					break;
@@ -127,12 +127,12 @@ public:
 				case KIND_TABLESWITCH: {
 					for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 						u1 pad = br.readu1();
-						Error::assert(pad == 0, "Padding must be zero");
+						JnifError::assert(pad == 0, "Padding must be zero");
 					}
 
 					{
 						bool check2 = br.offset() % 4 == 0;
-						Error::assert(check2, "%d", br.offset());
+						JnifError::assert(check2, "%d", br.offset());
 					}
 
 					int defOffset = br.readu4();
@@ -141,7 +141,7 @@ public:
 					int low = br.readu4();
 					int high = br.readu4();
 
-					Error::assert(low <= high, "low (%d) must be less or equal than high (%d)", low, high);
+					JnifError::assert(low <= high, "low (%d) must be less or equal than high (%d)", low, high);
 
 					for (int i = 0; i < high - low + 1; i++) {
 						int targetOffset = br.readu4();
@@ -152,7 +152,7 @@ public:
 				case KIND_LOOKUPSWITCH: {
 					for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 						u1 pad = br.readu1();
-						Error::assert(pad == 0, "Padding must be zero");
+						JnifError::assert(pad == 0, "Padding must be zero");
 					}
 
 					int defOffset = br.readu4();
@@ -171,7 +171,7 @@ public:
 //			case KIND_RESERVED:
 					//			break;
 				default:
-					Error::raise("default kind in parseInstTargets: "
+					JnifError::raise("default kind in parseInstTargets: "
 							"opcode: ", opcode, ", kind: ", kind);
 			}
 		}
@@ -241,25 +241,25 @@ public:
 			//inst.jump.label = targetOffset;
 
 			short labelpos = offset + targetOffset;
-			Error::check(labelpos >= 0,
+			JnifError::check(labelpos >= 0,
 					"invalid target for jump: must be >= 0");
-			Error::check(labelpos < br.size(), "invalid target for jump");
+			JnifError::check(labelpos < br.size(), "invalid target for jump");
 
 			//	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
 
 			LabelInst* targetLabel = labelManager[offset + targetOffset];
-			Error::check(targetLabel != NULL, "invalid label");
+			JnifError::check(targetLabel != NULL, "invalid label");
 
 			return instList.addJump(opcode, targetLabel);
 		} else if (kind == KIND_TABLESWITCH) {
 			for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 				u1 pad = br.readu1();
-				Error::assert(pad == 0, "Padding must be zero");
+				JnifError::assert(pad == 0, "Padding must be zero");
 			}
 
 			{
 				bool check2 = br.offset() % 4 == 0;
-				Error::assert(check2, "%d", br.offset());
+				JnifError::assert(check2, "%d", br.offset());
 			}
 
 			int defOffset = br.readu4();
@@ -267,7 +267,7 @@ public:
 			int low = br.readu4();
 			int high = br.readu4();
 
-			Error::assert(low <= high,
+			JnifError::assert(low <= high,
 					"low (%d) must be less or equal than high (%d)", low, high);
 
 			TableSwitchInst* ts = instList.addTableSwitch(def, low, high);
@@ -283,7 +283,7 @@ public:
 		} else if (kind == KIND_LOOKUPSWITCH) {
 			for (int i = 0; i < (((-offset - 1) % 4) + 4) % 4; i++) {
 				u1 pad = br.readu1();
-				Error::assert(pad == 0, "Padding must be zero");
+				JnifError::assert(pad == 0, "Padding must be zero");
 			}
 
 			int defOffset = br.readu4();
@@ -310,21 +310,21 @@ public:
 
 			return instList.addInvoke(opcode, methodRefIndex);
 		} else if (kind == KIND_INVOKEINTERFACE) {
-			Error::assert(opcode == OPCODE_invokeinterface, "invalid opcode");
+			JnifError::assert(opcode == OPCODE_invokeinterface, "invalid opcode");
 
 			u2 interMethodRefIndex = br.readu2();
 			u1 count = br.readu1();
 
-			Error::assert(count != 0, "Count is zero!");
+			JnifError::assert(count != 0, "Count is zero!");
 
 			u1 zero = br.readu1();
-			Error::assert(zero == 0, "Fourth operand must be zero");
+			JnifError::assert(zero == 0, "Fourth operand must be zero");
 
 			return instList.addInvokeInterface(interMethodRefIndex, count);
 		} else if (kind == KIND_INVOKEDYNAMIC) {
 			u2 callSite = br.readu2();
 			u2 zero = br.readu2();
-			Error::check(zero == 0, "Zero is not zero: ", zero);
+			JnifError::check(zero == 0, "Zero is not zero: ", zero);
 
 			return instList.addInvokeDynamic(callSite);
 		} else if (kind == KIND_TYPE) {
@@ -341,11 +341,11 @@ public:
 
 			return instList.addMultiArray(classIndex, dims);
 		} else if (kind == KIND_PARSE4TODO) {
-			Error::raise("FrParse4__TODO__Instr not implemented");
+			JnifError::raise("FrParse4__TODO__Instr not implemented");
 		} else if (kind == KIND_RESERVED) {
-			Error::raise("FrParseReservedInstr not implemented");
+			JnifError::raise("FrParseReservedInstr not implemented");
 		} else {
-			Error::raise("default kind in parseInstList");
+			JnifError::raise("default kind in parseInstList");
 		}
 	}
 
@@ -367,8 +367,8 @@ public:
 
 		u4 codeLen = br.readu4();
 
-		Error::check(codeLen > 0, "");
-		Error::check(codeLen < (2 << 16), "");
+		JnifError::check(codeLen > 0, "");
+		JnifError::check(codeLen < (2 << 16), "");
 
 		ca->codeLen = codeLen;
 
@@ -389,10 +389,10 @@ public:
 			u2 handlerPc = br.readu2();
 			ConstIndex catchType = br.readu2();
 
-			Error::check(startPc < endPc, "");
-			Error::check(endPc <= ca->codeLen, "");
-			Error::check(handlerPc < ca->codeLen, "");
-			Error::check(catchType == ConstPool::NULLENTRY || cp.isClass(catchType), "");
+			JnifError::check(startPc < endPc, "");
+			JnifError::check(endPc <= ca->codeLen, "");
+			JnifError::check(handlerPc < ca->codeLen, "");
+			JnifError::check(catchType == ConstPool::NULLENTRY || cp.isClass(catchType), "");
 
 			CodeExceptionEntry e;
 			e.startpc = labelManager.createExceptionLabel(startPc, true, false, false);

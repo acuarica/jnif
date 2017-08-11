@@ -213,7 +213,7 @@ public:
 	/**
 	 *
 	 */
-	String getSuperClassName() const {
+	const char* getSuperClassName() const {
 		return getClassName(superClassIndex);
 	}
 

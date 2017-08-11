@@ -18,16 +18,16 @@ public:
 
 	Block(Block* next) :
 			_next(next), _buffer(malloc(BLOCK_SIZE)), _position(0) {
-    Error::check(_buffer != NULL, "Block alloc is NULL");
+    JnifError::check(_buffer != NULL, "Block alloc is NULL");
 	}
 
 	~Block() {
-    Error::trace("Block::~Block");
+    JnifError::trace("Block::~Block");
 		free(_buffer);
 	}
 
 	void* alloc(int size) {
-    Error::assert(size <= BLOCK_SIZE, "Size too large to be allocated in a block: ", size);
+    JnifError::assert(size <= BLOCK_SIZE, "Size too large for a block: ", size);
 
 		if (_position + size <= BLOCK_SIZE) {
 			void* offset = (char*) _buffer + _position;
@@ -48,7 +48,7 @@ Arena::Arena() :
 }
 
 Arena::~Arena() {
-  Error::trace("Arena::~Arena");
+  JnifError::trace("Arena::~Arena");
 
 	for (Block* block = _head; block != NULL;) {
 		Block* next = block->_next;
@@ -56,7 +56,7 @@ Arena::~Arena() {
 		block = next;
 	}
 
-  Error::trace("END Arena::~Arena");
+  JnifError::trace("END Arena::~Arena");
 }
 
 void* Arena::alloc(int size) {
@@ -66,7 +66,7 @@ void* Arena::alloc(int size) {
 		res = _head->alloc(size);
 	}
 
-	Error::assert(res != NULL, "alloc == NULL");
+	JnifError::assert(res != NULL, "alloc == NULL");
 
 	return res;
 }

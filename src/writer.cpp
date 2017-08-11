@@ -59,7 +59,7 @@ public:
 	}
 
 	void writeu1(u1 value) {
-		Error::check(offset + 1 <= len, "Invalid write: offset: ", offset + 1,
+		JnifError::check(offset + 1 <= len, "Invalid write: offset: ", offset + 1,
 				", len: ", len);
 
 		buffer[offset] = value;
@@ -68,7 +68,7 @@ public:
 	}
 
 	void writeu2(u2 value) {
-		Error::check(offset + 2 <= len, "Invalid write: offset: ", offset + 2,
+		JnifError::check(offset + 2 <= len, "Invalid write: offset: ", offset + 2,
 				", len: ", len, ", value: ", value);
 
 		buffer[offset + 0] = ((u1*) &value)[1];
@@ -78,7 +78,7 @@ public:
 	}
 
 	void writeu4(u4 value) {
-		Error::check(offset + 4 <= len, "Invalid write: offset: ", offset + 4,
+		JnifError::check(offset + 4 <= len, "Invalid write: offset: ", offset + 4,
 				", len: ", len);
 
 		buffer[offset + 0] = ((u1*) &value)[3];
@@ -90,7 +90,7 @@ public:
 	}
 
 	void writecount(const void* source, int count) {
-		Error::check(offset + count <= len, "Invalid write count");
+		JnifError::check(offset + count <= len, "Invalid write count");
 
 		copy((u1*) source, (u1*) source + count, buffer + offset);
 
@@ -109,7 +109,7 @@ private:
 };
 
 template<typename TWriter>
-class ClassWriter: private Error {
+class ClassWriter: private Error<JnifException> {
 public:
 
 	ClassWriter(TWriter& bw) :

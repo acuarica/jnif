@@ -87,7 +87,7 @@ std::ostream& operator<<(std::ostream& os, const ConstTag& tag) {
 }
 
 std::ostream& operator <<(std::ostream& os, Opcode opcode) {
-	Error::assert(opcode >= 0, "");
+	JnifError::assert(opcode >= 0, "");
 
 	os << OPCODES[opcode];
 	return os;
@@ -208,16 +208,16 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 			break;
 		}
 		case KIND_PARSE4TODO:
-			Error::raise("FrParse4__TODO__Instr not implemented");
+			JnifError::raise("FrParse4__TODO__Instr not implemented");
 			break;
 		case KIND_RESERVED:
-			Error::raise("FrParseReservedInstr not implemented");
+			JnifError::raise("FrParseReservedInstr not implemented");
 			break;
 		case KIND_FRAME:
 			//	os << "Frame " << inst.frame.frame;
 			break;
 		default:
-			Error::raise("print inst: unknown inst kind!");
+			JnifError::raise("print inst: unknown inst kind!");
 	}
 
 	return os;
@@ -273,7 +273,7 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 	} else {
 		os << "UNKNOWN TYPE!!!";
 
-		Error::raise("Invalid type on write: ", type);
+		JnifError::raise("Invalid type on write: ", type);
 	}
 
 	return os;
@@ -336,7 +336,7 @@ std::ostream& operator<<(std::ostream& os, const Method& m) {
 	return os;
 }
 
-class ClassPrinter: private Error {
+class ClassPrinter: private Error<JnifException> {
 public:
 
 	ClassPrinter(const ClassFile& cf, ostream& os, int tabs) :
