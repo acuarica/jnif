@@ -23,7 +23,7 @@ else
   $(error Unrecognized environment. Only supported Darwin and Linux)
 endif
 
-CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O0
+CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O3
 
 #
 # Rules to make $(LIBJNIF)
@@ -118,7 +118,7 @@ runmaven: $(TESTMAVEN)
 
 testmaven: $(TESTMAVEN)
 
-$(TESTMAVEN): LDFLAGS+=-lz -lsqlite3
+$(TESTMAVEN): LDFLAGS+=-lz -lsqlite3 -O3
 $(TESTMAVEN): $(TESTMAVEN_OBJS) $(LIBJNIF)
 	$(CXX) $(LDFLAGS) -o $@ $^
 

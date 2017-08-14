@@ -25,7 +25,7 @@ ConstIndex ConstPool::addClass(ConstIndex classNameIndex) {
 }
 
 ConstIndex ConstPool::addClass(const char* className) {
-	ConstIndex classNameIndex = addUtf8(className);
+	ConstIndex classNameIndex = putUtf8(className);
 	return addClass(classNameIndex);
 }
 
@@ -145,6 +145,25 @@ ConstIndex ConstPool::addInvokeDynamic(u2 bootstrapMethodAttrIndex,
 	return _addSingle(e);
 }
 
+ConstIndex ConstPool::_addSingle(const ConstItem& entry) {
+  int index = entries.size();
+
+  JnifError::check(index < (1<<16), "CP limit reach: index=", index);
+  entries.push_back(entry);
+
+  return (ConstIndex)index;
+}
+
+ConstIndex ConstPool::_addDoubleEntry(const ConstItem& entry) {
+  ConstIndex index = entries.size();
+  entries.push_back(entry);
+
+  ConstItem nullEntry(CONST_NULLENTRY);
+  entries.push_back(nullEntry);
+
+  return index;
+}
+
 ConstIndex ConstPool::getIndexOfUtf8(const char* utf8) {
 	auto it = utf8s.find(utf8);
 	if (it != utf8s.end()) {
@@ -154,6 +173,17 @@ ConstIndex ConstPool::getIndexOfUtf8(const char* utf8) {
 	} else {
 		return NULLENTRY;
 	}
+}
+
+ConstIndex ConstPool::getIndexOfClass(const char* className) {
+  auto it = classes.find(className);
+  if (it != utf8s.end()) {
+    ConstIndex idx = it->second;
+    // JnifError::assert(getUtf8(idx) != utf8, "Error on get index of utf8");
+    return idx;
+  } else {
+    return NULLENTRY;
+  }
 }
 
 const ConstItem* ConstPool::_getEntry(ConstIndex i) const {

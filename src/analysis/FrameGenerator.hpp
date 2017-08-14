@@ -21,8 +21,10 @@ public:
 		if (type.isObject()) {
 			const String& className = type.getClassName();
 
-			ConstIndex utf8index = _cf.putUtf8(className.c_str());
-			ConstIndex index = _cf.addClass(utf8index);
+			// ConstIndex utf8index = _cf.putUtf8(className.c_str());
+			// ConstIndex index = _cf.addClass(utf8index);
+      // fprintf(stderr, "%s\n", className.c_str());
+			ConstIndex index = _cf.putClass(className.c_str());
 			type.setCpIndex(index);
 
 			if (!type.init) {
@@ -96,8 +98,7 @@ public:
 			initFrame.setVar(&lvindex, t);
 		}
 
-		ControlFlowGraph* cfgp = new ControlFlowGraph(code->instList,
-				_typeFactory);
+		ControlFlowGraph* cfgp = new ControlFlowGraph(code->instList, _typeFactory);
 		code->cfg = cfgp;
 
 		ControlFlowGraph& cfg = *cfgp;

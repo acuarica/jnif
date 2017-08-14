@@ -24,7 +24,7 @@ static int visitFile(const char* filePath, const struct stat*, int) {
 		if (!is.is_open()) {
 			int m;
 			is >> m;
-			cerr << "Erro on opening file: " << m << endl;
+			cerr << "Error on opening file: " << m << endl;
 			throw "File not opened!";
 		}
 

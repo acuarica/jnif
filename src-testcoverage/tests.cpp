@@ -14,10 +14,10 @@ using namespace jnif;
 
 template<typename T>
 void assertEquals(const T* lhsData, int lhsLen, const T* rhsData, int rhsLen) {
-	Error::assertEquals(lhsLen, rhsLen, "Invalid len for arrays");
+	JnifError::assertEquals(lhsLen, rhsLen, "Invalid len for arrays");
 
 	for (int i = 0; i < lhsLen; i++) {
-		Error::assertEquals(lhsData[i], rhsData[i], "Data difers at pos:", i);
+		JnifError::assertEquals(lhsData[i], rhsData[i], "Data difers at pos:", i);
 	}
 }
 
@@ -69,7 +69,7 @@ void testSize(const JavaFile& jf) {
 
 	int newlen = cf.computeSize();
 
-	Error::assertEquals(newlen, jf.len);
+	JnifError::assertEquals(newlen, jf.len);
 }
 
 void testWriter(const JavaFile& jf) {
@@ -77,7 +77,7 @@ void testWriter(const JavaFile& jf) {
 
 	int newlen = cf.computeSize();
 
-	Error::assertEquals(newlen, jf.len);
+	JnifError::assertEquals(newlen, jf.len);
 
 	u1* newdata = new u1[newlen];
 
@@ -132,7 +132,7 @@ void testNopAdderInstrSize(const JavaFile& jf) {
 	NopAdderInstr instr(cf);
 	int newlen = cf.computeSize();
 
-	Error::assertEquals(jf.len + instr.diff, newlen);
+	JnifError::assertEquals(jf.len + instr.diff, newlen);
 }
 
 void testNopAdderInstrWriter(const JavaFile& jf) {
@@ -142,7 +142,7 @@ void testNopAdderInstrWriter(const JavaFile& jf) {
 
 	int newlen = cf.computeSize();
 
-	Error::assertEquals(jf.len + instr.diff, newlen);
+	JnifError::assertEquals(jf.len + instr.diff, newlen);
 
 	u1* newdata = new u1[newlen];
 	cf.write(newdata, newlen);
@@ -151,7 +151,7 @@ void testNopAdderInstrWriter(const JavaFile& jf) {
 
 	int newlen2 = cf.computeSize();
 
-	Error::assertEquals(newlen2, newlen);
+	JnifError::assertEquals(newlen2, newlen);
 
 	u1* newdata2 = new u1[newlen2];
 	cf.write(newdata2, newlen2);

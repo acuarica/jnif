@@ -678,11 +678,23 @@ public:
 	}
 
 	ConstIndex getIndexOfUtf8(const char* utf8);
+	ConstIndex getIndexOfClass(const char* className);
 
 	ConstIndex putUtf8(const char* utf8) {
 		ConstIndex i = getIndexOfUtf8(utf8);
 		if (i == NULLENTRY) {
 			return addUtf8(utf8);
+		} else {
+			return i;
+		}
+	}
+
+	ConstIndex putClass(const char* className) {
+		ConstIndex i = getIndexOfClass(className);
+		if (i == NULLENTRY) {
+			i = addClass(className);
+      classes[className] = i;
+      return i;
 		} else {
 			return i;
 		}
@@ -703,22 +715,9 @@ private:
 		entries.push_back(nullEntry);
 	}
 
-	ConstIndex _addSingle(const ConstItem& entry) {
-		ConstIndex index = entries.size();
-		entries.push_back(entry);
+	ConstIndex _addSingle(const ConstItem& entry);
 
-		return index;
-	}
-
-	ConstIndex _addDoubleEntry(const ConstItem& entry) {
-		ConstIndex index = entries.size();
-		entries.push_back(entry);
-
-		ConstItem nullEntry(CONST_NULLENTRY);
-		entries.push_back(nullEntry);
-
-		return index;
-	}
+	ConstIndex _addDoubleEntry(const ConstItem& entry);
 
 	const ConstItem* _getEntry(ConstIndex i) const;
 
@@ -740,6 +739,7 @@ private:
 	}
 
 	std::map<String, ConstIndex> utf8s;
+	std::map<String, ConstIndex> classes;
 };
 
 std::ostream& operator<<(std::ostream& os, const ConstTag& tag);

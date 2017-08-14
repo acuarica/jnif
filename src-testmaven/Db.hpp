@@ -42,7 +42,7 @@ public:
     sqlite3_exec(_db, "PRAGMA journal_mode = OFF", NULL, NULL, NULL);
     sqlite3_exec(_db, "PRAGMA synchronous = OFF", NULL, NULL, NULL);
     sqlite3_exec(_db, "PRAGMA locking_mode = EXCLUSIVE", NULL, NULL, NULL);
-    sqlite3_exec(_db, "PRAGMA foreign_keys = ON", NULL, NULL, NULL);
+    // sqlite3_exec(_db, "PRAGMA foreign_keys = ON", NULL, NULL, NULL);
   }
 
   ~Db() {

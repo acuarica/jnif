@@ -72,7 +72,7 @@ private:
     }
 
     auto isSuffix = [](const std::string& suffix, const std::string& text) {
-      auto res =std::mismatch(suffix.rbegin(), suffix.rend(), text.rbegin());
+      auto res = std::mismatch(suffix.rbegin(), suffix.rend(), text.rbegin());
       return res.first == suffix.rend();
     };
 
