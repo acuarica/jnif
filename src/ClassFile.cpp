@@ -16,6 +16,9 @@
 #include "parser/StackMapTableAttrParser.hpp"
 #include "parser/SourceFileAttrParser.hpp"
 #include "parser/SignatureAttrParser.hpp"
+#include "analysis/SmtBuilder.hpp"
+#include "analysis/ComputeFrames.hpp"
+#include "analysis/FrameGenerator.hpp"
 
 namespace jnif {
 
@@ -102,6 +105,25 @@ Method* ClassFile::addMethod(ConstIndex nameIndex, ConstIndex descIndex,
 	Method* method = _arena.create<Method>(accessFlags, nameIndex, descIndex, this);
 	methods.push_back(method);
 	return method;
+}
+
+void ClassFile::computeFrames(IClassPath* classPath) {
+  computeSize();
+
+  FrameGenerator fg(*this, classPath);
+
+  for (Method* method : methods) {
+    CodeAttr* code = method->codeAttr();
+
+    if (code != NULL) {
+      bool hasJsrOrRet = code->instList.hasJsrOrRet();
+      if (hasJsrOrRet) {
+        return;
+      }
+
+      fg.computeFrames(code, method);
+    }
+  }
 }
 
 static std::ostream& dotFrame(std::ostream& os, const Frame& frame) {

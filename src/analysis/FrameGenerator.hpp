@@ -112,7 +112,6 @@ public:
         }
       }
 
-      // fprintf(stderr, "%ld/%ld\n", code->maxStack, maxStack);
       code->maxStack = maxStack;
 			return;
 		}
@@ -242,7 +241,6 @@ public:
 
 		code->attrs.add(smt);
 
-    // fprintf(stderr, "%ld/%ld\n", code->maxStack, maxStack);
     code->maxStack = maxStack;
 	}
 

@@ -233,6 +233,10 @@ public:
 
 	~CodeAttr();
 
+  /**
+   * The value of maxStack gives the maximum depth of the operand stack of this
+   * method at any point during execution of the method.
+   */
 	u2 maxStack;
 	u2 maxLocals;
 	u4 codeLen;

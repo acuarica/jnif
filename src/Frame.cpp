@@ -6,6 +6,10 @@
  */
 #include "Frame.hpp"
 #include "Error.hpp"
+#include "jnif.hpp"
+#include "analysis/SmtBuilder.hpp"
+#include "analysis/ComputeFrames.hpp"
+#include "analysis/ComputeFrames.hpp"
 
 namespace jnif {
 
@@ -154,6 +158,12 @@ void Frame::cleanTops() {
 			return;
 		}
 	}
+}
+
+void Frame::join(Frame& how, IClassPath* classPath) {
+  TypeFactory typeFactory;
+  ComputeFrames comp;
+  comp.join(typeFactory, *this, how, classPath);
 }
 
 void Frame::_setVar(u4 lvindex, const Type& t) {
