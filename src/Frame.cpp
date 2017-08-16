@@ -29,8 +29,7 @@ Type Frame::popTwoWord() {
 	Type t2 = pop();
 
 	JnifError::check(
-			(t1.isOneWord() && t2.isOneWord())
-					|| (t1.isTwoWord() && t2.isTop()),
+			(t1.isOneWord() && t2.isOneWord()) || (t1.isTwoWord() && t2.isTop()),
 			"Invalid types on top of the stack for pop2: ", t1, t2, *this);
 	//Error::check(t2.isTop(), "Type is not Top type: ", t2, t1, *this);
 
@@ -76,6 +75,15 @@ void Frame::popType(const Type& type) {
 	} else {
 		JnifError::raise("invalid pop type: ", type);
 	}
+}
+
+void Frame::push(const Type& t) {
+  stack.push_front(t);
+
+  if (maxStack < stack.size()) {
+    JnifError::assert(maxStack + 1 == stack.size(), "Invalid inc maxStack/size");
+    maxStack++;
+  }
 }
 
 void Frame::pushType(const Type& type) {

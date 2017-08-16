@@ -25,7 +25,7 @@ class Frame {
 public:
 
 	Frame(TypeFactory* typeFactory) :
-			valid(false), topsErased(false), _typeFactory(typeFactory) {
+    valid(false), topsErased(false), maxStack(0), _typeFactory(typeFactory) {
 		lva.reserve(256);
 	}
 
@@ -57,9 +57,7 @@ public:
 
 	void pushType(const Type& type);
 
-	void push(const Type& t) {
-		stack.push_front(t);
-	}
+	void push(const Type& t);
 
 	void pushInt() {
 		push(_typeFactory->intType());
@@ -130,6 +128,8 @@ public:
 	std::list<Type> stack;
 	bool valid;
 	bool topsErased;
+
+  unsigned long maxStack;
 
 	friend bool operator ==(const Frame& lhs, const Frame& rhs) {
 		return lhs.lva == rhs.lva && lhs.stack == rhs.stack

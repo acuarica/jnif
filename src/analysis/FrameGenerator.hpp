@@ -21,19 +21,12 @@ public:
 		if (type.isObject()) {
 			const String& className = type.getClassName();
 
-			// ConstIndex utf8index = _cf.putUtf8(className.c_str());
-			// ConstIndex index = _cf.addClass(utf8index);
-      // fprintf(stderr, "%s\n", className.c_str());
 			ConstIndex index = _cf.putClass(className.c_str());
 			type.setCpIndex(index);
 
 			if (!type.init) {
 				JnifError::assert(type.uninit.newinst->isType(), "It is not type");
 				LabelInst* l = instList.addLabel(type.uninit.newinst);
-				//cerr << instList << endl;
-				//type.uninit.label = l;
-				//type.uninit.newinst->
-
 				type = _typeFactory.uninitType(-1, l);
 			}
 		}
@@ -50,18 +43,12 @@ public:
 	}
 
 	void computeFrames(CodeAttr* code, Method* method) {
-
 		for (auto it = code->attrs.begin(); it != code->attrs.end(); it++) {
 			Attr* attr = *it;
 			if (attr->kind == ATTR_SMT) {
 				code->attrs.attrs.erase(it);
-				// delete attr;
 				break;
 			}
-		}
-
-		if (!code->instList.hasBranches() && !code->hasTryCatch()) {
-			return;
 		}
 
 		if (_attrIndex == ConstPool::NULLENTRY) {
@@ -113,6 +100,23 @@ public:
 		comp.computeState(*to, initFrame, code->instList, _cf, code, _classPath,
 				method, _typeFactory);
 
+    u4 maxStack = code->maxStack;
+    if (!code->instList.hasBranches() && !code->hasTryCatch()) {
+      for (BasicBlock* bb : cfg) {
+        if (maxStack < bb->in.maxStack) {
+          maxStack = bb->in.maxStack;
+        }
+
+        if (maxStack < bb->out.maxStack) {
+          maxStack = bb->out.maxStack;
+        }
+      }
+
+      // fprintf(stderr, "%ld/%ld\n", code->maxStack, maxStack);
+      code->maxStack = maxStack;
+			return;
+		}
+
 		SmtAttr* smt = new SmtAttr(_attrIndex, &_cf);
 
 		int totalOffset = -1;
@@ -134,9 +138,7 @@ public:
 			int isChopAppend(Frame& current, Frame& prev) {
 				int diff = current.lva.size() - prev.lva.size();
 
-				for (u4 i = 0;
-						i < std::min(current.lva.size(), prev.lva.size());
-						++i) {
+				for (u4 i = 0; i < std::min(current.lva.size(), prev.lva.size()); ++i) {
 					if (current.lva.at(i) != prev.lva.at(i)) {
 						return 0;
 					}
@@ -149,12 +151,20 @@ public:
 		} s;
 
 		for (BasicBlock* bb : cfg) {
+      if (maxStack < bb->in.maxStack) {
+        maxStack = bb->in.maxStack;
+      }
+
+      if (maxStack < bb->out.maxStack) {
+        maxStack = bb->out.maxStack;
+      }
+
 			if (bb->start != code->instList.end()) {
 				Inst* start = *bb->start;
-				if (start->isLabel()
-						&& (start->label()->isBranchTarget
+				if (start->isLabel() && (start->label()->isBranchTarget
 								|| start->label()->isCatchHandler)) {
 					Frame& current = bb->in;
+
 					current.cleanTops();
 
 					setCpIndex(current, code->instList);
@@ -231,6 +241,9 @@ public:
 		//code->cfg = cfgp;
 
 		code->attrs.add(smt);
+
+    // fprintf(stderr, "%ld/%ld\n", code->maxStack, maxStack);
+    code->maxStack = maxStack;
 	}
 
 private:
