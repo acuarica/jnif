@@ -45,10 +45,13 @@ public:
 	}
 
 	template<typename T, typename ... TArgs>
-	static inline void assertEquals(const T& expected, const T& actual,
-			const TArgs& ... args) {
+	static inline void assertEquals(
+      const T& expected,
+      const T& actual,
+      const TArgs& ... args
+  ) {
 		assert(expected == actual, "assertEqual failed: expected=", expected,
-				", actual=", actual, ", message: ", args...);
+           ", actual=", actual, ", message: ", args...);
 	}
 
 	template<typename ... TArgs>

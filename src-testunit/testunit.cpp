@@ -25,8 +25,8 @@ static void testEmptyModel() {
 	ClassFile cf("jnif/EmptyModel");
 
 	//Error::assertEquals(String("jnif/EmptyModel"), cf.getThisClassName());
-	Error::assertEquals(String("java/lang/Object"), cf.getSuperClassName());
-	Error::assertEquals(Version(51, 0), cf.version);
+	JnifError::assertEquals(String("java/lang/Object"), String(cf.getSuperClassName()));
+	JnifError::assertEquals(Version(51, 0), cf.version);
 
 	//Error::assertEquals(String("java/lang/Object"), cf.());
 }
@@ -37,8 +37,7 @@ static void testPrinterModel() {
 	os << emptyCf;
 
 	ClassFile cf2("jnif/test/generated/Class2", "jnif/test/generated/Class");
-	cf2.addMethod("main", "([Ljava/lang/String;)V",
-			METHOD_STATIC | METHOD_PUBLIC);
+	cf2.addMethod("main", "([Ljava/lang/String;)V", METHOD_STATIC | METHOD_PUBLIC);
 	ofstream os2;
 	os2 << cf2;
 }
@@ -73,7 +72,7 @@ static void testJoinFrameObjectAndEmpty() {
 	res.lva.resize(2, tf.topType());
 	res.setVar2(0, s);
 
-	Error::assertEquals(res, lhs);
+	JnifError::assertEquals(res, lhs);
 }
 
 static void testJoinFrameException() {
@@ -95,7 +94,7 @@ static void testJoinFrameException() {
 	res.lva.resize(2, tf.topType());
 	res.setVar2(0, classType);
 
-	Error::assertEquals(res, lhs);
+	JnifError::assertEquals(res, lhs);
 }
 
 static void testJoinFrame() {
@@ -106,7 +105,7 @@ static void testJoinFrame() {
 			METHOD_PUBLIC | METHOD_STATIC);
 	ConstIndex cidx = cf.addUtf8("Code");
 	CodeAttr* code = new CodeAttr(cidx, &cf);
-	m->add(code);
+	m->attrs.add(code);
 	InstList& instList = m->codeAttr()->instList;
 
 	ConstIndex idx = cf.addClass("testunit/Class");
@@ -156,7 +155,7 @@ static void testJoinStack() {
 	Method* m = cf.addMethod("method", "()Ltestunit/Class;", METHOD_PUBLIC);
 	auto cidx = cf.addUtf8("Code");
 	CodeAttr* code = new CodeAttr(cidx, &cf);
-	m->add(code);
+	m->attrs.add(code);
 	InstList& instList = m->codeAttr()->instList;
 
 	auto idx = cf.addClass("testunit/Class");
