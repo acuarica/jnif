@@ -46,6 +46,7 @@ signature, exceptions) values (?1, ?2, ?3, ?4, ?5, ?6)"),
   {
   }
 
+    int jarnotfound=0;
   void process(const char* path, const char* id) {
     jarc++;
 
@@ -57,7 +58,6 @@ signature, exceptions) values (?1, ?2, ?3, ?4, ?5, ?6)"),
     const long jarid = db.lastInsertRowid();
 
     fprintf(stderr, "[#%d %s ... ", jarc, id);
-
     try {
       UnzipFile uf(jarpath.c_str());
       int csc = uf.forEach(this, jarid, [] (void* mc, int jid, void* buf, int s) {
@@ -65,6 +65,7 @@ signature, exceptions) values (?1, ?2, ?3, ?4, ?5, ?6)"),
         });
       fprintf(stderr, "%d classes]\n", csc);
     } catch (const ZipException& ex) {
+        jarnotfound++;
       fprintf(stderr, "CANTOPEN]\n");
     }
   }
@@ -353,6 +354,7 @@ int main(int argc, const char* argv[]) {
         return 0;
       }, &mc);
 
+    printf(": %d\n", mc.jarnotfound);
     printf("Total artifacts processed: %d\n", mc.jarc);
   } catch (const DbException& e) {
     cerr << e << endl;
