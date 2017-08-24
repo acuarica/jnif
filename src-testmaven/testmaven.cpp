@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <tuple>
 
 #include "UnzipFile.hpp"
 #include "Db.hpp"
@@ -243,89 +244,108 @@ void doInst(Inst& inst)  {
 	}
 }
 
-  long getClassName(const char* className) {
-    getclassname.bindText(1, className);
-    int rc = getclassname.step();
-    long cnid;
-    if (rc == SQLITE_ROW) {
-      cnid = getclassname.getLong(0);
-    } else {
-      DbError::check(rc == SQLITE_DONE, "getClassName: ", rc);
-
-      insclassname.bindText(1, className);
-      insclassname.exec();
-
-      cnid = db.lastInsertRowid();
+    long getClassName(const string& className) {
+        return getByValue(classNameConstPool, className);
     }
 
-    getclassname.reset();
-
-    return cnid;
-  }
-
-  long getMethodDesc(const char* methodDesc) {
-    getmethoddesc.bindText(1, methodDesc);
-    int rc = getmethoddesc.step();
-    long rowid;
-    if (rc == SQLITE_ROW) {
-      rowid = getmethoddesc.getLong(0);
-    } else {
-      DbError::check(rc == SQLITE_DONE, "getMethodDesc: ", rc);
-
-      insmethoddesc.bindText(1, methodDesc);
-      insmethoddesc.exec();
-
-      rowid = db.lastInsertRowid();
+    long getMethodDesc(const string& methodDesc) {
+        return getByValue(methodDescConstPool, methodDesc);
     }
 
-    getmethoddesc.reset();
-
-    return rowid;
-  }
-
-  long getMethodRef(const char* className, const char* methodName, const char* methodDesc) {
-    long cnid = getClassName(className);
-    long mdid = getMethodDesc(methodDesc);
-    getmethodref.bindLong(1, cnid);
-    getmethodref.bindText(2, methodName);
-    getmethodref.bindLong(3, mdid);
-    int rc = getmethodref.step();
-    long rowid;
-    if (rc == SQLITE_ROW) {
-      rowid = getmethodref.getLong(0);
-    } else {
-      DbError::check(rc == SQLITE_DONE, "getMethodRef: ", rc);
-
-      insmethodref.bindLong(1, cnid);
-      insmethodref.bindText(2, methodName);
-      insmethodref.bindLong(3, mdid);
-      insmethodref.exec();
-
-      rowid = db.lastInsertRowid();
+    long getMethodRef(const string& className, const string& methodName, const string& methodDesc) {
+        long cnid = getClassName(className);
+        long mdid = getMethodDesc(methodDesc);
+        return getByValue(methodRefConstPool, make_tuple(cnid, methodName, mdid));
     }
 
-    getmethodref.reset();
+    template <typename TKey>
+    static long getByValue(map<TKey, long>& cpMap, const TKey& value) {
+        auto it = cpMap.find(value);
+        if (it != cpMap.end()) {
+            return it->second;
+        } else {
+            long id = cpMap.size() + 1;
+            cpMap[value] = id;
+            return id;
+        }
+    }
 
-    return rowid;
-  }
+  // long getClassName2(const char* className) {
+  //   getclassname.bindText(1, className);
+  //   int rc = getclassname.step();
+  //   long cnid;
+  //   if (rc == SQLITE_ROW) {
+  //     cnid = getclassname.getLong(0);
+  //   } else {
+  //     DbError::check(rc == SQLITE_DONE, "getClassName: ", rc);
+  //     insclassname.bindText(1, className);
+  //     insclassname.exec();
+  //     cnid = db.lastInsertRowid();
+  //   }
+  //   getclassname.reset();
+  //   return cnid;
+  // }
 
-  const char* repo;
-  Db db;
+  // long getMethodDesc(const char* methodDesc) {
+  //   getmethoddesc.bindText(1, methodDesc);
+  //   int rc = getmethoddesc.step();
+  //   long rowid;
+  //   if (rc == SQLITE_ROW) {
+  //     rowid = getmethoddesc.getLong(0);
+  //   } else {
+  //     DbError::check(rc == SQLITE_DONE, "getMethodDesc: ", rc);
+  //     insmethoddesc.bindText(1, methodDesc);
+  //     insmethoddesc.exec();
+  //     rowid = db.lastInsertRowid();
+  //   }
+  //   getmethoddesc.reset();
+  //   return rowid;
+  // }
 
-  Stmt getclassname;
-  Stmt getmethoddesc;
-  Stmt getmethodref;
-  Stmt insclassname;
-  Stmt insmethoddesc;
-  Stmt insmethodref;
-  Stmt inssignature;
-  Stmt insjar;
-  Stmt insclass;
-  Stmt insinterface;
-  Stmt insmethod;
-  Stmt inscode;
+  // long getMethodRef32(const char* className, const char* methodName, const char* methodDesc) {
+  //   long cnid = getClassName(className);
+  //   long mdid = getMethodDesc(methodDesc);
+  //   getmethodref.bindLong(1, cnid);
+  //   getmethodref.bindText(2, methodName);
+  //   getmethodref.bindLong(3, mdid);
+  //   int rc = getmethodref.step();
+  //   long rowid;
+  //   if (rc == SQLITE_ROW) {
+  //     rowid = getmethodref.getLong(0);
+  //   } else {
+  //     DbError::check(rc == SQLITE_DONE, "getMethodRef: ", rc);
+  //     insmethodref.bindLong(1, cnid);
+  //     insmethodref.bindText(2, methodName);
+  //     insmethodref.bindLong(3, mdid);
+  //     insmethodref.exec();
+  //     rowid = db.lastInsertRowid();
+  //   }
+  //   getmethodref.reset();
+  //   return rowid;
+  // }
 
-  int jarc;
+
+    const char* repo;
+    Db db;
+
+    Stmt getclassname;
+    Stmt getmethoddesc;
+    Stmt getmethodref;
+    Stmt insclassname;
+    Stmt insmethoddesc;
+    Stmt insmethodref;
+    Stmt inssignature;
+    Stmt insjar;
+    Stmt insclass;
+    Stmt insinterface;
+    Stmt insmethod;
+    Stmt inscode;
+
+    int jarc;
+
+    map<string, long> classNameConstPool;
+    map<string, long> methodDescConstPool;
+    map<tuple<long, string, long>, long> methodRefConstPool;
 
 };
 
@@ -351,6 +371,7 @@ int main(int argc, const char* argv[]) {
 
     db.exec(selectArts, [] (void* mc, int, char** argv, char**) {
         ((MavenClass*)mc)->process(argv[3], argv[2]);
+        // if (((MavenClass*)mc)->jarc == 100) return 1;
         return 0;
       }, &mc);
 
