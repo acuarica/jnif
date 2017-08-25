@@ -52,7 +52,7 @@ $(LIBJNIF_BUILD)/jar:
 #
 # Rules to make $(TESTUNIT)
 #
-TESTUNIT=$(BUILD)/testunit.bin
+TESTUNIT=$(BUILD)/testunit.mach-o
 TESTUNIT_BUILD=$(BUILD)/testunit
 TESTUNIT_SRC=src-testunit
 TESTUNIT_HPPS=$(wildcard $(TESTUNIT_SRC)/*.hpp) $(LIBJNIF_HPPS)
@@ -71,7 +71,7 @@ $(TESTUNIT_BUILD):
 #
 # Rules for testcoverage
 #
-TESTCOVERAGE=$(BUILD)/testcoverage.bin
+TESTCOVERAGE=$(BUILD)/testcoverage.mach-o
 TESTCOVERAGE_BUILD=$(BUILD)/testcoverage
 TESTCOVERAGE_SRC=src-testcoverage
 TESTCOVERAGE_HPPS=$(wildcard $(TESTCOVERAGE_SRC)/*.hpp) $(LIBJNIF_HPPS)
@@ -100,35 +100,6 @@ $(TESTCOVERAGE_BUILD)/%.cpp.o: $(TESTCOVERAGE_SRC)/%.cpp $(TESTCOVERAGE_HPPS) | 
 	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -c -o $@ $<
 
 $(TESTCOVERAGE_BUILD):
-	mkdir -p $@
-
-#
-# Rules for testmaven
-#
-TESTMAVEN=$(BUILD)/testmaven.bin
-TESTMAVEN_BUILD=$(BUILD)/testmaven
-TESTMAVEN_SRC=src-testmaven
-TESTMAVEN_HPPS=$(wildcard $(TESTMAVEN_SRC)/*.hpp) $(LIBJNIF_HPPS)
-TESTMAVEN_SRCS=$(wildcard $(TESTMAVEN_SRC)/*.cpp)
-TESTMAVEN_OBJS=$(TESTMAVEN_SRCS:$(TESTMAVEN_SRC)/%=$(TESTMAVEN_BUILD)/%.o)
-MAVEN_INDEX=/Volumes/Data/work/mavends/out/mavenindex.sqlite3
-MAVEN_REPO=/Volumes/Data/work/mavends/cache/repo
-SELECT_ARTS="select max(idate), * from artifact_jar group by groupid, artifactid"
-MAVEN_CLASS=/Volumes/Data/work/mavends/out/mavenclass.sqlite3
-
-runmaven: $(TESTMAVEN)
-	$(TESTMAVEN) $(MAVEN_INDEX) $(MAVEN_REPO) $(SELECT_ARTS) $(MAVEN_CLASS)
-
-testmaven: $(TESTMAVEN)
-
-$(TESTMAVEN): LDFLAGS+=-lz -lsqlite3 -O3
-$(TESTMAVEN): $(TESTMAVEN_OBJS) $(LIBJNIF)
-	$(CXX) $(LDFLAGS) -o $@ $^
-
-$(TESTMAVEN_BUILD)/%.cpp.o: $(TESTMAVEN_SRC)/%.cpp $(TESTMAVEN_HPPS) | $(TESTMAVEN_BUILD)
-	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -c -o $@ $<
-
-$(TESTMAVEN_BUILD):
 	mkdir -p $@
 
 #
@@ -322,7 +293,7 @@ docs:
 	doxygen
 
 #dots:
-DOTS=$(shell find build -name *.dot)
+# DOTS=$(shell find build -name *.dot)
 #dots:
 PNGS=$(DOTS:%.dot=%.png)
 dots: $(PNGS)
