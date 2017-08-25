@@ -13,7 +13,7 @@
 #include <fstream>
 #include <tuple>
 
-#include "UnzipFile.hpp"
+// #include "UnzipFile.hpp"
 #include "Db.hpp"
 
 #include <jnif.hpp>
@@ -60,12 +60,12 @@ signature, exceptions) values (?1, ?2, ?3, ?4, ?5, ?6)"),
 
     fprintf(stderr, "[#%d %s ... ", jarc, id);
     try {
-      UnzipFile uf(jarpath.c_str());
+      JarFile uf(jarpath.c_str());
       int csc = uf.forEach(this, jarid, [] (void* mc, int jid, void* buf, int s) {
           ((MavenClass*)mc)->processClassFile(jid, buf, s);
         });
       fprintf(stderr, "%d classes]\n", csc);
-    } catch (const ZipException& ex) {
+    } catch (const JarException& ex) {
         jarnotfound++;
       fprintf(stderr, "CANTOPEN]\n");
     }

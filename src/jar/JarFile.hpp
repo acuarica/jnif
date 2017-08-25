@@ -4,29 +4,29 @@
 
 #include "unzip.h"
 
-class ZipException {
+class JarException {
 public:
 
-  ZipException(const char* message) : message(message) {
+  JarException(const char* message) : message(message) {
   }
 
   const char* message;
 
 };
 
-class UnzipFile {
+class JarFile {
 public:
 
   typedef void (*ZipCallback)(void* args, int jarid, void* buffer, int size);
 
-  UnzipFile(const char* zipPath) {
+  JarFile(const char* zipPath) {
     _uf = unzOpen64(zipPath);
     if (_uf == NULL) {
-      throw ZipException("Can't open file");
+      throw JarException("Can't open file");
     }
   }
 
-  ~UnzipFile() {
+  ~JarFile() {
     unzClose(_uf);
   }
 

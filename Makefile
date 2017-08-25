@@ -32,18 +32,21 @@ LIBJNIF=$(BUILD)/libjnif.a
 LIBJNIF_BUILD=$(BUILD)/libjnif
 LIBJNIF_SRC=src
 LIBJNIF_HPPS=$(wildcard $(LIBJNIF_SRC)/*.hpp)
-LIBJNIF_SRCS=$(wildcard $(LIBJNIF_SRC)/*.cpp)
+LIBJNIF_SRCS=$(wildcard $(LIBJNIF_SRC)/*.cpp) $(wildcard $(LIBJNIF_SRC)/jar/*.cpp)
 LIBJNIF_OBJS=$(LIBJNIF_SRCS:$(LIBJNIF_SRC)/%=$(LIBJNIF_BUILD)/%.o)
 
 $(LIBJNIF): $(LIBJNIF_OBJS)
 	$(AR) cr $@ $^
 
-$(LIBJNIF_BUILD)/%.cpp.o: $(LIBJNIF_SRC)/%.cpp | $(LIBJNIF_BUILD)
+$(LIBJNIF_BUILD)/%.cpp.o: $(LIBJNIF_SRC)/%.cpp | $(LIBJNIF_BUILD) $(LIBJNIF_BUILD)/jar
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 -include $(LIBJNIF_BUILD)/*.cpp.d
 
 $(LIBJNIF_BUILD):
+	mkdir -p $@
+
+$(LIBJNIF_BUILD)/jar:
 	mkdir -p $@
 
 #

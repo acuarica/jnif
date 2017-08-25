@@ -1,3 +1,4 @@
+
 #ifndef JNIF_HPP
 #define JNIF_HPP
 
@@ -14,6 +15,7 @@
 #include "Version.hpp"
 #include "ClassFile.hpp"
 #include "ClassHierarchy.hpp"
+#include "jar/JarFile.hpp"
 
 /**
  * The jnif namespace contains all type definitions, constants, enumerations
