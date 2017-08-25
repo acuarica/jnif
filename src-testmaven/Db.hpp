@@ -53,6 +53,24 @@ public:
     return sqlite3_last_insert_rowid(_db);
   }
 
+    void start() {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(_db, "begin transaction", NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            sqlite3_free(errMsg);
+            throw DbException("error on exec", "");
+        }
+    }
+
+    void commit() {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(_db, "end transaction", NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            sqlite3_free(errMsg);
+            throw DbException("error on exec", "");
+        }
+    }
+
   void exec(const char* sql, Callback callback, void* args) {
     char *errMsg = NULL;
     int rc = sqlite3_exec(_db, sql, callback, args, &errMsg);

@@ -27,12 +27,12 @@ public:
   MavenClass(const char* repo, const char* mavenClassPath) :
     repo(repo),
     db(mavenClassPath),
-    getclassname(db, "select classnameid from cp_classname where classname=?1"),
-    getmethoddesc(db,"select methoddescid from cp_methoddesc where methoddesc=?1"),
-    getmethodref(db,"select methodrefid from cp_methodref where classnameid=?1 and methodname=?2 and methoddescid=?3"),
-    insclassname(db, "insert into cp_classname (classname) values (?1)"),
-    insmethoddesc(db, "insert into cp_methoddesc (methoddesc) values (?1)"),
-    insmethodref(db, "insert into cp_methodref (classnameid, methodname, methoddescid) values (?1, ?2, ?3)"),
+    // getclassname(db, "select classnameid from cp_classname where classname=?1"),
+    // getmethoddesc(db,"select methoddescid from cp_methoddesc where methoddesc=?1"),
+    // getmethodref(db,"select methodrefid from cp_methodref where classnameid=?1 and methodname=?2 and methoddescid=?3"),
+    insclassname(db, "insert into cp_classname (classnameid, classname) values (?1, ?2)"),
+    insmethoddesc(db, "insert into cp_methoddesc (methoddescid, methoddesc) values (?1, ?2)"),
+    insmethodref(db, "insert into cp_methodref (methodrefid, classnameid, methodname, methoddescid) values (?1, ?2, ?3, ?4)"),
     inssignature(db, "insert into cp_signature (signature) values (?1)"),
     insjar(db, "insert into jar (coord, path) values (?1, ?2)"),
     insclass(db, "insert into class (jarid, minor_version, major_version, access, \
@@ -258,6 +258,28 @@ void doInst(Inst& inst)  {
         return getByValue(methodRefConstPool, make_tuple(cnid, methodName, mdid));
     }
 
+    void insertConstPool() {
+        for (auto& e : classNameConstPool) {
+            insclassname.bindLong(1, e.second);
+            insclassname.bindText(2, e.first.c_str());
+            insclassname.exec();
+        }
+
+        for (auto& e : methodDescConstPool) {
+            insmethoddesc.bindLong(1, e.second);
+            insmethoddesc.bindText(2, e.first.c_str());
+            insmethoddesc.exec();
+        }
+
+        for (auto& e : methodRefConstPool) {
+            insmethodref.bindLong(1, e.second);
+            insmethodref.bindLong(2, get<0>(e.first));
+            insmethodref.bindText(3, get<1>(e.first).c_str());
+            insmethodref.bindLong(4, get<2>(e.first));
+            insmethodref.exec();
+        }
+    }
+
     template <typename TKey>
     static long getByValue(map<TKey, long>& cpMap, const TKey& value) {
         auto it = cpMap.find(value);
@@ -270,67 +292,9 @@ void doInst(Inst& inst)  {
         }
     }
 
-  // long getClassName2(const char* className) {
-  //   getclassname.bindText(1, className);
-  //   int rc = getclassname.step();
-  //   long cnid;
-  //   if (rc == SQLITE_ROW) {
-  //     cnid = getclassname.getLong(0);
-  //   } else {
-  //     DbError::check(rc == SQLITE_DONE, "getClassName: ", rc);
-  //     insclassname.bindText(1, className);
-  //     insclassname.exec();
-  //     cnid = db.lastInsertRowid();
-  //   }
-  //   getclassname.reset();
-  //   return cnid;
-  // }
-
-  // long getMethodDesc(const char* methodDesc) {
-  //   getmethoddesc.bindText(1, methodDesc);
-  //   int rc = getmethoddesc.step();
-  //   long rowid;
-  //   if (rc == SQLITE_ROW) {
-  //     rowid = getmethoddesc.getLong(0);
-  //   } else {
-  //     DbError::check(rc == SQLITE_DONE, "getMethodDesc: ", rc);
-  //     insmethoddesc.bindText(1, methodDesc);
-  //     insmethoddesc.exec();
-  //     rowid = db.lastInsertRowid();
-  //   }
-  //   getmethoddesc.reset();
-  //   return rowid;
-  // }
-
-  // long getMethodRef32(const char* className, const char* methodName, const char* methodDesc) {
-  //   long cnid = getClassName(className);
-  //   long mdid = getMethodDesc(methodDesc);
-  //   getmethodref.bindLong(1, cnid);
-  //   getmethodref.bindText(2, methodName);
-  //   getmethodref.bindLong(3, mdid);
-  //   int rc = getmethodref.step();
-  //   long rowid;
-  //   if (rc == SQLITE_ROW) {
-  //     rowid = getmethodref.getLong(0);
-  //   } else {
-  //     DbError::check(rc == SQLITE_DONE, "getMethodRef: ", rc);
-  //     insmethodref.bindLong(1, cnid);
-  //     insmethodref.bindText(2, methodName);
-  //     insmethodref.bindLong(3, mdid);
-  //     insmethodref.exec();
-  //     rowid = db.lastInsertRowid();
-  //   }
-  //   getmethodref.reset();
-  //   return rowid;
-  // }
-
-
     const char* repo;
     Db db;
 
-    Stmt getclassname;
-    Stmt getmethoddesc;
-    Stmt getmethodref;
     Stmt insclassname;
     Stmt insmethoddesc;
     Stmt insmethodref;
@@ -362,18 +326,22 @@ int main(int argc, const char* argv[]) {
 
   printf("* Maven Index DB: %s\n", mavenIndexPath);
   printf("* Maven Repo: %s\n", repo);
-  printf("* Select Artifacts Query: %s\n", selectArts);
+  printf("* Select Artifacts: %s\n", selectArts);
   printf("* Maven Class DB: %s\n", mavenClassPath);
 
   try {
     Db db(mavenIndexPath);
     MavenClass mc(repo, mavenClassPath);
 
+    mc.db.start();
     db.exec(selectArts, [] (void* mc, int, char** argv, char**) {
         ((MavenClass*)mc)->process(argv[3], argv[2]);
-        // if (((MavenClass*)mc)->jarc == 100) return 1;
         return 0;
       }, &mc);
+    fprintf(stderr, "* Inserting into constant pool tables ... ");
+    mc.insertConstPool();
+    fprintf(stderr, "[DONE]");
+    mc.db.commit();
 
     printf(": %d\n", mc.jarnotfound);
     printf("Total artifacts processed: %d\n", mc.jarc);
