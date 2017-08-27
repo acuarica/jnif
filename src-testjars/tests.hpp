@@ -8,12 +8,14 @@
 #ifndef TESTS_HPP
 #define TESTS_HPP
 
+#include <string>
+
 class JavaFile {
 public:
 
     const unsigned char* const data;
     const int len;
-    const char* name;
+    const std::string name;
 
 };
 

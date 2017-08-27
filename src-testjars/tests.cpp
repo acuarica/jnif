@@ -5,9 +5,10 @@
  *      Author: luigi
  */
 
-#include "apply.hpp"
-
 #include <fstream>
+#include <jnif.hpp>
+
+#include "tests.hpp"
 
 using namespace std;
 using namespace jnif;
