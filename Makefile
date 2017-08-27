@@ -26,80 +26,74 @@ endif
 CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O3
 
 #
-# Rules to make $(LIBJNIF)
+# Rules to make $(JNIF)
 #
-LIBJNIF=$(BUILD)/libjnif.a
-LIBJNIF_BUILD=$(BUILD)/libjnif
-LIBJNIF_SRC=src
-LIBJNIF_HPPS=$(wildcard $(LIBJNIF_SRC)/*.hpp)
-LIBJNIF_SRCS=$(wildcard $(LIBJNIF_SRC)/*.cpp) $(wildcard $(LIBJNIF_SRC)/jar/*.cpp)
-LIBJNIF_OBJS=$(LIBJNIF_SRCS:$(LIBJNIF_SRC)/%=$(LIBJNIF_BUILD)/%.o)
+JNIF=$(BUILD)/libjnif.a
+JNIF_BUILD=$(BUILD)/libjnif
+JNIF_SRC=src
+JNIF_SRCS=$(wildcard $(JNIF_SRC)/*.cpp) $(wildcard $(JNIF_SRC)/jar/*.cpp)
+JNIF_OBJS=$(JNIF_SRCS:$(JNIF_SRC)/%=$(JNIF_BUILD)/%.o)
 
-$(LIBJNIF): $(LIBJNIF_OBJS)
+$(JNIF): $(JNIF_OBJS)
 	$(AR) cr $@ $^
 
-$(LIBJNIF_BUILD)/%.cpp.o: $(LIBJNIF_SRC)/%.cpp | $(LIBJNIF_BUILD) $(LIBJNIF_BUILD)/jar
+$(JNIF_BUILD)/%.cpp.o: $(JNIF_SRC)/%.cpp | $(JNIF_BUILD) $(JNIF_BUILD)/jar
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
--include $(LIBJNIF_BUILD)/*.cpp.d
+-include $(JNIF_BUILD)/*.cpp.d
 
-$(LIBJNIF_BUILD):
+$(JNIF_BUILD):
 	mkdir -p $@
 
-$(LIBJNIF_BUILD)/jar:
+$(JNIF_BUILD)/jar:
 	mkdir -p $@
 
 #
 # Rules to make $(TESTUNIT)
 #
-TESTUNIT=$(BUILD)/testunit.mach-o
+TESTUNIT=$(BUILD)/testunit.bin
 TESTUNIT_BUILD=$(BUILD)/testunit
 TESTUNIT_SRC=src-testunit
-TESTUNIT_HPPS=$(wildcard $(TESTUNIT_SRC)/*.hpp) $(LIBJNIF_HPPS)
 TESTUNIT_SRCS=$(wildcard $(TESTUNIT_SRC)/*.cpp)
 TESTUNIT_OBJS=$(TESTUNIT_SRCS:$(TESTUNIT_SRC)/%=$(TESTUNIT_BUILD)/%.o)
 
-$(TESTUNIT): $(TESTUNIT_OBJS) $(LIBJNIF)
+run-testunit: $(TESTUNIT)
+	$(TESTUNIT)
+
+testunit: $(TESTUNIT)
+
+$(TESTUNIT): $(TESTUNIT_OBJS) $(JNIF)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-$(TESTUNIT_BUILD)/%.cpp.o: $(TESTUNIT_SRC)/%.cpp $(TESTUNIT_HPPS) | $(TESTUNIT_BUILD)
-	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -c -o $@ $<
+$(TESTUNIT_BUILD)/%.cpp.o: $(TESTUNIT_SRC)/%.cpp | $(TESTUNIT_BUILD)
+	$(CXX) $(CXXFLAGS) -I$(JNIF_SRC) -c -o $@ $<
 
 $(TESTUNIT_BUILD):
 	mkdir -p $@
 
 #
-# Rules for testcoverage
+# Rules for $(TESTJARS)
 #
-TESTCOVERAGE=$(BUILD)/testcoverage.mach-o
-TESTCOVERAGE_BUILD=$(BUILD)/testcoverage
-TESTCOVERAGE_SRC=src-testcoverage
-TESTCOVERAGE_HPPS=$(wildcard $(TESTCOVERAGE_SRC)/*.hpp) $(LIBJNIF_HPPS)
-TESTCOVERAGE_SRCS=$(wildcard $(TESTCOVERAGE_SRC)/*.cpp)
-TESTCOVERAGE_OBJS=$(TESTCOVERAGE_SRCS:$(TESTCOVERAGE_SRC)/%=$(TESTCOVERAGE_BUILD)/%.o)
+TESTJARS=$(BUILD)/testjars.bin
+TESTJARS_BUILD=$(BUILD)/testjars
+TESTJARS_SRC=src-testjars
+TESTJARS_SRCS=$(wildcard $(TESTJARS_SRC)/*.cpp)
+TESTJARS_OBJS=$(TESTJARS_SRCS:$(TESTJARS_SRC)/%=$(TESTJARS_BUILD)/%.o)
+JARS=$(wildcard jars/*.jar)
 
-# JARS=$(wildcard jars/*.jar)
-# DIRS=$(JARS:%.jar=$(BUILD)/%)
-# runcoverage: cp=$(BUILD)
-# runcoverage: test=
-runcoverage: $(TESTCOVERAGE) # $(DIRS)
-	$(TESTCOVERAGE) classes
+run-testjars: $(TESTJARS)
+	$(TESTJARS) $(JARS)
 
-# $(BUILD)/jars/%: jars/%.jar | $(BUILD)/jars
-# unzip $< -d $@
+testjars: $(TESTJARS)
 
-# $(BUILD)/jars:
-# mkdir -p $@
-
-testcoverage: $(TESTCOVERAGE)
-
-$(TESTCOVERAGE): $(TESTCOVERAGE_OBJS) $(LIBJNIF)
+$(TESTJARS): LDFLAGS=-lz
+$(TESTJARS): $(TESTJARS_OBJS) $(JNIF)
 	$(CXX) $(LDFLAGS) -o $@ $^
 
-$(TESTCOVERAGE_BUILD)/%.cpp.o: $(TESTCOVERAGE_SRC)/%.cpp $(TESTCOVERAGE_HPPS) | $(TESTCOVERAGE_BUILD)
-	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -c -o $@ $<
+$(TESTJARS_BUILD)/%.cpp.o: $(TESTJARS_SRC)/%.cpp | $(TESTJARS_BUILD)
+	$(CXX) $(CXXFLAGS) -I$(JNIF_SRC) -c -o $@ $<
 
-$(TESTCOVERAGE_BUILD):
+$(TESTJARS_BUILD):
 	mkdir -p $@
 
 #
@@ -176,11 +170,6 @@ $(INSTRSERVER_BUILD):
 
 all: $(LIBJNIF) $(TESTUNIT) $(TESTCOVERAGE) $(TESTAGENT) $(TESTAPP) $(INSTRSERVER)
 
-#
-# rununit
-#
-rununit: $(TESTUNIT)
-	$(TESTUNIT)
 
 #
 # Rules to run $(INSTRSERVER)

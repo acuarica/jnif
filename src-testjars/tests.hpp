@@ -8,7 +8,14 @@
 #ifndef TESTS_HPP
 #define TESTS_HPP
 
-#include "apply.hpp"
+class JavaFile {
+public:
+
+    const unsigned char* const data;
+    const int len;
+    const char* name;
+
+};
 
 void testPrinter(const JavaFile& jf);
 void testSize(const JavaFile& jf);

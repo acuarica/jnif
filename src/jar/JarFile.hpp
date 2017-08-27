@@ -17,7 +17,7 @@ public:
 class JarFile {
 public:
 
-  typedef void (*ZipCallback)(void* args, int jarid, void* buffer, int size);
+    typedef void (*ZipCallback)(void* args, int jarid, void* buffer, int size, const char* fileNameInZip);
 
   JarFile(const char* zipPath) {
     _uf = unzOpen64(zipPath);
@@ -97,7 +97,7 @@ private:
       printf("error %d with zipfile in unzReadCurrentFile\n",err);
     } else if (err == size) {
       err = UNZ_OK;
-      callback(args, jarid, buf, size);
+      callback(args, jarid, buf, size, filename_inzip);
     } else {
       printf("error while reading: %d", err);
     }
