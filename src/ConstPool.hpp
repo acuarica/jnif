@@ -642,6 +642,19 @@ public:
 		_getMemberRef(clazzName, name, desc, mr);
 	}
 
+    const char* getString(ConstIndex index) const {
+        const ConstItem* e = _getEntry(index, CONST_STRING, "String");
+        return getUtf8(e->s.stringIndex);
+    }
+
+    int getInteger(ConstIndex index) const {
+        return _getEntry(index, CONST_INTEGER, "CONSTANT_Integer")->i.value;
+    }
+
+    float getFloat(ConstIndex index) const {
+        return _getEntry(index, CONST_FLOAT, "CONSTANT_Float")->f.value;
+    }
+
 	long getLong(ConstIndex index) const {
 		return _getEntry(index, CONST_LONG, "CONSTANT_Long")->l.value;
 	}

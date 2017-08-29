@@ -24,11 +24,8 @@ public:
 static void testEmptyModel() {
 	ClassFile cf("jnif/EmptyModel");
 
-	//Error::assertEquals(String("jnif/EmptyModel"), cf.getThisClassName());
 	JnifError::assertEquals(String("java/lang/Object"), String(cf.getSuperClassName()));
 	JnifError::assertEquals(Version(51, 0), cf.version);
-
-	//Error::assertEquals(String("java/lang/Object"), cf.());
 }
 
 static void testPrinterModel() {
@@ -247,6 +244,22 @@ static void testJoinStack() {
 	}
 }
 
+static void testConstPool() {
+    ClassFile cf("jnif/test/ConstPoolTest");
+
+    ConstIndex si = cf.addString("String Test");
+    ConstIndex ii = cf.addInteger(1);
+    ConstIndex fi = cf.addFloat(2.1);
+    ConstIndex li = cf.addLong(3);
+    ConstIndex di = cf.addDouble(4.2);
+
+    JnifError::assertEquals(string("String Test"), string(cf.getString(si)));
+    JnifError::assertEquals(1, cf.getInteger(ii));
+    JnifError::assertEquals(2.1f, cf.getFloat(fi));
+    JnifError::assertEquals(3l, cf.getLong(li));
+    JnifError::assertEquals(4.2, cf.getDouble(di));
+}
+
 typedef void (TestFunc)();
 
 static void run(TestFunc* testFunc, const String& testName) {
@@ -272,6 +285,7 @@ int main(int, const char*[]) {
 	RUN(testJoinFrameException);
 	RUN(testJoinFrame);
 	RUN(testJoinStack);
+	RUN(testConstPool);
 
 	return 0;
 }

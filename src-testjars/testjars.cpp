@@ -59,7 +59,7 @@ int main(int argc, const char* argv[]) {
         for (auto& t : availableTests) {
             cerr << "    " << t.first << endl;
         }
-        cout << endl;
+        cerr << endl;
         return 1;
     }
 
