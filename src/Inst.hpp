@@ -327,6 +327,10 @@ public:
 
 	~LabelInst();
 
+    bool isTarget() const {
+        return isBranchTarget || isTryStart || isTryEnd || isCatchHandler;
+    }
+
 	u2 offset;
 	u2 deltaOffset;
 	int id;
