@@ -14,28 +14,28 @@
 
 namespace jnif {
 
-enum OpKind {
-	KIND_ZERO,
-	KIND_BIPUSH,
-	KIND_SIPUSH,
-	KIND_LDC,
-	KIND_VAR,
-	KIND_IINC,
-	KIND_JUMP,
-	KIND_TABLESWITCH,
-	KIND_LOOKUPSWITCH,
-	KIND_FIELD,
-	KIND_INVOKE,
-	KIND_INVOKEINTERFACE,
-	KIND_INVOKEDYNAMIC,
-	KIND_TYPE,
-	KIND_NEWARRAY,
-	KIND_MULTIARRAY,
-	KIND_PARSE4TODO,
-	KIND_RESERVED,
-	KIND_LABEL,
-	KIND_FRAME
-};
+    enum OpKind {
+        KIND_ZERO,
+        KIND_BIPUSH,
+        KIND_SIPUSH,
+        KIND_LDC,
+        KIND_VAR,
+        KIND_IINC,
+        KIND_JUMP,
+        KIND_TABLESWITCH,
+        KIND_LOOKUPSWITCH,
+        KIND_FIELD,
+        KIND_INVOKE,
+        KIND_INVOKEINTERFACE,
+        KIND_INVOKEDYNAMIC,
+        KIND_TYPE,
+        KIND_NEWARRAY,
+        KIND_MULTIARRAY,
+        KIND_PARSE4TODO,
+        KIND_RESERVED,
+        KIND_LABEL,
+        KIND_FRAME
+    };
 
 class ClassFile;
 
@@ -62,6 +62,7 @@ class Inst {
 	friend class InstList;
 
 public:
+
 
 	bool isJump() const {
 		return kind == KIND_JUMP;
@@ -284,6 +285,9 @@ public:
 	class MultiArrayInst* multiarray() const {
 		return cast<MultiArrayInst>(isMultiArray(), "multiarray");
 	}
+
+    Inst* uses = nullptr;
+    Inst* consumes = nullptr;
 
 private:
 
