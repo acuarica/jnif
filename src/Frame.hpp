@@ -12,6 +12,7 @@
 #include "TypeFactory.hpp"
 
 #include <list>
+#include <pair>
 
 namespace jnif {
 
@@ -124,8 +125,8 @@ public:
 
 	void join(Frame& how, class IClassPath* classPath);
 
-	std::vector<Type> lva;
-	std::list<Type> stack;
+    std::vector<pair<Type, Inst*>> lva;
+    std::list<pair<Type, Inst*>> stack;
 	bool valid;
 	bool topsErased;
 
