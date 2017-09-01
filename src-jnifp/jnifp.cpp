@@ -25,7 +25,6 @@ int main(int argc, const char* argv[]) {
     try {
         ClassFile cf(argv[1]);
         UnitTestClassPath cp;
-        cf.computeFrames(&cp);
         for (Method* m : cf.methods) {
             if (m->hasCode()) {
                 InstList& instList = m->codeAttr()->instList;
@@ -37,6 +36,7 @@ int main(int argc, const char* argv[]) {
                     }
             }
         }
+        cf.computeFrames(&cp);
         cout << cf << endl;
     } catch (const JnifException& ex) {
         cerr << ex << endl;

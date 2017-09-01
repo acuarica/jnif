@@ -13,6 +13,7 @@
 #include "ConstPool.hpp"
 
 #include <list>
+#include <set>
 
 namespace jnif {
 
@@ -288,8 +289,8 @@ public:
 		return cast<MultiArrayInst>(isMultiArray(), "multiarray");
 	}
 
-    std::list<Inst*> consumes;
-    std::list<Inst*> produces;
+    std::set<Inst*> consumes;
+    std::set<Inst*> produces;
     int id = 0;
 
 private:

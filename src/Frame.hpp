@@ -12,6 +12,7 @@
 #include "TypeFactory.hpp"
 
 #include <list>
+#include <set>
 #include <utility>
 
 namespace jnif {
@@ -123,7 +124,7 @@ public:
 
 	void join(Frame& how, class IClassPath* classPath);
 
-    typedef std::pair<Type, Inst*> T;
+    typedef std::pair<Type, std::set<Inst*> > T;
 
     std::vector<T> lva;
     std::list<T> stack;

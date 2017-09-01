@@ -10,6 +10,15 @@
 
 namespace jnif {
 
+    static std::ostream& operator<<(std::ostream& os, std::set<Inst*> ls) {
+        os << "{";
+        for (Inst* t : ls) {
+            os << t->id << " ";
+        }
+        os << "}";
+        return os;
+    }
+
 class ComputeFrames {
 public:
 
@@ -120,6 +129,7 @@ public:
 		return false;
 	}
 
+
 	bool join(TypeFactory& typeFactory, Frame& frame, Frame& how,
 			IClassPath* classPath, Method* method = NULL) {
 		JnifError::check(frame.stack.size() == how.stack.size(),
@@ -127,7 +137,8 @@ public:
 				how.stack.size(), ": #", frame, " != #", how, "Method: ",
 				method);
 
-    const Frame::T defType = std::make_pair(typeFactory.topType(), nullptr);
+    std::set<Inst*> ls;
+    const Frame::T defType = std::make_pair(typeFactory.topType(), ls);
 		if (frame.lva.size() < how.lva.size()) {
         frame.lva.resize(how.lva.size(), defType);
 		} else if (how.lva.size() < frame.lva.size()) {
@@ -142,6 +153,16 @@ public:
 		for (u4 i = 0; i < frame.lva.size(); i++) {
 			bool assignChanged = assign(frame.lva[i].first, how.lva[i].first, classPath,
 					typeFactory);
+
+      std::set<Inst*>& xs = frame.lva[i].second;
+      std::set<Inst*>& ys = how.lva[i].second;
+      std::cout << "lva["<< i << "] xs: " << xs << "ys: " << ys << std::endl;
+      if (xs != ys) {
+        xs.insert(ys.begin(), ys.end());
+        ys.insert(xs.begin(), xs.end());
+        change = true;
+      }
+
 			change = change || assignChanged;
 		}
 
@@ -150,6 +171,16 @@ public:
 
 		for (; i != frame.stack.end(); i++, j++) {
 			bool assignChanged = assign(i->first, j->first, classPath, typeFactory);
+
+      std::set<Inst*>& xs = i->second;
+      std::set<Inst*>& ys = j->second;
+      std::cout << "stack" << " xs: " << xs << "ys: " << ys << std::endl;
+      if (xs != ys) {
+        xs.insert(ys.begin(), ys.end());
+        ys.insert(xs.begin(), xs.end());
+        change = true;
+      }
+
 			change = change || assignChanged;
 		}
 

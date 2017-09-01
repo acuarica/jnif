@@ -13,17 +13,19 @@
 
 namespace jnif {
 
-    static void setLink(Inst* i, Inst* j) {
-        if (i != nullptr) {
-            j->consumes.push_back(i);
-            i->produces.push_back(j);
-        }
+    static void setLink(std::set<Inst*>& is, Inst* j) {
+        JnifError::assert(j != nullptr, "j cannot be null");
+            for (Inst* i : is) {
+                    JnifError::assert(i != nullptr, "i cannot be null");
+                j->consumes.insert(i);
+                i->produces.insert(j);
+            }
     }
 
     Type Frame::getVar(u4 lvindex, Inst* inst) {
         JnifError::assert(inst != nullptr, "Inst cannot be null for getVar");
 
-        T t = lva.at(lvindex);
+        T& t = lva.at(lvindex);
         setLink(t.second, inst);
 
         return t.first;
@@ -33,9 +35,9 @@ Type Frame::pop(Inst* inst) {
 	JnifError::check(stack.size() > 0, "Trying to pop in an empty stack.");
   JnifError::assert(inst != nullptr, "Inst cannot be null");
 
-  Frame::T t = stack.front();
-	stack.pop_front();
+  Frame::T& t = stack.front();
   setLink(t.second, inst);
+	stack.pop_front();
 
 	return t.first;
 }
@@ -101,7 +103,8 @@ Type Frame::popDouble(Inst* inst) {
 }
 
     void Frame::push(const Type& t, Inst* inst) {
-    stack.push_front(std::make_pair(t, inst));
+        std::set<Inst*> ls = {inst};
+        stack.push_front(std::make_pair(t, ls));
 
   if (maxStack < stack.size()) {
     JnifError::assert(maxStack + 1 == stack.size(), "Invalid inc maxStack/size");
@@ -190,10 +193,15 @@ void Frame::join(Frame& how, IClassPath* classPath) {
 	JnifError::check(lvindex < 256 * 256, "Index too large for LVA: ", lvindex);
 
 	if (lvindex >= lva.size()) {
-      lva.resize(lvindex + 1, std::make_pair(_typeFactory->topType(), nullptr));
+      lva.resize(lvindex + 1, std::make_pair(_typeFactory->topType(), std::set<Inst*>()));
 	}
 
-	lva[lvindex] = std::make_pair(t, inst);
+  std::set<Inst*> ls;
+  if (inst != nullptr) {
+      ls.insert(inst);
+  }
+
+	lva[lvindex] = std::make_pair(t, ls);
 }
 
 }
