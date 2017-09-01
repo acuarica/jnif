@@ -127,10 +127,11 @@ public:
 				how.stack.size(), ": #", frame, " != #", how, "Method: ",
 				method);
 
+    const Frame::T defType = std::make_pair(typeFactory.topType(), nullptr);
 		if (frame.lva.size() < how.lva.size()) {
-			frame.lva.resize(how.lva.size(), typeFactory.topType());
+        frame.lva.resize(how.lva.size(), defType);
 		} else if (how.lva.size() < frame.lva.size()) {
-			how.lva.resize(frame.lva.size(), typeFactory.topType());
+			how.lva.resize(frame.lva.size(), defType);
 		}
 
 		JnifError::assert(frame.lva.size() == how.lva.size(), "%ld != %ld",
@@ -139,16 +140,16 @@ public:
 		bool change = false;
 
 		for (u4 i = 0; i < frame.lva.size(); i++) {
-			bool assignChanged = assign(frame.lva[i], how.lva[i], classPath,
+			bool assignChanged = assign(frame.lva[i].first, how.lva[i].first, classPath,
 					typeFactory);
 			change = change || assignChanged;
 		}
 
-		std::list<Type>::iterator i = frame.stack.begin();
-		std::list<Type>::iterator j = how.stack.begin();
+		std::list<Frame::T>::iterator i = frame.stack.begin();
+		std::list<Frame::T>::iterator j = how.stack.begin();
 
 		for (; i != frame.stack.end(); i++, j++) {
-			bool assignChanged = assign(*i, *j, classPath, typeFactory);
+			bool assignChanged = assign(i->first, j->first, classPath, typeFactory);
 			change = change || assignChanged;
 		}
 
@@ -183,7 +184,7 @@ public:
 		const Type& exType = getExceptionType(cf, ex.catchtype, typeFactory);
 
 		frame.clearStack();
-		frame.push(exType);
+		frame.push(exType, nullptr);
 
 		computeState(*handlerBb, frame, instList, cf, code, classPath, method,
 				typeFactory);

@@ -179,11 +179,13 @@ enum Magic {
 class ClassFile: public ConstPool {
 public:
 
+    static constexpr const char* OBJECT = "java/lang/Object";
+
 	/**
 	 * Constructs a default class file given the class name, the super class
 	 * name and the access flags.
 	 */
-	ClassFile(const char* className, const char* superClassName = "java/lang/Object", u2 accessFlags = CLASS_PUBLIC, u2 majorVersion = 51, u2 minorVersion = 0) :
+	ClassFile(const char* className, const char* superClassName, u2 accessFlags = CLASS_PUBLIC, u2 majorVersion = 51, u2 minorVersion = 0) :
 			version(majorVersion, minorVersion),
       accessFlags(accessFlags),
       thisClassIndex(addClass(className)),
@@ -197,6 +199,8 @@ public:
 	 * class file.
 	 */
 	ClassFile(const u1* classFileData, int classFileLen);
+
+    ClassFile(const char* fileName);
 
 	/**
 	 * Releases the memory used for this class file.

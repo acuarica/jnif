@@ -12,6 +12,8 @@
 #include "Opcode.hpp"
 #include "ConstPool.hpp"
 
+#include <list>
+
 namespace jnif {
 
     enum OpKind {
@@ -286,8 +288,9 @@ public:
 		return cast<MultiArrayInst>(isMultiArray(), "multiarray");
 	}
 
-    Inst* uses = nullptr;
-    Inst* consumes = nullptr;
+    std::list<Inst*> consumes;
+    std::list<Inst*> produces;
+    int id = 0;
 
 private:
 

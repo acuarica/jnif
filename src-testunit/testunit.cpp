@@ -22,14 +22,14 @@ public:
 };
 
 static void testEmptyModel() {
-	ClassFile cf("jnif/EmptyModel");
+    ClassFile cf("jnif/EmptyModel", ClassFile::OBJECT);
 
 	JnifError::assertEquals(String("java/lang/Object"), String(cf.getSuperClassName()));
 	JnifError::assertEquals(Version(51, 0), cf.version);
 }
 
 static void testPrinterModel() {
-	ClassFile emptyCf("jnif/test/generated/Class1");
+    ClassFile emptyCf("jnif/test/generated/Class1", ClassFile::OBJECT);
 	ofstream os;
 	os << emptyCf;
 
@@ -57,17 +57,17 @@ static void testJoinFrameObjectAndEmpty() {
 	const Type& t = tf.objectType("TypeT");
 
 	Frame lhs(&tf);
-	lhs.setVar2(0, s);
-	lhs.setVar2(1, t);
+	lhs.setVar2(0, s, nullptr);
+	lhs.setVar2(1, t, nullptr);
 
 	Frame rhs(&tf);
-	rhs.setVar2(0, s);
+	rhs.setVar2(0, s, nullptr);
 
 	lhs.join(rhs, &cp);
 
 	Frame res(&tf);
-	res.lva.resize(2, tf.topType());
-	res.setVar2(0, s);
+	res.lva.resize(2, std::make_pair(tf.topType(), nullptr));
+	res.setVar2(0, s, nullptr);
 
 	JnifError::assertEquals(res, lhs);
 }
@@ -79,17 +79,17 @@ static void testJoinFrameException() {
 	const Type& exType = tf.objectType("java/lang/Exception");
 
 	Frame lhs(&tf);
-	lhs.setVar2(0, tf.nullType());
-	lhs.setVar2(1, exType);
+	lhs.setVar2(0, tf.nullType(), nullptr);
+	lhs.setVar2(1, exType, nullptr);
 
 	Frame rhs(&tf);
-	rhs.setVar2(0, classType);
+	rhs.setVar2(0, classType, nullptr);
 
 	lhs.join(rhs, &cp);
 
 	Frame res(&tf);
-	res.lva.resize(2, tf.topType());
-	res.setVar2(0, classType);
+	res.lva.resize(2, std::make_pair(tf.topType(), nullptr));
+	res.setVar2(0, classType, nullptr);
 
 	JnifError::assertEquals(res, lhs);
 }
@@ -97,7 +97,7 @@ static void testJoinFrameException() {
 static void testJoinFrame() {
 	UnitTestClassPath cp;
 
-	ClassFile cf("testunit/Class");
+	ClassFile cf("testunit/Class", ClassFile::OBJECT);
 	Method* m = cf.addMethod("method", "()Ltestunit/Class;",
 			METHOD_PUBLIC | METHOD_STATIC);
 	ConstIndex cidx = cf.addUtf8("Code");
@@ -146,7 +146,7 @@ static void testJoinFrame() {
 }
 
 static void testJoinStack() {
-	ClassFile cf("testunit/Class");
+    ClassFile cf("testunit/Class", ClassFile::OBJECT);
 	ConstIndex emptyString = cf.addString("");
 
 	Method* m = cf.addMethod("method", "()Ltestunit/Class;", METHOD_PUBLIC);
@@ -245,7 +245,7 @@ static void testJoinStack() {
 }
 
 static void testConstPool() {
-    ClassFile cf("jnif/test/ConstPoolTest");
+    ClassFile cf("jnif/test/ConstPoolTest", ClassFile::OBJECT);
 
     ConstIndex si = cf.addString("String Test");
     ConstIndex ii = cf.addInteger(1);

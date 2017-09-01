@@ -109,8 +109,18 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 		return os;
 	}
 
-	os << setw(4) << offset << ": (" << setw(3) << (int) inst.opcode << ") "
+	os << setw(4) << offset << "#" << setw(2) << inst.id << ": (" <<
+      setw(3) << (int) inst.opcode << ") "
 			<< OPCODES[inst.opcode] << " ";
+
+  os << "consumes: ";
+  for (const Inst* ii : inst.consumes) {
+      os << ii->id << " ";
+  }
+  os << "produces: ";
+  for (const Inst* ii : inst.produces) {
+      os << ii->id << " ";
+  }
 
 	const ConstPool& cf = *inst.constPool;
 
@@ -234,12 +244,12 @@ std::ostream& operator<<(std::ostream& os, const InstList& instList) {
 std::ostream& operator<<(std::ostream& os, const Frame& frame) {
 	os << "{ ";
 	for (u4 i = 0; i < frame.lva.size(); i++) {
-		os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i];
+		os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i].first;
 	}
 	os << " } [ ";
 	int i = 0;
 	for (auto t : frame.stack) {
-		os << (i == 0 ? "" : " | ") << t;
+		os << (i == 0 ? "" : " | ") << t.first;
 		i++;
 	}
 	return os << " ]";

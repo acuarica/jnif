@@ -20,6 +20,8 @@
 #include "analysis/ComputeFrames.hpp"
 #include "analysis/FrameGenerator.hpp"
 
+#include <fstream>
+
 namespace jnif {
 
 Method::~Method() {
@@ -81,6 +83,42 @@ ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
 	parser.parse(br, *this);
 }
 
+    ClassFile::ClassFile(const char* fileName) : sig(&attrs) {
+        std::ifstream is(fileName, std::ios::in | std::ios::binary |std::ios::ate);
+
+        if (!is.is_open()) {
+            int m;
+            is >> m;
+            throw "File not opened!";
+        }
+            
+        int fileSize = is.tellg();
+        u1* buffer = new u1[fileSize];
+            
+        is.seekg(0, std::ios::beg);
+        if (!is.read((char*) buffer, fileSize)) {
+            throw "File not opened!";
+        }
+        
+        BufferReader br(buffer, fileSize);
+        ClassParser<
+            AttrsParser<
+                SourceFileAttrParser,
+                SignatureAttrParser>,
+            AttrsParser<
+                CodeAttrParser<
+                    LineNumberTableAttrParser,
+                    LocalVariableTableAttrParser,
+                    LocalVariableTypeTableAttrParser,
+                    StackMapTableAttrParser>,
+                ExceptionsAttrParser,
+                SignatureAttrParser>,
+            AttrsParser<
+                SignatureAttrParser>
+            > parser;
+        parser.parse(br, *this);
+    }
+
 ClassFile::~ClassFile() {
   JnifError::trace("~ClassFile");
 
@@ -129,7 +167,7 @@ void ClassFile::computeFrames(IClassPath* classPath) {
 static std::ostream& dotFrame(std::ostream& os, const Frame& frame) {
 	os << " LVA: ";
 	for (u4 i = 0; i < frame.lva.size(); i++) {
-		os << (i == 0 ? "" : ",\n ") << i << ": " << frame.lva[i];
+		os << (i == 0 ? "" : ",\n ") << i << ": " << frame.lva[i].first;
 	}
 
 	os << std::endl;
@@ -137,7 +175,7 @@ static std::ostream& dotFrame(std::ostream& os, const Frame& frame) {
 	os << " STACK: ";
 	int i = 0;
 	for (auto t : frame.stack) {
-		os << (i == 0 ? "" : "\n  ") << t;
+		os << (i == 0 ? "" : "\n  ") << t.first;
 		i++;
 	}
 	return os << " ";

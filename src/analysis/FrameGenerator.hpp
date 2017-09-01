@@ -33,12 +33,12 @@ public:
 	}
 
 	void setCpIndex(Frame& frame, InstList& instList) {
-		for (Type& type : frame.lva) {
-			setCpIndex(type, instList);
+      for (Frame::T& t : frame.lva) {
+			setCpIndex(t.first, instList);
 		}
 
-		for (Type& type : frame.stack) {
-			setCpIndex(type, instList);
+      for (Frame::T& t : frame.stack) {
+			setCpIndex(t.first, instList);
 		}
 	}
 
@@ -69,9 +69,9 @@ public:
 				u.typeId = Type::nextTypeId;
 				u.className = className;
 				Type::nextTypeId++;
-				initFrame.setVar2(0, u);
+				initFrame.setVar2(0, u, nullptr);
 			} else {
-				initFrame.setRefVar(0, className);
+          initFrame.setRefVar(0, className, nullptr);
 			}
 
 			lvindex = 1;
@@ -82,7 +82,7 @@ public:
 		_typeFactory.fromMethodDesc(methodDesc, &argsType);
 
 		for (Type t : argsType) {
-			initFrame.setVar(&lvindex, t);
+        initFrame.setVar(&lvindex, t, nullptr);
 		}
 
 		ControlFlowGraph* cfgp = new ControlFlowGraph(code->instList, _typeFactory);
@@ -187,11 +187,11 @@ public:
 					} else if (s.isSameLocals1StackItem(current, *f)) {
 						if (offsetDelta <= 63) {
 							e.frameType = 64 + offsetDelta;
-							const Type& t = current.stack.front();
+							const Type& t = current.stack.front().first;
 							e.sameLocals_1_stack_item_frame.stack.push_back(t);
 						} else {
 							e.frameType = 247;
-							const Type& t = current.stack.front();
+							const Type& t = current.stack.front().first;
 							e.same_locals_1_stack_item_frame_extended.stack.push_back(
 									t);
 							e.same_locals_1_stack_item_frame_extended.offset_delta =
@@ -206,7 +206,7 @@ public:
 							int size = current.lva.size();
 							//list<Type> ts;
 							for (int i = 0; i < diff; i++) {
-								Type t = current.lva[size - diff + i];
+								Type t = current.lva[size - diff + i].first;
 								//ts.push_front(t);
 								e.append_frame.locals.push_back(t);
 							}
@@ -220,12 +220,17 @@ public:
 					} else {
 						e.frameType = 255;
 						e.full_frame.offset_delta = offsetDelta;
-						e.full_frame.locals = current.lva;
+            std::vector<Type> lva(current.lva.size(), TypeFactory::topType());
+            for (size_t i = 0; i < current.lva.size(); i++) {
+                lva[i] = current.lva[i].first;
+            }
 
-						std::list<Type> rs = current.stack;
+						e.full_frame.locals = lva;
+
+						std::list<Frame::T> rs = current.stack;
 						rs.reverse();
-						for (const Type& t : rs) {
-							e.full_frame.stack.push_back(t);
+						for (const Frame::T& t : rs) {
+							e.full_frame.stack.push_back(t.first);
 							//e.full_frame.stack.push_front(t);
 						}
 					}

@@ -12,7 +12,7 @@
 #include "TypeFactory.hpp"
 
 #include <list>
-#include <pair>
+#include <utility>
 
 namespace jnif {
 
@@ -30,92 +30,90 @@ public:
 		lva.reserve(256);
 	}
 
-	Type pop();
+	Type pop(Inst* inst);
 
-	Type popOneWord();
+	Type popOneWord(Inst* inst);
 
-	Type popTwoWord();
+	Type popTwoWord(Inst* inst);
 
-	Type popIntegral();
+	Type popIntegral(Inst* inst);
 
-	Type popFloat();
+	Type popFloat(Inst* inst);
 
-	Type popLong();
+	Type popLong(Inst* inst);
 
-	Type popDouble();
+	Type popDouble(Inst* inst);
 
-	Type popRef() {
-		Type t = popOneWord();
+	Type popRef(Inst* inst) {
+		Type t = popOneWord(inst);
 		//assert(t.is(), "invalid ref type on top of the stack");
 		return t;
 	}
 
-	Type popArray() {
-		return popOneWord();
+	Type popArray(Inst* inst) {
+		return popOneWord(inst);
 	}
 
-	void popType(const Type& type);
+    void popType(const Type& type, Inst* inst);
 
-	void pushType(const Type& type);
+    void pushType(const Type& type, Inst* inst);
 
-	void push(const Type& t);
+    void push(const Type& t, Inst* inst);
 
-	void pushInt() {
-		push(_typeFactory->intType());
+	void pushInt(Inst* inst) {
+      push(_typeFactory->intType(), inst);
 	}
-	void pushLong() {
-		push(_typeFactory->topType());
-		push(_typeFactory->longType());
+	void pushLong(Inst* inst) {
+      push(_typeFactory->topType(), inst);
+      push(_typeFactory->longType(), inst);
 	}
-	void pushFloat() {
-		push(_typeFactory->floatType());
+	void pushFloat(Inst* inst) {
+      push(_typeFactory->floatType(), inst);
 	}
-	void pushDouble() {
-		push(_typeFactory->topType());
-		push(_typeFactory->doubleType());
-	}
-
-	void pushRef(const String& className) {
-		push(_typeFactory->objectType(className));
+	void pushDouble(Inst* inst) {
+      push(_typeFactory->topType(), inst);
+      push(_typeFactory->doubleType(), inst);
 	}
 
-	void pushArray(const Type& type, u4 dims) {
-		push(_typeFactory->arrayType(type, dims));
+    void pushRef(const String& className, Inst* inst) {
+        push(_typeFactory->objectType(className), inst);
 	}
 
-	void pushNull() {
-		push(_typeFactory->nullType());
+    void pushArray(const Type& type, u4 dims, Inst* inst) {
+      push(_typeFactory->arrayType(type, dims), inst);
 	}
 
-	const Type& getVar(u4 lvindex) {
-		return lva.at(lvindex);
+	void pushNull(Inst* inst) {
+      push(_typeFactory->nullType(), inst);
 	}
 
-	void setVar(u4* lvindex, const Type& t);
+    Type getVar(u4 lvindex, Inst* inst);
 
-	void setVar2(u4 lvindex, const Type& t);
+    void setVar(u4* lvindex, const Type& t, Inst* inst);
 
-	void setIntVar(u4 lvindex) {
-		setVar(&lvindex, _typeFactory->intType());
+    void setVar2(u4 lvindex, const Type& t, Inst* inst);
+
+    void setIntVar(u4 lvindex, Inst* inst) {
+        setVar(&lvindex, _typeFactory->intType(), inst);
 	}
 
-	void setLongVar(u4 lvindex) {
-		setVar(&lvindex, _typeFactory->longType());
+    void setLongVar(u4 lvindex, Inst* inst) {
+        setVar(&lvindex, _typeFactory->longType(), inst);
 	}
 
-	void setFloatVar(u4 lvindex) {
-		setVar(&lvindex, _typeFactory->floatType());
+    void setFloatVar(u4 lvindex, Inst* inst) {
+        setVar(&lvindex, _typeFactory->floatType(), inst);
 	}
 
-	void setDoubleVar(u4 lvindex) {
-		setVar(&lvindex, _typeFactory->doubleType());
+    void setDoubleVar(u4 lvindex, Inst* inst) {
+        setVar(&lvindex, _typeFactory->doubleType(), inst);
 	}
 
-	void setRefVar(u4 lvindex, const String& className) {
-		setVar(&lvindex, _typeFactory->objectType(className));
+    void setRefVar(u4 lvindex, const String& className, Inst* inst) {
+        setVar(&lvindex, _typeFactory->objectType(className), inst);
 	}
 
-	void setRefVar(u4 lvindex, const Type& type);
+    void setRefVar(u4 lvindex, const Type& type, Inst* inst);
 
 	void clearStack() {
 		stack.clear();
@@ -125,8 +123,10 @@ public:
 
 	void join(Frame& how, class IClassPath* classPath);
 
-    std::vector<pair<Type, Inst*>> lva;
-    std::list<pair<Type, Inst*>> stack;
+    typedef std::pair<Type, Inst*> T;
+
+    std::vector<T> lva;
+    std::list<T> stack;
 	bool valid;
 	bool topsErased;
 
@@ -139,7 +139,7 @@ public:
 
 private:
 
-	void _setVar(u4 lvindex, const Type& t);
+    void _setVar(u4 lvindex, const Type& t, Inst* inst);
 
 	TypeFactory* _typeFactory;
 

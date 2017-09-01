@@ -97,6 +97,34 @@ $(TESTJARS_BUILD):
 	mkdir -p $@
 
 #
+# Rules to make $(JNIFP)
+#
+JNIFP=$(BUILD)/jnifp.mach-o
+JNIFP_BUILD=$(BUILD)/jnifp
+JNIFP_SRC=src-jnifp
+JNIFP_SRCS=$(wildcard $(JNIFP_SRC)/*.cpp)
+JNIFP_OBJS=$(JNIFP_SRCS:$(JNIFP_SRC)/%=$(JNIFP_BUILD)/%.o)
+JNIFP_JAVAS=$(wildcard classes/*.java)
+JNIFP_CLASSES=$(JNIFP_JAVAS:%.java=%.class)
+
+run-jnifp: $(JNIFP) $(JNIFP_CLASSES)
+	$(JNIFP) classes/Slice1.class
+
+jnifp: $(JNIFP)
+
+$(JNIFP): $(JNIFP_OBJS) $(JNIF)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+$(JNIFP_BUILD)/%.cpp.o: $(JNIFP_SRC)/%.cpp | $(JNIFP_BUILD)
+	$(CXX) $(CXXFLAGS) -I$(JNIF_SRC) -c -o $@ $<
+
+%.class: %.java
+	javac $<
+
+$(JNIFP_BUILD):
+	mkdir -p $@
+
+#
 # Rules to make $(TESTAGENT)
 #
 TESTAGENT=$(BUILD)/libtestagent.dylib
