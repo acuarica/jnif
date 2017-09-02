@@ -1,5 +1,5 @@
 
-public class SliceWhile {
+public class WhileIadd {
 
     public static void m(int n) {
         int i = 0;
@@ -8,8 +8,7 @@ public class SliceWhile {
         while (i < n) {
             sum += i;
             prod *= i;
-            i++;
-            // i = i + 1;
+            i = i + 1;
         }
 
         System.out.println(sum);
