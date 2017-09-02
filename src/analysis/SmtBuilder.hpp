@@ -781,6 +781,8 @@ private:
 	}
 
     void iinc(u2 index, Inst* inst) {
+        Type type = frame.getVar(index, inst);
+        JnifError::check(type.isInt());
         frame.setIntVar(index, inst);
 	}
 

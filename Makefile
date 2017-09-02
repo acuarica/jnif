@@ -108,6 +108,7 @@ JNIFP_JAVAS=$(wildcard classes/*.java)
 JNIFP_CLASSES=$(JNIFP_JAVAS:%.java=%.class)
 
 run-jnifp: $(JNIFP) $(JNIFP_CLASSES)
+# $(JNIFP) classes/SliceWhile.class
 	$(JNIFP) classes/Slice1.class
 
 jnifp: $(JNIFP)
