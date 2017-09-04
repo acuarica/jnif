@@ -10,6 +10,14 @@
 
 using namespace std;
 
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
 namespace jnif {
 
 const char* ConstNames[] = { "**** 0 ****", // 0
@@ -93,31 +101,33 @@ std::ostream& operator <<(std::ostream& os, Opcode opcode) {
 	return os;
 }
 
-const char* yesNo(bool value) {
-	return value ? "Yes" : "No";
+    const char* yesNo(bool value, const char* str) {
+	return value ? str : "";
 }
 
 std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 	int offset = inst._offset;
 
 	if (inst.kind == KIND_LABEL) {
-		os << "label " << inst.label()->id << ", B: "
-				<< yesNo(inst.label()->isBranchTarget) << ", TS: "
-				<< yesNo(inst.label()->isTryStart) << ", TE: "
-				<< yesNo(inst.label()->isTryEnd) << ", C: "
-				<< yesNo(inst.label()->isCatchHandler);
-		return os;
+      if (inst.label()->isTarget()) {
+		os << "label " << inst.label()->id << ""
+       << yesNo(inst.label()->isBranchTarget, "B") << " "
+       << yesNo(inst.label()->isTryStart, "TS") << " "
+       << yesNo(inst.label()->isTryEnd, "TE") << "  "
+       << yesNo(inst.label()->isCatchHandler, "C");
+      }
+      return os;
 	}
 
 	os << setw(4) << offset << "#" << setw(2) << inst.id << ": (" <<
-      setw(3) << (int) inst.opcode << ") "
-			<< OPCODES[inst.opcode] << " ";
+      setw(3) << (int) inst.opcode << ") " ANSI_COLOR_CYAN
+     << OPCODES[inst.opcode] << ANSI_COLOR_RESET " ";
 
-  os << "consumes: ";
+  os << "CS: ";
   for (const Inst* ii : inst.consumes) {
       os << ii->id << " ";
   }
-  os << "produces: ";
+  os << "PS: ";
   for (const Inst* ii : inst.produces) {
       os << ii->id << " ";
   }
@@ -235,24 +245,24 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 
 std::ostream& operator<<(std::ostream& os, const InstList& instList) {
 	for (Inst* inst : instList) {
-		os << *inst << endl;
+		os << *inst;
 	}
 
 	return os;
 }
 
 std::ostream& operator<<(std::ostream& os, const Frame& frame) {
-	os << "{ ";
+	os << "{";
 	for (u4 i = 0; i < frame.lva.size(); i++) {
-		os << (i == 0 ? "" : ", ") << i << ": " << frame.lva[i].first;
+		os << (i == 0 ? "" : ", ") << i << ":" << frame.lva[i].first;
 	}
-	os << " } [ ";
+	os << "} [";
 	int i = 0;
 	for (auto t : frame.stack) {
 		os << (i == 0 ? "" : " | ") << t.first;
 		i++;
 	}
-	return os << " ]";
+	return os << "]";
 }
 
 std::ostream& operator<<(std::ostream& os, const Type& type) {
@@ -263,13 +273,13 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 	if (type.isTop()) {
 		os << "Top";
 	} else if (type.isIntegral()) {
-		os << "Integer";
+		os << "I";
 	} else if (type.isFloat()) {
-		os << "Float";
+		os << "F";
 	} else if (type.isLong()) {
-		os << "Long";
+		os << "L";
 	} else if (type.isDouble()) {
-		os << "Double";
+		os << "D";
 	} else if (type.isNull()) {
 		os << "Null";
 	} else if (type.isUninitThis()) {
@@ -506,7 +516,7 @@ private:
 		}
 	}
 
-	void printAttrs(const Attrs& attrs, void* args = NULL) {
+	void printAttrs(const Attrs& attrs, void* = NULL) {
 		for (Attr* attrp : attrs) {
 			Attr& attr = *attrp;
 
@@ -521,7 +531,8 @@ private:
         printSignature((SignatureAttr&) attr);
         break;
 				case ATTR_CODE:
-					printCode((CodeAttr&) attr, (Method*) args);
+					// printCode((CodeAttr&) attr, (Method*) args);
+            // JnifError::raise("unreachable code");
 					break;
 				case ATTR_EXCEPTIONS:
 					printExceptions((ExceptionsAttr&) attr);
@@ -702,7 +713,7 @@ private:
 
 	inline ostream& line(int moretabs = 0) {
 		for (int i = 0; i < tabs + moretabs; i++) {
-			os << "    ";
+			os << "  ";
 		}
 
 		return os;
@@ -717,20 +728,42 @@ ostream& operator<<(ostream& os, const ClassFile& cf) {
 }
 
 std::ostream& operator<<(std::ostream& os, BasicBlock& bb) {
-	os << "* " << bb.name;
+	os << "" << bb.name;
 
-	os << " @Out { ";
+	os << " { ";
 	for (BasicBlock* bbt : bb) {
-		os << "->" << bbt->name << ", ";
+		os << "->" << bbt->name << " ";
 	}
 	os << "} ";
 
-	os << "in frame: " << bb.in << ", out frame: " << bb.out;
-	os << endl;
+	os << "in: " << bb.in << ", out: " << bb.out;
 
-	for (auto it = bb.start; it != bb.exit; ++it) {
-		Inst* inst = *it;
-		os << *inst << endl;
+  InstList::Iterator it = bb.start;
+
+  if (it == bb.exit) {
+      os << endl;
+      return os;
+  }
+
+  Inst& first = **it;
+  if (first.kind == KIND_LABEL && first.label()->isTarget()) {
+      os << "L" << first.label()->id << " "
+         << yesNo(first.label()->isBranchTarget, "B") << " "
+         << yesNo(first.label()->isTryStart, "TS") << " "
+         << yesNo(first.label()->isTryEnd, "TE") << " "
+         << yesNo(first.label()->isCatchHandler, "C");
+  }
+
+  os << endl;
+
+	for (; it != bb.exit; ++it) {
+		Inst& inst = **it;
+
+    if (inst.kind == KIND_LABEL) {
+        continue;
+    }
+
+		os << inst << endl;
 	}
 
 	return os;

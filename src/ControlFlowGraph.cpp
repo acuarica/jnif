@@ -38,13 +38,7 @@ static void buildBasicBlocks(InstList& instList, ControlFlowGraph& cfg) {
 			addBasicBlock2(it, beginBb, bbid, cfg);
 		}
 
-		if (inst->isBranch()) {
-			InstList::Iterator eit = it;
-			++eit;
-			addBasicBlock2(eit, beginBb, bbid, cfg);
-		}
-
-		if (inst->isExit()) {
+		if (inst->isBranch() || inst->isExit()) {
 			InstList::Iterator eit = it;
 			++eit;
 			addBasicBlock2(eit, beginBb, bbid, cfg);
@@ -64,7 +58,7 @@ static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
 
 	for (BasicBlock* bb : cfg) {
 		if (bb->start == instList.end()) {
-			JnifError::assert(bb->name == "Entry" || bb->name == "Exit", "");
+        JnifError::assert(bb->name ==  ControlFlowGraph::EntryName || bb->name == ControlFlowGraph::ExitName, "");
 			JnifError::assert(bb->exit == instList.end(), "");
 			continue;
 		}
@@ -108,8 +102,8 @@ static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
 }
 
 ControlFlowGraph::ControlFlowGraph(InstList& instList, TypeFactory& typeFactory) :
-		entry(addConstBb(instList, "Entry")), exit(
-				addConstBb(instList, "Exit")), instList(instList), _typeFactory(
+		entry(addConstBb(instList, EntryName)), exit(
+				addConstBb(instList, ExitName)), instList(instList), _typeFactory(
 				typeFactory) {
 	buildCfg(instList, *this);
 }
@@ -140,7 +134,7 @@ BasicBlock* ControlFlowGraph::addBasicBlock(InstList::Iterator start,
 BasicBlock* ControlFlowGraph::findBasicBlockOfLabel(int labelId) const {
 	for (BasicBlock* bb : *this) {
 		if (bb->start == instList.end()) {
-			JnifError::assert(bb->name == "Entry" || bb->name == "Exit", "");
+			JnifError::assert(bb->name == EntryName || bb->name == ExitName, "");
 			JnifError::assert(bb->exit == instList.end(), "");
 			continue;
 		}

@@ -221,6 +221,10 @@ public:
 		return getClassName(superClassIndex);
 	}
 
+    bool isInterface() {
+        return accessFlags & CLASS_INTERFACE;
+    }
+
 	/**
 	 * Adds a new field to this class file.
 	 *

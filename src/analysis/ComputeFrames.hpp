@@ -10,14 +10,14 @@
 
 namespace jnif {
 
-    static std::ostream& operator<<(std::ostream& os, std::set<Inst*> ls) {
-        os << "{";
-        for (Inst* t : ls) {
-            os << t->id << " ";
-        }
-        os << "}";
-        return os;
-    }
+    // static std::ostream& operator<<(std::ostream& os, std::set<Inst*> ls) {
+    //     os << "{";
+    //     for (Inst* t : ls) {
+    //         os << t->id << " ";
+    //     }
+    //     os << "}";
+    //     return os;
+    // }
 
 class ComputeFrames {
 public:
@@ -156,7 +156,7 @@ public:
 
       std::set<Inst*>& xs = frame.lva[i].second;
       std::set<Inst*>& ys = how.lva[i].second;
-      std::cout << "lva["<< i << "] xs: " << xs << "ys: " << ys << std::endl;
+      // std::cout << "lva["<< i << "] xs: " << xs << "ys: " << ys << std::endl;
       if (xs != ys) {
         xs.insert(ys.begin(), ys.end());
         ys.insert(xs.begin(), xs.end());
@@ -174,7 +174,7 @@ public:
 
       std::set<Inst*>& xs = i->second;
       std::set<Inst*>& ys = j->second;
-      std::cout << "stack" << " xs: " << xs << "ys: " << ys << std::endl;
+      // std::cout << "stack" << " xs: " << xs << "ys: " << ys << std::endl;
       if (xs != ys) {
         xs.insert(ys.begin(), ys.end());
         ys.insert(xs.begin(), xs.end());
@@ -233,7 +233,7 @@ public:
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
 			Method* method, TypeFactory& typeFactory) {
 		if (bb.start == instList.end()) {
-			JnifError::assert(bb.name == "Exit" && bb.exit == instList.end(),
+        JnifError::assert(bb.name == ControlFlowGraph::ExitName && bb.exit == instList.end(),
 					"exit bb");
 			return;
 		}

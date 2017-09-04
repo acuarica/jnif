@@ -108,7 +108,7 @@ JNIFP_JAVAS=$(wildcard classes/*.java)
 JNIFP_CLASSES=$(JNIFP_JAVAS:%.java=%.class)
 
 run-jnifp: $(JNIFP) $(JNIFP_CLASSES)
-	$(JNIFP) classes/WhileIinc.class
+	$(JNIFP) classes/Cond.class
 
 jnifp: $(JNIFP)
 

@@ -16,9 +16,13 @@ namespace jnif {
  */
 class ControlFlowGraph {
 private:
-	std::vector<BasicBlock*> basicBlocks;
+    std::vector<BasicBlock*> basicBlocks;
 
 public:
+
+    static constexpr const char* EntryName = ".Entry";
+    static constexpr const char* ExitName = ".Exit";
+
 	BasicBlock* const entry;
 
 	BasicBlock* const exit;
