@@ -10,13 +10,17 @@
 
 using namespace std;
 
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
+static constexpr const char* reset   = "\x1b[0m";
+static constexpr const char* red     = "\x1b[31m";
+static constexpr const char* green   = "\x1b[32m";
+static constexpr const char* yellow  = "\x1b[33m";
+static constexpr const char* blue    = "\x1b[34m";
+static constexpr const char* magenta = "\x1b[35m";
+static constexpr const char* cyan    = "\x1b[36m";
+
+static constexpr const char* cpindex = magenta;
+static constexpr const char* flags = cpindex;
+static constexpr const char* keyword = blue;
 
 namespace jnif {
 
@@ -105,6 +109,7 @@ std::ostream& operator <<(std::ostream& os, Opcode opcode) {
 	return value ? str : "";
 }
 
+
 std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 	int offset = inst._offset;
 
@@ -119,17 +124,17 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
       return os;
 	}
 
-	os << setw(4) << offset << "#" << setw(2) << inst.id << ": (" <<
-      setw(3) << (int) inst.opcode << ") " ANSI_COLOR_CYAN
-     << OPCODES[inst.opcode] << ANSI_COLOR_RESET " ";
+	os << setw(4) << offset << ": "; // << "#" << setw(2) << inst.id << ": ";
+  os << green << "(" << setw(3) << (int) inst.opcode << ") " << reset;
+  os << cyan << OPCODES[inst.opcode] << reset << " ";
 
   os << "CS: ";
   for (const Inst* ii : inst.consumes) {
-      os << ii->id << " ";
+      os << ii->_offset << " ";
   }
   os << "PS: ";
   for (const Inst* ii : inst.produces) {
-      os << ii->id << " ";
+      os << ii->_offset << " ";
   }
 
 	const ConstPool& cf = *inst.constPool;
@@ -215,8 +220,9 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 		}
 
 		case KIND_TYPE: {
-			string className = cf.getClassName(inst.type()->classIndex);
-			os << className;
+        int ci = inst.type()->classIndex;
+			string className = cf.getClassName(ci);
+			os << className << cpindex << "#" << ci << reset;
 			break;
 		}
 		case KIND_NEWARRAY:
@@ -254,9 +260,9 @@ std::ostream& operator<<(std::ostream& os, const InstList& instList) {
 std::ostream& operator<<(std::ostream& os, const Frame& frame) {
 	os << "{";
 	for (u4 i = 0; i < frame.lva.size(); i++) {
-		os << (i == 0 ? "" : ", ") << i << ":" << frame.lva[i].first;
+		os << (i == 0 ? "" : " ") << i << ":" << frame.lva[i].first;
 	}
-	os << "} [";
+	os << "}[";
 	int i = 0;
 	for (auto t : frame.stack) {
 		os << (i == 0 ? "" : " | ") << t.first;
@@ -285,7 +291,9 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 	} else if (type.isUninitThis()) {
 		os << "Uninitialized this";
 	} else if (type.isObject()) {
-		os << "" << type.getClassName() << "&";
+      string s = type.getClassName();
+      size_t i = s.find_last_of('/');
+      os << (i != string::npos ? s.substr(i + 1) : s) << "";
 	} else if (type.isUninit()) {
 		u2 offset = type.uninit.label->label()->offset;
 		os << "Uninitialized offset: new offset=" << type.uninit.offset
@@ -309,7 +317,7 @@ public:
 	static void check(MethodFlags accessFlags, const char* name, ostream& out,
 			AccessFlagsPrinter self, bool& empty) {
 		if (self.value & accessFlags) {
-			out << (empty ? "" : self.sep) << name;
+        out << keyword << (empty ? "" : self.sep) << name << reset;
 			empty = false;
 		}
 	}
@@ -330,6 +338,8 @@ public:
 		check(METHOD_STRICT, "strict", out, self, empty);
 		check(METHOD_SYNTHETIC, "synthetic", out, self, empty);
 
+    out << flags << "|" << self.value << reset;
+
 		return out;
 	}
 
@@ -340,9 +350,9 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const Method& m) {
 	ConstPool& cp = *m.constPool;
-	os << "+Method " << AccessFlagsPrinter(m.accessFlags) << " "
-			<< cp.getUtf8(m.nameIndex) << ": " << " #" << m.nameIndex << ": "
-			<< cp.getUtf8(m.descIndex) << "#" << m.descIndex << endl;
+	os << AccessFlagsPrinter(m.accessFlags) << " ";
+  os << cp.getUtf8(m.nameIndex) << cpindex << "#" << m.nameIndex << reset << "";
+	os << cp.getUtf8(m.descIndex) << cpindex << "#" << m.descIndex << reset << endl;
 
 	if (m.hasCode()) {
 		CodeAttr* c = m.codeAttr();
@@ -364,8 +374,16 @@ public:
 	}
 
 	void print() {
-		line() << AccessFlagsPrinter(cf.accessFlags) << " class "
-				<< cf.getThisClassName() << "#" << cf.thisClassIndex << endl;
+      line() << AccessFlagsPrinter(cf.accessFlags) << " class ";
+      os << cf.getThisClassName() << cpindex << "#" << cf.thisClassIndex << reset;
+      if (cf.superClassIndex != 0) {
+          os << keyword << " extends " << reset;
+             os << cf.getClassName(cf.superClassIndex) <<
+              cpindex << "#" << cf.superClassIndex << reset;
+      } else {
+          os << cpindex << "#" << cf.superClassIndex << reset;
+      }
+      os << endl;
 
 		inc();
 		line() << "* Version: " << cf.version << endl;
@@ -375,19 +393,11 @@ public:
 		printConstPool(cf);
 		dec();
 
-		line() << "* accessFlags: " << AccessFlagsPrinter(cf.accessFlags)
-				<< endl;
-		line() << "* thisClassIndex: " << cf.getThisClassName() << "#"
-				<< cf.thisClassIndex << endl;
+		// line() << "* accessFlags: " << AccessFlagsPrinter(cf.accessFlags)
+				// << endl;
+		// line() << "* thisClassIndex: " << cf.getThisClassName() << "#"
+				// << cf.thisClassIndex << endl;
 
-		if (cf.superClassIndex != 0) {
-			line() << "* superClassIndex: "
-					<< cf.getClassName(cf.superClassIndex) << "#"
-					<< cf.superClassIndex << endl;
-		} else {
-			line() << "* superClassIndex: " << "#" << cf.superClassIndex
-					<< endl;
-		}
 
 		line() << "* Interfaces [" << cf.interfaces.size() << "]" << endl;
 		inc();
@@ -409,15 +419,15 @@ public:
 		}
 		dec();
 
-		line() << "* Methods [" << cf.methods.size() << "]" << endl;
-		inc();
+		// line() << "* Methods [" << cf.methods.size() << "]" << endl;
+		// inc();
 
 		for (Method* m : cf.methods) {
 			line() << *m;
 
 			printAttrs(m->attrs, m);
 		}
-		dec();
+		// dec();
 
 		printAttrs(cf.attrs);
 
@@ -728,15 +738,20 @@ ostream& operator<<(ostream& os, const ClassFile& cf) {
 }
 
 std::ostream& operator<<(std::ostream& os, BasicBlock& bb) {
-	os << "" << bb.name;
+	os << "    " << bb.name;
 
-	os << " { ";
+	os << " {";
+  bool f = true;
 	for (BasicBlock* bbt : bb) {
-		os << "->" << bbt->name << " ";
+      if (!f) {
+          os << " ";
+      }
+		os << "->" << bbt->name;
+    f = false;
 	}
 	os << "} ";
 
-	os << "in: " << bb.in << ", out: " << bb.out;
+	os << "" << bb.in << " ~> " << bb.out;
 
   InstList::Iterator it = bb.start;
 

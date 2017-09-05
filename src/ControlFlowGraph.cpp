@@ -106,6 +106,13 @@ ControlFlowGraph::ControlFlowGraph(InstList& instList, TypeFactory& typeFactory)
 				addConstBb(instList, ExitName)), instList(instList), _typeFactory(
 				typeFactory) {
 	buildCfg(instList, *this);
+  std::vector<BasicBlock*>::iterator it = basicBlocks.begin();
+  JnifError::assert((*it)->name == EntryName, "Invalid entry");
+  it++;
+  JnifError::assert((*it)->name == ExitName, "Invalid entry");
+
+	basicBlocks.push_back(*it);
+  basicBlocks.erase(it);
 }
 
 ControlFlowGraph::~ControlFlowGraph() {
