@@ -124,7 +124,7 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
       return os;
 	}
 
-	os << setw(4) << offset << ": "; // << "#" << setw(2) << inst.id << ": ";
+	os << "    " << setw(4) << offset << ": "; // << "#" << setw(2) << inst.id << ": ";
   os << green << "(" << setw(3) << (int) inst.opcode << ") " << reset;
   os << cyan << OPCODES[inst.opcode] << reset << " ";
 
