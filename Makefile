@@ -12,7 +12,7 @@ include Makefile.local
 endif
 
 ifeq ($(UNAME), Darwin)
-  CXXFLAGS+=-std=c++11
+  CXXFLAGS+=-std=c++1z
   CXXFLAGS+=-stdlib=libc++
   R=r
 else ifeq ($(UNAME), Linux)
@@ -31,18 +31,22 @@ CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O3
 JNIF=$(BUILD)/libjnif.a
 JNIF_BUILD=$(BUILD)/libjnif
 JNIF_SRC=src
-JNIF_SRCS=$(wildcard $(JNIF_SRC)/*.cpp) $(wildcard $(JNIF_SRC)/jar/*.cpp)
+JNIF_SRCS=$(wildcard $(JNIF_SRC)/*.cpp) $(wildcard $(JNIF_SRC)/*/*.cpp)
 JNIF_OBJS=$(JNIF_SRCS:$(JNIF_SRC)/%=$(JNIF_BUILD)/%.o)
 
 $(JNIF): $(JNIF_OBJS)
 	$(AR) cr $@ $^
 
-$(JNIF_BUILD)/%.cpp.o: $(JNIF_SRC)/%.cpp | $(JNIF_BUILD) $(JNIF_BUILD)/jar
+$(JNIF_BUILD)/%.cpp.o: $(JNIF_SRC)/%.cpp | $(JNIF_BUILD) $(JNIF_BUILD)/parser $(JNIF_BUILD)/jar
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 -include $(JNIF_BUILD)/*.cpp.d
+-include $(JNIF_BUILD)/**/*.cpp.d
 
 $(JNIF_BUILD):
+	mkdir -p $@
+
+$(JNIF_BUILD)/parser:
 	mkdir -p $@
 
 $(JNIF_BUILD)/jar:
@@ -108,7 +112,7 @@ JNIFP_JAVAS=$(wildcard classes/*.java)
 JNIFP_CLASSES=$(JNIFP_JAVAS:%.java=%.class)
 
 run-jnifp: $(JNIFP) $(JNIFP_CLASSES)
-	$(JNIFP) classes/Cond.class
+	$(JNIFP) classes/If.class
 
 jnifp: $(JNIFP)
 

@@ -38,18 +38,18 @@ String Type::getClassName() const {
 	}
 }
 
-Type Type::elementType(TypeFactory& typeFactory) const {
+Type Type::elementType() const {
 	JnifError::check(isArray(), "Type is not array: ", *this);
 
 	Type type = Type(*this, dims - 1);
-	return typeFactory._addType(type);
+	return type;
 }
 
-Type Type::stripArrayType(TypeFactory& typeFactory) const {
+Type Type::stripArrayType() const {
 	JnifError::check(isArray(), "Type is not array: ", *this);
 
 	Type type = Type(*this, 0);
-	return typeFactory._addType(type);
+	return type;
 }
 
 long Type::nextTypeId = 2;

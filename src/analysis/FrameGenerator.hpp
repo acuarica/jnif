@@ -27,7 +27,7 @@ public:
 			if (!type.init) {
 				JnifError::assert(type.uninit.newinst->isType(), "It is not type");
 				LabelInst* l = instList.addLabel(type.uninit.newinst);
-				type = _typeFactory.uninitType(-1, l);
+				type = TypeFactory::uninitType(-1, l);
 			}
 		}
 	}
@@ -55,7 +55,7 @@ public:
 			_attrIndex = _cf.putUtf8("StackMapTable");
 		}
 
-		Frame initFrame(&_typeFactory);
+		Frame initFrame;
 
 		u4 lvindex;
 		if (method->isStatic()) {
@@ -64,7 +64,7 @@ public:
 			//|| method->isClassInit()
 			String className = _cf.getThisClassName();
 			if (method->isInit()) {
-				Type u = _typeFactory.uninitThisType();
+          Type u = TypeFactory::uninitThisType();
 				u.init = false;
 				u.typeId = Type::nextTypeId;
 				u.className = className;
@@ -79,13 +79,13 @@ public:
 
 		const char* methodDesc = _cf.getUtf8(method->descIndex);
 		std::vector<Type> argsType;
-		_typeFactory.fromMethodDesc(methodDesc, &argsType);
+    TypeFactory::fromMethodDesc(methodDesc, &argsType);
 
 		for (Type t : argsType) {
         initFrame.setVar(&lvindex, t, nullptr);
 		}
 
-		ControlFlowGraph* cfgp = new ControlFlowGraph(code->instList, _typeFactory);
+		ControlFlowGraph* cfgp = new ControlFlowGraph(code->instList);
 		code->cfg = cfgp;
 
 		ControlFlowGraph& cfg = *cfgp;
@@ -98,7 +98,7 @@ public:
 		BasicBlock* to = *cfg.entry->begin();
 		ComputeFrames comp;
 		comp.computeState(*to, initFrame, code->instList, _cf, code, _classPath,
-				method, _typeFactory);
+				method);
 
     u4 maxStack = code->maxStack;
     if (!code->instList.hasBranches() && !code->hasTryCatch()) {
@@ -254,7 +254,6 @@ private:
 	ConstIndex _attrIndex;
 	ClassFile& _cf;
 	IClassPath* _classPath;
-	TypeFactory _typeFactory;
 
 };
 

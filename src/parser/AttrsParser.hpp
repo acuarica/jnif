@@ -8,50 +8,61 @@
 #ifndef JNIF_PARSER_ATTRSPARSER_HPP
 #define JNIF_PARSER_ATTRSPARSER_HPP
 
-namespace jnif {
+#include "../ClassFile.hpp"
+#include "../Attr.hpp"
 
-template<typename ... TAttrParserList>
-class AttrsParser {
-public:
+namespace jnif::parser {
 
-	void parse(BufferReader& br, ClassFile& cp, Attrs& as, void* args = NULL) {
-		u2 attrCount = br.readu2();
+    template<class... TAttrParsers>
+    struct AttrParser {
+        template<class... TArgs>
+        Attr* parse(u2 nameIndex, u4 len, const u1* data, const String&,
+                    ClassFile* cp, TArgs... ) {
+            return cp->_arena.create<UnknownAttr>(nameIndex, len, data, cp);
+        }
+    };
 
-		for (int i = 0; i < attrCount; i++) {
-			u2 nameIndex = br.readu2();
-			u4 len = br.readu4();
-			const u1* data = br.pos();
+    template<class TAttrParser, class... TAttrParsers>
+    struct AttrParser<TAttrParser, TAttrParsers...> : AttrParser<TAttrParsers...> {
 
-			br.skip(len);
+        template<class... TArgs>
+        Attr* parse(u2 nameIndex, u4 len, const u1* data, const String& attrName,
+                    ClassFile* cp, TArgs... args) {
+            if (attrName == TAttrParser::AttrName) {
+                BufferReader br(data, len);
+                return TAttrParser().parse(&br, cp, nameIndex, args...);
+            } else {
+                return AttrParser<TAttrParsers...>::parse(
+                    nameIndex, len, data, attrName, cp, args...);
+            }
+        }
 
-			String attrName = cp.getUtf8(nameIndex);
+    };
 
-			Attr* a = _parse<void, TAttrParserList...>(nameIndex, len, data, attrName, cp, args);
-			as.add(a);
-		}
-	}
+    template<class... TAttrParsers>
+    struct AttrsParser {
 
-private:
+        template<class... TArgs>
+        void parse(BufferReader* br, ClassFile* cp, Attrs* as, TArgs... args ) {
+            u2 attrCount = br->readu2();
 
-	template<typename __TVoid>
-	Attr* _parse(u2 nameIndex, u4 len, const u1* data, const String&,
-			ClassFile& cp, void*) {
-    return cp._arena.create<UnknownAttr>(nameIndex, len, data, &cp);
-	}
+            for (int i = 0; i < attrCount; i++) {
+                u2 nameIndex = br->readu2();
+                u4 len = br->readu4();
+                const u1* data = br->pos();
 
-	template<typename __TVoid, typename TAttrParser,
-			typename ... TAttrParserTail>
-	Attr* _parse(u2 nameIndex, u4 len, const u1* data, const String& attrName,
-			ClassFile& cp, void* args) {
-		if (attrName == TAttrParser::AttrName) {
-			BufferReader br(data, len);
-			return TAttrParser().parse(br, cp, nameIndex, args);
-		} else {
-			return _parse<__TVoid, TAttrParserTail...>(nameIndex, len, data, attrName, cp, args);
-		}
-	}
+                br->skip(len);
 
-};
+                String attrName = cp->getUtf8(nameIndex);
+
+                Attr* a = AttrParser<TAttrParsers...>().parse(
+                    nameIndex, len, data, attrName, cp, args...);
+                as->add(a);
+            }
+        }
+
+    };
+
 
 }
 

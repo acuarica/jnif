@@ -117,7 +117,7 @@ public:
 	}
 
 	void writeClassFile(ClassFile& cf) {
-		bw.writeu4(CLASSFILE_MAGIC);
+      bw.writeu4(ClassFile::MAGIC);
 
 		bw.writeu2(cf.version.minorVersion());
 		bw.writeu2(cf.version.majorVersion());

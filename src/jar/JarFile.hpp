@@ -4,6 +4,8 @@
 
 #include "unzip.h"
 
+namespace jnif::jar {
+
 class JarException {
 public:
 
@@ -117,5 +119,7 @@ private:
 private:
   unzFile _uf;
 };
+
+}
 
 #endif

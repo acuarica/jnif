@@ -117,8 +117,6 @@ private:
 
 	static Type _getReturnType(const char*& methodDesc);
 
-	static Type _addType(const Type& type);
-
 };
 
 }

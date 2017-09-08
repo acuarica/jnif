@@ -11,7 +11,7 @@
 #include "LabelManager.hpp"
 #include "AttrsParser.hpp"
 
-namespace jnif {
+namespace jnif::parser {
 
 OpKind OPKIND[256] = { KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO,
 		KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO, KIND_ZERO,
@@ -358,22 +358,22 @@ public:
 		}
 	}
 
-	Attr* parse(BufferReader& br, ClassFile& cp, u2 nameIndex, void* ) {
+	Attr* parse(BufferReader* br, ClassFile* cp, u2 nameIndex) {
 
-		CodeAttr* ca = cp._arena.create<CodeAttr>(nameIndex, &cp);
+		CodeAttr* ca = cp->_arena.create<CodeAttr>(nameIndex, cp);
 
-		ca->maxStack = br.readu2();
-		ca->maxLocals = br.readu2();
+		ca->maxStack = br->readu2();
+		ca->maxLocals = br->readu2();
 
-		u4 codeLen = br.readu4();
+		u4 codeLen = br->readu4();
 
 		JnifError::check(codeLen > 0, "");
 		JnifError::check(codeLen < (2 << 16), "");
 
 		ca->codeLen = codeLen;
 
-		const u1* codeBuf = br.pos();
-		br.skip(ca->codeLen);
+		const u1* codeBuf = br->pos();
+		br->skip(ca->codeLen);
 
 		LabelManager labelManager(codeLen, ca->instList);
 
@@ -382,17 +382,17 @@ public:
 			parseInstTargets(br, labelManager);
 		}
 
-		u2 exceptionTableCount = br.readu2();
+		u2 exceptionTableCount = br->readu2();
 		for (int i = 0; i < exceptionTableCount; i++) {
-			u2 startPc = br.readu2();
-			u2 endPc = br.readu2();
-			u2 handlerPc = br.readu2();
-			ConstIndex catchType = br.readu2();
+			u2 startPc = br->readu2();
+			u2 endPc = br->readu2();
+			u2 handlerPc = br->readu2();
+			ConstIndex catchType = br->readu2();
 
 			JnifError::check(startPc < endPc, "");
 			JnifError::check(endPc <= ca->codeLen, "");
 			JnifError::check(handlerPc < ca->codeLen, "");
-			JnifError::check(catchType == ConstPool::NULLENTRY || cp.isClass(catchType), "");
+			JnifError::check(catchType == ConstPool::NULLENTRY || cp->isClass(catchType), "");
 
 			CodeExceptionEntry e;
 			e.startpc = labelManager.createExceptionLabel(startPc, true, false, false);
@@ -403,7 +403,7 @@ public:
 			ca->exceptions.push_back(e);
 		}
 
-		AttrsParser<TAttrParserList ...>().parse(br, cp, ca->attrs, &labelManager);
+		AttrsParser<TAttrParserList ...>().parse(br, cp, &ca->attrs, &labelManager);
 
 		{
 			BufferReader br(codeBuf, codeLen);

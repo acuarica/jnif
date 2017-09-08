@@ -8,7 +8,7 @@
 #ifndef JNIF_PARSER_BOOTSTRAPMETHODSATTRPARSER_HPP
 #define JNIF_PARSER_BOOTSTRAPMETHODSATTRPARSER_HPP
 
-namespace jnif {
+namespace jnif::parser {
 
 // TODO: To implement
 

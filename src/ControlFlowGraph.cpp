@@ -101,18 +101,19 @@ static void buildCfg(InstList& instList, ControlFlowGraph& cfg) {
 	}
 }
 
-ControlFlowGraph::ControlFlowGraph(InstList& instList, TypeFactory& typeFactory) :
-		entry(addConstBb(instList, EntryName)), exit(
-				addConstBb(instList, ExitName)), instList(instList), _typeFactory(
-				typeFactory) {
+ControlFlowGraph::ControlFlowGraph(InstList& instList) :
+		entry(addConstBb(instList, ".Entry")),
+    exit(
+				addConstBb(instList, ".Exit")), instList(instList) {
 	buildCfg(instList, *this);
-  std::vector<BasicBlock*>::iterator it = basicBlocks.begin();
-  JnifError::assert((*it)->name == EntryName, "Invalid entry");
-  it++;
-  JnifError::assert((*it)->name == ExitName, "Invalid entry");
 
-	basicBlocks.push_back(*it);
-  basicBlocks.erase(it);
+  // std::vector<BasicBlock*>::iterator it = basicBlocks.begin();
+  // JnifError::assert((*it)->name == EntryName, "Invalid entry");
+  // it++;
+  // JnifError::assert((*it)->name == ExitName, "Invalid entry");
+
+	// basicBlocks.push_back(*it);
+  // basicBlocks.erase(it);
 }
 
 ControlFlowGraph::~ControlFlowGraph() {
@@ -125,8 +126,7 @@ ControlFlowGraph::~ControlFlowGraph() {
 
 BasicBlock* ControlFlowGraph::addBasicBlock(InstList::Iterator start,
 		InstList::Iterator end, const String& name) {
-	BasicBlock * const bb = new BasicBlock(start, end, name, this,
-			_typeFactory);
+	BasicBlock * const bb = new BasicBlock(start, end, name, this);
 
 	if (basicBlocks.size() > 0) {
 		BasicBlock* prevbb = basicBlocks.back();

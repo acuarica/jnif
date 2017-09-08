@@ -10,38 +10,37 @@
 
 #include "LabelManager.hpp"
 
-namespace jnif {
+namespace jnif::parser {
 
-class LineNumberTableAttrParser {
-public:
+    class LineNumberTableAttrParser {
+    public:
 
-	static constexpr const char* AttrName = "LineNumberTable";
+        static constexpr const char* AttrName = "LineNumberTable";
 
-	Attr* parse(BufferReader& br, ClassFile& cp, ConstIndex nameIndex,
-			void* args) {
-		LabelManager& labelManager = *(LabelManager*) args;
+        Attr* parse(BufferReader* br, ClassFile* cp, ConstIndex nameIndex,
+                    LabelManager* labelManager) {
 
-		u2 lntlen = br.readu2();
+            u2 lntlen = br->readu2();
 
-		LntAttr* lnt = cp._arena.create<LntAttr>(nameIndex, &cp);
+            LntAttr* lnt = cp->_arena.create<LntAttr>(nameIndex, cp);
 
-		for (int i = 0; i < lntlen; i++) {
-			LntAttr::LnEntry e;
-			u2 startpc = br.readu2();
-			u2 lineno = br.readu2();
+            for (int i = 0; i < lntlen; i++) {
+                LntAttr::LnEntry e;
+                u2 startpc = br->readu2();
+                u2 lineno = br->readu2();
 
-			e.startPcLabel = labelManager.createLabel(startpc);
+                e.startPcLabel = labelManager->createLabel(startpc);
 
-			e.startpc = startpc;
-			e.lineno = lineno;
+                e.startpc = startpc;
+                e.lineno = lineno;
 
-			lnt->lnt.push_back(e);
-		}
+                lnt->lnt.push_back(e);
+            }
 
-		return lnt;
-	}
+            return lnt;
+        }
 
-};
+    };
 
 }
 

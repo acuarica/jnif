@@ -29,7 +29,7 @@ public:
 
 	const InstList& instList;
 
-	ControlFlowGraph(InstList& instList, TypeFactory& typeFactory);
+	ControlFlowGraph(InstList& instList);
 
 	~ControlFlowGraph();
 
@@ -73,8 +73,6 @@ private:
 	BasicBlock* addConstBb(InstList& instList, const char* name) {
 		return addBasicBlock(instList.end(), instList.end(), name);
 	}
-
-	TypeFactory& _typeFactory;
 
 };
 

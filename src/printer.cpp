@@ -251,7 +251,7 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 
 std::ostream& operator<<(std::ostream& os, const InstList& instList) {
 	for (Inst* inst : instList) {
-		os << *inst;
+      os << *inst << endl;
 	}
 
 	return os;
@@ -289,7 +289,7 @@ std::ostream& operator<<(std::ostream& os, const Type& type) {
 	} else if (type.isNull()) {
 		os << "Null";
 	} else if (type.isUninitThis()) {
-		os << "Uninitialized this";
+      os << "Uninitialized this:" << type.className;
 	} else if (type.isObject()) {
       string s = type.getClassName();
       size_t i = s.find_last_of('/');
@@ -314,7 +314,7 @@ public:
 			value(value), sep(sep) {
 	}
 
-	static void check(MethodFlags accessFlags, const char* name, ostream& out,
+    static void check(Method::MethodFlags accessFlags, const char* name, ostream& out,
 			AccessFlagsPrinter self, bool& empty) {
 		if (self.value & accessFlags) {
         out << keyword << (empty ? "" : self.sep) << name << reset;
@@ -325,18 +325,18 @@ public:
 	friend ostream& operator<<(ostream& out, AccessFlagsPrinter self) {
 		bool empty = true;
 
-		check(METHOD_PUBLIC, "public", out, self, empty);
-		check(METHOD_PRIVATE, "private", out, self, empty);
-		check(METHOD_PROTECTED, "protected", out, self, empty);
-		check(METHOD_STATIC, "static", out, self, empty);
-		check(METHOD_FINAL, "final", out, self, empty);
-		check(METHOD_SYNCHRONIZED, "synchronized", out, self, empty);
-		check(METHOD_BRIDGE, "bridge", out, self, empty);
-		check(METHOD_VARARGS, "varargs", out, self, empty);
-		check(METHOD_NATIVE, "native", out, self, empty);
-		check(METHOD_ABSTRACT, "abstract", out, self, empty);
-		check(METHOD_STRICT, "strict", out, self, empty);
-		check(METHOD_SYNTHETIC, "synthetic", out, self, empty);
+		check(Method::METHOD_PUBLIC, "public", out, self, empty);
+		check(Method::METHOD_PRIVATE, "private", out, self, empty);
+		check(Method::METHOD_PROTECTED, "protected", out, self, empty);
+		check(Method::METHOD_STATIC, "static", out, self, empty);
+		check(Method::METHOD_FINAL, "final", out, self, empty);
+		check(Method::METHOD_SYNCHRONIZED, "synchronized", out, self, empty);
+		check(Method::METHOD_BRIDGE, "bridge", out, self, empty);
+		check(Method::METHOD_VARARGS, "varargs", out, self, empty);
+		check(Method::METHOD_NATIVE, "native", out, self, empty);
+		check(Method::METHOD_ABSTRACT, "abstract", out, self, empty);
+		check(Method::METHOD_STRICT, "strict", out, self, empty);
+		check(Method::METHOD_SYNTHETIC, "synthetic", out, self, empty);
 
     out << flags << "|" << self.value << reset;
 

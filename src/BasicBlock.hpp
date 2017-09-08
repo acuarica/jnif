@@ -46,10 +46,8 @@ public:
 private:
 
 	BasicBlock(InstList::Iterator& start, InstList::Iterator& exit,
-			const String& name, class ControlFlowGraph* cfg,
-			TypeFactory& typeFactory) :
-			start(start), exit(exit), name(name), in(&typeFactory), out(
-					&typeFactory), next(NULL), cfg(cfg) {
+			const String& name, class ControlFlowGraph* cfg) :
+			start(start), exit(exit), name(name), next(NULL), cfg(cfg) {
 	}
 
 	std::vector<BasicBlock*> targets;

@@ -13,7 +13,7 @@ namespace jnif {
     // static std::ostream& operator<<(std::ostream& os, std::set<Inst*> ls) {
     //     os << "{";
     //     for (Inst* t : ls) {
-    //         os << t->id << " ";
+    //         os << t->_offset << " ";
     //     }
     //     os << "}";
     //     return os;
@@ -53,8 +53,7 @@ public:
 		return classPath->getCommonSuperClass(classLeft, classRight);
 	}
 
-	bool assign(Type& t, Type o, IClassPath* classPath,
-			TypeFactory& typeFactory) {
+	bool assign(Type& t, Type o, IClassPath* classPath) {
 		if (!isAssignable(t, o) && !isAssignable(o, t)) {
 			if (t.isClass() && o.isClass()) {
 				String clazz1 = t.getClassName();
@@ -62,7 +61,7 @@ public:
 
 				String res = getCommonSuperClass(clazz1, clazz2, classPath);
 
-				Type superClass = typeFactory.objectType(res);
+				Type superClass = TypeFactory::objectType(res);
 				JnifError::assert((superClass == t) == (res == clazz1),
 						"Invalid super class: ", superClass, t, o);
 
@@ -76,15 +75,15 @@ public:
 
 			if (t.isArray() && o.isArray()) {
 				if (t.getDims() != o.getDims()) {
-					t = typeFactory.objectType("java/lang/Object");
+            t = TypeFactory::objectType("java/lang/Object");
 					return true;
 				}
 
-				Type st = t.stripArrayType(typeFactory);
-				Type so = o.stripArrayType(typeFactory);
+				Type st = t.stripArrayType();
+				Type so = o.stripArrayType();
 
 				//bool change =
-				assign(st, so, classPath, typeFactory);
+				assign(st, so, classPath);
 //				JnifError::assert(change, "Assigning types between ", t,
 //						" (with stripped array type ", st, ") and ", o,
 //						" (with stripped array type ", so,
@@ -94,23 +93,23 @@ public:
 //						" and ", o,
 //						" should have not change assign result to Top.");
 				if (st.isTop()) {
-					t = typeFactory.objectType("java/lang/Object");
+            t = TypeFactory::objectType("java/lang/Object");
 					return true;
 				}
 
-				t = typeFactory.arrayType(st, t.getDims());
+				t = TypeFactory::arrayType(st, t.getDims());
 				return true;
 			}
 
 			if ((t.isClass() && o.isArray()) || (t.isArray() && o.isClass())) {
-				t = typeFactory.objectType("java/lang/Object");
+          t = TypeFactory::objectType("java/lang/Object");
 				return true;
 			}
 
 //			JnifError::raise("We arrived here, and we returning top: ", t, " and ",
 //					o);
 
-			t = typeFactory.topType();
+			t = TypeFactory::topType();
 			return true;
 		}
 
@@ -130,7 +129,17 @@ public:
 	}
 
 
-	bool join(TypeFactory& typeFactory, Frame& frame, Frame& how,
+    bool includes(const std::set<Inst*>& xs, const std::set<Inst*>& ys) {
+        for (Inst* y : ys) {
+            if (xs.find(y) == xs.end()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+	bool join(Frame& frame, Frame& how,
 			IClassPath* classPath, Method* method = NULL) {
 		JnifError::check(frame.stack.size() == how.stack.size(),
 				"Different stack sizes: ", frame.stack.size(), " != ",
@@ -138,7 +147,7 @@ public:
 				method);
 
     std::set<Inst*> ls;
-    const Frame::T defType = std::make_pair(typeFactory.topType(), ls);
+    const Frame::T defType = std::make_pair(TypeFactory::topType(), ls);
 		if (frame.lva.size() < how.lva.size()) {
         frame.lva.resize(how.lva.size(), defType);
 		} else if (how.lva.size() < frame.lva.size()) {
@@ -151,13 +160,13 @@ public:
 		bool change = false;
 
 		for (u4 i = 0; i < frame.lva.size(); i++) {
-			bool assignChanged = assign(frame.lva[i].first, how.lva[i].first, classPath,
-					typeFactory);
+			bool assignChanged = assign(frame.lva[i].first, how.lva[i].first, classPath);
 
       std::set<Inst*>& xs = frame.lva[i].second;
       std::set<Inst*>& ys = how.lva[i].second;
-      // std::cout << "lva["<< i << "] xs: " << xs << "ys: " << ys << std::endl;
-      if (xs != ys) {
+
+      if (!includes(xs, ys)) {
+          // std::cerr << "lva" << " xs: " << xs << "ys: " << ys << std::endl;
         xs.insert(ys.begin(), ys.end());
         ys.insert(xs.begin(), xs.end());
         change = true;
@@ -170,12 +179,12 @@ public:
 		std::list<Frame::T>::iterator j = how.stack.begin();
 
 		for (; i != frame.stack.end(); i++, j++) {
-			bool assignChanged = assign(i->first, j->first, classPath, typeFactory);
+			bool assignChanged = assign(i->first, j->first, classPath);
 
       std::set<Inst*>& xs = i->second;
       std::set<Inst*>& ys = j->second;
-      // std::cout << "stack" << " xs: " << xs << "ys: " << ys << std::endl;
-      if (xs != ys) {
+      if (!includes(xs, ys)) {
+          // std::cerr << "stack" << " xs: " << xs << "ys: " << ys << std::endl;
         xs.insert(ys.begin(), ys.end());
         ys.insert(xs.begin(), xs.end());
         change = true;
@@ -187,20 +196,18 @@ public:
 		return change;
 	}
 
-	Type getExceptionType(const ConstPool& cp, ConstIndex catchIndex,
-			TypeFactory& typeFactory) {
+	Type getExceptionType(const ConstPool& cp, ConstIndex catchIndex) {
 		if (catchIndex != ConstPool::NULLENTRY) {
 			const String& className = cp.getClassName(catchIndex);
-			return typeFactory.fromConstClass(className);
+			return TypeFactory::fromConstClass(className);
 		} else {
-			return typeFactory.objectType("java/lang/Throwable");
+			return TypeFactory::objectType("java/lang/Throwable");
 		}
 	}
 
 	void visitCatch(const CodeExceptionEntry& ex, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
-			const ControlFlowGraph* cfg, Frame frame, Method* method,
-			TypeFactory& typeFactory) {
+			const ControlFlowGraph* cfg, Frame frame, Method* method) {
 		int handlerPcId = ex.handlerpc->label()->id;
 		BasicBlock* handlerBb = cfg->findBasicBlockOfLabel(handlerPcId);
 
@@ -212,13 +219,12 @@ public:
 //				return Type::objectType("java/lang/Throwable");
 //			}
 //		}();
-		const Type& exType = getExceptionType(cf, ex.catchtype, typeFactory);
+		const Type& exType = getExceptionType(cf, ex.catchtype);
 
 		frame.clearStack();
 		frame.push(exType, nullptr);
 
-		computeState(*handlerBb, frame, instList, cf, code, classPath, method,
-				typeFactory);
+		computeState(*handlerBb, frame, instList, cf, code, classPath, method);
 	}
 
 	bool contains(const CodeExceptionEntry& ex, const Inst* inst) {
@@ -229,12 +235,16 @@ public:
 		return start <= off && off < end;
 	}
 
+    int s = 0;
 	void computeState(BasicBlock& bb, Frame& how, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
-			Method* method, TypeFactory& typeFactory) {
+			Method* method) {
+      s++;
+      // std::cerr << s << " " << std::flush;
 		if (bb.start == instList.end()) {
         JnifError::assert(bb.name == ControlFlowGraph::ExitName && bb.exit == instList.end(),
 					"exit bb");
+        s--;
 			return;
 		}
 
@@ -246,19 +256,13 @@ public:
 			bb.in = how;
 			change = true;
 		} else {
-			change = join(typeFactory, bb.in, how, classPath, method);
+			change = join(bb.in, how, classPath, method);
 		}
 
 		if (change) {
-
-			//auto prepareCatchHandlerFrame = [&](Inst* inst, const Frame& out) {
-			//};
-
-			//bb.out = bb.in;
 			Frame out = bb.in;
-			//Frame outp = out;
 
-			SmtBuilder builder(out, cf, method, typeFactory);
+			SmtBuilder builder(out, cf, method);
 			for (InstList::Iterator it = bb.start; it != bb.exit; ++it) {
 				Inst* inst = *it;
 				builder.processInst(*inst);
@@ -268,8 +272,7 @@ public:
 
 				for (const CodeExceptionEntry& ex : code->exceptions) {
 					if (contains(ex, inst)) {
-						visitCatch(ex, instList, cf, code, classPath, bb.cfg,
-								out, method, typeFactory);
+						visitCatch(ex, instList, cf, code, classPath, bb.cfg, out, method);
 					}
 				}
 			}
@@ -278,10 +281,10 @@ public:
 			Frame h = bb.out;
 
 			for (BasicBlock* nid : bb) {
-				computeState(*nid, h, instList, cf, code, classPath, method,
-						typeFactory);
+				computeState(*nid, h, instList, cf, code, classPath, method);
 			}
 		}
+    s--;
 	}
 };
 

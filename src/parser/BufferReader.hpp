@@ -12,106 +12,106 @@
 
 namespace jnif {
 
-/**
- * Implements a memory buffer reader in big-endian encoding.
- */
-class BufferReader {
-public:
+    /**
+     * Implements a memory buffer reader in big-endian encoding.
+     */
+    class BufferReader {
+    public:
 
-	/**
-	 * Constructs a BufferReader from a memory buffer and its size.
-	 * The buffer must be an accessible and readable memory location
-	 * at least of the specified size.
-	 *
-	 * @param buffer The memory buffer to read from.
-	 * @param size The size of the buffer in bytes.
-	 *
-	 */
-	BufferReader(const u1* buffer, u4 size) :
-			buffer(buffer), _size(size), off(0) {
-	}
+        /**
+         * Constructs a BufferReader from a memory buffer and its size.
+         * The buffer must be an accessible and readable memory location
+         * at least of the specified size.
+         *
+         * @param buffer The memory buffer to read from.
+         * @param size The size of the buffer in bytes.
+         *
+         */
+        BufferReader(const u1* buffer, u4 size) :
+            buffer(buffer), _size(size), off(0) {
+        }
 
-	/**
-	 * When this buffer reader finishes, it will check whether the end has
-	 * been reached, i.e., all bytes from buffer were read or skipped.
-	 * In other words, when the buffer reader br is destroyed, the condition
-	 *
-	 * @f[ br.offset() = br.size() @f]
-	 *
-	 * must hold.
-	 */
-	~BufferReader() {
-		//Error::check(off == _size, "Expected end of buffer");
-	}
+        /**
+         * When this buffer reader finishes, it will check whether the end has
+         * been reached, i.e., all bytes from buffer were read or skipped.
+         * In other words, when the buffer reader br is destroyed, the condition
+         *
+         * @f[ br.offset() = br.size() @f]
+         *
+         * must hold.
+         */
+        ~BufferReader() {
+            //Error::check(off == _size, "Expected end of buffer");
+        }
 
-	int size() const {
-		return _size;
-	}
+        int size() const {
+            return _size;
+        }
 
-	u1 readu1() {
-		JnifError::check(off + 1 <= _size, "Invalid read");
+        u1 readu1() {
+            JnifError::check(off + 1 <= _size, "Invalid read");
 
-		u1 result = buffer[off];
+            u1 result = buffer[off];
 
-		off += 1;
+            off += 1;
 
-		return result;
-	}
+            return result;
+        }
 
-	u2 readu2() {
-		JnifError::check(off + 2 <= _size, "Invalid read 2");
+        u2 readu2() {
+            JnifError::check(off + 2 <= _size, "Invalid read 2");
 
-		u1 r0 = buffer[off + 0];
-		u1 r1 = buffer[off + 1];
+            u1 r0 = buffer[off + 0];
+            u1 r1 = buffer[off + 1];
 
-		u2 result = r0 << 8 | r1;
+            u2 result = r0 << 8 | r1;
 
-		off += 2;
+            off += 2;
 
-		return result;
-	}
+            return result;
+        }
 
-	u4 readu4() {
-		JnifError::check(off + 4 <= _size, "Invalid read 4");
-		//if (off >= 256 ) Error::raise()
+        u4 readu4() {
+            JnifError::check(off + 4 <= _size, "Invalid read 4");
+            //if (off >= 256 ) Error::raise()
 
-		u1 r0 = buffer[off + 0];
-		u1 r1 = buffer[off + 1];
-		u1 r2 = buffer[off + 2];
-		u1 r3 = buffer[off + 3];
+            u1 r0 = buffer[off + 0];
+            u1 r1 = buffer[off + 1];
+            u1 r2 = buffer[off + 2];
+            u1 r3 = buffer[off + 3];
 
-		u4 result = r0 << 24 | r1 << 16 | r2 << 8 | r3;
+            u4 result = r0 << 24 | r1 << 16 | r2 << 8 | r3;
 
-		off += 4;
+            off += 4;
 
-		return result;
-	}
+            return result;
+        }
 
-	void skip(int count) {
-		const char* const m = "Invalid read: %d (offset: %d)";
-		JnifError::check(off + count <= _size, m, count, off);
+        void skip(int count) {
+            const char* const m = "Invalid read: %d (offset: %d)";
+            JnifError::check(off + count <= _size, m, count, off);
 
-		off += count;
-	}
+            off += count;
+        }
 
-	int offset() const {
-		return off;
-	}
+        int offset() const {
+            return off;
+        }
 
-	const u1* pos() const {
-		return buffer + off;
-	}
+        const u1* pos() const {
+            return buffer + off;
+        }
 
-	bool eor() const {
-		return off == _size;
-	}
+        bool eor() const {
+            return off == _size;
+        }
 
-private:
+    private:
 
-	const u1 * const buffer;
-	const int _size;
-	int off;
-};
+        const u1 * const buffer;
+        const int _size;
+        int off;
+    };
 
 }
 

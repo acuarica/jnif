@@ -92,8 +92,11 @@ void testWriter(const JavaFile& jf) {
 void testAnalysis(const JavaFile& jf) {
 	ClassFile cf(jf.data, jf.len);
 
+  // cout << cf;
+
 	UnitTestClassPath cp;
 	cf.computeFrames(&cp);
+
 }
 
 void testAnalysisPrinter(const JavaFile& jf) {

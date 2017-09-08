@@ -6,23 +6,17 @@
  */
 #include "ClassFile.hpp"
 #include "Error.hpp"
-#include "parser/BufferReader.hpp"
-#include "parser/ClassParser.hpp"
-#include "parser/CodeAttrParser.hpp"
-#include "parser/ExceptionsAttrParser.hpp"
-#include "parser/LineNumberTableAttrParser.hpp"
-#include "parser/LocalVariableTableAttrParser.hpp"
-#include "parser/LocalVariableTypeTableAttrParser.hpp"
-#include "parser/StackMapTableAttrParser.hpp"
-#include "parser/SourceFileAttrParser.hpp"
-#include "parser/SignatureAttrParser.hpp"
 #include "analysis/SmtBuilder.hpp"
 #include "analysis/ComputeFrames.hpp"
 #include "analysis/FrameGenerator.hpp"
 
+#include "parser/ClassFileParser.hpp"
+
 #include <fstream>
 
 namespace jnif {
+
+    using namespace jnif::parser;
 
 Method::~Method() {
   JnifError::trace("Method::~Method");
@@ -64,23 +58,25 @@ InstList& Method::instList() {
 ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
   version(0, 0), accessFlags(0), thisClassIndex(0), superClassIndex(0), sig(&attrs) {
 
-	BufferReader br(classFileData, classFileLen);
-	ClassParser<
-    AttrsParser<
-      SourceFileAttrParser,
-      SignatureAttrParser>,
-    AttrsParser<
-      CodeAttrParser<
-        LineNumberTableAttrParser,
-        LocalVariableTableAttrParser,
-        LocalVariableTypeTableAttrParser,
-        StackMapTableAttrParser>,
-      ExceptionsAttrParser,
-      SignatureAttrParser>,
-    AttrsParser<
-      SignatureAttrParser>
-    > parser;
-	parser.parse(br, *this);
+	// BufferReader br(classFileData, classFileLen);
+	// ClassParser<
+  //     ConstPoolParser,
+  //   AttrsParser<
+  //     SourceFileAttrParser,
+  //     SignatureAttrParser>,
+  //   AttrsParser<
+  //     CodeAttrParser<
+  //       LineNumberTableAttrParser,
+  //       LocalVariableTableAttrParser,
+  //       LocalVariableTypeTableAttrParser,
+  //       StackMapTableAttrParser>,
+  //     ExceptionsAttrParser,
+  //     SignatureAttrParser>,
+  //   AttrsParser<
+  //     SignatureAttrParser>
+  //   > parser;
+	// parser.parse(&br, this);
+  ClassFileParser::parse(classFileData, classFileLen, this);
 }
 
     ClassFile::ClassFile(const char* fileName) : sig(&attrs) {
@@ -100,23 +96,7 @@ ClassFile::ClassFile(const u1* classFileData, const int classFileLen) :
             throw "File not opened!";
         }
         
-        BufferReader br(buffer, fileSize);
-        ClassParser<
-            AttrsParser<
-                SourceFileAttrParser,
-                SignatureAttrParser>,
-            AttrsParser<
-                CodeAttrParser<
-                    LineNumberTableAttrParser,
-                    LocalVariableTableAttrParser,
-                    LocalVariableTypeTableAttrParser,
-                    StackMapTableAttrParser>,
-                ExceptionsAttrParser,
-                SignatureAttrParser>,
-            AttrsParser<
-                SignatureAttrParser>
-            > parser;
-        parser.parse(br, *this);
+        ClassFileParser::parse(buffer, fileSize, this);
     }
 
 ClassFile::~ClassFile() {

@@ -156,7 +156,7 @@ public:
 	 *
 	 * @returns the element type of this array.
 	 */
-	Type elementType(class TypeFactory& typeFactory) const;
+	Type elementType() const;
 
 	/**
 	 * Removes the any dimension on this type. This type has to be an array
@@ -168,7 +168,7 @@ public:
 	 * @returns the base type of this type. The result ensures that is not an
 	 * array type.
 	 */
-	Type stripArrayType(class TypeFactory& typeFactory) const;
+	Type stripArrayType() const;
 
 	union {
 		mutable struct {

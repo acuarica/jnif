@@ -16,37 +16,37 @@
 
 namespace jnif {
 
-class Signature {
-public:
+    class Signature {
+    public:
 
-  Signature(const Attrs* attrs) : attrs(attrs) {
-  }
+        Signature(const Attrs* attrs) : attrs(attrs) {
+        }
 
-	bool hasSignature() const {
-		for (Attr* attr : *attrs) {
-			if (attr->kind == ATTR_SIGNATURE) {
-				return true;
-			}
-		}
+        bool hasSignature() const {
+            for (Attr* attr : *attrs) {
+                if (attr->kind == ATTR_SIGNATURE) {
+                    return true;
+                }
+            }
 
-		return false;
-	}
+            return false;
+        }
 
-	const char* signature() const {
-		for (Attr* attr : *attrs) {
-			if (attr->kind == ATTR_SIGNATURE) {
-				return ((SignatureAttr*) attr)->signature();
-			}
-		}
+        const char* signature() const {
+            for (Attr* attr : *attrs) {
+                if (attr->kind == ATTR_SIGNATURE) {
+                    return ((SignatureAttr*) attr)->signature();
+                }
+            }
 
-		return NULL;
-	}
+            return NULL;
+        }
 
-private:
+    private:
 
-  const Attrs* attrs;
+        const Attrs* attrs;
 
-};
+    };
 
 /**
  * Represent a member of a class. This the base class for Field and
@@ -55,271 +55,381 @@ private:
  * @see Field
  * @see Method
  */
-class Member {
-public:
+    class Member {
+    public:
 
-	friend class Field;
-	friend class Method;
-	Member(const Member&) = delete;
-	Member(Member&&) = default;
+        friend class Field;
+        friend class Method;
+        Member(const Member&) = delete;
+        Member(Member&&) = default;
 
-	u2 accessFlags;
-	ConstIndex nameIndex;
-	ConstIndex descIndex;
-	ClassFile* const constPool;
-  Attrs attrs;
-  Signature sig;
+        u2 accessFlags;
+        ConstIndex nameIndex;
+        ConstIndex descIndex;
+        ClassFile* const constPool;
+        Attrs attrs;
+        Signature sig;
 
-	const char* getName() const;
-  const char* getDesc() const;
+        const char* getName() const;
+        const char* getDesc() const;
 
-private:
+    private:
 
-	Member(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
-			accessFlags(accessFlags),
-      nameIndex(nameIndex),
-      descIndex(descIndex),
-      constPool(constPool),
-      sig(&attrs)
-  {
-	}
-};
-
-/**
- *
- */
-class Field: public Member {
-	friend class ClassFile;
-
-public:
-
-	Field(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
-			Member(accessFlags, nameIndex, descIndex, constPool) {
-	}
-
-};
+        Member(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
+            accessFlags(accessFlags),
+            nameIndex(nameIndex),
+            descIndex(descIndex),
+            constPool(constPool),
+            sig(&attrs)
+        {
+        }
+    };
 
 /**
  *
  */
-class Method: public Member {
-	friend class ClassFile;
+    class Field: public Member {
+        friend class ClassFile;
 
-public:
+    public:
 
-	Method(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
-    Member(accessFlags, nameIndex, descIndex, constPool) {
-	}
+        Field(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
+            Member(accessFlags, nameIndex, descIndex, constPool) {
+        }
 
-  ~Method();
-
-	bool hasCode() const {
-		for (Attr* attr : attrs) {
-			if (attr->kind == ATTR_CODE) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	CodeAttr* codeAttr() const {
-		for (Attr* attr : attrs) {
-			if (attr->kind == ATTR_CODE) {
-				return (CodeAttr*) attr;
-			}
-		}
-
-		return NULL;
-	}
-
-	InstList& instList();
-
-	bool isPublic() const {
-		return accessFlags & METHOD_PUBLIC;
-	}
-
-	bool isStatic() const {
-		return accessFlags & METHOD_STATIC;
-	}
-
-	bool isInit() const;
-
-	bool isMain() const;
-
-	/**
-	 * Shows this method in the specified ostream.
-	 */
-	friend std::ostream& operator<<(std::ostream& os, const Method& m);
-
-};
-
-class IClassPath {
-public:
-
-	virtual ~IClassPath() {
-	}
-
-	virtual String getCommonSuperClass(const String& className1,
-			const String& className2) = 0;
-
-};
+    };
 
 /**
- * The magic number signature that must appear at the beginning of each
- * class file, identifying the class file format; it has the value 0xCAFEBABE.
+ *
  */
-enum Magic {
-	CLASSFILE_MAGIC = 0xcafebabe
-};
+    class Method: public Member {
+        friend class ClassFile;
+
+    public:
+
+        /**
+         * Access flags used by methods.
+         */
+        enum MethodFlags {
+
+            /**
+             * Declared public; may be accessed from outside its package.
+             */
+            METHOD_PUBLIC = 0x0001,
+
+            /**
+             * Declared private; accessible only within the defining class.
+             */
+            METHOD_PRIVATE = 0x0002,
+
+            /**
+             * Declared protected; may be accessed within subclasses.
+             */
+            METHOD_PROTECTED = 0x0004,
+
+            /**
+             * Declared static.
+             */
+            METHOD_STATIC = 0x0008,
+
+            /**
+             * Declared final; must not be overridden (see 5.4.5).
+             */
+            METHOD_FINAL = 0x0010,
+
+            /**
+             * Declared synchronized; invocation is wrapped by a monitor use.
+             */
+            METHOD_SYNCHRONIZED = 0x0020,
+
+            /**
+             * A bridge method, generated by the compiler.
+             */
+            METHOD_BRIDGE = 0x0040,
+
+            /**
+             * Declared with variable number of arguments.
+             */
+            METHOD_VARARGS = 0x0080,
+
+            /**
+             * Declared native; implemented in a language other than Java.
+             */
+            METHOD_NATIVE = 0x0100,
+
+            /**
+             * Declared abstract; no implementation is provided.
+             */
+            METHOD_ABSTRACT = 0x0400,
+
+            /**
+             * Declared strictfp; floating-point mode is FP-strict.
+             */
+            METHOD_STRICT = 0x0800,
+
+            /**
+             * Declared synthetic; not present in the source code.
+             */
+            METHOD_SYNTHETIC = 0x1000,
+        };
+        Method(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
+            Member(accessFlags, nameIndex, descIndex, constPool) {
+        }
+
+        ~Method();
+
+        bool hasCode() const {
+            for (Attr* attr : attrs) {
+                if (attr->kind == ATTR_CODE) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        CodeAttr* codeAttr() const {
+            for (Attr* attr : attrs) {
+                if (attr->kind == ATTR_CODE) {
+                    return (CodeAttr*) attr;
+                }
+            }
+
+            return NULL;
+        }
+
+        InstList& instList();
+
+        bool isPublic() const {
+            return accessFlags & METHOD_PUBLIC;
+        }
+
+        bool isStatic() const {
+            return accessFlags & METHOD_STATIC;
+        }
+
+        bool isInit() const;
+
+        bool isMain() const;
+
+        /**
+         * Shows this method in the specified ostream.
+         */
+        friend std::ostream& operator<<(std::ostream& os, const Method& m);
+
+    };
+
+    class IClassPath {
+    public:
+
+        virtual ~IClassPath() {
+        }
+
+        virtual String getCommonSuperClass(const String& className1,
+                                           const String& className2) = 0;
+
+    };
 
 /**
  * Models a Java Class File following the specification of the JVM version 7.
  */
-class ClassFile: public ConstPool {
-public:
+    class ClassFile: public ConstPool {
+    public:
 
-    static constexpr const char* OBJECT = "java/lang/Object";
+/**
+ * Access flags for the class itself.
+ */
+        enum ClassFlags {
 
-	/**
-	 * Constructs a default class file given the class name, the super class
-	 * name and the access flags.
-	 */
-	ClassFile(const char* className, const char* superClassName, u2 accessFlags = CLASS_PUBLIC, u2 majorVersion = 51, u2 minorVersion = 0) :
-			version(majorVersion, minorVersion),
-      accessFlags(accessFlags),
-      thisClassIndex(addClass(className)),
-      superClassIndex(addClass(superClassName)),
-      sig(&attrs)
-  {
-	}
+            /**
+             * Declared public; may be accessed from outside its package.
+             */
+            CLASS_PUBLIC = 0x0001,
 
-	/**
-	 * Constructs a class file from an in-memory representation of the java
-	 * class file.
-	 */
-	ClassFile(const u1* classFileData, int classFileLen);
+            /**
+             * Declared final; no subclasses allowed.
+             */
+            CLASS_FINAL = 0x0010,
 
-    ClassFile(const char* fileName);
+            /**
+             * Treat superclass methods specially when invoked by the
+             * invokespecial instruction.
+             */
+            CLASS_SUPER = 0x0020,
 
-	/**
-	 * Releases the memory used for this class file.
-	 */
-	~ClassFile();
+            /**
+             * Is an interface, not a class.
+             */
+            CLASS_INTERFACE = 0x0200,
 
-	/**
-	 * Gets the class name of this class file.
-	 */
-	const char* getThisClassName() const {
-		return getClassName(thisClassIndex);
-	}
+            /**
+             * Declared abstract; must not be instantiated.
+             */
+            CLASS_ABSTRACT = 0x0400,
 
-	/**
-	 *
-	 */
-	const char* getSuperClassName() const {
-		return getClassName(superClassIndex);
-	}
+            /**
+             * Declared synthetic; not present in the source code.
+             */
+            CLASS_SYNTHETIC = 0x1000,
 
-    bool isInterface() {
-        return accessFlags & CLASS_INTERFACE;
-    }
+            /**
+             * Declared as an annotation type.
+             */
+            CLASS_ANNOTATION = 0x2000,
 
-	/**
-	 * Adds a new field to this class file.
-	 *
-	 * @param nameIndex the utf8 index in the constant pool that contains the
-	 * name of the field to add.
-	 * @param descIndex the utf8 index in the constant pool that contains the
-	 * descriptor of the field to add.
-	 * @param accessFlags the access flags of the field to add.
-	 * @returns the newly created field.
-	 */
-	Field* addField(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags = FIELD_PUBLIC);
+            /**
+             * Declared as an enum type.
+             */
+            CLASS_ENUM = 0x4000
+        };
+/**
+ * The magic number signature that must appear at the beginning of each
+ * class file, identifying the class file format; it has the value 0xCAFEBABE.
+ */
+        static constexpr const u4 MAGIC = 0xcafebabe;
 
-	/**
-	 * Adds a new field to this class file by passing directly the name
-	 * and descriptor.
-	 *
-	 * @param fieldName the name of the field to add.
-	 * @param fieldDesc the descriptor of the field to add.
-	 * @param accessFlags the access flags of the field to add.
-	 * @returns the newly created field.
-	 */
-	Field* addField(const char* fieldName, const char* fieldDesc, u2 accessFlags = FIELD_PUBLIC) {
-		ConstIndex nameIndex = addUtf8(fieldName);
-		ConstIndex descIndex = addUtf8(fieldDesc);
+        static constexpr const char* OBJECT = "java/lang/Object";
 
-		return addField(nameIndex, descIndex, accessFlags);
-	}
 
-	/**
-	 * Adds a new method to this class file.
-	 *
-	 * @param nameIndex the utf8 index in the constant pool that contains the
-	 * name of the method to add.
-	 * @param descIndex the utf8 index in the constant pool that contains the
-	 * descriptor of the method to add.
-	 * @param accessFlags the access flags of the field to add.
-	 * @returns the newly created method.
-	 */
-	Method* addMethod(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags = METHOD_PUBLIC);
+        /**
+         * Constructs a default class file given the class name, the super class
+         * name and the access flags.
+         */
+        ClassFile(const char* className, const char* superClassName, u2 accessFlags = CLASS_PUBLIC, u2 majorVersion = 51, u2 minorVersion = 0) :
+            version(majorVersion, minorVersion),
+            accessFlags(accessFlags),
+            thisClassIndex(addClass(className)),
+            superClassIndex(addClass(superClassName)),
+            sig(&attrs)
+        {
+        }
 
-	/**
-	 * Adds a new method to this class file by passing directly the name
-	 * and descriptor.
-	 *
-	 * @param methodName the name of the method to add.
-	 * @param methodDesc the descriptor of the method to add.
-	 * @param accessFlags the access flags of the method to add.
-	 * @returns the newly created method.
-	 */
-	Method* addMethod(const char* methodName, const char* methodDesc, u2 accessFlags = METHOD_PUBLIC) {
-		ConstIndex nameIndex = addUtf8(methodName);
-		ConstIndex descIndex = addUtf8(methodDesc);
+        /**
+         * Constructs a class file from an in-memory representation of the java
+         * class file.
+         */
+        ClassFile(const u1* classFileData, int classFileLen);
 
-		return addMethod(nameIndex, descIndex, accessFlags);
-	}
+        ClassFile(const char* fileName);
 
-	/**
-	 * Computes the size in bytes of this class file of the in-memory
-	 * representation.
-	 */
-	u4 computeSize();
+        /**
+         * Releases the memory used for this class file.
+         */
+        ~ClassFile();
 
-	/**
-	 *
-	 */
-	void computeFrames(IClassPath* classPath);
+        /**
+         * Gets the class name of this class file.
+         */
+        const char* getThisClassName() const {
+            return getClassName(thisClassIndex);
+        }
 
-	/**
-	 * Writes this class file in the specified buffer according to the
-	 * specification.
-	 */
-	void write(u1* classFileData, int classFileLen);
+        /**
+         *
+         */
+        const char* getSuperClassName() const {
+            return getClassName(superClassIndex);
+        }
 
-	/**
-	 * Export this class file to dot format.
-	 *
-	 * @see www.graphviz.org
-	 */
-	void dot(std::ostream& os) const;
+        bool isInterface() {
+            return accessFlags & CLASS_INTERFACE;
+        }
 
-  // Must be the first member, as it is needed for the destructors of the other members.
-	Arena _arena;
+        /**
+         * Adds a new field to this class file.
+         *
+         * @param nameIndex the utf8 index in the constant pool that contains the
+         * name of the field to add.
+         * @param descIndex the utf8 index in the constant pool that contains the
+         * descriptor of the field to add.
+         * @param accessFlags the access flags of the field to add.
+         * @returns the newly created field.
+         */
+        Field* addField(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags = FIELD_PUBLIC);
 
-	Version version;
-	u2 accessFlags;
-	ConstIndex thisClassIndex;
-	ConstIndex superClassIndex;
-	std::vector<ConstIndex> interfaces;
-	std::vector<Field*> fields;
-	std::vector<Method*> methods;
-  Attrs attrs;
-  Signature sig;
-};
+        /**
+         * Adds a new field to this class file by passing directly the name
+         * and descriptor.
+         *
+         * @param fieldName the name of the field to add.
+         * @param fieldDesc the descriptor of the field to add.
+         * @param accessFlags the access flags of the field to add.
+         * @returns the newly created field.
+         */
+        Field* addField(const char* fieldName, const char* fieldDesc, u2 accessFlags = FIELD_PUBLIC) {
+            ConstIndex nameIndex = addUtf8(fieldName);
+            ConstIndex descIndex = addUtf8(fieldDesc);
 
-std::ostream& operator<<(std::ostream& os, const ClassFile& classFile);
+            return addField(nameIndex, descIndex, accessFlags);
+        }
+
+        /**
+         * Adds a new method to this class file.
+         *
+         * @param nameIndex the utf8 index in the constant pool that contains the
+         * name of the method to add.
+         * @param descIndex the utf8 index in the constant pool that contains the
+         * descriptor of the method to add.
+         * @param accessFlags the access flags of the field to add.
+         * @returns the newly created method.
+         */
+        Method* addMethod(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags = Method::METHOD_PUBLIC);
+
+        /**
+         * Adds a new method to this class file by passing directly the name
+         * and descriptor.
+         *
+         * @param methodName the name of the method to add.
+         * @param methodDesc the descriptor of the method to add.
+         * @param accessFlags the access flags of the method to add.
+         * @returns the newly created method.
+         */
+        Method* addMethod(const char* methodName, const char* methodDesc, u2 accessFlags = Method::METHOD_PUBLIC) {
+            ConstIndex nameIndex = addUtf8(methodName);
+            ConstIndex descIndex = addUtf8(methodDesc);
+
+            return addMethod(nameIndex, descIndex, accessFlags);
+        }
+
+        /**
+         * Computes the size in bytes of this class file of the in-memory
+         * representation.
+         */
+        u4 computeSize();
+
+        /**
+         *
+         */
+        void computeFrames(IClassPath* classPath);
+
+        /**
+         * Writes this class file in the specified buffer according to the
+         * specification.
+         */
+        void write(u1* classFileData, int classFileLen);
+
+        /**
+         * Export this class file to dot format.
+         *
+         * @see www.graphviz.org
+         */
+        void dot(std::ostream& os) const;
+
+        // Must be the first member, as it is needed for the destructors of the other members.
+        Arena _arena;
+
+        Version version;
+        u2 accessFlags;
+        ConstIndex thisClassIndex;
+        ConstIndex superClassIndex;
+        std::vector<ConstIndex> interfaces;
+        std::vector<Field*> fields;
+        std::vector<Method*> methods;
+        Attrs attrs;
+        Signature sig;
+    };
+
+    std::ostream& operator<<(std::ostream& os, const ClassFile& classFile);
 
 }
 

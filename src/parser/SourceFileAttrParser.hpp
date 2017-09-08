@@ -8,20 +8,20 @@
 #ifndef JNIF_PARSER_SOURCEFILEATTRPARSER_HPP
 #define JNIF_PARSER_SOURCEFILEATTRPARSER_HPP
 
-namespace jnif {
+namespace jnif::parser {
 
-class SourceFileAttrParser {
-public:
+    class SourceFileAttrParser {
+    public:
 
-	static constexpr const char* AttrName = "SourceFile";
+        static constexpr const char* AttrName = "SourceFile";
 
-	Attr* parse(BufferReader& br, ClassFile& cp, ConstIndex nameIndex, void*) {
-		u2 sourceFileIndex = br.readu2();
-		Attr* attr = cp._arena.create<SourceFileAttr>(nameIndex, sourceFileIndex, &cp);
-		return attr;
-	}
+        Attr* parse(BufferReader* br, ClassFile* cp, ConstIndex nameIndex) {
+            u2 sourceFileIndex = br->readu2();
+            Attr* attr = cp->_arena.create<SourceFileAttr>(nameIndex, sourceFileIndex, cp);
+            return attr;
+        }
 
-};
+    };
 
 }
 

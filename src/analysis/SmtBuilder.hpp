@@ -19,9 +19,8 @@ class JsrRetNotSupported {
 class SmtBuilder {
 public:
 
-	SmtBuilder(Frame& frame, const ConstPool& cp, Method* m,
-			TypeFactory& typeFactory) :
-			frame(frame), cp(cp), _m(m), _typeFactory(typeFactory) {
+	SmtBuilder(Frame& frame, const ConstPool& cp, Method* m) :
+			frame(frame), cp(cp), _m(m) {
 	}
 
 	void processInst(Inst& inst) {
@@ -634,7 +633,7 @@ private:
 
 	void newinst(TypeInst& inst) {
 		const String& className = cp.getClassName(inst.type()->classIndex);
-		const Type& t = _typeFactory.fromConstClass(className);
+		const Type& t = TypeFactory::fromConstClass(className);
 		t.init = false;
 		t.typeId = Type::nextTypeId;
 		Type::nextTypeId++;
@@ -652,7 +651,7 @@ private:
 	void anewarray(Inst& inst) {
 		frame.popIntegral(&inst);
 		const String& className = cp.getClassName(inst.type()->classIndex);
-		const Type& t = _typeFactory.fromConstClass(className);
+		const Type& t = TypeFactory::fromConstClass(className);
 		frame.pushArray(t, t.getDims() + 1, &inst);
 	}
 
@@ -662,7 +661,7 @@ private:
 		if (arrayType.isNull()) {
 			frame.pushNull(&inst);
 		} else {
-			const Type& elementType = arrayType.elementType(_typeFactory);
+			Type elementType = arrayType.elementType();
 			JnifError::check(elementType.isObject(), "Not an object:", elementType);
 			frame.push(elementType, &inst);
 		}
@@ -711,7 +710,7 @@ private:
 	void checkcast(Inst& inst) {
 		frame.popRef(&inst);
 		const String& className = cp.getClassName(inst.type()->classIndex);
-		frame.push(_typeFactory.fromConstClass(className), &inst);
+		frame.push(TypeFactory::fromConstClass(className), &inst);
 	}
 
     void istore(int lvindex, Inst* inst) {
@@ -824,7 +823,7 @@ private:
               bool popThis, bool isSpecial, Inst* inst) {
 		const char* d = desc.c_str();
 		std::vector<Type> argsType;
-		const Type& returnType = _typeFactory.fromMethodDesc(d, &argsType);
+		const Type& returnType = TypeFactory::fromMethodDesc(d, &argsType);
 
 		for (int i = argsType.size() - 1; i >= 0; i--) {
 			const Type& argType = argsType[i];
@@ -851,7 +850,7 @@ private:
 //								className, ".", name, desc, ", ", t);
 						JnifError::check(tr.className != "", "empty clsname lva");
 						JnifError::check(tr.className == t.className,
-								"!= clsname lva");
+                             "!= clsname lva", tr.className, " !=! ", t.className);
 
 						tr.init = true;
 						tr.tag = TYPE_OBJECT;
@@ -890,7 +889,7 @@ private:
 		cp.getFieldRef(inst.field()->fieldRefIndex, &className, &name, &desc);
 
 		const char* d = desc.c_str();
-		const Type& t = _typeFactory.fromFieldDesc(d);
+		const Type& t = TypeFactory::fromFieldDesc(d);
 
 		return t;
 	}
@@ -905,7 +904,7 @@ private:
 
 		String arrayClassName = cp.getClassName(inst.multiarray()->classIndex);
 		const char* d = arrayClassName.c_str();
-		Type arrayType = _typeFactory.fromFieldDesc(d);
+		Type arrayType = TypeFactory::fromFieldDesc(d);
 
 		frame.pushType(arrayType, &inst);
 	}
@@ -956,21 +955,21 @@ private:
 	const Type& getArrayBaseType(int atype) {
 		switch (atype) {
 			case NEWARRAYTYPE_BOOLEAN:
-				return _typeFactory.booleanType();
+				return TypeFactory::booleanType();
 			case NEWARRAYTYPE_CHAR:
-				return _typeFactory.charType();
+				return TypeFactory::charType();
 			case NEWARRAYTYPE_BYTE:
-				return _typeFactory.byteType();
+				return TypeFactory::byteType();
 			case NEWARRAYTYPE_SHORT:
-				return _typeFactory.shortType();
+				return TypeFactory::shortType();
 			case NEWARRAYTYPE_INT:
-				return _typeFactory.intType();
+				return TypeFactory::intType();
 			case NEWARRAYTYPE_FLOAT:
-				return _typeFactory.floatType();
+				return TypeFactory::floatType();
 			case NEWARRAYTYPE_LONG:
-				return _typeFactory.longType();
+				return TypeFactory::longType();
 			case NEWARRAYTYPE_DOUBLE:
-				return _typeFactory.doubleType();
+          return TypeFactory::doubleType();
 		}
 
 		JnifError::raise("invalid atype: ", atype);
@@ -979,7 +978,7 @@ private:
 	Frame& frame;
 	const ConstPool& cp;
 	Method* _m;
-	TypeFactory& _typeFactory;
+
 };
 
 }

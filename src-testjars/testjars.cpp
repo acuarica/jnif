@@ -14,8 +14,8 @@ using namespace jnif;
 typedef void (*TestFunc)(const JavaFile& jf);
 
 static bool isSuffix(const string& suffix, const string& text) {
-	auto res = std::mismatch(suffix.rbegin(), suffix.rend(), text.rbegin());
-	return res.first == suffix.rend();
+    auto res = std::mismatch(suffix.rbegin(), suffix.rend(), text.rbegin());
+    return res.first == suffix.rend();
 }
 
 void apply(ostream& os, const list<JavaFile>& classes, TestFunc instr) {
@@ -95,7 +95,7 @@ int main(int argc, const char* argv[]) {
     for (const string& j : jars) {
         cout << "[Loading " << j << " .. " << flush;
         try {
-            JarFile uf(j.c_str());
+            jnif::jar::JarFile uf(j.c_str());
             int csc = uf.forEach(&classes, 0, [] (void* classes, int, void* buf, int s, const char* fileNameInZip) {
                     u1* b = new u1[s];
                     memcpy(b, buf, s);
@@ -103,7 +103,7 @@ int main(int argc, const char* argv[]) {
                     ((list<JavaFile>*)classes)->push_back(jf);
                 });
             cout << csc << " classes OK]" << endl;
-        } catch (const JarException& ex) {
+        } catch (const jnif::jar::JarException& ex) {
             cerr << "ERROR: Can't open file" << endl;
             return 1;
         }

@@ -13,7 +13,7 @@
 
 namespace jnif {
 
-    static void setLink(std::set<Inst*>& is, Inst* j) {
+    static void setLink(const std::set<Inst*>& is, Inst* j) {
         JnifError::assert(j != nullptr, "j cannot be null");
             for (Inst* i : is) {
                     JnifError::assert(i != nullptr, "i cannot be null");
@@ -25,21 +25,22 @@ namespace jnif {
     Type Frame::getVar(u4 lvindex, Inst* inst) {
         JnifError::assert(inst != nullptr, "Inst cannot be null for getVar");
 
-        T& t = lva.at(lvindex);
-        setLink(t.second, inst);
+        const T* t = &lva.at(lvindex);
+        setLink(t->second, inst);
 
-        return t.first;
+        return t->first;
     }
 
 Type Frame::pop(Inst* inst) {
 	JnifError::check(stack.size() > 0, "Trying to pop in an empty stack.");
   JnifError::assert(inst != nullptr, "Inst cannot be null");
 
-  Frame::T& t = stack.front();
-  setLink(t.second, inst);
+  const T* t = &stack.front();
+  setLink(t->second, inst);
+  Type ret = t->first;
 	stack.pop_front();
 
-	return t.first;
+	return ret;
 }
 
 Type Frame::popOneWord(Inst* inst) {
@@ -103,7 +104,11 @@ Type Frame::popDouble(Inst* inst) {
 }
 
     void Frame::push(const Type& t, Inst* inst) {
-        std::set<Inst*> ls = {inst};
+        std::set<Inst*> ls;
+        if (inst != nullptr) {
+            ls.insert(inst);
+        }
+
         stack.push_front(std::make_pair(t, ls));
 
   if (maxStack < stack.size()) {
@@ -139,7 +144,7 @@ Type Frame::popDouble(Inst* inst) {
 		(*lvindex)++;
 	} else {
       _setVar(*lvindex, t, inst);
-      _setVar(*lvindex + 1, _typeFactory->topType(), inst);
+      _setVar(*lvindex + 1, TypeFactory::topType(), inst);
 		(*lvindex) += 2;
 	}
 }
@@ -184,16 +189,14 @@ void Frame::cleanTops() {
 }
 
 void Frame::join(Frame& how, IClassPath* classPath) {
-  TypeFactory typeFactory;
-  ComputeFrames comp;
-  comp.join(typeFactory, *this, how, classPath);
+    ComputeFrames().join(*this, how, classPath);
 }
 
     void Frame::_setVar(u4 lvindex, const Type& t, Inst* inst) {
 	JnifError::check(lvindex < 256 * 256, "Index too large for LVA: ", lvindex);
 
 	if (lvindex >= lva.size()) {
-      lva.resize(lvindex + 1, std::make_pair(_typeFactory->topType(), std::set<Inst*>()));
+      lva.resize(lvindex + 1, std::make_pair(TypeFactory::topType(), std::set<Inst*>()));
 	}
 
   std::set<Inst*> ls;
