@@ -112,7 +112,7 @@ JNIFP_JAVAS=$(wildcard classes/*.java)
 JNIFP_CLASSES=$(JNIFP_JAVAS:%.java=%.class)
 
 run-jnifp: $(JNIFP) $(JNIFP_CLASSES)
-	$(JNIFP) classes/If.class
+	$(JNIFP) classes/Cond.class
 
 jnifp: $(JNIFP)
 
@@ -138,11 +138,11 @@ TESTAGENT_HPPS=$(wildcard $(TESTAGENT_SRC)/*.hpp) $(LIBJNIF_HPPS)
 TESTAGENT_SRCS=$(wildcard $(TESTAGENT_SRC)/*.cpp) $(wildcard $(TESTAGENT_SRC)/frproxy/*.java)
 TESTAGENT_OBJS=$(TESTAGENT_SRCS:$(TESTAGENT_SRC)/%=$(TESTAGENT_BUILD)/%.o)
 
-$(TESTAGENT): $(TESTAGENT_OBJS) $(LIBJNIF)
+$(TESTAGENT): $(TESTAGENT_OBJS) $(JNIF)
 	$(CXX) -fPIC -g -lpthread -shared -lstdc++ -o $@ $^ $(CXXFLAGS)
 
 $(TESTAGENT_BUILD)/%.cpp.o: $(TESTAGENT_SRC)/%.cpp $(TESTAGENT_HPPS) | $(TESTAGENT_BUILD)
-	$(CXX) $(CXXFLAGS) -I$(LIBJNIF_SRC) -Wno-unused-parameter -I$(JAVA_HOME)/include -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -I$(JNIF_SRC) -Wno-unused-parameter -I$(JAVA_HOME)/include/darwin -I$(JAVA_HOME)/include -c -o $@ $<
 
 $(TESTAGENT_BUILD)/%.java.o: $(TESTAGENT_SRC)/%.java
 	$(JAVAC) -d $(TESTAGENT_BUILD)/ $<
