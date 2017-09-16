@@ -7,6 +7,7 @@
 
 #ifndef JNIF_BASICBLOCK_HPP
 #define JNIF_BASICBLOCK_HPP
+
 #include "InstList.hpp"
 #include "Frame.hpp"
 
@@ -17,42 +18,44 @@ namespace jnif {
  *
  * @see Inst
  */
-class BasicBlock {
-public:
-	BasicBlock(const BasicBlock&) = delete;
-	BasicBlock(BasicBlock&&) = default;
+    class BasicBlock {
+    public:
+        BasicBlock(const BasicBlock&) = delete;
+        BasicBlock(BasicBlock&&) = default;
 
-	friend class ControlFlowGraph;
+        friend class ControlFlowGraph;
 
-	void addTarget(BasicBlock* target);
+        void addTarget(BasicBlock* target);
 
-	InstList::Iterator start;
-	InstList::Iterator exit;
-	String name;
-	Frame in;
-	Frame out;
+        InstList::Iterator start;
+        InstList::Iterator exit;
+        String name;
+        Frame in;
+        Frame out;
 
-	std::vector<BasicBlock*>::iterator begin() {
-		return targets.begin();
-	}
+        std::vector<BasicBlock*>::iterator begin() {
+            return targets.begin();
+        }
 
-	std::vector<BasicBlock*>::iterator end() {
-		return targets.end();
-	}
+        std::vector<BasicBlock*>::iterator end() {
+            return targets.end();
+        }
 
-	BasicBlock* next;
-	class ControlFlowGraph* cfg;
+        BasicBlock* next;
+        class ControlFlowGraph* cfg;
 
-private:
+        const Inst* last = nullptr;
 
-	BasicBlock(InstList::Iterator& start, InstList::Iterator& exit,
-			const String& name, class ControlFlowGraph* cfg) :
-			start(start), exit(exit), name(name), next(NULL), cfg(cfg) {
-	}
+    private:
 
-	std::vector<BasicBlock*> targets;
-};
+        BasicBlock(InstList::Iterator& start, InstList::Iterator& exit,
+                   const String& name, class ControlFlowGraph* cfg) :
+            start(start), exit(exit), name(name), next(nullptr), cfg(cfg) {
+        }
+
+        std::vector<BasicBlock*> targets;
+    };
 
 }
 
-#endif /* BASICBLOCK_HPP_ */
+#endif

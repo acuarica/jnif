@@ -328,7 +328,7 @@ public:
 
 			return instList.addInvokeDynamic(callSite);
 		} else if (kind == KIND_TYPE) {
-			ConstIndex classIndex = br.readu2();
+        ConstPool::Index classIndex = br.readu2();
 
 			return instList.addType(opcode, classIndex);
 		} else if (kind == KIND_NEWARRAY) {
@@ -336,7 +336,7 @@ public:
 
 			return instList.addNewArray(atype);
 		} else if (kind == KIND_MULTIARRAY) {
-			ConstIndex classIndex = br.readu2();
+			        ConstPool::Index classIndex = br.readu2();
 			u1 dims = br.readu1();
 
 			return instList.addMultiArray(classIndex, dims);
@@ -387,20 +387,19 @@ public:
 			u2 startPc = br->readu2();
 			u2 endPc = br->readu2();
 			u2 handlerPc = br->readu2();
-			ConstIndex catchType = br->readu2();
+			        ConstPool::Index catchType = br->readu2();
 
 			JnifError::check(startPc < endPc, "");
 			JnifError::check(endPc <= ca->codeLen, "");
 			JnifError::check(handlerPc < ca->codeLen, "");
 			JnifError::check(catchType == ConstPool::NULLENTRY || cp->isClass(catchType), "");
 
-			CodeExceptionEntry e;
-			e.startpc = labelManager.createExceptionLabel(startPc, true, false, false);
-			e.endpc = labelManager.createExceptionLabel(endPc, false, true, false);
-			e.handlerpc = labelManager.createExceptionLabel(handlerPc, false, false, true);
-			e.catchtype = catchType;
-
-			ca->exceptions.push_back(e);
+			ca->exceptions.push_back({
+              labelManager.createExceptionLabel(startPc, true, false, false),
+                  labelManager.createExceptionLabel(endPc, false, true, false),
+                  labelManager.createExceptionLabel(handlerPc, false, false, true),
+                  catchType
+          });
 		}
 
 		AttrsParser<TAttrParserList ...>().parse(br, cp, &ca->attrs, &labelManager);

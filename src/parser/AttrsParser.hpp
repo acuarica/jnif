@@ -8,6 +8,7 @@
 #ifndef JNIF_PARSER_ATTRSPARSER_HPP
 #define JNIF_PARSER_ATTRSPARSER_HPP
 
+#include "BufferReader.hpp"
 #include "../ClassFile.hpp"
 #include "../Attr.hpp"
 
@@ -16,8 +17,10 @@ namespace jnif::parser {
     template<class... TAttrParsers>
     struct AttrParser {
         template<class... TArgs>
-        Attr* parse(u2 nameIndex, u4 len, const u1* data, const String&,
-                    ClassFile* cp, TArgs... ) {
+        Attr* parse(
+            u2 nameIndex, u4 len, const u1* data, const String&,
+            ClassFile* cp, TArgs...
+            ) {
             return cp->_arena.create<UnknownAttr>(nameIndex, len, data, cp);
         }
     };

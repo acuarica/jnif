@@ -15,277 +15,276 @@
 
 namespace jnif {
 
-class ClassFile;
+    class ClassFile;
 
-/**
- * Defines the base class for all attributes in the class file.
- */
-class Attr {
+    /// Defines the base class for all attributes in the class file.
+    class Attr {
 
-	Attr(const Attr&) = delete;
-public:
+        Attr(const Attr&) = delete;
+        Attr(Attr&&) = delete;
+        Attr& operator=(const Attr&) = delete;
+    public:
 
-	AttrKind kind;
+        AttrKind kind;
 
-	u2 nameIndex;
-	u4 len;
-	ClassFile* const constPool;
+        u2 nameIndex;
+        u4 len;
+        ClassFile* const constPool;
 
-	virtual ~Attr() {
-	}
+        virtual ~Attr() {
+        }
 
-protected:
+    protected:
 
-	Attr(AttrKind kind, u2 nameIndex, u4 len, ClassFile* constPool) :
-			kind(kind), nameIndex(nameIndex), len(len), constPool(constPool) {
-	}
+        Attr(AttrKind kind, u2 nameIndex, u4 len, ClassFile* constPool) :
+            kind(kind), nameIndex(nameIndex), len(len), constPool(constPool) {
+        }
 
-};
+    };
 
 /**
  * Represents a collection of attributes within a class, method or field
  * or even with another attributes, e.g., CodeAttr.
  */
-class Attrs {
-public:
+    class Attrs {
+    public:
 
-	Attrs(const Attrs&) = delete;
-	Attrs(Attrs&&) = default;
+        Attrs(const Attrs&) = delete;
+        Attrs(Attrs&&) = delete;
+        Attrs& operator=(const Attrs&) = delete;
 
-	Attrs() {
-	}
+        Attrs() {
+        }
 
-	virtual ~Attrs();
+        virtual ~Attrs();
 
-	Attr* add(Attr* attr) {
-		attrs.push_back(attr);
+        Attr* add(Attr* attr) {
+            attrs.push_back(attr);
 
-		return attr;
-	}
+            return attr;
+        }
 
-	u2 size() const {
-		return attrs.size();
-	}
+        u2 size() const {
+            return attrs.size();
+        }
 
-	const Attr& operator[](u2 index) const {
-		return *attrs[index];
-	}
+        const Attr& operator[](u2 index) const {
+            return *attrs[index];
+        }
 
-	std::vector<Attr*>::iterator begin() {
-		return attrs.begin();
-	}
+        std::vector<Attr*>::iterator begin() {
+            return attrs.begin();
+        }
 
-	std::vector<Attr*>::iterator end() {
-		return attrs.end();
-	}
+        std::vector<Attr*>::iterator end() {
+            return attrs.end();
+        }
 
-	std::vector<Attr*>::const_iterator begin() const {
-		return attrs.begin();
-	}
+        std::vector<Attr*>::const_iterator begin() const {
+            return attrs.begin();
+        }
 
-	std::vector<Attr*>::const_iterator end() const {
-		return attrs.end();
-	}
+        std::vector<Attr*>::const_iterator end() const {
+            return attrs.end();
+        }
 
-	std::vector<Attr*> attrs;
-};
+        std::vector<Attr*> attrs;
+    };
 
 /**
  * Represents an unknown opaque attribute to jnif.
  */
-class UnknownAttr: public Attr {
-public:
+    class UnknownAttr: public Attr {
+    public:
 
-	const u1 * const data;
+        const u1 * const data;
 
-	UnknownAttr(u2 nameIndex, u4 len, const u1* data, ClassFile* constPool) :
-			Attr(ATTR_UNKNOWN, nameIndex, len, constPool), data(data) {
-	}
+        UnknownAttr(u2 nameIndex, u4 len, const u1* data, ClassFile* constPool) :
+            Attr(ATTR_UNKNOWN, nameIndex, len, constPool), data(data) {
+        }
 
-};
-
-/**
- * Represents the LineNumberTable attribute within the Code attribute.
- */
-class LvtAttr: public Attr {
-public:
-
-	struct LvEntry {
-		u2 startPc;
-		Inst* startPcLabel;
-
-		Inst* endPcLabel;
-
-		u2 len;
-		u2 varNameIndex;
-		u2 varDescIndex;
-		u2 index;
-	};
-
-	std::vector<LvEntry> lvt;
-
-	LvtAttr(AttrKind kind, u2 nameIndex, ClassFile* constPool) :
-			Attr(kind, nameIndex, 0, constPool) {
-	}
-};
+    };
 
 /**
  * Represents the LineNumberTable attribute within the Code attribute.
  */
-class LntAttr: public Attr {
-public:
+    class LvtAttr: public Attr {
+    public:
 
-	LntAttr(u2 nameIndex, ClassFile* constPool) :
-			Attr(ATTR_LNT, nameIndex, 0, constPool) {
-	}
+        struct LvEntry {
+            u2 startPc;
+            Inst* startPcLabel;
 
-	struct LnEntry {
-		u2 startpc;
-		Inst* startPcLabel;
+            Inst* endPcLabel;
 
-		u2 lineno;
-	};
+            u2 len;
+            u2 varNameIndex;
+            u2 varDescIndex;
+            u2 index;
+        };
 
-	std::vector<LnEntry> lnt;
+        std::vector<LvEntry> lvt;
 
-};
+        LvtAttr(AttrKind kind, u2 nameIndex, ClassFile* constPool) :
+            Attr(kind, nameIndex, 0, constPool) {
+        }
+    };
+
+/**
+ * Represents the LineNumberTable attribute within the Code attribute.
+ */
+    class LntAttr: public Attr {
+    public:
+
+        LntAttr(u2 nameIndex, ClassFile* constPool) :
+            Attr(ATTR_LNT, nameIndex, 0, constPool) {
+        }
+
+        struct LnEntry {
+            u2 startpc;
+            Inst* startPcLabel;
+
+            u2 lineno;
+        };
+
+        std::vector<LnEntry> lnt;
+
+    };
 
 /**
  *
  */
-class SmtAttr: public Attr {
-public:
+    class SmtAttr: public Attr {
+    public:
 
-	SmtAttr(u2 nameIndex, ClassFile* constPool) :
-			Attr(ATTR_SMT, nameIndex, 0, constPool) {
-	}
+        SmtAttr(u2 nameIndex, ClassFile* constPool) :
+            Attr(ATTR_SMT, nameIndex, 0, constPool) {
+        }
 
-	class Entry {
-	public:
+        class Entry {
+        public:
 
-		int frameType;
-		Inst* label;
+            int frameType;
+            Inst* label;
 
-		struct {
-		} sameFrame;
-		struct {
-			std::vector<Type> stack; // [1]
-		} sameLocals_1_stack_item_frame;
-		struct {
-			short offset_delta;
-			std::vector<Type> stack; // [1]
-		} same_locals_1_stack_item_frame_extended;
-		struct {
-			short offset_delta;
-		} chop_frame;
-		struct {
-			short offset_delta;
-		} same_frame_extended;
-		struct {
-			short offset_delta;
-			std::vector<Type> locals; // frameType - 251
-		} append_frame;
-		struct {
-			short offset_delta;
-			std::vector<Type> locals;
-			std::vector<Type> stack;
-		} full_frame;
-	};
+            struct {
+            } sameFrame;
+            struct {
+                std::vector<Type> stack; // [1]
+            } sameLocals_1_stack_item_frame;
+            struct {
+                short offset_delta;
+                std::vector<Type> stack; // [1]
+            } same_locals_1_stack_item_frame_extended;
+            struct {
+                short offset_delta;
+            } chop_frame;
+            struct {
+                short offset_delta;
+            } same_frame_extended;
+            struct {
+                short offset_delta;
+                std::vector<Type> locals; // frameType - 251
+            } append_frame;
+            struct {
+                short offset_delta;
+                std::vector<Type> locals;
+                std::vector<Type> stack;
+            } full_frame;
+        };
 
-	std::vector<Entry> entries;
-};
+        std::vector<Entry> entries;
+    };
 
 /**
  * Represents the Exceptions attribute.
  */
-class ExceptionsAttr: public Attr {
-public:
+    class ExceptionsAttr: public Attr {
+    public:
 
-	ExceptionsAttr(u2 nameIndex, ClassFile* constPool,
-			const std::vector<u2>& es) :
-			Attr(ATTR_EXCEPTIONS, nameIndex, es.size() * 2 + 2, constPool), es(
-					es) {
-	}
+        ExceptionsAttr(u2 nameIndex, ClassFile* constPool,
+                       const std::vector<u2>& es) :
+            Attr(ATTR_EXCEPTIONS, nameIndex, es.size() * 2 + 2, constPool), es(
+                es) {
+        }
 
-	std::vector<ConstIndex> es;
-};
+        std::vector<ConstPool::Index> es;
+    };
 
-/**
- *
- */
-struct CodeExceptionEntry {
-	Inst* startpc;
-	Inst* endpc;
-	Inst* handlerpc;
-	ConstIndex catchtype;
-};
 
 /**
  * Represent the Code attribute of a method.
  */
-class CodeAttr: public Attr {
-public:
+    class CodeAttr: public Attr {
+    public:
 
-	CodeAttr(u2 nameIndex, ClassFile* constPool) :
-			Attr(ATTR_CODE, nameIndex, 0, constPool), maxStack(0), maxLocals(0), codeLen(
-					-1), instList(constPool), cfg(NULL) {
-	}
+        CodeAttr(u2 nameIndex, ClassFile* constPool) :
+            Attr(ATTR_CODE, nameIndex, 0, constPool), maxStack(0), maxLocals(0), codeLen(
+                -1), instList(constPool), cfg(NULL) {
+        }
 
-	~CodeAttr();
+        ~CodeAttr();
 
-  /**
-   * The value of maxStack gives the maximum depth of the operand stack of this
-   * method at any point during execution of the method.
-   */
-	u2 maxStack;
-	u2 maxLocals;
-	u4 codeLen;
+        /**
+         * Gives the maximum depth of the operand stack of this
+         * method at any point during execution of the method.
+         */
+        u2 maxStack;
+        u2 maxLocals;
+        u4 codeLen;
 
-	InstList instList;
+        InstList instList;
 
-	bool hasTryCatch() const {
-		return exceptions.size() > 0;
-	}
+        bool hasTryCatch() const {
+            return exceptions.size() > 0;
+        }
 
-	std::vector<CodeExceptionEntry> exceptions;
+        struct ExceptionHandler {
+            const LabelInst* const startpc;
+            const LabelInst* const endpc;
+            const LabelInst* const handlerpc;
+            const ConstPool::Index catchtype;
+        };
 
-	ControlFlowGraph* cfg;
+        std::vector<ExceptionHandler> exceptions;
 
-	Attrs attrs;
-};
+        ControlFlowGraph* cfg;
 
-/**
- *
- */
-class SourceFileAttr: public Attr {
-public:
-
-	const ConstIndex sourceFileIndex;
-
-	SourceFileAttr(ConstIndex nameIndex, ConstIndex sourceFileIndex,
-			ClassFile* constPool) :
-			Attr(ATTR_SOURCEFILE, nameIndex, 2, constPool), sourceFileIndex(sourceFileIndex) {
-	}
-
-  const char* sourceFile() const;
-
-};
+        Attrs attrs;
+    };
 
 /**
  *
  */
-class SignatureAttr: public Attr {
-public:
+    class SourceFileAttr: public Attr {
+    public:
 
-  const ConstIndex signatureIndex;
+        const ConstPool::Index sourceFileIndex;
 
-  SignatureAttr(ConstIndex nameIndex, ConstIndex signatureIndex, ClassFile* constPool) :
-			Attr(ATTR_SIGNATURE, nameIndex, 2, constPool), signatureIndex(signatureIndex) {
-  }
+        SourceFileAttr(ConstPool::Index nameIndex, ConstPool::Index sourceFileIndex,
+                       ClassFile* constPool) :
+            Attr(ATTR_SOURCEFILE, nameIndex, 2, constPool), sourceFileIndex(sourceFileIndex) {
+        }
 
-  const char* signature() const;
+        const char* sourceFile() const;
 
-};
+    };
+
+/**
+ *
+ */
+    class SignatureAttr: public Attr {
+    public:
+
+        const ConstPool::Index signatureIndex;
+
+        SignatureAttr(ConstPool::Index nameIndex, ConstPool::Index signatureIndex, ClassFile* constPool) :
+            Attr(ATTR_SIGNATURE, nameIndex, 2, constPool), signatureIndex(signatureIndex) {
+        }
+
+        const char* signature() const;
+
+    };
 
 }
 

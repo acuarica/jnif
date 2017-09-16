@@ -90,6 +90,17 @@ private:
 class JnifError: public Error<JnifException> {
 };
 
+    template<class T, class ... TArgs>
+    static inline void assertEquals(
+        const T& actual,
+        const T& expected,
+        const TArgs& ... args)
+    {
+        JnifError::assert(
+            actual == expected,
+            "assertEqual failed: expected=",
+            expected, ", actual=", actual, ", message: ", args...);
+    }
 }
 
 #endif

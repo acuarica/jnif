@@ -87,14 +87,14 @@ const char* OPCODES[] = { "nop", "aconst_null", "iconst_m1", "iconst_0",
 		"impdep1", "impdep2" };
 
 std::ostream& operator<<(std::ostream& os, const JnifException& ex) {
-	os << "Error: JNIF Exception: " << ex.message() << " @ " << endl;
-	os << ex.stackTrace();
+	os << "Error: JNIF Exception: " << ex.message << " @ " << endl;
+	os << ex.stackTrace;
 
 	return os;
 
 }
 
-std::ostream& operator<<(std::ostream& os, const ConstTag& tag) {
+    std::ostream& operator<<(std::ostream& os, const ConstPool::Tag& tag) {
 	return os << ConstNames[tag];
 }
 
@@ -118,7 +118,7 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 		os << "label " << inst.label()->id << ""
        << yesNo(inst.label()->isBranchTarget, "B") << " "
        << yesNo(inst.label()->isTryStart, "TS") << " "
-       << yesNo(inst.label()->isTryEnd, "TE") << "  "
+       // << yesNo(inst.label()->isTryEnd, "TE") << "  "
        << yesNo(inst.label()->isCatchHandler, "C");
       }
       return os;
@@ -188,13 +188,13 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 			break;
 		}
 		case KIND_INVOKE: {
-			ConstIndex mid = inst.invoke()->methodRefIndex;
+        ConstPool::Index mid = inst.invoke()->methodRefIndex;
 			os << "#" << mid << " ";
 
 			String className, name, desc;
 			// New in Java 8, invokespecial can be either a method ref or
 			// inter method ref.
-			if (cf.getTag(mid) == CONST_INTERMETHODREF) {
+			if (cf.getTag(mid) == ConstPool::INTERMETHODREF) {
 				cf.getInterMethodRef(inst.invoke()->methodRefIndex, &className,
 						&name, &desc);
 			} else {
@@ -314,7 +314,7 @@ public:
 			value(value), sep(sep) {
 	}
 
-    static void check(Method::MethodFlags accessFlags, const char* name, ostream& out,
+    static void check(Method::Flags accessFlags, const char* name, ostream& out,
 			AccessFlagsPrinter self, bool& empty) {
 		if (self.value & accessFlags) {
         out << keyword << (empty ? "" : self.sep) << name << reset;
@@ -325,18 +325,18 @@ public:
 	friend ostream& operator<<(ostream& out, AccessFlagsPrinter self) {
 		bool empty = true;
 
-		check(Method::METHOD_PUBLIC, "public", out, self, empty);
-		check(Method::METHOD_PRIVATE, "private", out, self, empty);
-		check(Method::METHOD_PROTECTED, "protected", out, self, empty);
-		check(Method::METHOD_STATIC, "static", out, self, empty);
-		check(Method::METHOD_FINAL, "final", out, self, empty);
-		check(Method::METHOD_SYNCHRONIZED, "synchronized", out, self, empty);
-		check(Method::METHOD_BRIDGE, "bridge", out, self, empty);
-		check(Method::METHOD_VARARGS, "varargs", out, self, empty);
-		check(Method::METHOD_NATIVE, "native", out, self, empty);
-		check(Method::METHOD_ABSTRACT, "abstract", out, self, empty);
-		check(Method::METHOD_STRICT, "strict", out, self, empty);
-		check(Method::METHOD_SYNTHETIC, "synthetic", out, self, empty);
+		check(Method::PUBLIC, "public", out, self, empty);
+		check(Method::PRIVATE, "private", out, self, empty);
+		check(Method::PROTECTED, "protected", out, self, empty);
+		check(Method::STATIC, "static", out, self, empty);
+		check(Method::FINAL, "final", out, self, empty);
+		check(Method::SYNCHRONIZED, "synchronized", out, self, empty);
+		check(Method::BRIDGE, "bridge", out, self, empty);
+		check(Method::VARARGS, "varargs", out, self, empty);
+		check(Method::NATIVE, "native", out, self, empty);
+		check(Method::ABSTRACT, "abstract", out, self, empty);
+		check(Method::STRICT, "strict", out, self, empty);
+		check(Method::SYNTHETIC, "synthetic", out, self, empty);
 
     out << flags << "|" << self.value << reset;
 
@@ -349,7 +349,7 @@ private:
 };
 
 std::ostream& operator<<(std::ostream& os, const Method& m) {
-	ConstPool& cp = *m.constPool;
+	const ConstPool& cp = *m.constPool;
 	os << AccessFlagsPrinter(m.accessFlags) << " ";
   os << cp.getUtf8(m.nameIndex) << cpindex << "#" << m.nameIndex << reset << "";
 	os << cp.getUtf8(m.descIndex) << cpindex << "#" << m.descIndex << reset << endl;
@@ -388,7 +388,7 @@ public:
 		inc();
 		line() << "* Version: " << cf.version << endl;
 
-		line() << "* Constant Pool [" << ((ConstPool) cf).size() << "]" << endl;
+		line() << "* Constant Pool [" << ((ConstPool&) cf).size() << "]" << endl;
 		inc();
 		printConstPool(cf);
 		dec();
@@ -409,23 +409,23 @@ public:
 
 		line() << "* Fields [" << cf.fields.size() << "]" << endl;
 		inc();
-		for (Field* f : cf.fields) {
-			line() << "Field " << cf.getUtf8(f->nameIndex) << ": "
-					<< AccessFlagsPrinter(f->accessFlags) << " #"
-					<< f->nameIndex << ": " << cf.getUtf8(f->descIndex) << "#"
-					<< f->descIndex << endl;
+		for (const Field& f : cf.fields) {
+			line() << "Field " << cf.getUtf8(f.nameIndex) << ": "
+					<< AccessFlagsPrinter(f.accessFlags) << " #"
+					<< f.nameIndex << ": " << cf.getUtf8(f.descIndex) << "#"
+					<< f.descIndex << endl;
 
-			printAttrs(f->attrs);
+			printAttrs(f.attrs);
 		}
 		dec();
 
 		// line() << "* Methods [" << cf.methods.size() << "]" << endl;
 		// inc();
 
-		for (Method* m : cf.methods) {
-			line() << *m;
+		for (const Method& m : cf.methods) {
+			line() << m;
 
-			printAttrs(m->attrs, m);
+			printAttrs(m.attrs, (void*)&m);
 		}
 		// dec();
 
@@ -442,18 +442,18 @@ private:
 		line() << "#0 [null entry]: -" << endl;
 
 		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
-			ConstIndex i = *it;
-			ConstTag tag = cp.getTag(i);
+        ConstPool::Index i = *it;
+        ConstPool::Tag tag = cp.getTag(i);
 
 			line() << "#" << i << " [" << ConstNames[tag] << "]: ";
 
-			const ConstItem* entry = &cp.entries[i];
+			const ConstPool::Item* entry = &cp.entries[i];
 
 			switch (tag) {
-				case CONST_CLASS:
+      case ConstPool::CLASS:
 					os << cp.getClassName(i) << "#" << entry->clazz.nameIndex;
 					break;
-				case CONST_FIELDREF: {
+				case ConstPool::FIELDREF: {
 					string clazzName, name, desc;
 					cp.getFieldRef(i, &clazzName, &name, &desc);
 
@@ -463,7 +463,7 @@ private:
 					break;
 				}
 
-				case CONST_METHODREF: {
+				case ConstPool::METHODREF: {
 					string clazzName, name, desc;
 					cp.getMethodRef(i, &clazzName, &name, &desc);
 
@@ -473,7 +473,7 @@ private:
 					break;
 				}
 
-				case CONST_INTERMETHODREF: {
+				case ConstPool::INTERMETHODREF: {
 					string clazzName, name, desc;
 					cp.getInterMethodRef(i, &clazzName, &name, &desc);
 
@@ -482,39 +482,39 @@ private:
 							<< entry->memberRef.nameAndTypeIndex;
 					break;
 				}
-				case CONST_STRING:
+				case ConstPool::STRING:
 					os << cp.getUtf8(entry->s.stringIndex) << "#"
 							<< entry->s.stringIndex;
 					break;
-				case CONST_INTEGER:
+				case ConstPool::INTEGER:
 					os << entry->i.value;
 					break;
-				case CONST_FLOAT:
+				case ConstPool::FLOAT:
 					os << entry->f.value;
 					break;
-				case CONST_LONG:
+				case ConstPool::LONG:
 					os << cp.getLong(i);
 					//i++;
 					break;
-				case CONST_DOUBLE:
+				case ConstPool::DOUBLE:
 					os << cp.getDouble(i);
 					//i++;
 					break;
-				case CONST_NAMEANDTYPE:
+				case ConstPool::NAMEANDTYPE:
 					os << "#" << entry->nameandtype.nameIndex << ".#"
 							<< entry->nameandtype.descriptorIndex;
 					break;
-				case CONST_UTF8:
+				case ConstPool::UTF8:
 					os << entry->utf8.str;
 					break;
-				case CONST_METHODHANDLE:
+				case ConstPool::METHODHANDLE:
 					os << entry->methodhandle.referenceKind << " #"
 							<< entry->methodhandle.referenceIndex;
 					break;
-				case CONST_METHODTYPE:
+				case ConstPool::METHODTYPE:
 					os << "#" << entry->methodtype.descriptorIndex;
 					break;
-				case CONST_INVOKEDYNAMIC:
+				case ConstPool::INVOKEDYNAMIC:
 					os << "#" << entry->invokedynamic.bootstrapMethodAttrIndex
 							<< ".#" << entry->invokedynamic.nameAndTypeIndex;
 					break;
@@ -594,7 +594,7 @@ private:
 
 		}
 
-		for (CodeExceptionEntry& e : c.exceptions) {
+		for (const CodeAttr::ExceptionHandler& e : c.exceptions) {
 			line(1) << "exception entry: startpc: " << e.startpc->label()->id
 					<< ", endpc: " << e.endpc->label()->id << ", handlerpc: "
 					<< e.handlerpc->label()->id << ", catchtype: "
@@ -612,7 +612,7 @@ private:
 
 			const string& exceptionName = cf.getClassName(exceptionIndex);
 
-			line() << "  Exceptions entry: '" << exceptionName << "'#"
+			line() << "  Exceptions entry: " << red << exceptionName << reset << "'#"
 					<< exceptionIndex << endl;
 		}
 	}
@@ -738,7 +738,7 @@ ostream& operator<<(ostream& os, const ClassFile& cf) {
 }
 
 std::ostream& operator<<(std::ostream& os, BasicBlock& bb) {
-	os << "    " << bb.name;
+    os << "    " << yellow << bb.name << reset;
 
 	os << " {";
   bool f = true;
@@ -765,7 +765,7 @@ std::ostream& operator<<(std::ostream& os, BasicBlock& bb) {
       os << "L" << first.label()->id << " "
          << yesNo(first.label()->isBranchTarget, "B") << " "
          << yesNo(first.label()->isTryStart, "TS") << " "
-         << yesNo(first.label()->isTryEnd, "TE") << " "
+         // << yesNo(first.label()->isTryEnd, "TE") << " "
          << yesNo(first.label()->isCatchHandler, "C");
   }
 
@@ -778,7 +778,12 @@ std::ostream& operator<<(std::ostream& os, BasicBlock& bb) {
         continue;
     }
 
-		os << inst << endl;
+		os << inst;
+    if (bb.last == *it) {
+        os << " <--";
+    }
+
+    os << endl;
 	}
 
 	return os;

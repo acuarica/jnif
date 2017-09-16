@@ -21,7 +21,7 @@ public:
 		if (type.isObject()) {
 			const String& className = type.getClassName();
 
-			ConstIndex index = _cf.putClass(className.c_str());
+      ConstPool::Index index = _cf.putClass(className.c_str());
 			type.setCpIndex(index);
 
 			if (!type.init) {
@@ -251,7 +251,7 @@ public:
 
 private:
 
-	ConstIndex _attrIndex;
+    ConstPool::Index _attrIndex;
 	ClassFile& _cf;
 	IClassPath* _classPath;
 

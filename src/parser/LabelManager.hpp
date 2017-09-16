@@ -23,10 +23,6 @@ public:
 		}
 	}
 
-	~LabelManager() {
-    // Error::trace("~LabelManager");
-	}
-
 	LabelInst* createLabel(int labelPos) {
 		JnifError::check(0 <= labelPos, "Invalid position for label: ", labelPos);
 		JnifError::check((u4) labelPos < codeLen + 1,
@@ -47,7 +43,6 @@ public:
 
 		LabelInst* label = createLabel(labelPos);
 		label->isTryStart = label->isTryStart || isTryStart;
-		label->isTryEnd = label->isTryEnd || isTryEnd;
 		label->isCatchHandler = label->isCatchHandler || isCatchHandler;
 
 		return label;

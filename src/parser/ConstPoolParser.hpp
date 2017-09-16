@@ -18,46 +18,46 @@ namespace jnif::parser {
                 u1 tag = br->readu1();
 
                 switch (tag) {
-                case CONST_CLASS: {
+                case ConstPool::CLASS: {
                     u2 classNameIndex = br->readu2();
                     cp->addClass(classNameIndex);
                     break;
                 }
-                case CONST_FIELDREF: {
+                case ConstPool::FIELDREF: {
                     u2 classIndex = br->readu2();
                     u2 nameAndTypeIndex = br->readu2();
                     cp->addFieldRef(classIndex, nameAndTypeIndex);
                     break;
                 }
-                case CONST_METHODREF: {
+                case ConstPool::METHODREF: {
                     u2 classIndex = br->readu2();
                     u2 nameAndTypeIndex = br->readu2();
                     cp->addMethodRef(classIndex, nameAndTypeIndex);
                     break;
                 }
-                case CONST_INTERMETHODREF: {
+                case ConstPool::INTERMETHODREF: {
                     u2 classIndex = br->readu2();
                     u2 nameAndTypeIndex = br->readu2();
                     cp->addInterMethodRef(classIndex, nameAndTypeIndex);
                     break;
                 }
-                case CONST_STRING: {
+                case ConstPool::STRING: {
                     u2 utf8Index = br->readu2();
                     cp->addString(utf8Index);
                     break;
                 }
-                case CONST_INTEGER: {
+                case ConstPool::INTEGER: {
                     u4 value = br->readu4();
                     cp->addInteger(value);
                     break;
                 }
-                case CONST_FLOAT: {
+                case ConstPool::FLOAT: {
                     u4 value = br->readu4();
                     float fvalue = *(float*) &value;
                     cp->addFloat(fvalue);
                     break;
                 }
-                case CONST_LONG: {
+                case ConstPool::LONG: {
                     u4 high = br->readu4();
                     u4 low = br->readu4();
                     long value = ((long) high << 32) + low;
@@ -65,7 +65,7 @@ namespace jnif::parser {
                     i++;
                     break;
                 }
-                case CONST_DOUBLE: {
+                case ConstPool::DOUBLE: {
                     u4 high = br->readu4();
                     u4 low = br->readu4();
                     long lvalue = ((long) high << 32) + low;
@@ -74,30 +74,30 @@ namespace jnif::parser {
                     i++;
                     break;
                 }
-                case CONST_NAMEANDTYPE: {
+                case ConstPool::NAMEANDTYPE: {
                     u2 nameIndex = br->readu2();
                     u2 descIndex = br->readu2();
                     cp->addNameAndType(nameIndex, descIndex);
                     break;
                 }
-                case CONST_UTF8: {
+                case ConstPool::UTF8: {
                     u2 len = br->readu2();
                     cp->addUtf8((const char*) br->pos(), len);
                     br->skip(len);
                     break;
                 }
-                case CONST_METHODHANDLE: {
+                case ConstPool::METHODHANDLE: {
                     u1 refKind = br->readu1();
                     u2 refIndex = br->readu2();
                     cp->addMethodHandle(refKind, refIndex);
                     break;
                 }
-                case CONST_METHODTYPE: {
+                case ConstPool::METHODTYPE: {
                     u2 descIndex = br->readu2();
                     cp->addMethodType(descIndex);
                     break;
                 }
-                case CONST_INVOKEDYNAMIC: {
+                case ConstPool::INVOKEDYNAMIC: {
                     u2 bootMethodAttrIndex = br->readu2();
                     u2 nameAndTypeIndex = br->readu2();
                     cp->addInvokeDynamic(bootMethodAttrIndex, nameAndTypeIndex);

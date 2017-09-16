@@ -196,7 +196,7 @@ public:
 		return change;
 	}
 
-	Type getExceptionType(const ConstPool& cp, ConstIndex catchIndex) {
+    Type getExceptionType(const ConstPool& cp, ConstPool::Index catchIndex) {
 		if (catchIndex != ConstPool::NULLENTRY) {
 			const String& className = cp.getClassName(catchIndex);
 			return TypeFactory::fromConstClass(className);
@@ -205,7 +205,7 @@ public:
 		}
 	}
 
-	void visitCatch(const CodeExceptionEntry& ex, InstList& instList,
+    void visitCatch(const CodeAttr::ExceptionHandler& ex, InstList& instList,
 			const ClassFile& cf, const CodeAttr* code, IClassPath* classPath,
 			const ControlFlowGraph* cfg, Frame frame, Method* method) {
 		int handlerPcId = ex.handlerpc->label()->id;
@@ -227,7 +227,7 @@ public:
 		computeState(*handlerBb, frame, instList, cf, code, classPath, method);
 	}
 
-	bool contains(const CodeExceptionEntry& ex, const Inst* inst) {
+    bool contains(const CodeAttr::ExceptionHandler& ex, const Inst* inst) {
 		int start = ex.startpc->label()->_offset;
 		int end = ex.endpc->label()->_offset;
 		int off = inst->_offset;
@@ -262,15 +262,15 @@ public:
 		if (change) {
 			Frame out = bb.in;
 
-			SmtBuilder builder(out, cf, method);
+			SmtBuilder<Frame> builder(out, cf);
 			for (InstList::Iterator it = bb.start; it != bb.exit; ++it) {
 				Inst* inst = *it;
-				builder.processInst(*inst);
+				builder.exec(*inst);
 				//prepareCatchHandlerFrame(inst, out);
 
 				//join(typeFactory, outp, out, classPath, method);
 
-				for (const CodeExceptionEntry& ex : code->exceptions) {
+				for (const CodeAttr::ExceptionHandler& ex : code->exceptions) {
 					if (contains(ex, inst)) {
 						visitCatch(ex, instList, cf, code, classPath, bb.cfg, out, method);
 					}

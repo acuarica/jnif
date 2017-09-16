@@ -30,61 +30,61 @@ namespace jnif {
  * The release level of the Java SE platform to which a Java Virtual Machine
  * implementation conforms is responsible for determining the range.
  */
-class Version {
-public:
+    class Version {
+    public:
 
-	/**
-	 * Using default 51, which is supported by JDK 1.7.
-	 */
-	Version(u2 majorVersion = 51, u2 minorVersion = 0) :
-			_major(majorVersion), _minor(minorVersion) {
-	}
+        /**
+         * Using default 51, which is supported by JDK 1.7.
+         */
+        Version(u2 majorVersion = 51, u2 minorVersion = 0) :
+            _major(majorVersion), _minor(minorVersion) {
+        }
 
-	/**
-	 * The major version number.
-	 */
-	u2 majorVersion() const;
+        /**
+         * The major version number.
+         */
+        u2 majorVersion() const;
 
-	/**
-	 * The minor version number.
-	 */
-	u2 minorVersion() const;
+        /**
+         * The minor version number.
+         */
+        u2 minorVersion() const;
 
-	/**
-	 * Taken from the oficial JVM specification.
-	 *
-	 * Oracle's Java Virtual Machine implementation in JDK release 1.0.2
-	 * supports class file format versions 45.0 through 45.3 inclusive.
-	 * JDK releases 1.1.* support class file format versions in the
-	 * range 45.0 through 45.65535 inclusive.
-	 * For k >= 2, JDK release 1.k supports class file format versions in
-	 * the range 45.0 through 44+k.0 inclusive.
-	 */
-	String supportedByJdk() const;
+        /**
+         * Taken from the oficial JVM specification.
+         *
+         * Oracle's Java Virtual Machine implementation in JDK release 1.0.2
+         * supports class file format versions 45.0 through 45.3 inclusive.
+         * JDK releases 1.1.* support class file format versions in the
+         * range 45.0 through 45.65535 inclusive.
+         * For k >= 2, JDK release 1.k supports class file format versions in
+         * the range 45.0 through 44+k.0 inclusive.
+         */
+        String supportedByJdk() const;
 
-	/**
-	 * Equals comparator.
-	 */
-	friend bool operator==(const Version& lhs, const Version& rhs);
+        /**
+         * Equals comparator.
+         */
+        friend bool operator==(const Version& lhs, const Version& rhs);
 
-	/**
-	 * Less comparator.
-	 */
-	friend bool operator<(const Version& lhs, const Version& rhs);
+        /**
+         * Less comparator.
+         */
+        friend bool operator<(const Version& lhs, const Version& rhs);
 
-	/**
-	 * Less or equal comparator.
-	 */
-	friend bool operator<=(const Version& lhs, const Version& rha);
+        /**
+         * Less or equal comparator.
+         */
+        friend bool operator<=(const Version& lhs, const Version& rha);
 
-	friend std::ostream& operator<<(std::ostream& os, const Version& version);
+        friend std::ostream& operator<<(std::ostream& os, const Version& version);
 
-private:
+    private:
 
-	u2 _major;
-	u2 _minor;
+        u2 _major;
+        u2 _minor;
 
-};
+    };
 
 }
 

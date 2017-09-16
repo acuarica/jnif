@@ -13,17 +13,16 @@ namespace jnif::parser {
 /**
  * The ExceptionsAttrParser parses the Exceptions attribute of a method.
  */
-    class ExceptionsAttrParser {
-    public:
+    struct ExceptionsAttrParser {
 
         static constexpr const char* AttrName = "Exceptions";
 
-        Attr* parse(BufferReader* br, ClassFile* cp, ConstIndex nameIndex) {
+        Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex) {
             u2 len = br->readu2();
 
-            std::vector<ConstIndex> es;
+            std::vector<ConstPool::Index> es;
             for (int i = 0; i < len; i++) {
-                ConstIndex exceptionIndex = br->readu2();
+                ConstPool::Index exceptionIndex = br->readu2();
 
                 es.push_back(exceptionIndex);
             }

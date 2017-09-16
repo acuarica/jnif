@@ -25,9 +25,9 @@ int main(int argc, const char* argv[]) {
     try {
         ClassFile cf(argv[1]);
         UnitTestClassPath cp;
-        for (Method* m : cf.methods) {
-            if (m->hasCode()) {
-                InstList& instList = m->codeAttr()->instList;
+        for (Method& m : cf.methods) {
+            if (m.hasCode()) {
+                InstList& instList = m.codeAttr()->instList;
 
                     int id = 1;
                     for (Inst* inst : instList) {

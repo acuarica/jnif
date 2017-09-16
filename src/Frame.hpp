@@ -121,6 +121,8 @@ namespace jnif {
 
         void join(Frame& how, class IClassPath* classPath);
 
+        void init(const Type& type);
+
         typedef std::pair<Type, std::set<Inst*> > T;
 
         std::vector<T> lva;

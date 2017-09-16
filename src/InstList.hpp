@@ -9,8 +9,11 @@
 #define JNIF_INSTLIST_HPP
 
 #include "Inst.hpp"
+#include "Arena.hpp"
 
 namespace jnif {
+
+    class ClassFile;
 
 /**
  * Represents the bytecode of a method.
@@ -57,19 +60,19 @@ public:
 	ZeroInst* addZero(Opcode opcode, Inst* pos = NULL);
 	PushInst* addBiPush(u1 value, Inst* pos = NULL);
 	PushInst* addSiPush(u2 value, Inst* pos = NULL);
-	LdcInst* addLdc(Opcode opcode, ConstIndex valueIndex, Inst* pos = NULL);
+    LdcInst* addLdc(Opcode opcode, ConstPool::Index valueIndex, Inst* pos = NULL);
 	VarInst* addVar(Opcode opcode, u1 lvindex, Inst* pos = NULL);
 	IincInst* addIinc(u1 index, u1 value, Inst* pos = NULL);
 	WideInst* addWideVar(Opcode varOpcode, u2 lvindex, Inst* pos = NULL);
 	WideInst* addWideIinc(u2 index, u2 value, Inst* pos = NULL);
 	JumpInst* addJump(Opcode opcode, LabelInst* targetLabel, Inst* pos = NULL);
-	FieldInst* addField(Opcode opcode, ConstIndex fieldRefIndex, Inst* pos = NULL);
-	InvokeInst* addInvoke(Opcode opcode, ConstIndex methodRefIndex, Inst* pos = NULL);
-	InvokeInterfaceInst* addInvokeInterface(ConstIndex interMethodRefIndex, u1 count, Inst* pos = NULL);
-	InvokeDynamicInst* addInvokeDynamic(ConstIndex callSite, Inst* pos = NULL);
-	TypeInst* addType(Opcode opcode, ConstIndex classIndex, Inst* pos = NULL);
+	FieldInst* addField(Opcode opcode, ConstPool::Index fieldRefIndex, Inst* pos = NULL);
+	InvokeInst* addInvoke(Opcode opcode, ConstPool::Index methodRefIndex, Inst* pos = NULL);
+	InvokeInterfaceInst* addInvokeInterface(ConstPool::Index interMethodRefIndex, u1 count, Inst* pos = NULL);
+	InvokeDynamicInst* addInvokeDynamic(ConstPool::Index callSite, Inst* pos = NULL);
+	TypeInst* addType(Opcode opcode, ConstPool::Index classIndex, Inst* pos = NULL);
 	NewArrayInst* addNewArray(u1 atype, Inst* pos = NULL);
-	MultiArrayInst* addMultiArray(ConstIndex classIndex, u1 dims, Inst* pos = NULL);
+	MultiArrayInst* addMultiArray(ConstPool::Index classIndex, u1 dims, Inst* pos = NULL);
 	TableSwitchInst* addTableSwitch(LabelInst* def, int low, int high, Inst* pos = NULL);
 	LookupSwitchInst* addLookupSwitch(LabelInst* def, u4 npairs, Inst* pos = NULL);
 
@@ -97,8 +100,8 @@ public:
 
 private:
 
-	InstList(ClassFile* constPool) :
-    constPool(constPool), first(NULL),last(NULL),_size(0),nextLabelId(1), branchesCount(0), jsrOrRet(false) {
+	InstList(ClassFile* arena) :
+    constPool(arena), first(NULL),last(NULL),_size(0),nextLabelId(1), branchesCount(0), jsrOrRet(false) {
   }
 
 	~InstList();

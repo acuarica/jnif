@@ -10,33 +10,37 @@
 
 namespace jnif {
 
-class Arena {
-public:
+    class Arena {
+    public:
 
-	Arena();
-	~Arena();
+        Arena();
+        ~Arena();
 
-	void* alloc(int size);
+        // Arena(const Arena&) = delete;
+        // Arena(Arena&) = delete;
+        // Arena(const Arena&&) = delete;
 
-	template<typename T, typename ... TArgs>
-  T* create(const TArgs& ... args) {
-    void* buf = alloc(sizeof(T));
-    return new (buf) T(args ...);
-  }
+        void* alloc(int size);
 
-	template<typename T>
-  T* newArray(int size) {
-    void* buf = alloc(sizeof(T) * size);
-    return new (buf) T[size];
-  }
+        template<typename T, typename ... TArgs>
+        T* create(const TArgs& ... args) {
+            void* buf = alloc(sizeof(T));
+            return new (buf) T(args ...);
+        }
 
-private:
+        template<typename T>
+        T* newArray(int size) {
+            void* buf = alloc(sizeof(T) * size);
+            return new (buf) T[size];
+        }
 
-	class Block;
+    private:
 
-	Block* _head;
+        class Block;
 
-};
+        Block* _head;
+
+    };
 
 }
 

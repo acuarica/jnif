@@ -116,7 +116,7 @@ public:
 			bw(bw) {
 	}
 
-	void writeClassFile(ClassFile& cf) {
+	void writeClassFile(const ClassFile& cf) {
       bw.writeu4(ClassFile::MAGIC);
 
 		bw.writeu2(cf.version.minorVersion());
@@ -131,27 +131,26 @@ public:
 		u2 interCount = cf.interfaces.size();
 		bw.writeu2(interCount);
 
-		for (u4 i = 0; i < cf.interfaces.size(); i++) {
-			u2 interIndex = cf.interfaces[i];
+    for (u2 interIndex : cf.interfaces) {
 			bw.writeu2(interIndex);
 		}
 
 		bw.writeu2(cf.fields.size());
-		for (Field* f : cf.fields) {
-			bw.writeu2(f->accessFlags);
-			bw.writeu2(f->nameIndex);
-			bw.writeu2(f->descIndex);
+		for (const Field& f : cf.fields) {
+			bw.writeu2(f.accessFlags);
+			bw.writeu2(f.nameIndex);
+			bw.writeu2(f.descIndex);
 
-			writeAttrs(f->attrs);
+			writeAttrs(f.attrs);
 		}
 
 		bw.writeu2(cf.methods.size());
-		for (Method* m : cf.methods) {
-			bw.writeu2(m->accessFlags);
-			bw.writeu2(m->nameIndex);
-			bw.writeu2(m->descIndex);
+		for (const Method& m : cf.methods) {
+			bw.writeu2(m.accessFlags);
+			bw.writeu2(m.nameIndex);
+			bw.writeu2(m.descIndex);
 
-			writeAttrs(m->attrs);
+			writeAttrs(m.attrs);
 		}
 
 		writeAttrs(cf.attrs);
@@ -162,47 +161,47 @@ public:
 		bw.writeu2(count);
 
 		for (ConstPool::Iterator it = cp.iterator(); it.hasNext(); it++) {
-			ConstIndex i = *it;
-			const ConstItem* entry = &cp.entries[i];
+        ConstPool::Index i = *it;
+        const ConstPool::Item* entry = &cp.entries[i];
 
 			bw.writeu1(entry->tag);
 
 			switch (entry->tag) {
-				case CONST_CLASS:
+      case ConstPool::CLASS:
 					bw.writeu2(entry->clazz.nameIndex);
 					break;
-				case CONST_FIELDREF:
+				case ConstPool::FIELDREF:
 					bw.writeu2(entry->memberRef.classIndex);
 					bw.writeu2(entry->memberRef.nameAndTypeIndex);
 					break;
-				case CONST_METHODREF:
+				case ConstPool::METHODREF:
 					bw.writeu2(entry->memberRef.classIndex);
 					bw.writeu2(entry->memberRef.nameAndTypeIndex);
 					break;
-				case CONST_INTERMETHODREF:
+				case ConstPool::INTERMETHODREF:
 					bw.writeu2(entry->memberRef.classIndex);
 					bw.writeu2(entry->memberRef.nameAndTypeIndex);
 					break;
-				case CONST_STRING:
+				case ConstPool::STRING:
 					bw.writeu2(entry->s.stringIndex);
 					break;
-				case CONST_INTEGER:
+				case ConstPool::INTEGER:
 					bw.writeu4(entry->i.value);
 					break;
-				case CONST_FLOAT: {
+				case ConstPool::FLOAT: {
 					float fvalue = entry->f.value;
 					u4 value = *(u4*) &fvalue;
 					bw.writeu4(value);
 					break;
 				}
-				case CONST_LONG: {
+				case ConstPool::LONG: {
 					long value = cp.getLong(i);
 					bw.writeu4(value >> 32);
 					bw.writeu4(value & 0xffffffff);
 					//		i++;
 					break;
 				}
-				case CONST_DOUBLE: {
+				case ConstPool::DOUBLE: {
 					double dvalue = cp.getDouble(i);
 					long value = *(long*) &dvalue;
 					bw.writeu4(value >> 32);
@@ -210,25 +209,25 @@ public:
 					//			i++;
 					break;
 				}
-				case CONST_NAMEANDTYPE:
+				case ConstPool::NAMEANDTYPE:
 					bw.writeu2(entry->nameandtype.nameIndex);
 					bw.writeu2(entry->nameandtype.descriptorIndex);
 					break;
-				case CONST_UTF8: {
+				case ConstPool::UTF8: {
 					u2 len = entry->utf8.str.length();
 					const char* str = entry->utf8.str.c_str();
 					bw.writeu2(len);
 					bw.writecount(str, len);
 					break;
 				}
-				case CONST_METHODHANDLE:
+				case ConstPool::METHODHANDLE:
 					bw.writeu1(entry->methodhandle.referenceKind);
 					bw.writeu2(entry->methodhandle.referenceIndex);
 					break;
-				case CONST_METHODTYPE:
+				case ConstPool::METHODTYPE:
 					bw.writeu2(entry->methodtype.descriptorIndex);
 					break;
-				case CONST_INVOKEDYNAMIC:
+				case ConstPool::INVOKEDYNAMIC:
 					bw.writeu2(entry->invokedynamic.bootstrapMethodAttrIndex);
 					bw.writeu2(entry->invokedynamic.nameAndTypeIndex);
 					break;
@@ -238,11 +237,11 @@ public:
 		}
 	}
 
-	void writeUnknown(UnknownAttr& attr) {
+	void writeUnknown(const UnknownAttr& attr) {
 		bw.writecount(attr.data, attr.len);
 	}
 
-	void writeExceptions(ExceptionsAttr& attr) {
+	void writeExceptions(const ExceptionsAttr& attr) {
 		u2 size = attr.es.size();
 
 		bw.writeu2(size);
@@ -252,13 +251,13 @@ public:
 		}
 	}
 
-	void writeLnt(LntAttr& attr) {
+	void writeLnt(const LntAttr& attr) {
 		u2 count = attr.lnt.size();
 
 		bw.writeu2(count);
 
 		for (u4 i = 0; i < count; i++) {
-			LntAttr::LnEntry& lne = attr.lnt[i];
+			const LntAttr::LnEntry& lne = attr.lnt[i];
 
 			//bw.writeu2(lne.startpc);
 			bw.writeu2(lne.startPcLabel->label()->offset);
@@ -608,14 +607,15 @@ public:
 					"Method code must be less than 65536 but it is equals to ",
 					attr.codeLen);
 		} catch (const JnifException& ex) {
-			throw InvalidMethodLengthException(ex.message(), ex.stackTrace());
+			throw InvalidMethodLengthException(ex.message, ex.stackTrace);
 		}
 		//}
 
 		u2 esize = attr.exceptions.size();
 		bw.writeu2(esize);
-		for (u4 i = 0; i < esize; i++) {
-			CodeExceptionEntry& e = attr.exceptions[i];
+		// for (u4 i = 0; i < esize; i++) {
+			// const CodeExceptionEntry& e = attr.exceptions[i];
+    for (const CodeAttr::ExceptionHandler& e : attr.exceptions) {
 			bw.writeu2(e.startpc->label()->offset);
 			bw.writeu2(e.endpc->label()->offset);
 			bw.writeu2(e.handlerpc->label()->offset);
@@ -625,12 +625,12 @@ public:
 		writeAttrs(attr.attrs);
 	}
 
-	void writeAttrs(Attrs& attrs) {
+	void writeAttrs(const Attrs& attrs) {
 		bw.writeu2(attrs.size());
 
 		for (u4 i = 0; i < attrs.size(); i++) {
 
-			Attr& attr = *attrs.attrs[i];
+        Attr& attr = (Attr&)*attrs.attrs[i];
 
 			bw.writeu2(attr.nameIndex);
 			bw.writeu4(attr.len);

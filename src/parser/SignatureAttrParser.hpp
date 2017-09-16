@@ -8,16 +8,19 @@
 #ifndef JNIF_PARSER_SIGNATUREATTRPARSER_HPP
 #define JNIF_PARSER_SIGNATUREATTRPARSER_HPP
 
+#include "BufferReader.hpp"
+#include "../ConstPool.hpp"
+#include "../ClassFile.hpp"
+
 namespace jnif::parser {
 
-    class SignatureAttrParser {
-    public:
+    struct SignatureAttrParser {
 
         static constexpr const char* AttrName = "Signature";
 
-        Attr* parse(BufferReader* br, ClassFile* cp, ConstIndex nameIndex) {
-            u2 signatureIndex = br->readu2();
-            Attr* attr = cp->_arena.create<SignatureAttr>(nameIndex, signatureIndex, cp);
+        Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex) {
+            ConstPool::Index sigIndex = br->readu2();
+            Attr* attr = cp->_arena.create<SignatureAttr>(nameIndex, sigIndex, cp);
             return attr;
         }
 

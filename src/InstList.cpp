@@ -92,7 +92,7 @@ PushInst* InstList::addSiPush(u2 value, Inst* pos) {
 	return inst;
 }
 
-LdcInst* InstList::addLdc(Opcode opcode, ConstIndex valueIndex, Inst* pos) {
+LdcInst* InstList::addLdc(Opcode opcode, ConstPool::Index valueIndex, Inst* pos) {
 	LdcInst* inst = _create<LdcInst>(opcode, valueIndex, constPool);
 	addInst(inst, pos);
 
@@ -145,31 +145,31 @@ JumpInst* InstList::addJump(Opcode opcode, LabelInst* targetLabel, Inst* pos) {
 	return inst;
 }
 
-FieldInst* InstList::addField(Opcode opcode, ConstIndex fieldRefIndex, Inst* pos) {
+    FieldInst* InstList::addField(Opcode opcode, ConstPool::Index fieldRefIndex, Inst* pos) {
 	FieldInst* inst = _create<FieldInst>(opcode, fieldRefIndex, constPool);
 	addInst(inst, pos);
 	return inst;
 }
 
-InvokeInst* InstList::addInvoke(Opcode opcode, ConstIndex methodRefIndex, Inst* pos) {
+InvokeInst* InstList::addInvoke(Opcode opcode, ConstPool::Index methodRefIndex, Inst* pos) {
 	InvokeInst* inst = _create<InvokeInst>(opcode, methodRefIndex, constPool);
 	addInst(inst, pos);
 	return inst;
 }
 
-InvokeInterfaceInst* InstList::addInvokeInterface(ConstIndex interMethodRefIndex, u1 count, Inst* pos) {
+InvokeInterfaceInst* InstList::addInvokeInterface(ConstPool::Index interMethodRefIndex, u1 count, Inst* pos) {
 	InvokeInterfaceInst* inst = _create<InvokeInterfaceInst>(interMethodRefIndex, count, constPool);
 	addInst(inst, pos);
 	return inst;
 }
 
-InvokeDynamicInst* InstList::addInvokeDynamic(ConstIndex callSite, Inst* pos) {
+InvokeDynamicInst* InstList::addInvokeDynamic(ConstPool::Index callSite, Inst* pos) {
 	InvokeDynamicInst* inst = _create<InvokeDynamicInst>(callSite, constPool);
 	addInst(inst, pos);
 	return inst;
 }
 
-TypeInst* InstList::addType(Opcode opcode, ConstIndex classIndex, Inst* pos) {
+TypeInst* InstList::addType(Opcode opcode, ConstPool::Index classIndex, Inst* pos) {
 	TypeInst* inst = _create<TypeInst>(opcode, classIndex, constPool);
 	addInst(inst, pos);
 	return inst;
@@ -181,7 +181,7 @@ NewArrayInst* InstList::addNewArray(u1 atype, Inst* pos) {
 	return inst;
 }
 
-MultiArrayInst* InstList::addMultiArray(ConstIndex classIndex, u1 dims, Inst* pos) {
+MultiArrayInst* InstList::addMultiArray(ConstPool::Index classIndex, u1 dims, Inst* pos) {
 	MultiArrayInst* inst = _create<MultiArrayInst>(OPCODE_multianewarray, classIndex, dims, constPool);
 	addInst(inst, pos);
 	return inst;

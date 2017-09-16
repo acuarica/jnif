@@ -340,9 +340,9 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 
 	stats.loadedClasses++;
 
-	for (const Method* m : cf.methods) {
-		if (m->hasCode()) {
-			CodeAttr* c = m->codeAttr();
+	for (const Method& m : cf.methods) {
+		if (m.hasCode()) {
+			CodeAttr* c = m.codeAttr();
 			stats.exceptionEntries += c->exceptions.size();
 		}
 	}
@@ -358,17 +358,17 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 class Instr {
 public:
 
-	static void instrObjectInit(ClassFile& cf, ConstIndex classIndex) {
+    static void instrObjectInit(ClassFile& cf, ConstPool::Index classIndex) {
 		if (cf.getThisClassName() != String("java/lang/Object")) {
 			return;
 		}
 
-		ConstIndex mid = cf.addMethodRef(classIndex, "alloc",
+		ConstPool::Index mid = cf.addMethodRef(classIndex, "alloc",
 				"(Ljava/lang/Object;)V");
 
-		for (Method* m : cf.methods) {
-			if (m->isInit()) {
-				InstList& instList = m->instList();
+		for (Method& m : cf.methods) {
+			if (m.isInit()) {
+				InstList& instList = m.instList();
 
 				Inst* p = *instList.begin();
 				instList.addZero(OPCODE_aload_0, p);
@@ -377,13 +377,13 @@ public:
 		}
 	}
 
-	static void instrNewArray(ClassFile& cf, ConstIndex classIndex) {
+    static void instrNewArray(ClassFile& cf, ConstPool::Index classIndex) {
 		const char* desc = "(ILjava/lang/Object;I)V";
-		ConstIndex mid = cf.addMethodRef(classIndex, "newArrayEvent", desc);
+		ConstPool::Index mid = cf.addMethodRef(classIndex, "newArrayEvent", desc);
 
-		for (Method* m : cf.methods) {
-			if (m->hasCode()) {
-				InstList& instList = m->instList();
+		for (Method& m : cf.methods) {
+			if (m.hasCode()) {
+				InstList& instList = m.instList();
 
 				for (Inst* inst : instList) {
 					if (inst->opcode == OPCODE_newarray) {
@@ -410,18 +410,18 @@ public:
 					}
 				}
 
-				m->codeAttr()->maxStack += 3;
+				m.codeAttr()->maxStack += 3;
 			}
 		}
 	}
 
-	static void instrANewArray(ClassFile& cf, ConstIndex classIndex) {
+    static void instrANewArray(ClassFile& cf, ConstPool::Index classIndex) {
 		const char* desc = "(ILjava/lang/Object;Ljava/lang/String;)V";
-		ConstIndex mid = cf.addMethodRef(classIndex, "aNewArrayEvent", desc);
+		ConstPool::Index mid = cf.addMethodRef(classIndex, "aNewArrayEvent", desc);
 
-		for (Method* m : cf.methods) {
-			if (m->hasCode()) {
-				InstList& instList = m->instList();
+		for (Method& m : cf.methods) {
+			if (m.hasCode()) {
+				InstList& instList = m.instList();
 
 				for (Inst* inst : instList) {
 					if (inst->opcode == OPCODE_anewarray) {
@@ -450,26 +450,26 @@ public:
 					}
 				}
 
-				m->codeAttr()->maxStack += 3;
+				m.codeAttr()->maxStack += 3;
 			}
 		}
 	}
 
-	static void instrMethodEntryExit(ClassFile& cf, ConstIndex proxyClass) {
+    static void instrMethodEntryExit(ClassFile& cf, ConstPool::Index proxyClass) {
 		//if  ( cf.getThisClassName())
-		ConstIndex sid = cf.addMethodRef(proxyClass, "enterMethod",
+        ConstPool::Index sid = cf.addMethodRef(proxyClass, "enterMethod",
 				"(Ljava/lang/String;Ljava/lang/String;)V");
 
-		ConstIndex eid = cf.addMethodRef(proxyClass, "exitMethod",
+        ConstPool::Index eid = cf.addMethodRef(proxyClass, "exitMethod",
 				"(Ljava/lang/String;Ljava/lang/String;)V");
 
-		ConstIndex classNameIdx = cf.addStringFromClass(cf.thisClassIndex);
+        ConstPool::Index classNameIdx = cf.addStringFromClass(cf.thisClassIndex);
 
-		for (Method* m : cf.methods) {
-			if (m->hasCode()) {
-				InstList& instList = m->instList();
+		for (Method& m : cf.methods) {
+			if (m.hasCode()) {
+				InstList& instList = m.instList();
 
-				ConstIndex methodIndex = cf.addString(m->nameIndex);
+        ConstPool::Index methodIndex = cf.addString(m.nameIndex);
 
 				Inst* p = *instList.begin();
 
@@ -488,13 +488,13 @@ public:
 		}
 	}
 
-	static void instrMain(ClassFile& cf, ConstIndex classIndex) {
-		ConstIndex sid = cf.addMethodRef(classIndex, "enterMainMethod", "()V");
-		ConstIndex eid = cf.addMethodRef(classIndex, "exitMainMethod", "()V");
+    static void instrMain(ClassFile& cf, ConstPool::Index classIndex) {
+        ConstPool::Index sid = cf.addMethodRef(classIndex, "enterMainMethod", "()V");
+        ConstPool::Index eid = cf.addMethodRef(classIndex, "exitMainMethod", "()V");
 
-		for (Method* m : cf.methods) {
-			if (m->isMain()) {
-				InstList& instList = m->instList();
+		for (Method& m : cf.methods) {
+			if (m.isMain()) {
+				InstList& instList = m.instList();
 
 				Inst* p = *instList.begin();
 				instList.addInvoke(OPCODE_invokestatic, sid, p);
@@ -508,12 +508,12 @@ public:
 		}
 	}
 
-	static void instrIndy(ClassFile& cf, ConstIndex classIndex) {
-		ConstIndex mid = cf.addMethodRef(classIndex, "indy", "(I)V");
+    static void instrIndy(ClassFile& cf, ConstPool::Index classIndex) {
+        ConstPool::Index mid = cf.addMethodRef(classIndex, "indy", "(I)V");
 
-		for (Method* m : cf.methods) {
-			if (m->hasCode()) {
-				InstList& instList = m->instList();
+		for (Method& m : cf.methods) {
+			if (m.hasCode()) {
+				InstList& instList = m.instList();
 
 				for (Inst* inst : instList) {
 					if (inst->isInvokeDynamic()) {
@@ -527,12 +527,12 @@ public:
 		}
 	}
 
-	static void instrAllOpcodes(ClassFile& cf, ConstIndex proxyClass) {
+    static void instrAllOpcodes(ClassFile& cf, ConstPool::Index proxyClass) {
 //		ConstIndex mid = cf.addMethodRef(proxyClass, "opcode", "(I)V");
 
-		for (Method* m : cf.methods) {
-			if (m->hasCode()) {
-				InstList& instList = m->instList();
+		for (Method& m : cf.methods) {
+			if (m.hasCode()) {
+				InstList& instList = m.instList();
 
 				for (Inst* inst : instList) {
 //					if (inst->opcode == OPCODE_newarray
@@ -545,7 +545,7 @@ public:
 					}
 				}
 
-				m->codeAttr()->maxStack += 1;
+				m.codeAttr()->maxStack += 1;
 			}
 		}
 	}
@@ -560,7 +560,7 @@ void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
 	ClassFile cf(data, len);
 	classHierarchy.addClass(cf);
 
-	ConstIndex proxyClass = cf.addClass("frproxy/FrInstrProxy");
+  ConstPool::Index proxyClass = cf.addClass("frproxy/FrInstrProxy");
 
 	Instr::instrObjectInit(cf, proxyClass);
 	//Instr::instrNewArray(cf, classIndex);
@@ -579,7 +579,7 @@ void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
 		*newdata = Allocate(jvmti, *newlen);
 		cf.write(*newdata, *newlen);
 	} catch (const InvalidMethodLengthException& ex) {
-		cerr << "Class not instrumented: " << ex.message() << endl;
+		cerr << "Class not instrumented: " << ex.message << endl;
 	}
 }
 
@@ -591,7 +591,7 @@ void InstrClassAll(jvmtiEnv* jvmti, unsigned char* data, int len,
 	ClassFile cf(data, len);
 	classHierarchy.addClass(cf);
 
-	ConstIndex proxyClass = cf.addClass("frproxy/FrInstrProxy");
+  ConstPool::Index proxyClass = cf.addClass("frproxy/FrInstrProxy");
 
 	if (!isPrefix("java/lang/", cf.getThisClassName())) {
 		Instr::instrAllOpcodes(cf, proxyClass);

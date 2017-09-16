@@ -48,25 +48,26 @@ namespace jnif {
 
     };
 
-/**
- * Represent a member of a class. This the base class for Field and
- * Method classes.
- *
- * @see Field
- * @see Method
- */
+    /// Represent a member of a class. This the base class for Field and
+    /// Method classes.
+    /// @see Field
+    /// @see Method
     class Member {
-    public:
+
+        Member(const Member&) = delete;
+        Member(Member&&) = delete;
+        Member& operator=(const Member&) = delete;
+        Member& operator=(Member&&) = delete;
 
         friend class Field;
         friend class Method;
-        Member(const Member&) = delete;
-        Member(Member&&) = default;
 
-        u2 accessFlags;
-        ConstIndex nameIndex;
-        ConstIndex descIndex;
-        ClassFile* const constPool;
+    public:
+
+        const u2 accessFlags;
+        const ConstPool::Index nameIndex;
+        const ConstPool::Index descIndex;
+        const ConstPool* const constPool;
         Attrs attrs;
         Signature sig;
 
@@ -75,7 +76,12 @@ namespace jnif {
 
     private:
 
-        Member(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
+        Member(
+            u2 accessFlags,
+            ConstPool::Index nameIndex,
+            ConstPool::Index descIndex,
+            const ConstPool* constPool
+            ) :
             accessFlags(accessFlags),
             nameIndex(nameIndex),
             descIndex(descIndex),
@@ -85,95 +91,115 @@ namespace jnif {
         }
     };
 
-/**
- *
- */
     class Field: public Member {
-        friend class ClassFile;
+
+        Field(const Field&) = delete;
+        Field(Field&&) = delete;
+        Field& operator=(const Field&) = delete;
+        Field& operator=(Field&&) = delete;
 
     public:
 
-        Field(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
-            Member(accessFlags, nameIndex, descIndex, constPool) {
+        /// Access flags used by fields.
+        enum Flags {
+
+            /// Declared public; may be accessed from outside its package.
+            PUBLIC = 0x0001,
+
+            /// Declared private; usable only within the defining class.
+            PRIVATE = 0x0002,
+
+            /// Declared protected; may be accessed within subclasses.
+            PROTECTED = 0x0004,
+
+            /// Declared static.
+            STATIC = 0x0008,
+
+            /// Declared final;never directly assigned to after object construction.
+            FINAL = 0x0010,
+
+            /// Declared volatile; cannot be cached.
+            VOLATILE = 0x0040,
+
+            /// Declared transient; not written/read by a persistent object manager.
+            TRANSIENT = 0x0080,
+
+            /// Declared synthetic; not present in the source code.
+            SYNTHETIC = 0x1000,
+
+            /// Declared as an element of an enum.
+            ENUM = 0x4000
+        };
+
+        Field(
+            u2 accessFlags,
+            ConstPool::Index nameIndex,
+            ConstPool::Index descIndex,
+            const ConstPool* constPool) :
+            Member(accessFlags, nameIndex, descIndex, constPool)
+        {
         }
 
     };
 
-/**
- *
- */
+    /// Represents a Java method.
     class Method: public Member {
-        friend class ClassFile;
+
+        Method(const Method&) = delete;
+        Method(Method&&) = delete;
+        Method& operator=(const Method&) = delete;
+        Method& operator=(Method&&) = delete;
 
     public:
 
-        /**
-         * Access flags used by methods.
-         */
-        enum MethodFlags {
+        /// Access flags used by methods.
+        enum Flags {
 
-            /**
-             * Declared public; may be accessed from outside its package.
-             */
-            METHOD_PUBLIC = 0x0001,
+            /// Declared public; may be accessed from outside its package.
+            PUBLIC = 0x0001,
 
-            /**
-             * Declared private; accessible only within the defining class.
-             */
-            METHOD_PRIVATE = 0x0002,
+            /// Declared private; accessible only within the defining class.
+            PRIVATE = 0x0002,
 
-            /**
-             * Declared protected; may be accessed within subclasses.
-             */
-            METHOD_PROTECTED = 0x0004,
+            /// Declared protected; may be accessed within subclasses.
+            PROTECTED = 0x0004,
 
-            /**
-             * Declared static.
-             */
-            METHOD_STATIC = 0x0008,
+            /// Declared static.
+            STATIC = 0x0008,
 
-            /**
-             * Declared final; must not be overridden (see 5.4.5).
-             */
-            METHOD_FINAL = 0x0010,
+            /// Declared final; must not be overridden (see 5.4.5).
+            FINAL = 0x0010,
 
-            /**
-             * Declared synchronized; invocation is wrapped by a monitor use.
-             */
-            METHOD_SYNCHRONIZED = 0x0020,
+            /// Declared synchronized; invocation is wrapped by a monitor use.
+            SYNCHRONIZED = 0x0020,
 
-            /**
-             * A bridge method, generated by the compiler.
-             */
-            METHOD_BRIDGE = 0x0040,
+            /// A bridge method, generated by the compiler.
+            BRIDGE = 0x0040,
 
-            /**
-             * Declared with variable number of arguments.
-             */
-            METHOD_VARARGS = 0x0080,
+            /// Declared with variable number of arguments.
+            VARARGS = 0x0080,
 
-            /**
-             * Declared native; implemented in a language other than Java.
-             */
-            METHOD_NATIVE = 0x0100,
+            /// Declared native; implemented in a language other than Java.
+            NATIVE = 0x0100,
 
-            /**
-             * Declared abstract; no implementation is provided.
-             */
-            METHOD_ABSTRACT = 0x0400,
+            /// Declared abstract; no implementation is provided.
+            ABSTRACT = 0x0400,
 
-            /**
-             * Declared strictfp; floating-point mode is FP-strict.
-             */
-            METHOD_STRICT = 0x0800,
+            /// Declared strictfp; floating-point mode is FP-strict.
+            STRICT = 0x0800,
 
-            /**
-             * Declared synthetic; not present in the source code.
-             */
-            METHOD_SYNTHETIC = 0x1000,
+            /// Declared synthetic; not present in the source code.
+            SYNTHETIC = 0x1000,
+
         };
-        Method(u2 accessFlags, ConstIndex nameIndex, ConstIndex descIndex, ClassFile* constPool) :
-            Member(accessFlags, nameIndex, descIndex, constPool) {
+
+        Method(
+            u2 accessFlags,
+            ConstPool::Index nameIndex,
+            ConstPool::Index descIndex,
+            const ConstPool* constPool) :
+            Member(accessFlags, nameIndex, descIndex, constPool)
+        {
         }
 
         ~Method();
@@ -201,11 +227,11 @@ namespace jnif {
         InstList& instList();
 
         bool isPublic() const {
-            return accessFlags & METHOD_PUBLIC;
+            return accessFlags & PUBLIC;
         }
 
         bool isStatic() const {
-            return accessFlags & METHOD_STATIC;
+            return accessFlags & STATIC;
         }
 
         bool isInit() const;
@@ -230,72 +256,62 @@ namespace jnif {
 
     };
 
-/**
- * Models a Java Class File following the specification of the JVM version 7.
- */
+    /// Models a Java Class File following the specification of the JVM version 7.
     class ClassFile: public ConstPool {
+
+        ClassFile(const ClassFile&) = delete;
+        ClassFile(ClassFile&&) = delete;
+        ClassFile& operator=(const ClassFile&) = delete;
+        ClassFile& operator=(ClassFile&&) = delete;
+
     public:
 
-/**
- * Access flags for the class itself.
- */
-        enum ClassFlags {
+        /// Access flags for the class itself.
+        enum Flags {
 
-            /**
-             * Declared public; may be accessed from outside its package.
-             */
-            CLASS_PUBLIC = 0x0001,
+            /// Declared public; may be accessed from outside its package.
+            PUBLIC = 0x0001,
 
-            /**
-             * Declared final; no subclasses allowed.
-             */
-            CLASS_FINAL = 0x0010,
+            /// Declared final; no subclasses allowed.
+            FINAL = 0x0010,
 
-            /**
-             * Treat superclass methods specially when invoked by the
-             * invokespecial instruction.
-             */
-            CLASS_SUPER = 0x0020,
+            /// Treat superclass methods specially when invoked by the
+            /// invokespecial instruction.
+            SUPER = 0x0020,
 
-            /**
-             * Is an interface, not a class.
-             */
-            CLASS_INTERFACE = 0x0200,
+            /// Is an interface, not a class.
+            INTERFACE = 0x0200,
 
-            /**
-             * Declared abstract; must not be instantiated.
-             */
-            CLASS_ABSTRACT = 0x0400,
+            /// Declared abstract; must not be instantiated.
+            ABSTRACT = 0x0400,
 
-            /**
-             * Declared synthetic; not present in the source code.
-             */
-            CLASS_SYNTHETIC = 0x1000,
+            /// Declared synthetic; not present in the source code.
+            SYNTHETIC = 0x1000,
 
-            /**
-             * Declared as an annotation type.
-             */
-            CLASS_ANNOTATION = 0x2000,
+            /// Declared as an annotation type.
+            ANNOTATION = 0x2000,
 
-            /**
-             * Declared as an enum type.
-             */
-            CLASS_ENUM = 0x4000
+            /// Declared as an enum type.
+            ENUM = 0x4000
         };
-/**
- * The magic number signature that must appear at the beginning of each
- * class file, identifying the class file format; it has the value 0xCAFEBABE.
- */
+
+        /// The magic number signature that must appear at the beginning of each
+        /// class file, identifying the class file format;
+        /// it has the value 0xCAFEBABE.
         static constexpr const u4 MAGIC = 0xcafebabe;
 
+        /// Java's root class
         static constexpr const char* OBJECT = "java/lang/Object";
 
-
-        /**
-         * Constructs a default class file given the class name, the super class
-         * name and the access flags.
-         */
-        ClassFile(const char* className, const char* superClassName, u2 accessFlags = CLASS_PUBLIC, u2 majorVersion = 51, u2 minorVersion = 0) :
+        /// Constructs a default class file given the class name, the super class
+        /// name and the access flags.
+        ClassFile(
+            const char* className,
+            const char* superClassName,
+            u2 accessFlags = PUBLIC,
+            u2 majorVersion = 51,
+            u2 minorVersion = 0
+            ) :
             version(majorVersion, minorVersion),
             accessFlags(accessFlags),
             thisClassIndex(addClass(className)),
@@ -313,11 +329,6 @@ namespace jnif {
         ClassFile(const char* fileName);
 
         /**
-         * Releases the memory used for this class file.
-         */
-        ~ClassFile();
-
-        /**
          * Gets the class name of this class file.
          */
         const char* getThisClassName() const {
@@ -332,7 +343,7 @@ namespace jnif {
         }
 
         bool isInterface() {
-            return accessFlags & CLASS_INTERFACE;
+            return accessFlags & INTERFACE;
         }
 
         /**
@@ -345,7 +356,8 @@ namespace jnif {
          * @param accessFlags the access flags of the field to add.
          * @returns the newly created field.
          */
-        Field* addField(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags = FIELD_PUBLIC);
+        Field& addField(
+            ConstPool::Index nameIndex,         ConstPool::Index descIndex, u2 accessFlags = Field::PUBLIC);
 
         /**
          * Adds a new field to this class file by passing directly the name
@@ -356,9 +368,9 @@ namespace jnif {
          * @param accessFlags the access flags of the field to add.
          * @returns the newly created field.
          */
-        Field* addField(const char* fieldName, const char* fieldDesc, u2 accessFlags = FIELD_PUBLIC) {
-            ConstIndex nameIndex = addUtf8(fieldName);
-            ConstIndex descIndex = addUtf8(fieldDesc);
+        Field& addField(const char* fieldName, const char* fieldDesc, u2 accessFlags = Field::PUBLIC) {
+            ConstPool::Index nameIndex = addUtf8(fieldName);
+            ConstPool::Index descIndex = addUtf8(fieldDesc);
 
             return addField(nameIndex, descIndex, accessFlags);
         }
@@ -373,7 +385,7 @@ namespace jnif {
          * @param accessFlags the access flags of the field to add.
          * @returns the newly created method.
          */
-        Method* addMethod(ConstIndex nameIndex, ConstIndex descIndex, u2 accessFlags = Method::METHOD_PUBLIC);
+        Method& addMethod(        ConstPool::Index nameIndex,         ConstPool::Index descIndex, u2 accessFlags = Method::PUBLIC);
 
         /**
          * Adds a new method to this class file by passing directly the name
@@ -384,9 +396,12 @@ namespace jnif {
          * @param accessFlags the access flags of the method to add.
          * @returns the newly created method.
          */
-        Method* addMethod(const char* methodName, const char* methodDesc, u2 accessFlags = Method::METHOD_PUBLIC) {
-            ConstIndex nameIndex = addUtf8(methodName);
-            ConstIndex descIndex = addUtf8(methodDesc);
+        Method& addMethod(
+            const char* methodName,
+            const char* methodDesc, u2 accessFlags = Method::PUBLIC
+            ) {
+            ConstPool::Index nameIndex = addUtf8(methodName);
+            ConstPool::Index descIndex = addUtf8(methodDesc);
 
             return addMethod(nameIndex, descIndex, accessFlags);
         }
@@ -420,11 +435,11 @@ namespace jnif {
 
         Version version;
         u2 accessFlags;
-        ConstIndex thisClassIndex;
-        ConstIndex superClassIndex;
-        std::vector<ConstIndex> interfaces;
-        std::vector<Field*> fields;
-        std::vector<Method*> methods;
+        ConstPool::Index thisClassIndex;
+        ConstPool::Index superClassIndex;
+        std::list<ConstPool::Index> interfaces;
+        std::list<Field> fields;
+        std::list<Method> methods;
         Attrs attrs;
         Signature sig;
     };

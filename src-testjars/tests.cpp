@@ -39,9 +39,9 @@ public:
 	NopAdderInstr(ClassFile& cf) :
 			diff(0) {
 		int methodsWithCode = 0;
-		for (Method* m : cf.methods) {
-			if (m->hasCode()) {
-				InstList& instList = m->instList();
+		for (Method& m : cf.methods) {
+			if (m.hasCode()) {
+				InstList& instList = m.instList();
 
 				// If there is a tableswitch or a lookupswitch instruction
 				// bytes added to the instruction flow must be a multiple

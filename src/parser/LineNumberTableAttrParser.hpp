@@ -17,7 +17,7 @@ namespace jnif::parser {
 
         static constexpr const char* AttrName = "LineNumberTable";
 
-        Attr* parse(BufferReader* br, ClassFile* cp, ConstIndex nameIndex,
+        Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex,
                     LabelManager* labelManager) {
 
             u2 lntlen = br->readu2();

@@ -87,9 +87,8 @@ namespace jnif::parser {
                 u2 nameIndex = br->readu2();
                 u2 descIndex = br->readu2();
 
-                Field* f = cf->addField(nameIndex, descIndex, accessFlags);
-
-                FieldAttrsParser().parse(br, cf, &f->attrs);
+                Field& f = cf->addField(nameIndex, descIndex, accessFlags);
+                FieldAttrsParser().parse(br, cf, &f.attrs);
             }
 
             u2 methodCount = br->readu2();
@@ -98,10 +97,8 @@ namespace jnif::parser {
                 u2 nameIndex = br->readu2();
                 u2 descIndex = br->readu2();
 
-                Method* m = cf->addMethod(nameIndex, descIndex, accessFlags);
-                JnifError::trace("Method ", m->getName());
-
-                MethodAttrsParser().parse(br, cf, &m->attrs);
+                Method& m = cf->addMethod(nameIndex, descIndex, accessFlags);
+                MethodAttrsParser().parse(br, cf, &m.attrs);
             }
 
             ClassAttrsParser().parse(br, cf, &cf->attrs);

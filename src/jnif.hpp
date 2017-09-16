@@ -16,6 +16,7 @@
 #include "ClassFile.hpp"
 #include "ClassHierarchy.hpp"
 #include "jar/JarFile.hpp"
+#include "parser/ClassFileParser.hpp"
 
 /**
  * The jnif namespace contains all type definitions, constants, enumerations
