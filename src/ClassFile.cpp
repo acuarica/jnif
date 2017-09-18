@@ -16,31 +16,25 @@
 
 namespace jnif {
 
-    Method::~Method() {
-        JnifError::trace("Method::~Method");
-    }
-
     bool Method::isInit() const {
-        String name = constPool->getUtf8(nameIndex);
+        String name = constPool.getUtf8(nameIndex);
         return hasCode() && name == "<init>";
     }
 
     bool Method::isMain() const {
-        String name = constPool->getUtf8(nameIndex);
-        String desc = constPool->getUtf8(descIndex);
+        String name = constPool.getUtf8(nameIndex);
+        String desc = constPool.getUtf8(descIndex);
 
         return hasCode() && name == "main" && isStatic() && isPublic()
             && desc == "([Ljava/lang/String;)V";
     }
 
     const char* Member::getName() const {
-        const char* name = constPool->getUtf8(nameIndex);
-        return name;
+        return constPool.getUtf8(nameIndex);
     }
 
     const char* Member::getDesc() const {
-        const char* desc = constPool->getUtf8(descIndex);
-        return desc;
+        return constPool.getUtf8(descIndex);
     }
 
     InstList& Method::instList() {
@@ -81,13 +75,13 @@ namespace jnif {
 
     Field& ClassFile::addField(ConstPool::Index nameIndex, ConstPool::Index descIndex,
                                u2 accessFlags) {
-        fields.emplace_back(accessFlags, nameIndex, descIndex, this);
+        fields.emplace_back(accessFlags, nameIndex, descIndex, *this);
         return fields.back();
     }
 
     Method& ClassFile::addMethod(ConstPool::Index nameIndex, ConstPool::Index descIndex,
                                  u2 accessFlags) {
-        methods.emplace_back(accessFlags, nameIndex, descIndex, this);
+        methods.emplace_back(accessFlags, nameIndex, descIndex, *this);
         return methods.back();
     }
 

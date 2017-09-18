@@ -41,7 +41,7 @@ namespace jnif {
          * must hold.
          */
         ~BufferReader() {
-            //Error::check(off == _size, "Expected end of buffer");
+            JnifError::check(off == _size, "Expected end of buffer");
         }
 
         int size() const {

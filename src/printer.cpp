@@ -349,7 +349,7 @@ private:
 };
 
 std::ostream& operator<<(std::ostream& os, const Method& m) {
-	const ConstPool& cp = *m.constPool;
+	const ConstPool& cp = m.constPool;
 	os << AccessFlagsPrinter(m.accessFlags) << " ";
   os << cp.getUtf8(m.nameIndex) << cpindex << "#" << m.nameIndex << reset << "";
 	os << cp.getUtf8(m.descIndex) << cpindex << "#" << m.descIndex << reset << endl;

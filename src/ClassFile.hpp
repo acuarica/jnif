@@ -67,7 +67,7 @@ namespace jnif {
         const u2 accessFlags;
         const ConstPool::Index nameIndex;
         const ConstPool::Index descIndex;
-        const ConstPool* const constPool;
+        const ConstPool& constPool;
         Attrs attrs;
         Signature sig;
 
@@ -80,7 +80,7 @@ namespace jnif {
             u2 accessFlags,
             ConstPool::Index nameIndex,
             ConstPool::Index descIndex,
-            const ConstPool* constPool
+            const ConstPool& constPool
             ) :
             accessFlags(accessFlags),
             nameIndex(nameIndex),
@@ -135,7 +135,7 @@ namespace jnif {
             u2 accessFlags,
             ConstPool::Index nameIndex,
             ConstPool::Index descIndex,
-            const ConstPool* constPool) :
+            const ConstPool& constPool) :
             Member(accessFlags, nameIndex, descIndex, constPool)
         {
         }
@@ -197,12 +197,10 @@ namespace jnif {
             u2 accessFlags,
             ConstPool::Index nameIndex,
             ConstPool::Index descIndex,
-            const ConstPool* constPool) :
+            const ConstPool& constPool) :
             Member(accessFlags, nameIndex, descIndex, constPool)
         {
         }
-
-        ~Method();
 
         bool hasCode() const {
             for (Attr* attr : attrs) {

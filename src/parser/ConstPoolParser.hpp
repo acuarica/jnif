@@ -8,8 +8,7 @@
 
 namespace jnif::parser {
 
-    class ConstPoolParser {
-    public:
+    struct ConstPoolParser {
 
         void parse(BufferReader* br, ConstPool* cp) {
             u2 count = br->readu2();
