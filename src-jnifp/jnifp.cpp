@@ -29,15 +29,31 @@ int main(int argc, const char* argv[]) {
             if (m.hasCode()) {
                 InstList& instList = m.codeAttr()->instList;
 
-                    int id = 1;
-                    for (Inst* inst : instList) {
-                        inst->id = id;
-                        id++;
-                    }
+                int id = 1;
+                for (Inst* inst : instList) {
+                    inst->id = id;
+                    id++;
+                }
             }
         }
+
         cf.computeFrames(&cp);
-        cout << cf << endl;
+        // cout << cf << endl;
+        auto it = cf.getMethod("m");
+        if (it != cf.methods.end()) {
+            const Method& m = *it;
+            InstList& instList = m.codeAttr()->instList;
+            cout << m;
+            Inst* inst = instList.getInst(30);
+            if (inst != nullptr) {
+                cout << "@ " << inst->_offset << ": " << *inst << endl;
+                // std::set<Inst*> ls;
+                // ls.push_back(inst);
+                // for (Inst* ii : ls) {
+                    // ls.insert(inst->consumes.begin(), inst->consumes.end());
+                // }
+            }
+        }
     } catch (const JnifException& ex) {
         cerr << ex << endl;
         return 1;

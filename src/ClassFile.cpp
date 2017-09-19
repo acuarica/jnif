@@ -85,6 +85,14 @@ namespace jnif {
         return methods.back();
     }
 
+    std::list<Method>::iterator ClassFile::getMethod(const char* methodName) {
+        return std::find_if(
+            methods.begin(),
+            methods.end(),
+            [&](const Method& m) {return m.getName() == std::string(methodName);}
+            );
+    }
+
     void ClassFile::computeFrames(IClassPath* classPath) {
         computeSize();
 

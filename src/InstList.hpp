@@ -96,6 +96,8 @@ public:
 		return Iterator(NULL, last);
 	}
 
+    Inst* getInst(int offset);
+
 	ClassFile* const constPool;
 
 private:

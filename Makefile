@@ -23,7 +23,7 @@ else
   $(error Unrecognized environment. Only supported Darwin and Linux)
 endif
 
-CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O3
+CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O0
 
 #
 # Rules to make $(JNIF)
@@ -109,10 +109,10 @@ JNIFP_SRC=src-jnifp
 JNIFP_SRCS=$(wildcard $(JNIFP_SRC)/*.cpp)
 JNIFP_OBJS=$(JNIFP_SRCS:$(JNIFP_SRC)/%=$(JNIFP_BUILD)/%.o)
 JNIFP_JAVAS=$(wildcard classes/*.java)
-JNIFP_CLASSES=$(JNIFP_JAVAS:%.java=%.class)
+JNIFP_CLASSES=$(JNIFP_JAVAS:%.java=$(BUILD)/%.class)
 
 run-jnifp: $(JNIFP) $(JNIFP_CLASSES)
-	$(JNIFP) classes/Cond.class
+	$(JNIFP) $(BUILD)/classes/WhileIadd.class
 
 jnifp: $(JNIFP)
 
@@ -122,10 +122,13 @@ $(JNIFP): $(JNIFP_OBJS) $(JNIF)
 $(JNIFP_BUILD)/%.cpp.o: $(JNIFP_SRC)/%.cpp | $(JNIFP_BUILD)
 	$(CXX) $(CXXFLAGS) -I$(JNIF_SRC) -c -o $@ $<
 
-%.class: %.java
-	javac $<
+$(BUILD)/%.class: %.java | $(BUILD)/classes
+	javac -d $(BUILD)/classes $<
 
 $(JNIFP_BUILD):
+	mkdir -p $@
+
+$(BUILD)/classes:
 	mkdir -p $@
 
 #

@@ -404,6 +404,8 @@ namespace jnif {
             return addMethod(nameIndex, descIndex, accessFlags);
         }
 
+        std::list<Method>::iterator getMethod(const char* methodName);
+
         /**
          * Computes the size in bytes of this class file of the in-memory
          * representation.

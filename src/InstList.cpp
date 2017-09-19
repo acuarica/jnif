@@ -207,6 +207,16 @@ LookupSwitchInst* InstList::addLookupSwitch(LabelInst* def, u4 npairs, Inst* pos
 	return inst;
 }
 
+    Inst* InstList::getInst(int offset) {
+        for (Inst* inst : *this) {
+            if (inst->_offset == offset && !inst->isLabel()) {
+                return inst;
+            }
+        }
+
+        return nullptr;
+    }
+
 template<typename TInst, typename ... TArgs>
 TInst* InstList::_create(const TArgs& ... args) {
   return constPool->_arena.create<TInst>(args ...);
