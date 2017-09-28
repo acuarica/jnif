@@ -14,6 +14,7 @@ namespace jnif {
 
     /// Represents a control flow graph of instructions.
     class ControlFlowGraph {
+        friend struct Dominator;
     private:
         std::vector<BasicBlock*> basicBlocks;
 
@@ -67,6 +68,10 @@ namespace jnif {
         std::vector<BasicBlock*>::const_iterator end() const {
             return basicBlocks.end();
         }
+
+        typedef std::map<BasicBlock*, std::set<BasicBlock*> > D;
+
+        D dominance(BasicBlock* start);
 
     private:
 

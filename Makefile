@@ -25,6 +25,13 @@ endif
 
 CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O0
 
+
+# CPP_SRCS=$(shell find src-* -name "*.cpp")
+# CPP_OBJS=$(CPP_SRCS:src-%=$(BUILD)/%.o)
+# hola:
+# # @echo $(CPP_SRCS)
+# 	@echo $(CPP_OBJS)
+
 #
 # Rules to make $(JNIF)
 #
@@ -112,7 +119,7 @@ JNIFP_JAVAS=$(wildcard classes/*.java)
 JNIFP_CLASSES=$(JNIFP_JAVAS:%.java=$(BUILD)/%.class)
 
 run-jnifp: $(JNIFP) $(JNIFP_CLASSES)
-	$(JNIFP) $(BUILD)/classes/WhileIadd.class
+	$(JNIFP) $(BUILD)/classes/Goto.class
 
 jnifp: $(JNIFP)
 

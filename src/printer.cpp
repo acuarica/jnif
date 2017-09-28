@@ -740,18 +740,25 @@ ostream& operator<<(ostream& os, const ClassFile& cf) {
 std::ostream& operator<<(std::ostream& os, BasicBlock& bb) {
     os << "    " << yellow << bb.name << reset;
 
-	os << " {";
-  bool f = true;
-	for (BasicBlock* bbt : bb) {
-      if (!f) {
-          os << " ";
-      }
-		os << "->" << bbt->name;
-    f = false;
-	}
-	os << "} ";
+    auto p = [&os] (const std::vector<BasicBlock*>& bs, const char* arrow) {
+        os << "{";
+        bool f = true;
+        for (BasicBlock* bbt : bs) {
+            if (!f) {
+                os << " ";
+            }
+            os << arrow << bbt->name;
+            f = false;
+        }
+        os << "}";
+    };
 
-	os << "" << bb.in << " ~> " << bb.out;
+    os << " ";
+  p(bb.targets, "->");
+  os << " ";
+  p(bb.ins, "<-");
+
+	os << " " << bb.in << " ~> " << bb.out;
 
   InstList::Iterator it = bb.start;
 

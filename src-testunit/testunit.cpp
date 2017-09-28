@@ -271,19 +271,6 @@ static void run(TestFunc* testFunc, const String& testName) {
 #define RUN(testName) run(&testName, #testName)
 
 int main(int, const char*[]) {
-    // struct S {
-    //     int i;
-    //     S(const S&) = delete;
-    //     S(S&&) = delete;
-    //     S(int i) : i(i) {
-    //         std::cout << "S constructed" << std::endl;
-    //     }
-    // };
-    // std::list<S> vs;
-    // vs.emplace_back(0);
-
-    // return 0;
-
     RUN(testEmptyModel);
     RUN(testPrinterModel);
     RUN(testException);

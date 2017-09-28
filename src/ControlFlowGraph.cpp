@@ -8,6 +8,8 @@
 #include "Error.hpp"
 #include <sstream>
 
+using namespace std;
+
 namespace jnif {
 
     static void addBasicBlock2(InstList::Iterator eit, InstList::Iterator& beginBb,
@@ -159,6 +161,43 @@ namespace jnif {
 
         JnifError::raise("Invalid label id: ", labelId, " for the instruction list: ",
                          ", in cfg: ", *this, instList);
+    }
+
+    ControlFlowGraph::D ControlFlowGraph::dominance(BasicBlock* start) {
+        ControlFlowGraph& cfg = *this;
+        map<BasicBlock*, set<BasicBlock*> > ds;
+
+        for (BasicBlock* bb : cfg) {
+            ds[bb].insert(cfg.basicBlocks.begin(), cfg.basicBlocks.end());
+        }
+
+        bool changed = true;
+        while (changed) {
+            changed = false;
+
+            for (BasicBlock* bb : cfg) {
+                set<BasicBlock*> ns;
+                for (BasicBlock* p : bb->targets) {
+                    if (ns.empty()) {
+                        ns = ds[p];
+                    } else {
+                        for (BasicBlock* bbp : ns) {
+                            if (ds[p].count(bbp) == 0) {
+                                ns.erase(bbp);
+                            }
+                        }
+                    }
+                }
+                ns.insert(bb);
+
+                if (ns != ds[bb]) {
+                    changed = true;
+                    ds[bb] = ns;
+                }
+            }
+        }
+
+        return ds;
     }
 
 }

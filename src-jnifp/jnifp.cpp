@@ -1,7 +1,10 @@
 /*
  * Includes
  */
+
 #include <jnif.hpp>
+
+#include <Dominator.hpp>
 
 using namespace std;
 using namespace jnif;
@@ -50,8 +53,21 @@ int main(int argc, const char* argv[]) {
                 // std::set<Inst*> ls;
                 // ls.push_back(inst);
                 // for (Inst* ii : ls) {
-                    // ls.insert(inst->consumes.begin(), inst->consumes.end());
+                // ls.insert(inst->consumes.begin(), inst->consumes.end());
                 // }
+            }
+
+            ControlFlowGraph& cfg = *m.codeAttr()->cfg;
+            Dominator ds(cfg);
+
+
+
+            // auto ds = cfg.dominance(nullptr);
+            for (auto d : ds) {
+                cout << d.first->name << endl;
+                for (auto dp : d.second) {
+                    cout << "  " << dp->name << endl;
+                }
             }
         }
     } catch (const JnifException& ex) {

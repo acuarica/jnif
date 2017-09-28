@@ -41,19 +41,22 @@ namespace jnif {
             return targets.end();
         }
 
-        BasicBlock* next;
-        class ControlFlowGraph* cfg;
-
+        BasicBlock* next = nullptr;
+        class ControlFlowGraph* const cfg;
         const Inst* last = nullptr;
+
+        std::vector<BasicBlock*> targets;
+        std::vector<BasicBlock*> ins;
+
+        const BasicBlock* dom = nullptr;
 
     private:
 
         BasicBlock(InstList::Iterator& start, InstList::Iterator& exit,
                    const String& name, class ControlFlowGraph* cfg) :
-            start(start), exit(exit), name(name), next(nullptr), cfg(cfg) {
+            start(start), exit(exit), name(name), cfg(cfg) {
         }
 
-        std::vector<BasicBlock*> targets;
     };
 
 }
