@@ -15,7 +15,7 @@ namespace jnif {
     /// Represents a control flow graph of instructions.
     class ControlFlowGraph {
         friend struct Dominator;
-    private:
+    public:
         std::vector<BasicBlock*> basicBlocks;
 
     public:

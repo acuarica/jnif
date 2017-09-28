@@ -59,16 +59,12 @@ int main(int argc, const char* argv[]) {
 
             ControlFlowGraph& cfg = *m.codeAttr()->cfg;
             Dominator ds(cfg);
+            PostDominator pds(cfg);
 
+            cout << ds;
+            cout << endl;
+            cout << pds;
 
-
-            // auto ds = cfg.dominance(nullptr);
-            for (auto d : ds) {
-                cout << d.first->name << endl;
-                for (auto dp : d.second) {
-                    cout << "  " << dp->name << endl;
-                }
-            }
         }
     } catch (const JnifException& ex) {
         cerr << ex << endl;

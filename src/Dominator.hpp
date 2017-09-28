@@ -3,9 +3,10 @@
 
 namespace jnif {
 
-    struct Dominator : std::map<BasicBlock*, std::set<BasicBlock*> > {
+    template <class TDir>
+    struct BaseDominator : std::map<BasicBlock*, std::set<BasicBlock*> > {
 
-        Dominator(ControlFlowGraph& cfg) {
+        BaseDominator(ControlFlowGraph& cfg) {
             for (BasicBlock* bb : cfg) {
                 (*this)[bb].insert(cfg.basicBlocks.begin(), cfg.basicBlocks.end());
             }
@@ -16,7 +17,7 @@ namespace jnif {
 
                 for (BasicBlock* bb : cfg) {
                     std::set<BasicBlock*> ns;
-                    for (BasicBlock* p : bb->targets) {
+                    for (BasicBlock* p : TDir::dir(bb)) {
                         if (ns.empty()) {
                             ns = (*this)[p];
                         } else {
@@ -36,8 +37,31 @@ namespace jnif {
                 }
             }
         }
+
+
+        template <class T>
+        friend std::ostream& operator<<(std::ostream& os, BaseDominator<T> ds) {
+            for (auto d : ds) {
+                os << d.first->name << ": ";
+                for (auto dp : d.second) {
+                    os << "  " << dp->name << " ";
+                }
+                os << std::endl;
+            }
+
+            return os;
+        }
     };
 
+    struct Dominator : BaseDominator<Dominator> {
+        using BaseDominator<Dominator>::BaseDominator;
+        static std::vector<BasicBlock*>& dir(BasicBlock* bb) { return bb->ins; }
+    };
+
+    struct PostDominator : BaseDominator<PostDominator> {
+        using BaseDominator<PostDominator>::BaseDominator;
+        static std::vector<BasicBlock*>& dir(BasicBlock* bb) { return bb->targets; }
+    };
 }
 
 #endif
