@@ -58,18 +58,12 @@ int main(int argc, const char* argv[]) {
             }
 
             ControlFlowGraph& cfg = *m.codeAttr()->cfg;
-            SDom<Forward> fd(cfg);
-            IDom<Forward> fdt(fd);
-            cout << fd;
-            cout << endl;
-            cout << fdt;
+            SDom<Backward> ds(cfg);
+            cout << ds << endl;
 
+            IDom<Backward> dt(ds);
             cout << endl;
-
-            // DomTree<Backward> bdt(bd);
-            // StrictDominance<Backward> bd(cfg);
-            // cout << bd;
-            // cout << bdt;
+            cout << dt;
         }
     } catch (const JnifException& ex) {
         cerr << ex << endl;

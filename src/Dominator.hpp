@@ -23,9 +23,11 @@ namespace jnif {
                         if (ns.empty()) {
                             ns = (*this)[p];
                         } else {
-                            for (BasicBlock* bbp : ns) {
-                                if ((*this)[p].count(bbp) == 0) {
-                                    ns.erase(bbp);
+                            for(auto it = ns.begin(); it != ns.end(); ) {
+                                if ((*this)[p].count(*it) == 0) {
+                                    it = ns.erase(it);
+                                } else {
+                                    ++it;
                                 }
                             }
                         }
@@ -38,7 +40,6 @@ namespace jnif {
                     }
                 }
             }
-
         }
     };
 
@@ -46,9 +47,11 @@ namespace jnif {
     struct SDom : Dom<TDir> {
         SDom(const ControlFlowGraph& cfg) : Dom<TDir>(cfg) {
             int count = this->erase(TDir::start(cfg));
-            JnifError::assert(count == 1, "count");
+            JnifError::assert(count == 1, "count: ", count);
+
             for (auto& d : *this) {
-                d.second.erase(d.first);
+                int count = d.second.erase(d.first);
+                JnifError::assert(count == 1, "count: ", count);
             }
         }
     };
@@ -56,11 +59,15 @@ namespace jnif {
     template <class TDir>
     struct IDom : DomMap {
         IDom(SDom<TDir>& ds) {
-            for (const std::pair<BasicBlock*, std::set<BasicBlock*> >& d : ds) {
+            for (std::pair<BasicBlock* const, std::set<BasicBlock*> >& d : ds) {
+                JnifError::assert(!d.second.empty(), "Empty: ", d.first->name);
+
                 std::set<BasicBlock*> sdomBy = d.second;
-                for (BasicBlock* bb : sdomBy) {
-                    for (BasicBlock* dd : ds[bb]) {
-                        sdomBy.erase(dd);
+                for (BasicBlock* bb : d.second) {
+                    if (ds.find(bb) != ds.end()) {
+                        for (BasicBlock* dd : ds[bb]) {
+                            sdomBy.erase(dd);
+                        }
                     }
                 }
 
@@ -83,8 +90,8 @@ namespace jnif {
     std::ostream& operator<<(std::ostream& os, const DomMap& ds) {
         for (const std::pair<BasicBlock*, std::set<BasicBlock*> >& d : ds) {
             os << d.first->name << ": ";
-            for (const BasicBlock* dp : d.second) {
-                os << "  " << dp->name << " ";
+            for (const BasicBlock* bb : d.second) {
+                os << bb->name << " ";
             }
             os << std::endl;
         }
