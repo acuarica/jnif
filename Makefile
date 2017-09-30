@@ -119,7 +119,7 @@ JNIFP_JAVAS=$(wildcard classes/*.java)
 JNIFP_CLASSES=$(JNIFP_JAVAS:%.java=$(BUILD)/%.class)
 
 run-jnifp: $(JNIFP) $(JNIFP_CLASSES)
-	$(JNIFP) $(BUILD)/classes/Goto.class
+	$(JNIFP) $(BUILD)/classes/If.class
 
 jnifp: $(JNIFP)
 
@@ -128,6 +128,8 @@ $(JNIFP): $(JNIFP_OBJS) $(JNIF)
 
 $(JNIFP_BUILD)/%.cpp.o: $(JNIFP_SRC)/%.cpp | $(JNIFP_BUILD)
 	$(CXX) $(CXXFLAGS) -I$(JNIF_SRC) -c -o $@ $<
+
+-include $(JNIFP_BUILD)/*.cpp.d
 
 $(BUILD)/%.class: %.java | $(BUILD)/classes
 	javac -d $(BUILD)/classes $<

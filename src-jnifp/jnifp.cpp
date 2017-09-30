@@ -42,7 +42,7 @@ int main(int argc, const char* argv[]) {
 
         cf.computeFrames(&cp);
         // cout << cf << endl;
-        auto it = cf.getMethod("m");
+        auto it = cf.getMethod("m1");
         if (it != cf.methods.end()) {
             const Method& m = *it;
             InstList& instList = m.codeAttr()->instList;
@@ -58,13 +58,18 @@ int main(int argc, const char* argv[]) {
             }
 
             ControlFlowGraph& cfg = *m.codeAttr()->cfg;
-            Dominator ds(cfg);
-            PostDominator pds(cfg);
-
-            cout << ds;
+            SDom<Forward> fd(cfg);
+            IDom<Forward> fdt(fd);
+            cout << fd;
             cout << endl;
-            cout << pds;
+            cout << fdt;
 
+            cout << endl;
+
+            // DomTree<Backward> bdt(bd);
+            // StrictDominance<Backward> bd(cfg);
+            // cout << bd;
+            // cout << bdt;
         }
     } catch (const JnifException& ex) {
         cerr << ex << endl;
