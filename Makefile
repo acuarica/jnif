@@ -37,7 +37,7 @@ CXXFLAGS+=-MMD -fPIC -W -g -Wall -Wextra -O0
 #
 JNIF=$(BUILD)/libjnif.a
 JNIF_BUILD=$(BUILD)/libjnif
-JNIF_SRC=src
+JNIF_SRC=src-libjnif
 JNIF_SRCS=$(wildcard $(JNIF_SRC)/*.cpp) $(wildcard $(JNIF_SRC)/*/*.cpp)
 JNIF_OBJS=$(JNIF_SRCS:$(JNIF_SRC)/%=$(JNIF_BUILD)/%.o)
 
@@ -45,7 +45,7 @@ $(JNIF): $(JNIF_OBJS)
 	$(AR) cr $@ $^
 
 $(JNIF_BUILD)/%.cpp.o: $(JNIF_SRC)/%.cpp | $(JNIF_BUILD) $(JNIF_BUILD)/parser $(JNIF_BUILD)/jar
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -I$(JNIF_SRC) -c -o $@ $<
 
 -include $(JNIF_BUILD)/*.cpp.d
 -include $(JNIF_BUILD)/**/*.cpp.d
@@ -119,7 +119,7 @@ JNIFP_JAVAS=$(wildcard classes/*.java)
 JNIFP_CLASSES=$(JNIFP_JAVAS:%.java=$(BUILD)/%.class)
 
 run-jnifp: $(JNIFP) $(JNIFP_CLASSES)
-	$(JNIFP) $(BUILD)/classes/If.class
+	$(JNIFP) $(BUILD)/classes/Generic.class
 
 jnifp: $(JNIFP)
 

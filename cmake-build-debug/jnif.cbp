@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="jnif"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/Volumes/Data/work/jnif/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/Volumes/Data/work/jnif/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/Volumes/Data/work/jnif/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="testjars">
+				<Option output="/Volumes/Data/work/jnif/cmake-build-debug/testjars" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Volumes/Data/work/jnif/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Volumes/Data/work/jnif/src-libjnif"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 testjars"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="testjars/fast">
+				<Option output="/Volumes/Data/work/jnif/cmake-build-debug/testjars" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Volumes/Data/work/jnif/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Volumes/Data/work/jnif/src-libjnif"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 testjars/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="testunit">
+				<Option output="/Volumes/Data/work/jnif/cmake-build-debug/testunit" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Volumes/Data/work/jnif/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Volumes/Data/work/jnif/src-libjnif"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 testunit"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="testunit/fast">
+				<Option output="/Volumes/Data/work/jnif/cmake-build-debug/testunit" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Volumes/Data/work/jnif/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Volumes/Data/work/jnif/src-libjnif"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 testunit/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="jnifp">
+				<Option output="/Volumes/Data/work/jnif/cmake-build-debug/jnifp" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Volumes/Data/work/jnif/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Volumes/Data/work/jnif/src-libjnif"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 jnifp"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="jnifp/fast">
+				<Option output="/Volumes/Data/work/jnif/cmake-build-debug/jnifp" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Volumes/Data/work/jnif/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Volumes/Data/work/jnif/src-libjnif"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 jnifp/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="jnif">
+				<Option output="/Volumes/Data/work/jnif/cmake-build-debug/libjnif.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Volumes/Data/work/jnif/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Volumes/Data/work/jnif/src-libjnif"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 jnif"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="jnif/fast">
+				<Option output="/Volumes/Data/work/jnif/cmake-build-debug/libjnif.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Volumes/Data/work/jnif/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Volumes/Data/work/jnif/src-libjnif"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 jnif/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Volumes/Data/work/jnif/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/Volumes/Data/work/jnif/src-jnifp/jnifp.cpp">
+			<Option target="jnifp"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/BasicBlock.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/BasicBlock.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/ClassHierarchy.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/ClassHierarchy.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/ControlFlowGraph.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/ControlFlowGraph.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/Dominator.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/Error.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/Error.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/Frame.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/Frame.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/analysis/ComputeFrames.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/analysis/FrameGenerator.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/analysis/SmtBuilder.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/base.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/jar/JarFile.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/jar/ioapi.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/jar/ioapi.h">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/jar/unzip.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/jar/unzip.h">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/jnif.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/Arena.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/Arena.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/ClassFile.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/ClassFile.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/ConstPool.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/ConstPool.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/IClassPath.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/Inst.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/Inst.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/InstList.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/InstList.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/Member.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/Opcode.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/Type.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/Type.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/TypeFactory.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/TypeFactory.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/Version.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/Version.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/attrs/Attr.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/attrs/Attr.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/attrs/SignatureAttr.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/model/attrs/SourceFileAttr.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/AttrsParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/BootstrapMethodsAttrParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/BufferReader.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/ClassFileParser.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/ClassFileParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/ClassParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/CodeAttrParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/ConstPoolParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/ExceptionsAttrParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/LabelManager.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/LineNumberTableAttrParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/LocalVariableTableAttrParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/LocalVariableTypeTableAttrParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/SignatureAttrParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/SourceFileAttrParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/parser/StackMapTableAttrParser.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/printer.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/stream/ClassFileStream.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/stream/ClassFileStream.hpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-libjnif/writer.cpp">
+			<Option target="jnif"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-testjars/testjars.cpp">
+			<Option target="testjars"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-testjars/tests.cpp">
+			<Option target="testjars"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-testjars/tests.hpp">
+			<Option target="testjars"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/src-testunit/testunit.cpp">
+			<Option target="testunit"/>
+		</Unit>
+		<Unit filename="/Volumes/Data/work/jnif/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
