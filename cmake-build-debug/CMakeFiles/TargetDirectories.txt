@@ -1,6 +1,0 @@
-/Volumes/Data/work/jnif/cmake-build-debug/CMakeFiles/edit_cache.dir
-/Volumes/Data/work/jnif/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/Volumes/Data/work/jnif/cmake-build-debug/CMakeFiles/testjars.dir
-/Volumes/Data/work/jnif/cmake-build-debug/CMakeFiles/testunit.dir
-/Volumes/Data/work/jnif/cmake-build-debug/CMakeFiles/jnifp.dir
-/Volumes/Data/work/jnif/cmake-build-debug/CMakeFiles/jnif.dir

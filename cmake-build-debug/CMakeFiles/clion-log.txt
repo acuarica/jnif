@@ -1,4 +1,0 @@
-/Applications/CLion.app/Contents/bin/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /Volumes/Data/work/jnif
--- Configuring done
--- Generating done
--- Build files have been written to: /Volumes/Data/work/jnif/cmake-build-debug
