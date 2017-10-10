@@ -64,6 +64,7 @@ set(SOURCE_FILES
         src-libjnif/Frame.cpp
         src-libjnif/Frame.hpp
         src-libjnif/jnif.hpp
+        src-libjnif/jnif2.hpp
         src-libjnif/printer.cpp
         src-libjnif/writer.cpp
         src-libjnif/model/attrs/SignatureAttr.hpp src-libjnif/model/IClassPath.hpp src-libjnif/stream/ClassFileStream.cpp src-libjnif/model/Member.cpp)
