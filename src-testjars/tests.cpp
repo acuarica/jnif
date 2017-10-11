@@ -47,10 +47,10 @@ public:
 				// If there is a tableswitch or a lookupswitch instruction
 				// bytes added to the instruction flow must be a multiple
 				// of four to keep the padding in this instructions.
-				instList.addZero(OPCODE_nop);
-				instList.addZero(OPCODE_nop);
-				instList.addZero(OPCODE_nop);
-				instList.addZero(OPCODE_nop);
+				instList.addZero(Opcode::nop);
+				instList.addZero(Opcode::nop);
+				instList.addZero(Opcode::nop);
+				instList.addZero(Opcode::nop);
 
 				methodsWithCode++;
 			}
