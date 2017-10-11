@@ -4,8 +4,7 @@
  *  Created on: Jun 11, 2014
  *      Author: luigi
  */
-#include "Arena.hpp"
-#include "../Error.hpp"
+#include <jnif.hpp>
 #include <stdlib.h>
 #include <stdio.h>
 

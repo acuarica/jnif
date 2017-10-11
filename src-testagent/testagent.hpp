@@ -7,7 +7,7 @@
 #ifndef TESTAGENT_HPP
 #define TESTAGENT_HPP
 
-#include <jnif.hpp>
+#include <jnif-TODELETE.hpp>
 
 class Options {
 public:

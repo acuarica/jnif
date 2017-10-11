@@ -4,9 +4,7 @@
  *  Created on: Jun 6, 2014
  *      Author: luigi
  */
-#include "ControlFlowGraph.hpp"
-#include "Error.hpp"
-#include <sstream>
+#include <jnif.hpp>
 
 using namespace std;
 
@@ -17,7 +15,7 @@ namespace jnif {
         if (beginBb != eit) {
             std::stringstream ss;
             ss << "BB" << bbid;
-            String name = ss.str();
+            string name = ss.str();
 
             cfg.addBasicBlock(beginBb, eit, name);
 
@@ -132,7 +130,7 @@ namespace jnif {
     }
 
     BasicBlock* ControlFlowGraph::addBasicBlock(InstList::Iterator start,
-                                                InstList::Iterator end, const String& name) {
+                                                InstList::Iterator end, const string& name) {
         BasicBlock * const bb = new BasicBlock(start, end, name, this);
 
         if (basicBlocks.size() > 0) {

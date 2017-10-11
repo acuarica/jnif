@@ -4,8 +4,7 @@
  *  Created on: Jun 13, 2014
  *      Author: luigi
  */
-#include "Error.hpp"
-#include "base.hpp"
+#include <jnif.hpp>
 
 #include <stdio.h>
 #include <execinfo.h>

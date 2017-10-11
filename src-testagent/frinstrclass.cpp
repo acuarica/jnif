@@ -21,7 +21,7 @@
 
 #include <mutex>
 
-#include <jnif.hpp>
+#include <jnif-TODELETE.hpp>
 
 #include "testagent.hpp"
 

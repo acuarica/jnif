@@ -1,7 +1,5 @@
 
-#include "../model/ClassFile.hpp"
-
-#include "ClassFileParser.hpp"
+#include <jnif.hpp>
 
 #include "BufferReader.hpp"
 #include "ConstPoolParser.hpp"

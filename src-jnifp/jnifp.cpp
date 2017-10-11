@@ -2,10 +2,12 @@
  * Includes
  */
 
+#include <iostream>
 #include <jnif.hpp>
 
 
 #include "../src-libjnif/Dominator.hpp"
+
 
 using namespace std;
 using namespace jnif;
@@ -14,7 +16,7 @@ using namespace jnif::stream;
 class UnitTestClassPath: public IClassPath {
 public:
 
-    String getCommonSuperClass(const String&, const String&) {
+    string getCommonSuperClass(const string&, const string&) {
         return "java/lang/Object";
     }
 
@@ -30,8 +32,6 @@ void print(ControlFlowGraph& cfg) {
 }
 
 int main(int argc, const char* argv[]) {
-    auto c =  getcwd(nullptr, 0);
-    cerr << c << endl;
     if (argc <= 1) {
         cerr << "Usage: " << endl;
         cerr << "  " << argv[0] << " <class file name>.class" << endl;

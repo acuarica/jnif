@@ -8,10 +8,7 @@
 #ifndef JNIF_ANALYSIS_SMTBUILDER_HPP
 #define JNIF_ANALYSIS_SMTBUILDER_HPP
 
-#include "../model/ConstPool.hpp"
-#include "../model/Inst.hpp"
-#include "../model/TypeFactory.hpp"
-#include "../Error.hpp"
+#include <jnif.hpp>
 
 namespace jnif {
 
@@ -616,8 +613,8 @@ namespace jnif {
                 ConstPool::Index callSite = inst.indy()->callSite();
                 const ConstPool::InvokeDynamic& dyn = cp.getInvokeDynamic(callSite);
 
-                String name;
-                String desc;
+                string name;
+                string desc;
                 cp.getNameAndType(dyn.nameAndTypeIndex, &name, &desc);
 
                 //cerr << name << endl;
@@ -636,7 +633,7 @@ namespace jnif {
     private:
 
         void newinst(TypeInst& inst) {
-            const String& className = cp.getClassName(inst.type()->classIndex);
+            const string& className = cp.getClassName(inst.type()->classIndex);
             const Type& t = TypeFactory::fromConstClass(className);
             t.init = false;
             t.typeId = Type::nextTypeId;
@@ -655,7 +652,7 @@ namespace jnif {
 
         void anewarray(Inst& inst) {
             frame.popIntegral(&inst);
-            const String& className = cp.getClassName(inst.type()->classIndex);
+            const string& className = cp.getClassName(inst.type()->classIndex);
             const Type& t = TypeFactory::fromConstClass(className);
             frame.pushArray(t, t.getDims() + 1, &inst);
         }
@@ -714,7 +711,7 @@ namespace jnif {
 
         void checkcast(Inst& inst) {
             frame.popRef(&inst);
-            const String& className = cp.getClassName(inst.type()->classIndex);
+            const string& className = cp.getClassName(inst.type()->classIndex);
             frame.push(TypeFactory::fromConstClass(className), &inst);
         }
 
@@ -791,7 +788,7 @@ namespace jnif {
         }
 
         void invokeMethod(u2 methodRefIndex, bool popThis, bool isSpecial, Inst* inst) {
-            String className, name, desc;
+            string className, name, desc;
             cp.getMethodRef(methodRefIndex, &className, &name, &desc);
             invoke(className, name, desc, popThis, isSpecial, inst);
         }
@@ -808,7 +805,7 @@ namespace jnif {
         }
 
         void invokeInterface(u2 interMethodRefIndex, bool popThis, Inst* inst) {
-            String className, name, desc;
+            string className, name, desc;
             cp.getInterMethodRef(interMethodRefIndex, &className, &name, &desc);
             invoke(className, name, desc, popThis, false, inst);
         }
@@ -824,7 +821,7 @@ namespace jnif {
             }
         }
 
-        void invoke(const String& className, const String& name, const String& desc,
+        void invoke(const string& className, const string& name, const string& desc,
                     bool popThis, bool isSpecial, Inst* inst) {
             const char* d = desc.c_str();
             std::vector<Type> argsType;
@@ -856,7 +853,7 @@ namespace jnif {
         }
 
         Type fieldType(Inst& inst) {
-            String className, name, desc;
+            string className, name, desc;
             cp.getFieldRef(inst.field()->fieldRefIndex, &className, &name, &desc);
 
             const char* d = desc.c_str();
@@ -873,7 +870,7 @@ namespace jnif {
                 frame.popIntegral(&inst);
             }
 
-            String arrayClassName = cp.getClassName(inst.multiarray()->classIndex);
+            string arrayClassName = cp.getClassName(inst.multiarray()->classIndex);
             const char* d = arrayClassName.c_str();
             Type arrayType = TypeFactory::fromFieldDesc(d);
 

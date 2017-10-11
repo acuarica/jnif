@@ -8,7 +8,7 @@
 #ifndef JNIF_PARSER_SOURCEFILEATTRPARSER_HPP
 #define JNIF_PARSER_SOURCEFILEATTRPARSER_HPP
 
-#include "../model/attrs/SourceFileAttr.hpp"
+#include <jnif.hpp>
 
 namespace jnif::parser {
 

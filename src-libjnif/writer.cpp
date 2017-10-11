@@ -6,8 +6,6 @@
  */
 #include "jnif.hpp"
 
-#include "model/attrs/SourceFileAttr.hpp"
-
 using namespace std;
 
 namespace jnif {

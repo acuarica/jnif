@@ -8,7 +8,7 @@
 #ifndef JNIF_PARSER_BUFFERREADER_HPP
 #define JNIF_PARSER_BUFFERREADER_HPP
 
-#include "../Error.hpp"
+#include <jnif.hpp>
 
 namespace jnif {
 

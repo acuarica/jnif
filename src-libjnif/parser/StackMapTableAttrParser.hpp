@@ -8,7 +8,7 @@
 #ifndef JNIF_PARSER_STACKMAPTABLEATTRPARSER_HPP
 #define JNIF_PARSER_STACKMAPTABLEATTRPARSER_HPP
 
-#include "../model/TypeFactory.hpp"
+#include <jnif.hpp>
 
 namespace jnif::parser {
 
@@ -38,7 +38,7 @@ public:
 			case TYPE_OBJECT: {
 				u2 cpIndex = br->readu2();
 				JnifError::check(cp->isClass(cpIndex), "Bad cpindex: ", cpIndex);
-				String className = cp->getClassName(cpIndex);
+				string className = cp->getClassName(cpIndex);
 				return TypeFactory::objectType(className, cpIndex);
 			}
 			case TYPE_UNINIT: {

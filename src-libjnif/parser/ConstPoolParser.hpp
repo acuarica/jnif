@@ -4,7 +4,7 @@
 #ifndef JNIF_PARSER_CONSTPOOLPARSER_HPP
 #define JNIF_PARSER_CONSTPOOLPARSER_HPP
 
-#include "../model/ConstPool.hpp"
+#include <jnif.hpp>
 
 namespace jnif::parser {
 

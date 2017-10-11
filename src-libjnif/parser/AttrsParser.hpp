@@ -9,8 +9,7 @@
 #define JNIF_PARSER_ATTRSPARSER_HPP
 
 #include "BufferReader.hpp"
-#include "../model/ClassFile.hpp"
-#include "../model/attrs/Attr.hpp"
+#include <jnif.hpp>
 
 namespace jnif::parser {
 
@@ -20,7 +19,7 @@ namespace jnif::parser {
     struct AttrParser {
         template<class... TArgs>
         Attr *parse(
-                u2 nameIndex, u4 len, const u1 *data, const String &,
+                u2 nameIndex, u4 len, const u1 *data, const string &,
                 ClassFile *cp, TArgs...
         ) {
             return cp->_arena.create<UnknownAttr>(nameIndex, len, data, cp);
@@ -31,7 +30,7 @@ namespace jnif::parser {
     struct AttrParser<TAttrParser, TAttrParsers...> : AttrParser<TAttrParsers...> {
 
         template<class... TArgs>
-        Attr *parse(u2 nameIndex, u4 len, const u1 *data, const String &attrName,
+        Attr *parse(u2 nameIndex, u4 len, const u1 *data, const string &attrName,
                     ClassFile *cp, TArgs... args) {
             if (attrName == TAttrParser::AttrName) {
                 BufferReader br(data, len);
@@ -58,7 +57,7 @@ namespace jnif::parser {
 
                 br->skip(len);
 
-                String attrName = cp->getUtf8(nameIndex);
+                string attrName = cp->getUtf8(nameIndex);
 
                 Attr *a = AttrParser<TAttrParsers...>().parse(
                         nameIndex, len, data, attrName, cp, args...);

@@ -6,8 +6,6 @@
  */
 #include "jnif.hpp"
 
-#include "model/attrs/SourceFileAttr.hpp"
-
 #include <iomanip>
 
 using namespace std;
@@ -287,7 +285,7 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
         ConstPool::Index mid = inst.invoke()->methodRefIndex;
 			os << "#" << mid << " ";
 
-			String className, name, desc;
+			string className, name, desc;
 			// New in Java 8, invokespecial can be either a method ref or
 			// inter method ref.
 			if (cf.getTag(mid) == ConstPool::INTERMETHODREF) {
@@ -302,7 +300,7 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 			break;
 		}
 		case KIND_INVOKEINTERFACE: {
-			String className, name, desc;
+			string className, name, desc;
 			cf.getInterMethodRef(inst.invokeinterface()->interMethodRefIndex,
 					&className, &name, &desc);
 

@@ -16,7 +16,7 @@
 #include "frinstr.hpp"
 #include "testagent.hpp"
 
-#include <jnif.hpp>
+#include <jnif-TODELETE.hpp>
 
 #include <sstream>
 #include <fstream>

@@ -8,7 +8,7 @@
 #ifndef JNIF_PARSER_CLASSPARSER_HPP
 #define JNIF_PARSER_CLASSPARSER_HPP
 
-#include "../model/ClassFile.hpp"
+#include <jnif.hpp>
 #include "AttrsParser.hpp"
 
 namespace jnif::parser {

@@ -4,8 +4,7 @@
  *  Created on: Jun 6, 2014
  *      Author: luigi
  */
-#include "BasicBlock.hpp"
-#include "Error.hpp"
+#include <jnif.hpp>
 
 namespace jnif {
 

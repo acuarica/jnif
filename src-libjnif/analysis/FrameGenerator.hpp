@@ -19,7 +19,7 @@ public:
 
 	void setCpIndex(Type& type, InstList& instList) {
 		if (type.isObject()) {
-			const String& className = type.getClassName();
+			const string& className = type.getClassName();
 
       ConstPool::Index index = _cf.putClass(className.c_str());
 			type.setCpIndex(index);
@@ -62,7 +62,7 @@ public:
 			lvindex = 0;
 		} else {
 			//|| method->isClassInit()
-			String className = _cf.getThisClassName();
+			string className = _cf.getThisClassName();
 			if (method->isInit()) {
           Type u = TypeFactory::uninitThisType();
 				u.init = false;

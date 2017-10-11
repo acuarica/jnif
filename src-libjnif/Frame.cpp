@@ -4,9 +4,7 @@
  *  Created on: Jun 6, 2014
  *      Author: luigi
  */
-#include "Frame.hpp"
-#include "Error.hpp"
-#include "jnif.hpp"
+#include <jnif.hpp>
 #include "analysis/SmtBuilder.hpp"
 #include "analysis/ComputeFrames.hpp"
 #include "analysis/ComputeFrames.hpp"

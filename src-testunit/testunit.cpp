@@ -13,7 +13,7 @@ using namespace jnif;
 using jnif::JnifError;
 
 static void testConstPool() {
-    jnif::ConstPool cp;
+    jnif::model::ConstPool cp;
 
     auto si = cp.addString("String Test");
     auto ii = cp.addInteger(1);
@@ -29,10 +29,10 @@ static void testConstPool() {
     assertEquals(cp.getDouble(di), 4.2);
 }
 
-class UnitTestClassPath: public IClassPath {
+class UnitTestClassPath: public jnif::model::IClassPath {
 public:
 
-    String getCommonSuperClass(const String&, const String&) {
+    string getCommonSuperClass(const string&, const string&) {
         return "java/lang/Object";
     }
 
@@ -41,7 +41,7 @@ public:
 static void testEmptyModel() {
     ClassFile cf("jnif/EmptyModel", ClassFile::OBJECT);
 
-    assertEquals(String("java/lang/Object"), String(cf.getSuperClassName()));
+    assertEquals(string("java/lang/Object"), string(cf.getSuperClassName()));
     assertEquals(Version(51, 0), cf.version);
 }
 
@@ -255,7 +255,7 @@ static void testJoinStack() {
 
 typedef void (TestFunc)();
 
-static void run(TestFunc* testFunc, const String& testName) {
+static void run(TestFunc* testFunc, const string& testName) {
     cerr << "Running test " << testName << " ";
 
     try {

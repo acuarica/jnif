@@ -8,6 +8,7 @@
 #ifndef JNIF_CLASSHIERARCHY_CPP
 #define JNIF_CLASSHIERARCHY_CPP
 
+#include <jnif.hpp>
 #include "ClassHierarchy.hpp"
 #include "model/ClassFile.hpp"
 #include "Error.hpp"

@@ -2,10 +2,9 @@
 // Created by Luigi on 07.10.17.
 //
 
+#include <jnif.hpp>
 #include <fstream>
 #include <iostream>
-#include "parser/ClassFileParser.hpp"
-#include "stream/ClassFileStream.hpp"
 
 namespace jnif::stream {
 

@@ -12,6 +12,7 @@
 
 using namespace std;
 using namespace jnif;
+using namespace jnif::parser;
 
 template<typename T>
 void assertEquals(const T* lhsData, int lhsLen, const T* rhsData, int rhsLen) {
@@ -25,7 +26,7 @@ void assertEquals(const T* lhsData, int lhsLen, const T* rhsData, int rhsLen) {
 class UnitTestClassPath: public IClassPath {
 public:
 
-	String getCommonSuperClass(const String&, const String&) {
+	string getCommonSuperClass(const string&, const string&) {
 		return "java/lang/Object";
 	}
 
@@ -60,13 +61,13 @@ public:
 };
 
 void testPrinter(const JavaFile& jf) {
-	ClassFile cf(jf.data, jf.len);
+	ClassFileParser cf(jf.data, jf.len);
 	ofstream os;
 	os << cf;
 }
 
 void testSize(const JavaFile& jf) {
-	ClassFile cf(jf.data, jf.len);
+	ClassFileParser cf(jf.data, jf.len);
 
 	int newlen = cf.computeSize();
 
@@ -74,7 +75,7 @@ void testSize(const JavaFile& jf) {
 }
 
 void testWriter(const JavaFile& jf) {
-	ClassFile cf(jf.data, jf.len);
+	ClassFileParser cf(jf.data, jf.len);
 
 	int newlen = cf.computeSize();
 
@@ -90,7 +91,7 @@ void testWriter(const JavaFile& jf) {
 }
 
 void testAnalysis(const JavaFile& jf) {
-	ClassFile cf(jf.data, jf.len);
+	ClassFileParser cf(jf.data, jf.len);
 
   // cout << cf;
 
@@ -100,7 +101,7 @@ void testAnalysis(const JavaFile& jf) {
 }
 
 void testAnalysisPrinter(const JavaFile& jf) {
-	ClassFile cf(jf.data, jf.len);
+	ClassFileParser cf(jf.data, jf.len);
 
 	UnitTestClassPath cp;
 	cf.computeFrames(&cp);
@@ -110,7 +111,7 @@ void testAnalysisPrinter(const JavaFile& jf) {
 }
 
 void testAnalysisWriter(const JavaFile& jf) {
-	ClassFile cf(jf.data, jf.len);
+	ClassFileParser cf(jf.data, jf.len);
 
 	UnitTestClassPath cp;
 	cf.computeFrames(&cp);
@@ -123,7 +124,7 @@ void testAnalysisWriter(const JavaFile& jf) {
 }
 
 void testNopAdderInstrPrinter(const JavaFile& jf) {
-	ClassFile cf(jf.data, jf.len);
+	ClassFileParser cf(jf.data, jf.len);
 
 	NopAdderInstr instr(cf);
 	fstream os;
@@ -131,7 +132,7 @@ void testNopAdderInstrPrinter(const JavaFile& jf) {
 }
 
 void testNopAdderInstrSize(const JavaFile& jf) {
-	ClassFile cf(jf.data, jf.len);
+	ClassFileParser cf(jf.data, jf.len);
 
 	NopAdderInstr instr(cf);
 	int newlen = cf.computeSize();
@@ -140,7 +141,7 @@ void testNopAdderInstrSize(const JavaFile& jf) {
 }
 
 void testNopAdderInstrWriter(const JavaFile& jf) {
-	ClassFile cf(jf.data, jf.len);
+	ClassFileParser cf(jf.data, jf.len);
 
 	NopAdderInstr instr(cf);
 
@@ -151,7 +152,7 @@ void testNopAdderInstrWriter(const JavaFile& jf) {
 	u1* newdata = new u1[newlen];
 	cf.write(newdata, newlen);
 
-	ClassFile newcf(newdata, newlen);
+	ClassFileParser newcf(newdata, newlen);
 
 	int newlen2 = cf.computeSize();
 
@@ -166,7 +167,7 @@ void testNopAdderInstrWriter(const JavaFile& jf) {
 }
 
 void testNopAdderInstrAnalysisPrinter(const JavaFile& jf) {
-	ClassFile cf(jf.data, jf.len);
+	ClassFileParser cf(jf.data, jf.len);
 
 	NopAdderInstr instr(cf);
 
@@ -178,7 +179,7 @@ void testNopAdderInstrAnalysisPrinter(const JavaFile& jf) {
 }
 
 void testNopAdderInstrAnalysisWriter(const JavaFile& jf) {
-	ClassFile cf(jf.data, jf.len);
+	ClassFileParser cf(jf.data, jf.len);
 
 	NopAdderInstr instr(cf);
 

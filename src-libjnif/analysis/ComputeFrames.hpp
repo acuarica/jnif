@@ -43,8 +43,8 @@ public:
 		return false;
 	}
 
-	String getCommonSuperClass(const String& classLeft,
-			const String& classRight, IClassPath* classPath) {
+	string getCommonSuperClass(const string& classLeft,
+			const string& classRight, IClassPath* classPath) {
 		if (classLeft == "java/lang/Object"
 				|| classRight == "java/lang/Object") {
 			return "java/lang/Object";
@@ -56,10 +56,10 @@ public:
 	bool assign(Type& t, Type o, IClassPath* classPath) {
 		if (!isAssignable(t, o) && !isAssignable(o, t)) {
 			if (t.isClass() && o.isClass()) {
-				String clazz1 = t.getClassName();
-				String clazz2 = o.getClassName();
+				string clazz1 = t.getClassName();
+				string clazz2 = o.getClassName();
 
-				String res = getCommonSuperClass(clazz1, clazz2, classPath);
+				string res = getCommonSuperClass(clazz1, clazz2, classPath);
 
 				Type superClass = TypeFactory::objectType(res);
 				JnifError::assert((superClass == t) == (res == clazz1),
@@ -198,7 +198,7 @@ public:
 
     Type getExceptionType(const ConstPool& cp, ConstPool::Index catchIndex) {
 		if (catchIndex != ConstPool::NULLENTRY) {
-			const String& className = cp.getClassName(catchIndex);
+			const string& className = cp.getClassName(catchIndex);
 			return TypeFactory::fromConstClass(className);
 		} else {
 			return TypeFactory::objectType("java/lang/Throwable");

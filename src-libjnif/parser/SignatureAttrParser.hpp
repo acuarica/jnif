@@ -9,9 +9,7 @@
 #define JNIF_PARSER_SIGNATUREATTRPARSER_HPP
 
 #include "BufferReader.hpp"
-#include "../model/ClassFile.hpp"
-
-#include "../model/attrs/SignatureAttr.hpp"
+#include <jnif.hpp>
 
 namespace jnif::parser {
 
