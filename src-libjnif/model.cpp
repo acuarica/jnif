@@ -416,8 +416,6 @@ namespace jnif::model {
     }
 
     InstList::~InstList() {
-        JnifError::trace("~InstList");
-
         for (Inst* inst = first; inst != NULL;) {
             Inst* next = inst->next;
             inst->~Inst();
@@ -452,7 +450,7 @@ namespace jnif::model {
     }
 
     PushInst* InstList::addBiPush(u1 value, Inst* pos) {
-        PushInst* inst = _create<PushInst>(OPCODE_bipush, KIND_BIPUSH, value,
+        PushInst* inst = _create<PushInst>(Opcode::bipush, KIND_BIPUSH, value,
                                            constPool);
         addInst(inst, pos);
 
@@ -460,7 +458,7 @@ namespace jnif::model {
     }
 
     PushInst* InstList::addSiPush(u2 value, Inst* pos) {
-        PushInst* inst = _create<PushInst>(OPCODE_sipush, KIND_SIPUSH, value,
+        PushInst* inst = _create<PushInst>(Opcode::sipush, KIND_SIPUSH, value,
                                            constPool);
         addInst(inst, pos);
 
@@ -478,7 +476,7 @@ namespace jnif::model {
         VarInst* inst = _create<VarInst>(opcode, lvindex, constPool);
         addInst(inst, pos);
 
-        if (opcode == OPCODE_ret) {
+        if (opcode == Opcode::ret) {
             jsrOrRet = true;
         }
 
@@ -513,7 +511,7 @@ namespace jnif::model {
 
         targetLabel->isBranchTarget = true;
 
-        if (opcode == OPCODE_jsr) {
+        if (opcode == Opcode::jsr) {
             jsrOrRet = true;
         }
 
@@ -551,13 +549,13 @@ namespace jnif::model {
     }
 
     NewArrayInst* InstList::addNewArray(u1 atype, Inst* pos) {
-        NewArrayInst* inst = _create<NewArrayInst>(OPCODE_newarray, atype, constPool);
+        NewArrayInst* inst = _create<NewArrayInst>(Opcode::newarray, atype, constPool);
         addInst(inst, pos);
         return inst;
     }
 
     MultiArrayInst* InstList::addMultiArray(ConstPool::Index classIndex, u1 dims, Inst* pos) {
-        MultiArrayInst* inst = _create<MultiArrayInst>(OPCODE_multianewarray, classIndex, dims, constPool);
+        MultiArrayInst* inst = _create<MultiArrayInst>(Opcode::multianewarray, classIndex, dims, constPool);
         addInst(inst, pos);
         return inst;
     }

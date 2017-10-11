@@ -76,7 +76,7 @@ namespace jnif {
             if (last->isJump()) {
                 addTarget2(bb, last->jump()->label2, cfg);
 
-                if (last->opcode != OPCODE_goto) {
+                if (last->opcode != Opcode::GOTO) {
                     JnifError::assert(bb->next != NULL, "next bb is null");
                     bb->addTarget(bb->next);
                 }
@@ -122,8 +122,6 @@ namespace jnif {
     }
 
     ControlFlowGraph::~ControlFlowGraph() {
-        JnifError::trace("~ControlFlowGraph");
-
         for (auto bb : *this) {
             delete bb;
         }

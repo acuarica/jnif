@@ -73,13 +73,13 @@ public:
 			int offset = br.offset();
 
 			Opcode opcode = (Opcode) br.readu1();
-			OpKind kind = OPKIND[opcode];
+			OpKind kind = OPKIND[(int)opcode];
 
 			switch (kind) {
 				case KIND_ZERO:
-					if (opcode == OPCODE_wide) {
-						u1 opcodew = (Opcode) br.readu1();
-						if (opcodew == OPCODE_iinc) {
+					if (opcode == Opcode::wide) {
+						Opcode opcodew = (Opcode) br.readu1();
+						if (opcodew == Opcode::iinc) {
 							br.skip(4);
 						} else {
 							br.skip(2);
@@ -108,7 +108,7 @@ public:
 					br.skip(4);
 					break;
 				case KIND_LDC:
-					if (opcode == OPCODE_ldc) {
+					if (opcode == Opcode::ldc) {
 						br.readu1();
 					} else {
 						br.readu2();
@@ -190,7 +190,7 @@ public:
 		labelManager.putLabelIfExists(offset);
 
 		Opcode opcode = (Opcode) br.readu1();
-		u1 kind = OPKIND[opcode];
+		u1 kind = OPKIND[(int)opcode];
 
 		//Inst* instp = new Inst(opcode, kind);
 		//instp->_offset = offset;
@@ -200,9 +200,9 @@ public:
 		//inst.kind = OPKIND[inst.opcode];
 
 		if (kind == KIND_ZERO) {
-			if (opcode == OPCODE_wide) {
+			if (opcode == Opcode::wide) {
 				Opcode subOpcode = (Opcode) br.readu1();
-				if (subOpcode == OPCODE_iinc) {
+				if (subOpcode == Opcode::iinc) {
 					u2 index = br.readu2();
 					u2 value = br.readu2();
 
@@ -222,7 +222,7 @@ public:
 			return instList.addSiPush(value);
 		} else if (kind == KIND_LDC) {
 			u2 valueIndex;
-			if (opcode == OPCODE_ldc) {
+			if (opcode == Opcode::ldc) {
 				valueIndex = br.readu1();
 			} else {
 				valueIndex = br.readu2();
@@ -310,7 +310,7 @@ public:
 
 			return instList.addInvoke(opcode, methodRefIndex);
 		} else if (kind == KIND_INVOKEINTERFACE) {
-			JnifError::assert(opcode == OPCODE_invokeinterface, "invalid opcode");
+			JnifError::assert(opcode == Opcode::invokeinterface, "invalid opcode");
 
 			u2 interMethodRefIndex = br.readu2();
 			u1 count = br.readu1();

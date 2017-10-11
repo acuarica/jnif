@@ -29,6 +29,9 @@ namespace jnif {
 
     using std::string;
     using std::ostream;
+    using std::stringstream;
+    using std::vector;
+    using std::list;
 
     /**
      * Represents a byte inside the Java Class File.
@@ -58,11 +61,8 @@ namespace jnif {
          * Creates an exception given the message and the stack trace.
          *
          * @param message contains information about exceptional situation.
-         * @param stackTrace the stack trace where this exception happened.
          */
-        JnifException(const string& message, const string& stackTrace = "") :
-                message(message), stackTrace(stackTrace) {
-        }
+        JnifException(const string& message);
 
         /**
          * Returns information about the exceptional situation.
@@ -84,23 +84,21 @@ namespace jnif {
     class WriterException : public JnifException {
     public:
 
-        WriterException(const string& message, const string& stackTrace) :
-                JnifException(message, stackTrace) {
-        }
+        WriterException(const string& message) : JnifException(message) {}
+
     };
 
     class InvalidMethodLengthException : public WriterException {
     public:
-        InvalidMethodLengthException(const string& message,
-                                     const string& stackTrace) :
-                WriterException(message, stackTrace) {
+
+        InvalidMethodLengthException(const string& message) : WriterException(message) {
         }
     };
 
-    void _backtrace(std::ostream& os);
-
     /**
-     * This class contains static method to facilitate error handling mechanism.
+     * Contains static method to facilitate error handling mechanism.
+     *
+     * @tparam TException The type of exception to be thrown in case of error.
      */
     template<typename TException>
     class Error {
@@ -108,13 +106,10 @@ namespace jnif {
 
         template<typename ... TArgs>
         static void raise(const TArgs& ... args) __attribute__((noreturn)) {
-            std::stringstream message;
+            stringstream message;
             _format(message, args...);
 
-            std::stringstream stackTrace;
-            _backtrace(stackTrace);
-
-            throw TException(message.str(), stackTrace.str());
+            throw TException(message.str());
         }
 
         template<typename ... TArgs>
@@ -141,28 +136,13 @@ namespace jnif {
             }
         }
 
-#ifdef TRACE
-        template<typename ... TArgs>
-    static void trace(const TArgs& ... args) {
-    _format(std::cerr, args...);
-    std::cerr << std::endl;
-  }
-#else
-
-        template<typename ... TArgs>
-        static void trace(const TArgs& ...) {
-        }
-
-#endif
-
     private:
 
-        static inline void _format(std::ostream&) {
+        static inline void _format(ostream&) {
         }
 
         template<typename TArg, typename ... TArgs>
-        static inline void _format(std::ostream& os, const TArg& arg,
-                                   const TArgs& ... args) {
+        static inline void _format(ostream& os, const TArg& arg, const TArgs& ... args) {
             os << arg;
             _format(os, args...);
         }
@@ -186,16 +166,17 @@ namespace jnif {
     class Arena {
     public:
 
+        static constexpr int BLOCK_SIZE = 1024 * 1024;
+
         Arena(const Arena&) = delete;
 
         Arena(Arena&) = delete;
 
         Arena(const Arena&&) = delete;
 
-        Arena();
+        Arena(int blockSize = BLOCK_SIZE);
 
         ~Arena();
-
 
         void* alloc(int size);
 
@@ -214,6 +195,8 @@ namespace jnif {
     private:
 
         class Block;
+
+        int blockSize;
 
         Block* _head;
 
@@ -516,9 +499,11 @@ namespace jnif {
             /// Represents the invalid (null) item, which must not be asked for.
             static const Index NULLINDEX = 0;
 
-            /// Initializes an empty constant pool. The valid indices start from 1
-            /// inclusive, because the null entry (index 0) is added by default.
-            ConstPool(size_t initialCapacity = 4096) {
+            /**
+             * Initializes an empty constant pool. The valid indices start from 1
+             * inclusive, because the null entry (index 0) is added by default.
+             */
+            explicit ConstPool(size_t initialCapacity = 4096) {
                 entries.reserve(initialCapacity);
                 entries.emplace_back();
             }
@@ -779,9 +764,10 @@ namespace jnif {
                 }
             }
 
-            std::vector<Item> entries;
+            vector<Item> entries;
 
         private:
+
 
             template<class... TArgs>
             Index _addSingle(TArgs... args);
@@ -841,7 +827,7 @@ namespace jnif {
              * @param majorVersion
              * @param minorVersion
              */
-            Version(u2 majorVersion = 51, u2 minorVersion = 0);
+            explicit Version(u2 majorVersion = 51, u2 minorVersion = 0);
 
             /**
              * @return The major version number.
@@ -854,7 +840,7 @@ namespace jnif {
             u2 minorVersion() const;
 
             /**
-             * Taken from the oficial JVM specification.
+             * Taken from the official JVM specification.
              *
              * Oracle's Java Virtual Machine implementation in JDK release 1.0.2
              * supports class file format versions 45.0 through 45.3 inclusive.
@@ -863,7 +849,7 @@ namespace jnif {
              * For k >= 2, JDK release 1.k supports class file format versions in
              * the range 45.0 through 44+k.0 inclusive.
              */
-            std::string supportedByJdk() const;
+            string supportedByJdk() const;
 
             /**
              * Equals comparator.
@@ -910,215 +896,215 @@ namespace jnif {
         ///
         /// http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-6.html
         /// http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-7.html
-        enum Opcode {
-            OPCODE_nop = 0x00,
-            OPCODE_aconst_null = 0x01,
-            OPCODE_iconst_m1 = 0x02,
-            OPCODE_iconst_0 = 0x03,
-            OPCODE_iconst_1 = 0x04,
-            OPCODE_iconst_2 = 0x05,
-            OPCODE_iconst_3 = 0x06,
-            OPCODE_iconst_4 = 0x07,
-            OPCODE_iconst_5 = 0x08,
-            OPCODE_lconst_0 = 0x09,
-            OPCODE_lconst_1 = 0x0a,
-            OPCODE_fconst_0 = 0x0b,
-            OPCODE_fconst_1 = 0x0c,
-            OPCODE_fconst_2 = 0x0d,
-            OPCODE_dconst_0 = 0x0e,
-            OPCODE_dconst_1 = 0x0f,
-            OPCODE_bipush = 0x10,
-            OPCODE_sipush = 0x11,
-            OPCODE_ldc = 0x12,
-            OPCODE_ldc_w = 0x13,
-            OPCODE_ldc2_w = 0x14,
-            OPCODE_iload = 0x15,
-            OPCODE_lload = 0x16,
-            OPCODE_fload = 0x17,
-            OPCODE_dload = 0x18,
-            OPCODE_aload = 0x19,
-            OPCODE_iload_0 = 0x1a,
-            OPCODE_iload_1 = 0x1b,
-            OPCODE_iload_2 = 0x1c,
-            OPCODE_iload_3 = 0x1d,
-            OPCODE_lload_0 = 0x1e,
-            OPCODE_lload_1 = 0x1f,
-            OPCODE_lload_2 = 0x20,
-            OPCODE_lload_3 = 0x21,
-            OPCODE_fload_0 = 0x22,
-            OPCODE_fload_1 = 0x23,
-            OPCODE_fload_2 = 0x24,
-            OPCODE_fload_3 = 0x25,
-            OPCODE_dload_0 = 0x26,
-            OPCODE_dload_1 = 0x27,
-            OPCODE_dload_2 = 0x28,
-            OPCODE_dload_3 = 0x29,
-            OPCODE_aload_0 = 0x2a,
-            OPCODE_aload_1 = 0x2b,
-            OPCODE_aload_2 = 0x2c,
-            OPCODE_aload_3 = 0x2d,
-            OPCODE_iaload = 0x2e,
-            OPCODE_laload = 0x2f,
-            OPCODE_faload = 0x30,
-            OPCODE_daload = 0x31,
-            OPCODE_aaload = 0x32,
-            OPCODE_baload = 0x33,
-            OPCODE_caload = 0x34,
-            OPCODE_saload = 0x35,
-            OPCODE_istore = 0x36,
-            OPCODE_lstore = 0x37,
-            OPCODE_fstore = 0x38,
-            OPCODE_dstore = 0x39,
-            OPCODE_astore = 0x3a,
-            OPCODE_istore_0 = 0x3b,
-            OPCODE_istore_1 = 0x3c,
-            OPCODE_istore_2 = 0x3d,
-            OPCODE_istore_3 = 0x3e,
-            OPCODE_lstore_0 = 0x3f,
-            OPCODE_lstore_1 = 0x40,
-            OPCODE_lstore_2 = 0x41,
-            OPCODE_lstore_3 = 0x42,
-            OPCODE_fstore_0 = 0x43,
-            OPCODE_fstore_1 = 0x44,
-            OPCODE_fstore_2 = 0x45,
-            OPCODE_fstore_3 = 0x46,
-            OPCODE_dstore_0 = 0x47,
-            OPCODE_dstore_1 = 0x48,
-            OPCODE_dstore_2 = 0x49,
-            OPCODE_dstore_3 = 0x4a,
-            OPCODE_astore_0 = 0x4b,
-            OPCODE_astore_1 = 0x4c,
-            OPCODE_astore_2 = 0x4d,
-            OPCODE_astore_3 = 0x4e,
-            OPCODE_iastore = 0x4f,
-            OPCODE_lastore = 0x50,
-            OPCODE_fastore = 0x51,
-            OPCODE_dastore = 0x52,
-            OPCODE_aastore = 0x53,
-            OPCODE_bastore = 0x54,
-            OPCODE_castore = 0x55,
-            OPCODE_sastore = 0x56,
-            OPCODE_pop = 0x57,
-            OPCODE_pop2 = 0x58,
-            OPCODE_dup = 0x59,
-            OPCODE_dup_x1 = 0x5a,
-            OPCODE_dup_x2 = 0x5b,
-            OPCODE_dup2 = 0x5c,
-            OPCODE_dup2_x1 = 0x5d,
-            OPCODE_dup2_x2 = 0x5e,
-            OPCODE_swap = 0x5f,
-            OPCODE_iadd = 0x60,
-            OPCODE_ladd = 0x61,
-            OPCODE_fadd = 0x62,
-            OPCODE_dadd = 0x63,
-            OPCODE_isub = 0x64,
-            OPCODE_lsub = 0x65,
-            OPCODE_fsub = 0x66,
-            OPCODE_dsub = 0x67,
-            OPCODE_imul = 0x68,
-            OPCODE_lmul = 0x69,
-            OPCODE_fmul = 0x6a,
-            OPCODE_dmul = 0x6b,
-            OPCODE_idiv = 0x6c,
-            OPCODE_ldiv = 0x6d,
-            OPCODE_fdiv = 0x6e,
-            OPCODE_ddiv = 0x6f,
-            OPCODE_irem = 0x70,
-            OPCODE_lrem = 0x71,
-            OPCODE_frem = 0x72,
-            OPCODE_drem = 0x73,
-            OPCODE_ineg = 0x74,
-            OPCODE_lneg = 0x75,
-            OPCODE_fneg = 0x76,
-            OPCODE_dneg = 0x77,
-            OPCODE_ishl = 0x78,
-            OPCODE_lshl = 0x79,
-            OPCODE_ishr = 0x7a,
-            OPCODE_lshr = 0x7b,
-            OPCODE_iushr = 0x7c,
-            OPCODE_lushr = 0x7d,
-            OPCODE_iand = 0x7e,
-            OPCODE_land = 0x7f,
-            OPCODE_ior = 0x80,
-            OPCODE_lor = 0x81,
-            OPCODE_ixor = 0x82,
-            OPCODE_lxor = 0x83,
-            OPCODE_iinc = 0x84,
-            OPCODE_i2l = 0x85,
-            OPCODE_i2f = 0x86,
-            OPCODE_i2d = 0x87,
-            OPCODE_l2i = 0x88,
-            OPCODE_l2f = 0x89,
-            OPCODE_l2d = 0x8a,
-            OPCODE_f2i = 0x8b,
-            OPCODE_f2l = 0x8c,
-            OPCODE_f2d = 0x8d,
-            OPCODE_d2i = 0x8e,
-            OPCODE_d2l = 0x8f,
-            OPCODE_d2f = 0x90,
-            OPCODE_i2b = 0x91,
-            OPCODE_i2c = 0x92,
-            OPCODE_i2s = 0x93,
-            OPCODE_lcmp = 0x94,
-            OPCODE_fcmpl = 0x95,
-            OPCODE_fcmpg = 0x96,
-            OPCODE_dcmpl = 0x97,
-            OPCODE_dcmpg = 0x98,
-            OPCODE_ifeq = 0x99,
-            OPCODE_ifne = 0x9a,
-            OPCODE_iflt = 0x9b,
-            OPCODE_ifge = 0x9c,
-            OPCODE_ifgt = 0x9d,
-            OPCODE_ifle = 0x9e,
-            OPCODE_if_icmpeq = 0x9f,
-            OPCODE_if_icmpne = 0xa0,
-            OPCODE_if_icmplt = 0xa1,
-            OPCODE_if_icmpge = 0xa2,
-            OPCODE_if_icmpgt = 0xa3,
-            OPCODE_if_icmple = 0xa4,
-            OPCODE_if_acmpeq = 0xa5,
-            OPCODE_if_acmpne = 0xa6,
-            OPCODE_goto = 0xa7,
-            OPCODE_jsr = 0xa8,
-            OPCODE_ret = 0xa9,
-            OPCODE_tableswitch = 0xaa,
-            OPCODE_lookupswitch = 0xab,
-            OPCODE_ireturn = 0xac,
-            OPCODE_lreturn = 0xad,
-            OPCODE_freturn = 0xae,
-            OPCODE_dreturn = 0xaf,
-            OPCODE_areturn = 0xb0,
-            OPCODE_return = 0xb1,
-            OPCODE_getstatic = 0xb2,
-            OPCODE_putstatic = 0xb3,
-            OPCODE_getfield = 0xb4,
-            OPCODE_putfield = 0xb5,
-            OPCODE_invokevirtual = 0xb6,
-            OPCODE_invokespecial = 0xb7,
-            OPCODE_invokestatic = 0xb8,
-            OPCODE_invokeinterface = 0xb9,
-            OPCODE_invokedynamic = 0xba,
-            OPCODE_new = 0xbb,
-            OPCODE_newarray = 0xbc,
-            OPCODE_anewarray = 0xbd,
-            OPCODE_arraylength = 0xbe,
-            OPCODE_athrow = 0xbf,
-            OPCODE_checkcast = 0xc0,
-            OPCODE_instanceof = 0xc1,
-            OPCODE_monitorenter = 0xc2,
-            OPCODE_monitorexit = 0xc3,
-            OPCODE_wide = 0xc4,
-            OPCODE_multianewarray = 0xc5,
-            OPCODE_ifnull = 0xc6,
-            OPCODE_ifnonnull = 0xc7,
-            OPCODE_goto_w = 0xc8,
-            OPCODE_jsr_w = 0xc9,
-            OPCODE_breakpoint = 0xca,
-            OPCODE_impdep1 = 0xfe,
-            OPCODE_impdep2 = 0xff
+        enum class Opcode {
+            nop = 0x00,
+            aconst_null = 0x01,
+            iconst_m1 = 0x02,
+            iconst_0 = 0x03,
+            iconst_1 = 0x04,
+            iconst_2 = 0x05,
+            iconst_3 = 0x06,
+            iconst_4 = 0x07,
+            iconst_5 = 0x08,
+            lconst_0 = 0x09,
+            lconst_1 = 0x0a,
+            fconst_0 = 0x0b,
+            fconst_1 = 0x0c,
+            fconst_2 = 0x0d,
+            dconst_0 = 0x0e,
+            dconst_1 = 0x0f,
+            bipush = 0x10,
+            sipush = 0x11,
+            ldc = 0x12,
+            ldc_w = 0x13,
+            ldc2_w = 0x14,
+            iload = 0x15,
+            lload = 0x16,
+            fload = 0x17,
+            dload = 0x18,
+            aload = 0x19,
+            iload_0 = 0x1a,
+            iload_1 = 0x1b,
+            iload_2 = 0x1c,
+            iload_3 = 0x1d,
+            lload_0 = 0x1e,
+            lload_1 = 0x1f,
+            lload_2 = 0x20,
+            lload_3 = 0x21,
+            fload_0 = 0x22,
+            fload_1 = 0x23,
+            fload_2 = 0x24,
+            fload_3 = 0x25,
+            dload_0 = 0x26,
+            dload_1 = 0x27,
+            dload_2 = 0x28,
+            dload_3 = 0x29,
+            aload_0 = 0x2a,
+            aload_1 = 0x2b,
+            aload_2 = 0x2c,
+            aload_3 = 0x2d,
+            iaload = 0x2e,
+            laload = 0x2f,
+            faload = 0x30,
+            daload = 0x31,
+            aaload = 0x32,
+            baload = 0x33,
+            caload = 0x34,
+            saload = 0x35,
+            istore = 0x36,
+            lstore = 0x37,
+            fstore = 0x38,
+            dstore = 0x39,
+            astore = 0x3a,
+            istore_0 = 0x3b,
+            istore_1 = 0x3c,
+            istore_2 = 0x3d,
+            istore_3 = 0x3e,
+            lstore_0 = 0x3f,
+            lstore_1 = 0x40,
+            lstore_2 = 0x41,
+            lstore_3 = 0x42,
+            fstore_0 = 0x43,
+            fstore_1 = 0x44,
+            fstore_2 = 0x45,
+            fstore_3 = 0x46,
+            dstore_0 = 0x47,
+            dstore_1 = 0x48,
+            dstore_2 = 0x49,
+            dstore_3 = 0x4a,
+            astore_0 = 0x4b,
+            astore_1 = 0x4c,
+            astore_2 = 0x4d,
+            astore_3 = 0x4e,
+            iastore = 0x4f,
+            lastore = 0x50,
+            fastore = 0x51,
+            dastore = 0x52,
+            aastore = 0x53,
+            bastore = 0x54,
+            castore = 0x55,
+            sastore = 0x56,
+            pop = 0x57,
+            pop2 = 0x58,
+            dup = 0x59,
+            dup_x1 = 0x5a,
+            dup_x2 = 0x5b,
+            dup2 = 0x5c,
+            dup2_x1 = 0x5d,
+            dup2_x2 = 0x5e,
+            swap = 0x5f,
+            iadd = 0x60,
+            ladd = 0x61,
+            fadd = 0x62,
+            dadd = 0x63,
+            isub = 0x64,
+            lsub = 0x65,
+            fsub = 0x66,
+            dsub = 0x67,
+            imul = 0x68,
+            lmul = 0x69,
+            fmul = 0x6a,
+            dmul = 0x6b,
+            idiv = 0x6c,
+            ldiv = 0x6d,
+            fdiv = 0x6e,
+            ddiv = 0x6f,
+            irem = 0x70,
+            lrem = 0x71,
+            frem = 0x72,
+            drem = 0x73,
+            ineg = 0x74,
+            lneg = 0x75,
+            fneg = 0x76,
+            dneg = 0x77,
+            ishl = 0x78,
+            lshl = 0x79,
+            ishr = 0x7a,
+            lshr = 0x7b,
+            iushr = 0x7c,
+            lushr = 0x7d,
+            iand = 0x7e,
+            land = 0x7f,
+            ior = 0x80,
+            lor = 0x81,
+            ixor = 0x82,
+            lxor = 0x83,
+            iinc = 0x84,
+            i2l = 0x85,
+            i2f = 0x86,
+            i2d = 0x87,
+            l2i = 0x88,
+            l2f = 0x89,
+            l2d = 0x8a,
+            f2i = 0x8b,
+            f2l = 0x8c,
+            f2d = 0x8d,
+            d2i = 0x8e,
+            d2l = 0x8f,
+            d2f = 0x90,
+            i2b = 0x91,
+            i2c = 0x92,
+            i2s = 0x93,
+            lcmp = 0x94,
+            fcmpl = 0x95,
+            fcmpg = 0x96,
+            dcmpl = 0x97,
+            dcmpg = 0x98,
+            ifeq = 0x99,
+            ifne = 0x9a,
+            iflt = 0x9b,
+            ifge = 0x9c,
+            ifgt = 0x9d,
+            ifle = 0x9e,
+            if_icmpeq = 0x9f,
+            if_icmpne = 0xa0,
+            if_icmplt = 0xa1,
+            if_icmpge = 0xa2,
+            if_icmpgt = 0xa3,
+            if_icmple = 0xa4,
+            if_acmpeq = 0xa5,
+            if_acmpne = 0xa6,
+            GOTO = 0xa7,
+            jsr = 0xa8,
+            ret = 0xa9,
+            tableswitch = 0xaa,
+            lookupswitch = 0xab,
+            ireturn = 0xac,
+            lreturn = 0xad,
+            freturn = 0xae,
+            dreturn = 0xaf,
+            areturn = 0xb0,
+            RETURN = 0xb1,
+            getstatic = 0xb2,
+            putstatic = 0xb3,
+            getfield = 0xb4,
+            putfield = 0xb5,
+            invokevirtual = 0xb6,
+            invokespecial = 0xb7,
+            invokestatic = 0xb8,
+            invokeinterface = 0xb9,
+            invokedynamic = 0xba,
+            NEW = 0xbb,
+            newarray = 0xbc,
+            anewarray = 0xbd,
+            arraylength = 0xbe,
+            athrow = 0xbf,
+            checkcast = 0xc0,
+            instanceof = 0xc1,
+            monitorenter = 0xc2,
+            monitorexit = 0xc3,
+            wide = 0xc4,
+            multianewarray = 0xc5,
+            ifnull = 0xc6,
+            ifnonnull = 0xc7,
+            goto_w = 0xc8,
+            jsr_w = 0xc9,
+            breakpoint = 0xca,
+            impdep1 = 0xfe,
+            impdep2 = 0xff
         };
 
-        std::ostream& operator<<(std::ostream& os, Opcode opcode);
+        ostream& operator<<(ostream& os, Opcode opcode);
 
         class IClassPath {
         public:
@@ -1130,7 +1116,6 @@ namespace jnif {
                                                const string& className2) = 0;
 
         };
-
 
         class ClassFile;
 
@@ -1215,8 +1200,8 @@ namespace jnif {
             }
 
             bool isExit() const {
-                return (opcode >= OPCODE_ireturn && opcode <= OPCODE_return)
-                       || opcode == OPCODE_athrow;
+                return (opcode >= Opcode::ireturn && opcode <= Opcode::RETURN)
+                       || opcode == Opcode::athrow;
             }
 
             bool isLabel() const {
@@ -1268,7 +1253,7 @@ namespace jnif {
             }
 
             bool isWide() const {
-                return opcode == OPCODE_wide && kind == KIND_ZERO;
+                return opcode == Opcode::wide && kind == KIND_ZERO;
             }
 
             bool isField() const {
@@ -1280,7 +1265,7 @@ namespace jnif {
             }
 
             bool isJsrOrRet() const {
-                return opcode == OPCODE_jsr || opcode == OPCODE_jsr_w || opcode == OPCODE_ret;
+                return opcode == Opcode::jsr || opcode == Opcode::jsr_w || opcode == Opcode::ret;
             }
 
             /**
@@ -1430,7 +1415,7 @@ namespace jnif {
         private:
 
             Inst() :
-                    opcode(OPCODE_nop), kind(KIND_ZERO), _offset(0), constPool(NULL), prev(NULL), next(NULL) {
+                    opcode(Opcode::nop), kind(KIND_ZERO), _offset(0), constPool(NULL), prev(NULL), next(NULL) {
             }
 
             Inst(Opcode opcode, OpKind kind, const ConstPool* constPool, Inst* prev = NULL, Inst* next = NULL) :
@@ -1461,7 +1446,7 @@ namespace jnif {
         public:
 
             LabelInst(ConstPool* constPool, int id) :
-                    Inst(OPCODE_nop, KIND_LABEL, constPool), offset(0), deltaOffset(0), id(
+                    Inst(Opcode::nop, KIND_LABEL, constPool), offset(0), deltaOffset(0), id(
                     id), isBranchTarget(false), isTryStart(false), isCatchHandler(false) {
             }
 
@@ -1546,7 +1531,7 @@ namespace jnif {
         public:
 
             IincInst(u1 index, u1 value, ConstPool* constPool) :
-                    Inst(OPCODE_iinc, KIND_IINC, constPool), index(index), value(value) {
+                    Inst(Opcode::iinc, KIND_IINC, constPool), index(index), value(value) {
             }
 
             const u1 index;
@@ -1563,16 +1548,16 @@ namespace jnif {
         public:
 
             WideInst(Opcode subOpcode, u2 lvindex, ConstPool* constPool) :
-                    Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(subOpcode) {
-                if (subOpcode == OPCODE_ret) {
-                    throw JnifException("Ret found in wide instruction!!!", "no bt");
+                    Inst(Opcode::wide, KIND_ZERO, constPool), subOpcode(subOpcode) {
+                if (subOpcode == Opcode::ret) {
+                    throw JnifException("Ret found in wide instruction!!!");
                 }
 
                 var.lvindex = lvindex;
             }
 
             WideInst(u2 index, u2 value, ConstPool* constPool) :
-                    Inst(OPCODE_wide, KIND_ZERO, constPool), subOpcode(OPCODE_iinc) {
+                    Inst(Opcode::wide, KIND_ZERO, constPool), subOpcode(Opcode::iinc) {
                 iinc.index = index;
                 iinc.value = value;
             }
@@ -1650,7 +1635,7 @@ namespace jnif {
 
             InvokeInterfaceInst(ConstPool::Index interMethodRefIndex, u1 count,
                                 ConstPool* constPool) :
-                    Inst(OPCODE_invokeinterface, KIND_INVOKEINTERFACE, constPool), interMethodRefIndex(
+                    Inst(Opcode::invokeinterface, KIND_INVOKEINTERFACE, constPool), interMethodRefIndex(
                     interMethodRefIndex), count(count) {
             }
 
@@ -1668,7 +1653,7 @@ namespace jnif {
         public:
 
             InvokeDynamicInst(ConstPool::Index callSite, ConstPool* constPool) :
-                    Inst(OPCODE_invokedynamic, KIND_INVOKEDYNAMIC, constPool), _callSite(callSite) {
+                    Inst(Opcode::invokedynamic, KIND_INVOKEDYNAMIC, constPool), _callSite(callSite) {
             }
 
             /**
@@ -1784,7 +1769,7 @@ namespace jnif {
         public:
 
             TableSwitchInst(LabelInst* def, int low, int high, ConstPool* constPool) :
-                    SwitchInst(OPCODE_tableswitch, KIND_TABLESWITCH, constPool), def(def), low(low), high(high) {
+                    SwitchInst(Opcode::tableswitch, KIND_TABLESWITCH, constPool), def(def), low(low), high(high) {
             }
 
             Inst* def;
@@ -1802,7 +1787,7 @@ namespace jnif {
         public:
 
             LookupSwitchInst(LabelInst* def, u4 npairs, ConstPool* constPool) :
-                    SwitchInst(OPCODE_lookupswitch, KIND_LOOKUPSWITCH, constPool), defbyte(def), npairs(npairs) {
+                    SwitchInst(Opcode::lookupswitch, KIND_LOOKUPSWITCH, constPool), defbyte(def), npairs(npairs) {
             }
 
 
@@ -1812,7 +1797,7 @@ namespace jnif {
 
         };
 
-        std::ostream& operator<<(std::ostream& os, const Inst& inst);
+        ostream& operator<<(ostream& os, const Inst& inst);
 
 /**
  * Represents the bytecode of a method.
@@ -1947,7 +1932,7 @@ namespace jnif {
 
         };
 
-        std::ostream& operator<<(std::ostream& os, const InstList& instList);
+        ostream& operator<<(ostream& os, const InstList& instList);
 
         enum TypeTag {
             TYPE_TOP = 0,
@@ -2775,7 +2760,9 @@ namespace jnif {
         };
 
 
-        /// Models a Java Class File following the specification of the JVM version 7.
+        /**
+         * Models a Java Class File following the specification of the JVM version 7.
+         */
         class ClassFile : public ConstPool {
 
             ClassFile(const ClassFile&) = delete;
@@ -2788,10 +2775,14 @@ namespace jnif {
 
         public:
 
-            /// Access flags for the class itself.
+            /**
+             * Access flags for the class itself.
+             */
             enum Flags {
 
-                /// Declared public; may be accessed from outside its package.
+                /**
+                 * Declared public; may be accessed from outside its package.
+                 */
                         PUBLIC = 0x0001,
 
                 /// Declared final; no subclasses allowed.
@@ -2930,7 +2921,7 @@ namespace jnif {
                 return addMethod(nameIndex, descIndex, accessFlags);
             }
 
-            std::list<Method>::iterator getMethod(const char* methodName);
+            list<Method>::iterator getMethod(const char* methodName);
 
             /**
              * Computes the size in bytes of this class file of the in-memory

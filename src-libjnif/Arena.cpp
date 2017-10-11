@@ -5,31 +5,26 @@
  *      Author: luigi
  */
 #include <jnif.hpp>
-#include <stdlib.h>
-#include <stdio.h>
-
-constexpr int BLOCK_SIZE = 1024 * 1024;
 
 namespace jnif {
 
     class Arena::Block {
     public:
 
-        Block(Block *next) :
-                _next(next), _buffer(malloc(BLOCK_SIZE)), _position(0) {
+        Block(Block* next, int blockSize) :
+                _next(next), _buffer(malloc(blockSize)), _position(0) {
             JnifError::check(_buffer != nullptr, "Block alloc is NULL");
         }
 
         ~Block() {
-            JnifError::trace("Block::~Block");
             free(_buffer);
         }
 
-        void *alloc(int size) {
+        void* alloc(int size) {
             JnifError::assert(size <= BLOCK_SIZE, "Size too large for a block: ", size);
 
             if (_position + size <= BLOCK_SIZE) {
-                void *offset = (char *) _buffer + _position;
+                void* offset = (char*) _buffer + _position;
                 _position += size;
                 return offset;
             }
@@ -37,27 +32,28 @@ namespace jnif {
             return nullptr;
         }
 
-        Block *_next;
-        void *_buffer;
+        Block* _next;
+        void* _buffer;
         int _position;
     };
 
-    Arena::Arena() :
-            _head(new Block(nullptr)) {
+    Arena::Arena(int blockSize) :
+            blockSize(blockSize),
+            _head(new Block(nullptr, blockSize)) {
     }
 
     Arena::~Arena() {
-        for (Block *block = _head; block != nullptr;) {
-            Block *next = block->_next;
+        for (Block* block = _head; block != nullptr;) {
+            Block* next = block->_next;
             delete block;
             block = next;
         }
     }
 
-    void *Arena::alloc(int size) {
-        void *res = _head->alloc(size);
+    void* Arena::alloc(int size) {
+        void* res = _head->alloc(size);
         if (res == NULL) {
-            _head = new Block(_head);
+            _head = new Block(_head, blockSize);
             res = _head->alloc(size);
         }
 

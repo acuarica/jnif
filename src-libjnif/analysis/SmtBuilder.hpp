@@ -26,255 +26,255 @@ namespace jnif {
 
         void exec(Inst& inst) {
             switch (inst.opcode) {
-            case OPCODE_nop:
+            case Opcode::nop:
                 break;
-            case OPCODE_aconst_null:
+            case Opcode::aconst_null:
                 frame.pushNull(&inst);
                 break;
-            case OPCODE_iconst_m1:
-            case OPCODE_iconst_0:
-            case OPCODE_iconst_1:
-            case OPCODE_iconst_2:
-            case OPCODE_iconst_3:
-            case OPCODE_iconst_4:
-            case OPCODE_iconst_5:
-            case OPCODE_bipush:
-            case OPCODE_sipush:
+            case Opcode::iconst_m1:
+            case Opcode::iconst_0:
+            case Opcode::iconst_1:
+            case Opcode::iconst_2:
+            case Opcode::iconst_3:
+            case Opcode::iconst_4:
+            case Opcode::iconst_5:
+            case Opcode::bipush:
+            case Opcode::sipush:
                 frame.pushInt(&inst);
                 break;
-            case OPCODE_lconst_0:
-            case OPCODE_lconst_1:
+            case Opcode::lconst_0:
+            case Opcode::lconst_1:
                 frame.pushLong(&inst);
                 break;
-            case OPCODE_fconst_0:
-            case OPCODE_fconst_1:
-            case OPCODE_fconst_2:
+            case Opcode::fconst_0:
+            case Opcode::fconst_1:
+            case Opcode::fconst_2:
                 frame.pushFloat(&inst);
                 break;
-            case OPCODE_dconst_0:
-            case OPCODE_dconst_1:
+            case Opcode::dconst_0:
+            case Opcode::dconst_1:
                 frame.pushDouble(&inst);
                 break;
-            case OPCODE_ldc:
-            case OPCODE_ldc_w:
+            case Opcode::ldc:
+            case Opcode::ldc_w:
                 ldc(inst);
                 break;
-            case OPCODE_ldc2_w:
+            case Opcode::ldc2_w:
                 ldc2(inst);
                 break;
-            case OPCODE_iload:
+            case Opcode::iload:
                 iload(inst.var()->lvindex, &inst);
                 break;
-            case OPCODE_iload_0:
+            case Opcode::iload_0:
                 iload(0, &inst);
                 break;
-            case OPCODE_iload_1:
+            case Opcode::iload_1:
                 iload(1, &inst);
                 break;
-            case OPCODE_iload_2:
+            case Opcode::iload_2:
                 iload(2, &inst);
                 break;
-            case OPCODE_iload_3:
+            case Opcode::iload_3:
                 iload(3, &inst);
                 break;
-            case OPCODE_lload:
+            case Opcode::lload:
                 lload(inst.var()->lvindex, &inst);
                 break;
-            case OPCODE_lload_0:
+            case Opcode::lload_0:
                 lload(0, &inst);
                 break;
-            case OPCODE_lload_1:
+            case Opcode::lload_1:
                 lload(1, &inst);
                 break;
-            case OPCODE_lload_2:
+            case Opcode::lload_2:
                 lload(2, &inst);
                 break;
-            case OPCODE_lload_3:
+            case Opcode::lload_3:
                 lload(3, &inst);
                 break;
-            case OPCODE_fload:
+            case Opcode::fload:
                 fload(inst.var()->lvindex, &inst);
                 break;
-            case OPCODE_fload_0:
+            case Opcode::fload_0:
                 fload(0, &inst);
                 break;
-            case OPCODE_fload_1:
+            case Opcode::fload_1:
                 fload(1, &inst);
                 break;
-            case OPCODE_fload_2:
+            case Opcode::fload_2:
                 fload(2, &inst);
                 break;
-            case OPCODE_fload_3:
+            case Opcode::fload_3:
                 fload(3, &inst);
                 break;
-            case OPCODE_dload:
+            case Opcode::dload:
                 dload(inst.var()->lvindex, &inst);
                 break;
-            case OPCODE_dload_0:
+            case Opcode::dload_0:
                 dload(0, &inst);
                 break;
-            case OPCODE_dload_1:
+            case Opcode::dload_1:
                 dload(1, &inst);
                 break;
-            case OPCODE_dload_2:
+            case Opcode::dload_2:
                 dload(2, &inst);
                 break;
-            case OPCODE_dload_3:
+            case Opcode::dload_3:
                 dload(3, &inst);
                 break;
-            case OPCODE_aload:
+            case Opcode::aload:
                 aload(inst.var()->lvindex, &inst);
                 break;
-            case OPCODE_aload_0:
+            case Opcode::aload_0:
                 aload(0, &inst);
                 break;
-            case OPCODE_aload_1:
+            case Opcode::aload_1:
                 aload(1, &inst);
                 break;
-            case OPCODE_aload_2:
+            case Opcode::aload_2:
                 aload(2, &inst);
                 break;
-            case OPCODE_aload_3:
+            case Opcode::aload_3:
                 aload(3, &inst);
                 break;
-            case OPCODE_iaload:
-            case OPCODE_baload:
-            case OPCODE_caload:
-            case OPCODE_saload:
+            case Opcode::iaload:
+            case Opcode::baload:
+            case Opcode::caload:
+            case Opcode::saload:
                 frame.popIntegral(&inst);
                 frame.popArray(&inst);
                 frame.pushInt(&inst);
                 break;
-            case OPCODE_laload:
+            case Opcode::laload:
                 frame.popIntegral(&inst);
                 frame.popArray(&inst);
                 frame.pushLong(&inst);
                 break;
-            case OPCODE_faload:
+            case Opcode::faload:
                 frame.popIntegral(&inst);
                 frame.popArray(&inst);
                 frame.pushFloat(&inst);
                 break;
-            case OPCODE_daload: {
+            case Opcode::daload: {
                 frame.popIntegral(&inst);
                 Type arrayType = frame.popArray(&inst);
                 frame.pushDouble(&inst);
                 break;
             }
-            case OPCODE_aaload:
+            case Opcode::aaload:
                 aaload(inst);
                 break;
-            case OPCODE_istore:
+            case Opcode::istore:
                 istore(inst.var()->lvindex, &inst);
                 break;
-            case OPCODE_lstore:
+            case Opcode::lstore:
                 lstore(inst.var()->lvindex, &inst);
                 break;
-            case OPCODE_fstore:
+            case Opcode::fstore:
                 fstore(inst.var()->lvindex, &inst);
                 break;
-            case OPCODE_dstore:
+            case Opcode::dstore:
                 dstore(inst.var()->lvindex, &inst);
                 break;
-            case OPCODE_astore:
+            case Opcode::astore:
                 astore(inst.var()->lvindex, &inst);
                 break;
-            case OPCODE_istore_0:
+            case Opcode::istore_0:
                 istore(0, &inst);
                 break;
-            case OPCODE_istore_1:
+            case Opcode::istore_1:
                 istore(1, &inst);
                 break;
-            case OPCODE_istore_2:
+            case Opcode::istore_2:
                 istore(2, &inst);
                 break;
-            case OPCODE_istore_3:
+            case Opcode::istore_3:
                 istore(3, &inst);
                 break;
-            case OPCODE_lstore_0:
+            case Opcode::lstore_0:
                 lstore(0, &inst);
                 break;
-            case OPCODE_lstore_1:
+            case Opcode::lstore_1:
                 lstore(1, &inst);
                 break;
-            case OPCODE_lstore_2:
+            case Opcode::lstore_2:
                 lstore(2, &inst);
                 break;
-            case OPCODE_lstore_3:
+            case Opcode::lstore_3:
                 lstore(3, &inst);
                 break;
-            case OPCODE_fstore_0:
+            case Opcode::fstore_0:
                 fstore(0, &inst);
                 break;
-            case OPCODE_fstore_1:
+            case Opcode::fstore_1:
                 fstore(1, &inst);
                 break;
-            case OPCODE_fstore_2:
+            case Opcode::fstore_2:
                 fstore(2, &inst);
                 break;
-            case OPCODE_fstore_3:
+            case Opcode::fstore_3:
                 fstore(3, &inst);
                 break;
-            case OPCODE_dstore_0:
+            case Opcode::dstore_0:
                 dstore(0, &inst);
                 break;
-            case OPCODE_dstore_1:
+            case Opcode::dstore_1:
                 dstore(1, &inst);
                 break;
-            case OPCODE_dstore_2:
+            case Opcode::dstore_2:
                 dstore(2, &inst);
                 break;
-            case OPCODE_dstore_3:
+            case Opcode::dstore_3:
                 dstore(3, &inst);
                 break;
-            case OPCODE_astore_0:
+            case Opcode::astore_0:
                 astore(0, &inst);
                 break;
-            case OPCODE_astore_1:
+            case Opcode::astore_1:
                 astore(1, &inst);
                 break;
-            case OPCODE_astore_2:
+            case Opcode::astore_2:
                 astore(2, &inst);
                 break;
-            case OPCODE_astore_3:
+            case Opcode::astore_3:
                 astore(3, &inst);
                 break;
-            case OPCODE_iastore:
-            case OPCODE_bastore:
-            case OPCODE_castore:
-            case OPCODE_sastore:
+            case Opcode::iastore:
+            case Opcode::bastore:
+            case Opcode::castore:
+            case Opcode::sastore:
                 frame.popIntegral(&inst);
                 xastore(&inst);
                 break;
-            case OPCODE_lastore:
+            case Opcode::lastore:
                 frame.popLong(&inst);
                 xastore(&inst);
                 break;
-            case OPCODE_fastore:
+            case Opcode::fastore:
                 frame.popFloat(&inst);
                 xastore(&inst);
                 break;
-            case OPCODE_dastore:
+            case Opcode::dastore:
                 frame.popDouble(&inst);
                 xastore(&inst);
                 break;
-            case OPCODE_aastore:
+            case Opcode::aastore:
                 frame.popRef(&inst);
                 xastore(&inst);
                 break;
-            case OPCODE_pop:
+            case Opcode::pop:
                 frame.popOneWord(&inst);
                 break;
-            case OPCODE_pop2:
+            case Opcode::pop2:
                 frame.popTwoWord(&inst);
                 break;
-            case OPCODE_dup: {
+            case Opcode::dup: {
                 const Type& t1 = frame.popOneWord(&inst);
                 frame.push(t1, &inst);
                 frame.push(t1, &inst);
                 break;
             }
-            case OPCODE_dup_x1: {
+            case Opcode::dup_x1: {
                 const Type& t1 = frame.popOneWord(&inst);
                 const Type& t2 = frame.popOneWord(&inst);
                 frame.push(t1, &inst);
@@ -282,7 +282,7 @@ namespace jnif {
                 frame.push(t1, &inst);
                 break;
             }
-            case OPCODE_dup_x2: {
+            case Opcode::dup_x2: {
                 const Type& t1 = frame.pop(&inst);
                 const Type& t2 = frame.pop(&inst);
                 const Type& t3 = frame.pop(&inst);
@@ -292,7 +292,7 @@ namespace jnif {
                 frame.push(t1, &inst);
                 break;
             }
-            case OPCODE_dup2: {
+            case Opcode::dup2: {
                 const Type& t1 = frame.pop(&inst);
                 const Type& t2 = frame.pop(&inst);
                 frame.push(t2, &inst);
@@ -301,7 +301,7 @@ namespace jnif {
                 frame.push(t1, &inst);
                 break;
             }
-            case OPCODE_dup2_x1: {
+            case Opcode::dup2_x1: {
                 const Type& t1 = frame.pop(&inst);
                 const Type& t2 = frame.pop(&inst);
                 const Type& t3 = frame.pop(&inst);
@@ -312,7 +312,7 @@ namespace jnif {
                 frame.push(t1, &inst);
                 break;
             }
-            case OPCODE_dup2_x2: {
+            case Opcode::dup2_x2: {
                 const Type& t1 = frame.pop(&inst);
                 const Type& t2 = frame.pop(&inst);
                 const Type& t3 = frame.pop(&inst);
@@ -325,58 +325,58 @@ namespace jnif {
                 frame.push(t1, &inst);
                 break;
             }
-            case OPCODE_swap: {
+            case Opcode::swap: {
                 const Type& t1 = frame.pop(&inst);
                 const Type& t2 = frame.pop(&inst);
                 frame.push(t1, &inst);
                 frame.push(t2, &inst);
                 break;
             }
-            case OPCODE_iadd:
-            case OPCODE_fadd:
-            case OPCODE_isub:
-            case OPCODE_fsub:
-            case OPCODE_imul:
-            case OPCODE_fmul:
-            case OPCODE_idiv:
-            case OPCODE_fdiv:
-            case OPCODE_irem:
-            case OPCODE_frem:
-            case OPCODE_ishl:
-            case OPCODE_ishr:
-            case OPCODE_iushr:
-            case OPCODE_iand:
-            case OPCODE_ior:
-            case OPCODE_ixor: {
+            case Opcode::iadd:
+            case Opcode::fadd:
+            case Opcode::isub:
+            case Opcode::fsub:
+            case Opcode::imul:
+            case Opcode::fmul:
+            case Opcode::idiv:
+            case Opcode::fdiv:
+            case Opcode::irem:
+            case Opcode::frem:
+            case Opcode::ishl:
+            case Opcode::ishr:
+            case Opcode::iushr:
+            case Opcode::iand:
+            case Opcode::ior:
+            case Opcode::ixor: {
                 const Type& t1 = frame.pop(&inst);
                 frame.pop(&inst);
                 frame.push(t1, &inst);
                 break;
             }
-            case OPCODE_ladd:
-            case OPCODE_lsub:
-            case OPCODE_lmul:
-            case OPCODE_ldiv:
-            case OPCODE_lrem:
-            case OPCODE_land:
-            case OPCODE_lor:
-            case OPCODE_lxor:
+            case Opcode::ladd:
+            case Opcode::lsub:
+            case Opcode::lmul:
+            case Opcode::ldiv:
+            case Opcode::lrem:
+            case Opcode::land:
+            case Opcode::lor:
+            case Opcode::lxor:
                 frame.popLong(&inst);
                 frame.popLong(&inst);
                 frame.pushLong(&inst);
                 break;
-            case OPCODE_lshl:
-            case OPCODE_lshr:
-            case OPCODE_lushr:
+            case Opcode::lshl:
+            case Opcode::lshr:
+            case Opcode::lushr:
                 frame.popIntegral(&inst);
                 frame.popLong(&inst);
                 frame.pushLong(&inst);
                 break;
-            case OPCODE_dadd:
-            case OPCODE_dsub:
-            case OPCODE_dmul:
-            case OPCODE_ddiv:
-            case OPCODE_drem: {
+            case Opcode::dadd:
+            case Opcode::dsub:
+            case Opcode::dmul:
+            case Opcode::ddiv:
+            case Opcode::drem: {
                 frame.pop(&inst);
                 frame.pop(&inst);
                 frame.pop(&inst);
@@ -384,232 +384,232 @@ namespace jnif {
                 frame.pushDouble(&inst);
                 break;
             }
-            case OPCODE_ineg:
-            case OPCODE_fneg: {
+            case Opcode::ineg:
+            case Opcode::fneg: {
                 const Type& t1 = frame.pop(&inst);
                 frame.push(t1, &inst);
                 break;
             }
-            case OPCODE_lneg: {
+            case Opcode::lneg: {
                 frame.popLong(&inst);
                 frame.pushLong(&inst);
                 break;
             }
-            case OPCODE_dneg: {
+            case Opcode::dneg: {
                 frame.popDouble(&inst);
                 frame.pushDouble(&inst);
                 break;
             }
-            case OPCODE_iinc:
+            case Opcode::iinc:
                 iinc(inst.iinc()->index, &inst);
                 break;
-            case OPCODE_i2l:
+            case Opcode::i2l:
                 frame.popIntegral(&inst);
                 frame.pushLong(&inst);
                 break;
-            case OPCODE_i2f:
+            case Opcode::i2f:
                 frame.popIntegral(&inst);
                 frame.pushFloat(&inst);
                 break;
-            case OPCODE_i2d:
+            case Opcode::i2d:
                 frame.popIntegral(&inst);
                 frame.pushDouble(&inst);
                 break;
-            case OPCODE_l2i:
+            case Opcode::l2i:
                 frame.popLong(&inst);
                 frame.pushInt(&inst);
                 break;
-            case OPCODE_l2f:
+            case Opcode::l2f:
                 frame.popLong(&inst);
                 frame.pushFloat(&inst);
                 break;
-            case OPCODE_l2d:
+            case Opcode::l2d:
                 frame.popLong(&inst);
                 frame.pushDouble(&inst);
                 break;
-            case OPCODE_f2i:
+            case Opcode::f2i:
                 frame.popFloat(&inst);
                 frame.pushInt(&inst);
                 break;
-            case OPCODE_f2l:
+            case Opcode::f2l:
                 frame.popFloat(&inst);
                 frame.pushLong(&inst);
                 break;
-            case OPCODE_f2d:
+            case Opcode::f2d:
                 frame.popFloat(&inst);
                 frame.pushDouble(&inst);
                 break;
-            case OPCODE_d2i:
+            case Opcode::d2i:
                 frame.popDouble(&inst);
                 frame.pushInt(&inst);
                 break;
-            case OPCODE_d2l:
+            case Opcode::d2l:
                 frame.popDouble(&inst);
                 frame.pushLong(&inst);
                 break;
-            case OPCODE_d2f:
+            case Opcode::d2f:
                 frame.popDouble(&inst);
                 frame.pushFloat(&inst);
                 break;
-            case OPCODE_i2b:
-            case OPCODE_i2c:
-            case OPCODE_i2s:
+            case Opcode::i2b:
+            case Opcode::i2c:
+            case Opcode::i2s:
                 frame.popIntegral(&inst);
                 frame.pushInt(&inst);
                 break;
-            case OPCODE_lcmp:
+            case Opcode::lcmp:
                 frame.pop(&inst);
                 frame.pop(&inst);
                 frame.pop(&inst);
                 frame.pop(&inst);
                 frame.pushInt(&inst);
                 break;
-            case OPCODE_fcmpl:
-            case OPCODE_fcmpg:
+            case Opcode::fcmpl:
+            case Opcode::fcmpg:
                 frame.pop(&inst);
                 frame.pop(&inst);
                 frame.pushInt(&inst);
                 break;
-            case OPCODE_dcmpl:
-            case OPCODE_dcmpg:
+            case Opcode::dcmpl:
+            case Opcode::dcmpg:
                 frame.pop(&inst);
                 frame.pop(&inst);
                 frame.pop(&inst);
                 frame.pop(&inst);
                 frame.pushInt(&inst);
                 break;
-            case OPCODE_ifeq:
-            case OPCODE_ifne:
-            case OPCODE_iflt:
-            case OPCODE_ifge:
-            case OPCODE_ifgt:
-            case OPCODE_ifle:
+            case Opcode::ifeq:
+            case Opcode::ifne:
+            case Opcode::iflt:
+            case Opcode::ifge:
+            case Opcode::ifgt:
+            case Opcode::ifle:
                 frame.pop(&inst);
                 break;
-            case OPCODE_if_icmpeq:
-            case OPCODE_if_icmpne:
-            case OPCODE_if_icmplt:
-            case OPCODE_if_icmpge:
-            case OPCODE_if_icmpgt:
-            case OPCODE_if_icmple:
+            case Opcode::if_icmpeq:
+            case Opcode::if_icmpne:
+            case Opcode::if_icmplt:
+            case Opcode::if_icmpge:
+            case Opcode::if_icmpgt:
+            case Opcode::if_icmple:
                 frame.popIntegral(&inst);
                 frame.popIntegral(&inst);
                 break;
-            case OPCODE_if_acmpeq:
-            case OPCODE_if_acmpne:
+            case Opcode::if_acmpeq:
+            case Opcode::if_acmpne:
                 frame.pop(&inst);
                 frame.pop(&inst);
                 break;
-            case OPCODE_goto:
+            case Opcode::GOTO:
                 break;
-            case OPCODE_jsr:
+            case Opcode::jsr:
                 throw JsrRetNotSupported();
                 break;
-            case OPCODE_ret:
+            case Opcode::ret:
                 throw JsrRetNotSupported();
                 break;
-            case OPCODE_tableswitch:
-            case OPCODE_lookupswitch:
+            case Opcode::tableswitch:
+            case Opcode::lookupswitch:
                 frame.pop(&inst);
                 break;
-            case OPCODE_ireturn:
+            case Opcode::ireturn:
                 frame.pop(&inst);
                 break;
-            case OPCODE_lreturn:
-                frame.pop(&inst);
-                frame.pop(&inst);
-                break;
-            case OPCODE_freturn:
-                frame.pop(&inst);
-                break;
-            case OPCODE_dreturn:
+            case Opcode::lreturn:
                 frame.pop(&inst);
                 frame.pop(&inst);
                 break;
-            case OPCODE_areturn:
+            case Opcode::freturn:
                 frame.pop(&inst);
                 break;
-            case OPCODE_return:
+            case Opcode::dreturn:
+                frame.pop(&inst);
+                frame.pop(&inst);
                 break;
-            case OPCODE_getstatic: {
+            case Opcode::areturn:
+                frame.pop(&inst);
+                break;
+            case Opcode::RETURN:
+                break;
+            case Opcode::getstatic: {
                 const Type& t = fieldType(inst);
                 frame.pushType(t, &inst);
                 break;
             }
-            case OPCODE_putstatic: {
+            case Opcode::putstatic: {
                 const Type& t = fieldType(inst);
                 frame.popType(t, &inst);
                 break;
             }
-            case OPCODE_getfield: {
+            case Opcode::getfield: {
                 const Type& t = fieldType(inst);
                 frame.popRef(&inst);
                 frame.pushType(t, &inst);
                 break;
             }
-            case OPCODE_putfield: {
+            case Opcode::putfield: {
                 const Type& t = fieldType(inst);
                 frame.popType(t, &inst);
                 frame.popRef(&inst);
                 break;
             }
-            case OPCODE_invokevirtual:
+            case Opcode::invokevirtual:
                 invokeMethod(inst.invoke()->methodRefIndex, true, false, &inst);
                 break;
-            case OPCODE_invokespecial:
+            case Opcode::invokespecial:
                 invokeSpecial(inst.invoke()->methodRefIndex, &inst);
                 break;
-            case OPCODE_invokestatic:
+            case Opcode::invokestatic:
                 invokeStatic(inst.invoke()->methodRefIndex, &inst);
                 break;
-            case OPCODE_invokeinterface:
+            case Opcode::invokeinterface:
                 invokeInterface(inst.invokeinterface()->interMethodRefIndex, true, &inst);
                 break;
-            case OPCODE_new:
+            case Opcode::NEW:
                 newinst(*inst.type());
                 break;
-            case OPCODE_newarray:
+            case Opcode::newarray:
                 newarray(inst);
                 break;
-            case OPCODE_anewarray:
+            case Opcode::anewarray:
                 anewarray(inst);
                 break;
-            case OPCODE_arraylength:
+            case Opcode::arraylength:
                 frame.pop(&inst);
                 frame.pushInt(&inst);
                 break;
-            case OPCODE_athrow:
+            case Opcode::athrow:
                 athrow(inst);
                 break;
-            case OPCODE_checkcast:
+            case Opcode::checkcast:
                 checkcast(inst);
                 break;
-            case OPCODE_instanceof:
+            case Opcode::instanceof:
                 frame.popRef(&inst);
                 frame.pushInt(&inst);
                 break;
-            case OPCODE_monitorenter:
-            case OPCODE_monitorexit:
+            case Opcode::monitorenter:
+            case Opcode::monitorexit:
                 frame.popRef(&inst);
                 break;
-            case OPCODE_wide:
+            case Opcode::wide:
                 wide(inst);
                 break;
-            case OPCODE_multianewarray:
+            case Opcode::multianewarray:
                 multianewarray(inst);
                 break;
-            case OPCODE_ifnull:
-            case OPCODE_ifnonnull:
+            case Opcode::ifnull:
+            case Opcode::ifnonnull:
                 frame.pop(&inst);
                 break;
-            case OPCODE_goto_w:
-            case OPCODE_jsr_w:
-            case OPCODE_breakpoint:
-            case OPCODE_impdep1:
-            case OPCODE_impdep2:
+            case Opcode::goto_w:
+            case Opcode::jsr_w:
+            case Opcode::breakpoint:
+            case Opcode::impdep1:
+            case Opcode::impdep2:
                 JnifError::raise("goto_w, jsr_w breakpoint not implemented");
                 break;
-            case OPCODE_invokedynamic: {
+            case Opcode::invokedynamic: {
                 ConstPool::Index callSite = inst.indy()->callSite();
                 const ConstPool::InvokeDynamic& dyn = cp.getInvokeDynamic(callSite);
 
@@ -880,37 +880,37 @@ namespace jnif {
         void wide(Inst& inst) {
             u2 lvindex = inst.wide()->var.lvindex;
             switch (inst.wide()->subOpcode) {
-            case OPCODE_iload:
+            case Opcode::iload:
                 iload(lvindex, &inst);
                 break;
-            case OPCODE_lload:
+            case Opcode::lload:
                 lload(lvindex, &inst);
                 break;
-            case OPCODE_fload:
+            case Opcode::fload:
                 fload(lvindex, &inst);
                 break;
-            case OPCODE_dload:
+            case Opcode::dload:
                 dload(lvindex, &inst);
                 break;
-            case OPCODE_aload:
+            case Opcode::aload:
                 aload(lvindex, &inst);
                 break;
-            case OPCODE_istore:
+            case Opcode::istore:
                 istore(lvindex, &inst);
                 break;
-            case OPCODE_fstore:
+            case Opcode::fstore:
                 fstore(lvindex, &inst);
                 break;
-            case OPCODE_lstore:
+            case Opcode::lstore:
                 lstore(lvindex, &inst);
                 break;
-            case OPCODE_dstore:
+            case Opcode::dstore:
                 dstore(lvindex, &inst);
                 break;
-            case OPCODE_astore:
+            case Opcode::astore:
                 astore(lvindex, &inst);
                 break;
-            case OPCODE_iinc:
+            case Opcode::iinc:
                 iinc(inst.wide()->iinc.index, &inst);
                 break;
             default:

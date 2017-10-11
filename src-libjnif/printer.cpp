@@ -196,10 +196,10 @@ const char* OPCODES[] = { "nop", "aconst_null", "iconst_m1", "iconst_0",
 	return os << ConstNames[tag];
 }
 
-std::ostream& operator <<(std::ostream& os, Opcode opcode) {
-	JnifError::assert(opcode >= 0, "");
+ostream& operator <<(ostream& os, Opcode opcode) {
+//	JnifError::assert(opcode >= 0, "");
 
-	os << OPCODES[opcode];
+	os << OPCODES[(int)opcode];
 	return os;
 }
 
@@ -220,7 +220,7 @@ std::ostream& operator<<(std::ostream& os, const Inst& inst) {
 
 	os << "    " << setw(4) << offset << ": "; // << "#" << setw(2) << inst.id << ": ";
   os << green << "(" << setw(3) << (int) inst.opcode << ") " << reset;
-  os << cyan << OPCODES[inst.opcode] << reset << " ";
+  os << cyan << OPCODES[(int)inst.opcode] << reset << " ";
 
   os << "CS: ";
   for (const Inst* ii : inst.consumes) {

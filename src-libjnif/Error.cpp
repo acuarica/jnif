@@ -12,19 +12,26 @@
 
 namespace jnif {
 
-void _backtrace(std::ostream& os) {
-	void* array[20];
-	size_t size;
+    static void _backtrace(ostream& os) {
+        void* array[20];
+        size_t size;
 
-	size = backtrace(array, 20);
+        size = backtrace(array, 20);
 
-	char** symbols = backtrace_symbols(array, size);
-	for (size_t i = 0; i < size; i++) {
-		const char* symbol = symbols[i];
-		os << "    " << symbol << std::endl;
-	}
+        char** symbols = backtrace_symbols(array, size);
+        for (size_t i = 0; i < size; i++) {
+            const char* symbol = symbols[i];
+            os << "    " << symbol << std::endl;
+        }
 
-	free(symbols);
-}
+        free(symbols);
+    }
+
+    JnifException::JnifException(const string& message) : message(message) {
+        stringstream os;
+        _backtrace(os);
+
+        stackTrace = os.str();
+    }
 
 }
