@@ -33,6 +33,8 @@ namespace jnif {
     using std::vector;
     using std::list;
     using std::map;
+    using std::set;
+    using std::pair;
 
     /**
      * Represents a byte inside the Java Class File.
@@ -175,21 +177,21 @@ namespace jnif {
 
         Arena(const Arena&&) = delete;
 
-        Arena(int blockSize = BLOCK_SIZE);
+        explicit Arena(size_t blockSize = BLOCK_SIZE);
 
         ~Arena();
 
-        void *alloc(int size);
+        void* alloc(int size);
 
         template<typename T, typename ... TArgs>
-        T *create(const TArgs& ... args) {
-            void *buf = alloc(sizeof(T));
+        T* create(const TArgs& ... args) {
+            void* buf = alloc(sizeof(T));
             return new(buf) T(args ...);
         }
 
         template<typename T>
-        T *newArray(int size) {
-            void *buf = alloc(sizeof(T) * size);
+        T* newArray(int size) {
+            void* buf = alloc(sizeof(T) * size);
             return new(buf) T[size];
         }
 
@@ -197,9 +199,9 @@ namespace jnif {
 
         class Block;
 
-        int blockSize;
+        size_t blockSize;
 
-        Block *_head;
+        Block* _head;
 
     };
 
@@ -325,10 +327,10 @@ namespace jnif {
 
                 Utf8() {}
 
-                Utf8(const std::string& str) : str(str) {}
+                Utf8(const string& str) : str(str) {}
 
                 /// The string data.
-                const std::string str;
+                const string str;
             };
 
             /// Represents a method handle entry.
@@ -445,7 +447,7 @@ namespace jnif {
 
                 Item(InvokeDynamic id) : tag(INVOKEDYNAMIC), invokedynamic(id) {}
 
-                Item(const std::string& value) : tag(UTF8), utf8(value) {}
+                Item(const string& value) : tag(UTF8), utf8(value) {}
 
                 Item(const Item&) = delete;
 
@@ -538,7 +540,7 @@ namespace jnif {
              * @param className name of the class to reference.
              * @returns the index of the newly created reference to a class item.
              */
-            Index addClass(const char *className);
+            Index addClass(const char* className);
 
             /**
              * Adds a field reference to this constant pool.
@@ -562,7 +564,7 @@ namespace jnif {
              *
              * @returns the Index of the newly created entry.
              */
-            Index addMethodRef(Index classIndex, const char *name, const char *desc);
+            Index addMethodRef(Index classIndex, const char* name, const char* desc);
 
             /// Adds an interface method reference.
             /// @returns the Index of the newly created entry.
@@ -576,7 +578,7 @@ namespace jnif {
             /**
              * Adds a string to the constant pool by providing a string.
              */
-            Index addString(const std::string& str);
+            Index addString(const string& str);
 
             /**
              * Adds a String item to the Constant Pool using a class entry.
@@ -633,7 +635,7 @@ namespace jnif {
              * @param len the len in bytes of utf8.
              * @returns the Index of the newly created entry.
              */
-            Index addUtf8(const char *utf8, int len);
+            Index addUtf8(const char* utf8, int len);
 
             /**
              * Adds a modified UTF8 string given an null-terminated char array.
@@ -642,7 +644,7 @@ namespace jnif {
              * UTF8 string.
              * @returns the Index of the newly created entry.
              */
-            Index addUtf8(const char *str);
+            Index addUtf8(const char* str);
 
             /**
              * @returns the Index of the newly created entry.
@@ -659,7 +661,7 @@ namespace jnif {
              *
              */
             Tag getTag(Index index) const {
-                const Item *entry = _getEntry(index);
+                const Item* entry = _getEntry(index);
                 return entry->tag;
             }
 
@@ -675,36 +677,36 @@ namespace jnif {
             }
 
             Index getClassNameIndex(Index classIndex) const {
-                const Item *e = _getEntry(classIndex, CLASS, "CONSTANT_Class");
+                const Item* e = _getEntry(classIndex, CLASS, "CONSTANT_Class");
                 Index ni = e->clazz.nameIndex;
 
                 return ni;
             }
 
-            void getFieldRef(Index index, std::string *className, std::string *name,
-                             std::string *desc) const {
-                const Item *e = _getEntry(index, FIELDREF, "FieldRef");
+            void getFieldRef(Index index, string* className, string* name,
+                             string* desc) const {
+                const Item* e = _getEntry(index, FIELDREF, "FieldRef");
                 const MemberRef& mr = e->memberRef;
                 _getMemberRef(className, name, desc, mr);
             }
 
-            void getMethodRef(Index index, std::string *clazzName, std::string *name,
-                              std::string *desc) const {
-                const Item *e = _getEntry(index, METHODREF, "MethodRef");
+            void getMethodRef(Index index, string* clazzName, string* name,
+                              string* desc) const {
+                const Item* e = _getEntry(index, METHODREF, "MethodRef");
                 const MemberRef& mr = e->memberRef;
                 _getMemberRef(clazzName, name, desc, mr);
             }
 
             void getInterMethodRef(
-                    Index index, std::string *clazzName, std::string *name,
-                    std::string *desc) const {
-                const Item *e = _getEntry(index, INTERMETHODREF, "imr");
+                    Index index, string* clazzName, string* name,
+                    string* desc) const {
+                const Item* e = _getEntry(index, INTERMETHODREF, "imr");
                 const MemberRef& mr = e->memberRef;
                 _getMemberRef(clazzName, name, desc, mr);
             }
 
-            const char *getString(Index index) const {
-                const Item *e = _getEntry(index, STRING, "String");
+            const char* getString(Index index) const {
+                const Item* e = _getEntry(index, STRING, "String");
                 return getUtf8(e->s.stringIndex);
             }
 
@@ -724,18 +726,18 @@ namespace jnif {
                 return _getEntry(index, DOUBLE, "CONSTANT_Double")->d.value;
             }
 
-            const char *getUtf8(Index utf8Index) const {
-                const Item *entry = _getEntry(utf8Index, UTF8, "Utf8");
+            const char* getUtf8(Index utf8Index) const {
+                const Item* entry = _getEntry(utf8Index, UTF8, "Utf8");
                 return entry->utf8.str.c_str();
             }
 
-            const char *getClassName(Index classIndex) const {
+            const char* getClassName(Index classIndex) const {
                 Index classNameIndex = getClassNameIndex(classIndex);
                 return getUtf8(classNameIndex);
             }
 
-            void getNameAndType(Index index, std::string *name, std::string *desc) const {
-                const Item *e = _getEntry(index, NAMEANDTYPE, "NameAndType");
+            void getNameAndType(Index index, string* name, string* desc) const {
+                const Item* e = _getEntry(index, NAMEANDTYPE, "NameAndType");
                 u2 nameIndex = e->nameandtype.nameIndex;
                 u2 descIndex = e->nameandtype.descriptorIndex;
 
@@ -744,15 +746,15 @@ namespace jnif {
             }
 
             const InvokeDynamic& getInvokeDynamic(Index index) const {
-                const Item *e = _getEntry(index, INVOKEDYNAMIC, "Indy");
+                const Item* e = _getEntry(index, INVOKEDYNAMIC, "Indy");
                 return e->invokedynamic;
             }
 
-            Index getIndexOfUtf8(const char *utf8);
+            Index getIndexOfUtf8(const char* utf8);
 
-            Index getIndexOfClass(const char *className);
+            Index getIndexOfClass(const char* className);
 
-            Index putUtf8(const char *utf8) {
+            Index putUtf8(const char* utf8) {
                 Index i = getIndexOfUtf8(utf8);
                 if (i == NULLENTRY) {
                     return addUtf8(utf8);
@@ -761,7 +763,7 @@ namespace jnif {
                 }
             }
 
-            Index putClass(const char *className) {
+            Index putClass(const char* className) {
                 Index i = getIndexOfClass(className);
                 if (i == NULLENTRY) {
                     i = addClass(className);
@@ -783,17 +785,17 @@ namespace jnif {
             template<class... TArgs>
             Index _addDoubleEntry(TArgs... args);
 
-            const Item *_getEntry(Index i) const;
+            const Item* _getEntry(Index i) const;
 
-            const Item *_getEntry(Index index, u1 tag, const char *message) const;
+            const Item* _getEntry(Index index, u1 tag, const char* message) const;
 
             bool _isDoubleEntry(Index index) const {
-                const Item *e = _getEntry(index);
+                const Item* e = _getEntry(index);
                 return e->tag == LONG || e->tag == DOUBLE;
             }
 
             void _getMemberRef(
-                    std::string *clazzName, std::string *name, std::string *desc,
+                    string* clazzName, string* name, string* desc,
                     const MemberRef& memberRef) const {
                 Index classIndex = memberRef.classIndex;
                 Index nameAndTypeIndex = memberRef.nameAndTypeIndex;
@@ -806,7 +808,7 @@ namespace jnif {
             map<string, Index> classes;
         };
 
-        std::ostream& operator<<(std::ostream& os, const ConstPool::Tag& tag);
+        ostream& operator<<(ostream& os, const ConstPool::Tag& tag);
 
         /**
          * The Version class is a tuple containing a major and minor
@@ -889,7 +891,7 @@ namespace jnif {
              * @param version
              * @return
              */
-            friend std::ostream& operator<<(std::ostream& os, const Version& version);
+            friend ostream& operator<<(ostream& os, const Version& version);
 
         private:
 
@@ -1288,136 +1290,136 @@ namespace jnif {
 
             int _offset;
 
-            const ConstPool *const constPool;
-            Inst *prev;
-            Inst *next;
+            const ConstPool* const constPool;
+            Inst* prev;
+            Inst* next;
 
-            class LabelInst *label() {
+            class LabelInst* label() {
                 return cast<LabelInst>(isLabel(), "label");
             }
 
-            class PushInst *push() {
+            class PushInst* push() {
                 return cast<PushInst>(isPush(), "push");
             }
 
-            class LdcInst *ldc() {
+            class LdcInst* ldc() {
                 return cast<LdcInst>(isLdc(), "ldc");
             }
 
-            class VarInst *var() {
+            class VarInst* var() {
                 return cast<VarInst>(isVar(), "var");
             }
 
-            class IincInst *iinc() {
+            class IincInst* iinc() {
                 return cast<IincInst>(isIinc(), "iinc");
             }
 
-            class InvokeInst *invoke() {
+            class InvokeInst* invoke() {
                 return cast<InvokeInst>(isInvoke(), "invoke");
             }
 
-            class JumpInst *jump() {
+            class JumpInst* jump() {
                 return cast<JumpInst>(isJump(), "jump");
             }
 
-            class TableSwitchInst *ts() {
+            class TableSwitchInst* ts() {
                 return cast<TableSwitchInst>(isTableSwitch(), "ts");
             }
 
-            class LookupSwitchInst *ls() {
+            class LookupSwitchInst* ls() {
                 return cast<LookupSwitchInst>(isLookupSwitch(), "ls");
             }
 
-            class InvokeInterfaceInst *invokeinterface() {
+            class InvokeInterfaceInst* invokeinterface() {
                 return cast<InvokeInterfaceInst>(isInvokeInterface(), "invinter");
             }
 
-            class TypeInst *type() {
+            class TypeInst* type() {
                 return cast<TypeInst>(isType(), "type");
             }
 
-            class NewArrayInst *newarray() {
+            class NewArrayInst* newarray() {
                 return cast<NewArrayInst>(isNewArray(), "newarray");
             }
 
-            class WideInst *wide() {
+            class WideInst* wide() {
                 return cast<WideInst>(isWide(), "wide");
             }
 
-            class FieldInst *field() {
+            class FieldInst* field() {
                 return cast<FieldInst>(isField(), "field");
             }
 
-            class MultiArrayInst *multiarray() {
+            class MultiArrayInst* multiarray() {
                 return cast<MultiArrayInst>(isMultiArray(), "multiarray");
             }
 
-            class LabelInst *label() const {
+            class LabelInst* label() const {
                 return cast<LabelInst>(isLabel(), "label");
             }
 
-            class PushInst *push() const {
+            class PushInst* push() const {
                 return cast<PushInst>(isPush(), "push");
             }
 
-            class LdcInst *ldc() const {
+            class LdcInst* ldc() const {
                 return cast<LdcInst>(isLdc(), "ldc");
             }
 
-            class VarInst *var() const {
+            class VarInst* var() const {
                 return cast<VarInst>(isVar(), "var");
             }
 
-            class IincInst *iinc() const {
+            class IincInst* iinc() const {
                 return cast<IincInst>(isIinc(), "iinc");
             }
 
-            class InvokeInst *invoke() const {
+            class InvokeInst* invoke() const {
                 return cast<InvokeInst>(isInvoke(), "invoke");
             }
 
-            class JumpInst *jump() const {
+            class JumpInst* jump() const {
                 return cast<JumpInst>(isJump(), "jump");
             }
 
-            class TableSwitchInst *ts() const {
+            class TableSwitchInst* ts() const {
                 return cast<TableSwitchInst>(isTableSwitch(), "ts");
             }
 
-            class LookupSwitchInst *ls() const {
+            class LookupSwitchInst* ls() const {
                 return cast<LookupSwitchInst>(isLookupSwitch(), "ls");
             }
 
-            class InvokeInterfaceInst *invokeinterface() const {
+            class InvokeInterfaceInst* invokeinterface() const {
                 return cast<InvokeInterfaceInst>(isInvokeInterface(), "invinter");
             }
 
-            class InvokeDynamicInst *indy() const {
+            class InvokeDynamicInst* indy() const {
                 return cast<InvokeDynamicInst>(isInvokeDynamic(), "indy");
             }
 
-            class TypeInst *type() const {
+            class TypeInst* type() const {
                 return cast<TypeInst>(isType(), "type");
             }
 
-            class NewArrayInst *newarray() const {
+            class NewArrayInst* newarray() const {
                 return cast<NewArrayInst>(isNewArray(), "newarray");
             }
 
-            class WideInst *wide() const {
+            class WideInst* wide() const {
                 return cast<WideInst>(isWide(), "wide");
             }
 
-            class FieldInst *field() const {
+            class FieldInst* field() const {
                 return cast<FieldInst>(isField(), "field");
             }
 
-            class MultiArrayInst *multiarray() const {
+            class MultiArrayInst* multiarray() const {
                 return cast<MultiArrayInst>(isMultiArray(), "multiarray");
             }
 
-            std::set<Inst *> consumes;
-            std::set<Inst *> produces;
+            set<Inst*> consumes;
+            set<Inst*> produces;
             int id = 0;
 
         private:
@@ -1426,23 +1428,23 @@ namespace jnif {
                     opcode(Opcode::nop), kind(KIND_ZERO), _offset(0), constPool(NULL), prev(NULL), next(NULL) {
             }
 
-            Inst(Opcode opcode, OpKind kind, const ConstPool *constPool, Inst *prev = NULL, Inst *next = NULL) :
+            Inst(Opcode opcode, OpKind kind, const ConstPool* constPool, Inst* prev = NULL, Inst* next = NULL) :
                     opcode(opcode), kind(kind), _offset(0), constPool(constPool), prev(prev), next(next) {
             }
 
             template<typename TKind>
-            TKind *cast(bool cond, const char *kindName) {
+            TKind* cast(bool cond, const char* kindName) {
                 checkCast(cond, kindName);
-                return (TKind *) this;
+                return (TKind*) this;
             }
 
             template<typename TKind>
-            TKind *cast(bool cond, const char *kindName) const {
+            TKind* cast(bool cond, const char* kindName) const {
                 checkCast(cond, kindName);
-                return (TKind *) this;
+                return (TKind*) this;
             }
 
-            void checkCast(bool cond, const char *kindName) const;
+            void checkCast(bool cond, const char* kindName) const;
         };
 
 /**
@@ -1453,7 +1455,7 @@ namespace jnif {
 
         public:
 
-            LabelInst(ConstPool *constPool, int id) :
+            LabelInst(ConstPool* constPool, int id) :
                     Inst(Opcode::nop, KIND_LABEL, constPool), offset(0), deltaOffset(0), id(
                     id), isBranchTarget(false), isTryStart(false), isCatchHandler(false) {
             }
@@ -1479,7 +1481,7 @@ namespace jnif {
 
         public:
 
-            ZeroInst(Opcode opcode, ConstPool *constPool) :
+            ZeroInst(Opcode opcode, ConstPool* constPool) :
                     Inst(opcode, KIND_ZERO, constPool) {
             }
 
@@ -1493,7 +1495,7 @@ namespace jnif {
 
         public:
 
-            PushInst(Opcode opcode, OpKind kind, int value, ConstPool *constPool) :
+            PushInst(Opcode opcode, OpKind kind, int value, ConstPool* constPool) :
                     Inst(opcode, kind, constPool), value(value) {
             }
 
@@ -1508,7 +1510,7 @@ namespace jnif {
 
         public:
 
-            LdcInst(Opcode opcode, ConstPool::Index valueIndex, ConstPool *constPool) :
+            LdcInst(Opcode opcode, ConstPool::Index valueIndex, ConstPool* constPool) :
                     Inst(opcode, KIND_LDC, constPool), valueIndex(valueIndex) {
             }
 
@@ -1523,7 +1525,7 @@ namespace jnif {
 
         public:
 
-            VarInst(Opcode opcode, u1 lvindex, ConstPool *constPool) :
+            VarInst(Opcode opcode, u1 lvindex, ConstPool* constPool) :
                     Inst(opcode, KIND_VAR, constPool), lvindex(lvindex) {
             }
 
@@ -1538,7 +1540,7 @@ namespace jnif {
 
         public:
 
-            IincInst(u1 index, u1 value, ConstPool *constPool) :
+            IincInst(u1 index, u1 value, ConstPool* constPool) :
                     Inst(Opcode::iinc, KIND_IINC, constPool), index(index), value(value) {
             }
 
@@ -1555,7 +1557,7 @@ namespace jnif {
 
         public:
 
-            WideInst(Opcode subOpcode, u2 lvindex, ConstPool *constPool) :
+            WideInst(Opcode subOpcode, u2 lvindex, ConstPool* constPool) :
                     Inst(Opcode::wide, KIND_ZERO, constPool), subOpcode(subOpcode) {
                 if (subOpcode == Opcode::ret) {
                     throw JnifException("Ret found in wide instruction!!!");
@@ -1564,7 +1566,7 @@ namespace jnif {
                 var.lvindex = lvindex;
             }
 
-            WideInst(u2 index, u2 value, ConstPool *constPool) :
+            WideInst(u2 index, u2 value, ConstPool* constPool) :
                     Inst(Opcode::wide, KIND_ZERO, constPool), subOpcode(Opcode::iinc) {
                 iinc.index = index;
                 iinc.value = value;
@@ -1593,11 +1595,11 @@ namespace jnif {
         public:
 
 
-            JumpInst(Opcode opcode, LabelInst *targetLabel, ConstPool *constPool) :
+            JumpInst(Opcode opcode, LabelInst* targetLabel, ConstPool* constPool) :
                     Inst(opcode, KIND_JUMP, constPool), label2(targetLabel) {
             }
 
-            const Inst *label2;
+            const Inst* label2;
 
         };
 
@@ -1609,7 +1611,7 @@ namespace jnif {
 
         public:
 
-            FieldInst(Opcode opcode, ConstPool::Index fieldRefIndex, ConstPool *constPool) :
+            FieldInst(Opcode opcode, ConstPool::Index fieldRefIndex, ConstPool* constPool) :
                     Inst(opcode, KIND_FIELD, constPool), fieldRefIndex(fieldRefIndex) {
             }
 
@@ -1625,7 +1627,7 @@ namespace jnif {
 
         public:
 
-            InvokeInst(Opcode opcode, ConstPool::Index methodRefIndex, ConstPool *constPool) :
+            InvokeInst(Opcode opcode, ConstPool::Index methodRefIndex, ConstPool* constPool) :
                     Inst(opcode, KIND_INVOKE, constPool), methodRefIndex(methodRefIndex) {
             }
 
@@ -1642,7 +1644,7 @@ namespace jnif {
         public:
 
             InvokeInterfaceInst(ConstPool::Index interMethodRefIndex, u1 count,
-                                ConstPool *constPool) :
+                                ConstPool* constPool) :
                     Inst(Opcode::invokeinterface, KIND_INVOKEINTERFACE, constPool), interMethodRefIndex(
                     interMethodRefIndex), count(count) {
             }
@@ -1660,7 +1662,7 @@ namespace jnif {
 
         public:
 
-            InvokeDynamicInst(ConstPool::Index callSite, ConstPool *constPool) :
+            InvokeDynamicInst(ConstPool::Index callSite, ConstPool* constPool) :
                     Inst(Opcode::invokedynamic, KIND_INVOKEDYNAMIC, constPool), _callSite(callSite) {
             }
 
@@ -1684,7 +1686,7 @@ namespace jnif {
 
         public:
 
-            TypeInst(Opcode opcode, ConstPool::Index classIndex, ConstPool *constPool) :
+            TypeInst(Opcode opcode, ConstPool::Index classIndex, ConstPool* constPool) :
                     Inst(opcode, KIND_TYPE, constPool), classIndex(classIndex) {
             }
 
@@ -1717,7 +1719,7 @@ namespace jnif {
                 NEWARRAYTYPE_LONG = 11
             };
 
-            NewArrayInst(Opcode opcode, u1 atype, ConstPool *constPool) :
+            NewArrayInst(Opcode opcode, u1 atype, ConstPool* constPool) :
                     Inst(opcode, KIND_NEWARRAY, constPool), atype(atype) {
             }
 
@@ -1734,7 +1736,7 @@ namespace jnif {
         public:
 
             MultiArrayInst(Opcode opcode, ConstPool::Index classIndex, u1 dims,
-                           ConstPool *constPool) :
+                           ConstPool* constPool) :
                     Inst(opcode, KIND_MULTIARRAY, constPool), classIndex(classIndex), dims(dims) {
             }
 
@@ -1753,16 +1755,16 @@ namespace jnif {
 
         public:
 
-            std::vector<Inst *> targets;
+            vector<Inst*> targets;
 
-            void addTarget(LabelInst *label) {
+            void addTarget(LabelInst* label) {
                 targets.push_back(label);
                 label->isBranchTarget = true;
             }
 
         private:
 
-            SwitchInst(Opcode opcode, OpKind kind, ConstPool *constPool) :
+            SwitchInst(Opcode opcode, OpKind kind, ConstPool* constPool) :
                     Inst(opcode, kind, constPool) {
             }
 
@@ -1776,11 +1778,11 @@ namespace jnif {
 
         public:
 
-            TableSwitchInst(LabelInst *def, int low, int high, ConstPool *constPool) :
+            TableSwitchInst(LabelInst* def, int low, int high, ConstPool* constPool) :
                     SwitchInst(Opcode::tableswitch, KIND_TABLESWITCH, constPool), def(def), low(low), high(high) {
             }
 
-            Inst *def;
+            Inst* def;
             int low;
             int high;
 
@@ -1794,12 +1796,12 @@ namespace jnif {
 
         public:
 
-            LookupSwitchInst(LabelInst *def, u4 npairs, ConstPool *constPool) :
+            LookupSwitchInst(LabelInst* def, u4 npairs, ConstPool* constPool) :
                     SwitchInst(Opcode::lookupswitch, KIND_LOOKUPSWITCH, constPool), defbyte(def), npairs(npairs) {
             }
 
 
-            Inst *defbyte;
+            Inst* defbyte;
             u4 npairs;
             vector<u4> keys;
 
@@ -1820,9 +1822,9 @@ namespace jnif {
 
             public:
 
-                Inst *operator*();
+                Inst* operator*();
 
-                Inst *operator->() const;
+                Inst* operator->() const;
 
                 bool friend operator==(const Iterator& lhs, const Iterator& rhs) {
                     return lhs.position == rhs.position;
@@ -1838,56 +1840,56 @@ namespace jnif {
 
             private:
 
-                Iterator(Inst *position, Inst *last) :
+                Iterator(Inst* position, Inst* last) :
                         position(position), last(last) {
                 }
 
-                Inst *position;
-                Inst *last;
+                Inst* position;
+                Inst* last;
             };
 
-            LabelInst *createLabel();
+            LabelInst* createLabel();
 
-            void addLabel(LabelInst *inst, Inst *pos = nullptr);
+            void addLabel(LabelInst* inst, Inst* pos = nullptr);
 
-            LabelInst *addLabel(Inst *pos = nullptr);
+            LabelInst* addLabel(Inst* pos = nullptr);
 
-            ZeroInst *addZero(Opcode opcode, Inst *pos = nullptr);
+            ZeroInst* addZero(Opcode opcode, Inst* pos = nullptr);
 
-            PushInst *addBiPush(u1 value, Inst *pos = nullptr);
+            PushInst* addBiPush(u1 value, Inst* pos = nullptr);
 
-            PushInst *addSiPush(u2 value, Inst *pos = nullptr);
+            PushInst* addSiPush(u2 value, Inst* pos = nullptr);
 
-            LdcInst *addLdc(Opcode opcode, ConstPool::Index valueIndex, Inst *pos = nullptr);
+            LdcInst* addLdc(Opcode opcode, ConstPool::Index valueIndex, Inst* pos = nullptr);
 
-            VarInst *addVar(Opcode opcode, u1 lvindex, Inst *pos = nullptr);
+            VarInst* addVar(Opcode opcode, u1 lvindex, Inst* pos = nullptr);
 
-            IincInst *addIinc(u1 index, u1 value, Inst *pos = nullptr);
+            IincInst* addIinc(u1 index, u1 value, Inst* pos = nullptr);
 
-            WideInst *addWideVar(Opcode varOpcode, u2 lvindex, Inst *pos = nullptr);
+            WideInst* addWideVar(Opcode varOpcode, u2 lvindex, Inst* pos = nullptr);
 
-            WideInst *addWideIinc(u2 index, u2 value, Inst *pos = nullptr);
+            WideInst* addWideIinc(u2 index, u2 value, Inst* pos = nullptr);
 
-            JumpInst *addJump(Opcode opcode, LabelInst *targetLabel, Inst *pos = nullptr);
+            JumpInst* addJump(Opcode opcode, LabelInst* targetLabel, Inst* pos = nullptr);
 
-            FieldInst *addField(Opcode opcode, ConstPool::Index fieldRefIndex, Inst *pos = nullptr);
+            FieldInst* addField(Opcode opcode, ConstPool::Index fieldRefIndex, Inst* pos = nullptr);
 
-            InvokeInst *addInvoke(Opcode opcode, ConstPool::Index methodRefIndex, Inst *pos = nullptr);
+            InvokeInst* addInvoke(Opcode opcode, ConstPool::Index methodRefIndex, Inst* pos = nullptr);
 
-            InvokeInterfaceInst *
-            addInvokeInterface(ConstPool::Index interMethodRefIndex, u1 count, Inst *pos = nullptr);
+            InvokeInterfaceInst*
+            addInvokeInterface(ConstPool::Index interMethodRefIndex, u1 count, Inst* pos = nullptr);
 
-            InvokeDynamicInst *addInvokeDynamic(ConstPool::Index callSite, Inst *pos = nullptr);
+            InvokeDynamicInst* addInvokeDynamic(ConstPool::Index callSite, Inst* pos = nullptr);
 
-            TypeInst *addType(Opcode opcode, ConstPool::Index classIndex, Inst *pos = nullptr);
+            TypeInst* addType(Opcode opcode, ConstPool::Index classIndex, Inst* pos = nullptr);
 
-            NewArrayInst *addNewArray(u1 atype, Inst *pos = nullptr);
+            NewArrayInst* addNewArray(u1 atype, Inst* pos = nullptr);
 
-            MultiArrayInst *addMultiArray(ConstPool::Index classIndex, u1 dims, Inst *pos = nullptr);
+            MultiArrayInst* addMultiArray(ConstPool::Index classIndex, u1 dims, Inst* pos = nullptr);
 
-            TableSwitchInst *addTableSwitch(LabelInst *def, int low, int high, Inst *pos = nullptr);
+            TableSwitchInst* addTableSwitch(LabelInst* def, int low, int high, Inst* pos = nullptr);
 
-            LookupSwitchInst *addLookupSwitch(LabelInst *def, u4 npairs, Inst *pos = nullptr);
+            LookupSwitchInst* addLookupSwitch(LabelInst* def, u4 npairs, Inst* pos = nullptr);
 
             bool hasBranches() const {
                 return branchesCount > 0;
@@ -1909,23 +1911,23 @@ namespace jnif {
                 return Iterator(nullptr, last);
             }
 
-            Inst *getInst(int offset);
+            Inst* getInst(int offset);
 
-            ClassFile *const constPool;
+            ClassFile* const constPool;
 
         private:
 
-            InstList(ClassFile *arena) :
+            InstList(ClassFile* arena) :
                     constPool(arena), first(nullptr), last(nullptr), _size(0), nextLabelId(1), branchesCount(0),
                     jsrOrRet(false) {
             }
 
             ~InstList();
 
-            void addInst(Inst *inst, Inst *pos);
+            void addInst(Inst* inst, Inst* pos);
 
-            Inst *first;
-            Inst *last;
+            Inst* first;
+            Inst* last;
 
             int _size;
 
@@ -1936,7 +1938,7 @@ namespace jnif {
             bool jsrOrRet;
 
             template<typename TInst, typename ... TArgs>
-            TInst *_create(const TArgs& ... args);
+            TInst* _create(const TArgs& ... args);
 
         };
 
@@ -2101,8 +2103,8 @@ namespace jnif {
             union {
                 mutable struct {
                     short offset;
-                    Inst *label;
-                    TypeInst *newinst;
+                    Inst* label;
+                    TypeInst* newinst;
                 } uninit;
             };
 
@@ -2123,7 +2125,7 @@ namespace jnif {
                     init(true), typeId(0), tag(tag), dims(0), classIndex(0) {
             }
 
-            Type(TypeTag tag, short offset, Inst *label) :
+            Type(TypeTag tag, short offset, Inst* label) :
                     init(true), typeId(0), tag(tag), dims(0), classIndex(0) {
                 uninit.offset = offset;
                 uninit.label = label;
@@ -2151,7 +2153,7 @@ namespace jnif {
 
         };
 
-        std::ostream& operator<<(std::ostream& os, const Type& type);
+        ostream& operator<<(ostream& os, const Type& type);
 
 
         class TypeFactory {
@@ -2205,7 +2207,7 @@ namespace jnif {
 
             static Type uninitThisType();
 
-            static Type uninitType(short offset, class Inst *label);
+            static Type uninitType(short offset, class Inst* label);
 
             static Type objectType(const string& className, u2 cpindex = 0);
 
@@ -2225,7 +2227,7 @@ namespace jnif {
              * @param fieldDesc the field descriptor to parse.
              * @returns the type that represents the field descriptor.
              */
-            static Type fromFieldDesc(const char *& fieldDesc);
+            static Type fromFieldDesc(const char*& fieldDesc);
 
             /**
              * Parses a method descriptor.
@@ -2234,8 +2236,8 @@ namespace jnif {
              * @param argsType collection of method arguments of methodDesc.
              * @returns the type that represents the return type of methodDesc.
              */
-            static Type fromMethodDesc(const char *methodDesc,
-                                       std::vector<Type> *argsType);
+            static Type fromMethodDesc(const char* methodDesc,
+                                       vector<Type>* argsType);
 
         private:
 
@@ -2251,13 +2253,13 @@ namespace jnif {
             static Type _nullType;
             static Type _voidType;
 
-            static Type _parseBaseType(const char *& fieldDesc,
-                                       const char *originalFieldDesc);
+            static Type _parseBaseType(const char*& fieldDesc,
+                                       const char* originalFieldDesc);
 
-            static Type _getType(const char *& fieldDesc, const char *originalFieldDesc,
+            static Type _getType(const char*& fieldDesc, const char* originalFieldDesc,
                                  int dims);
 
-            static Type _getReturnType(const char *& methodDesc);
+            static Type _getReturnType(const char*& methodDesc);
 
         };
 
@@ -2289,14 +2291,14 @@ namespace jnif {
 
             u2 nameIndex;
             u4 len;
-            ClassFile *const constPool;
+            ClassFile* const constPool;
 
             virtual ~Attr() {
             }
 
         protected:
 
-            Attr(AttrKind kind, u2 nameIndex, u4 len, ClassFile *constPool) :
+            Attr(AttrKind kind, u2 nameIndex, u4 len, ClassFile* constPool) :
                     kind(kind), nameIndex(nameIndex), len(len), constPool(constPool) {
             }
 
@@ -2320,7 +2322,7 @@ namespace jnif {
 
             virtual ~Attrs();
 
-            Attr *add(Attr *attr) {
+            Attr* add(Attr* attr) {
                 attrs.push_back(attr);
 
                 return attr;
@@ -2334,23 +2336,23 @@ namespace jnif {
                 return *attrs[index];
             }
 
-            std::vector<Attr *>::iterator begin() {
+            vector<Attr*>::iterator begin() {
                 return attrs.begin();
             }
 
-            std::vector<Attr *>::iterator end() {
+            vector<Attr*>::iterator end() {
                 return attrs.end();
             }
 
-            std::vector<Attr *>::const_iterator begin() const {
+            vector<Attr*>::const_iterator begin() const {
                 return attrs.begin();
             }
 
-            std::vector<Attr *>::const_iterator end() const {
+            vector<Attr*>::const_iterator end() const {
                 return attrs.end();
             }
 
-            std::vector<Attr *> attrs;
+            vector<Attr*> attrs;
         };
 
 /**
@@ -2359,9 +2361,9 @@ namespace jnif {
         class UnknownAttr : public Attr {
         public:
 
-            const u1 *const data;
+            const u1* const data;
 
-            UnknownAttr(u2 nameIndex, u4 len, const u1 *data, ClassFile *constPool) :
+            UnknownAttr(u2 nameIndex, u4 len, const u1* data, ClassFile* constPool) :
                     Attr(ATTR_UNKNOWN, nameIndex, len, constPool), data(data) {
             }
 
@@ -2375,9 +2377,9 @@ namespace jnif {
 
             struct LvEntry {
                 u2 startPc;
-                Inst *startPcLabel;
+                Inst* startPcLabel;
 
-                Inst *endPcLabel;
+                Inst* endPcLabel;
 
                 u2 len;
                 u2 varNameIndex;
@@ -2385,9 +2387,9 @@ namespace jnif {
                 u2 index;
             };
 
-            std::vector<LvEntry> lvt;
+            vector<LvEntry> lvt;
 
-            LvtAttr(AttrKind kind, u2 nameIndex, ClassFile *constPool) :
+            LvtAttr(AttrKind kind, u2 nameIndex, ClassFile* constPool) :
                     Attr(kind, nameIndex, 0, constPool) {
             }
         };
@@ -2398,18 +2400,18 @@ namespace jnif {
         class LntAttr : public Attr {
         public:
 
-            LntAttr(u2 nameIndex, ClassFile *constPool) :
+            LntAttr(u2 nameIndex, ClassFile* constPool) :
                     Attr(ATTR_LNT, nameIndex, 0, constPool) {
             }
 
             struct LnEntry {
                 u2 startpc;
-                Inst *startPcLabel;
+                Inst* startPcLabel;
 
                 u2 lineno;
             };
 
-            std::vector<LnEntry> lnt;
+            vector<LnEntry> lnt;
 
         };
 
@@ -2419,7 +2421,7 @@ namespace jnif {
         class SmtAttr : public Attr {
         public:
 
-            SmtAttr(u2 nameIndex, ClassFile *constPool) :
+            SmtAttr(u2 nameIndex, ClassFile* constPool) :
                     Attr(ATTR_SMT, nameIndex, 0, constPool) {
             }
 
@@ -2427,16 +2429,16 @@ namespace jnif {
             public:
 
                 int frameType;
-                Inst *label;
+                Inst* label;
 
                 struct {
                 } sameFrame;
                 struct {
-                    std::vector<Type> stack; // [1]
+                    vector<Type> stack; // [1]
                 } sameLocals_1_stack_item_frame;
                 struct {
                     short offset_delta;
-                    std::vector<Type> stack; // [1]
+                    vector<Type> stack; // [1]
                 } same_locals_1_stack_item_frame_extended;
                 struct {
                     short offset_delta;
@@ -2446,16 +2448,16 @@ namespace jnif {
                 } same_frame_extended;
                 struct {
                     short offset_delta;
-                    std::vector<Type> locals; // frameType - 251
+                    vector<Type> locals; // frameType - 251
                 } append_frame;
                 struct {
                     short offset_delta;
-                    std::vector<Type> locals;
-                    std::vector<Type> stack;
+                    vector<Type> locals;
+                    vector<Type> stack;
                 } full_frame;
             };
 
-            std::vector<Entry> entries;
+            vector<Entry> entries;
         };
 
 /**
@@ -2464,13 +2466,13 @@ namespace jnif {
         class ExceptionsAttr : public Attr {
         public:
 
-            ExceptionsAttr(u2 nameIndex, ClassFile *constPool,
-                           const std::vector<u2>& es) :
+            ExceptionsAttr(u2 nameIndex, ClassFile* constPool,
+                           const vector<u2>& es) :
                     Attr(ATTR_EXCEPTIONS, nameIndex, es.size() * 2 + 2, constPool), es(
                     es) {
             }
 
-            std::vector<ConstPool::Index> es;
+            vector<ConstPool::Index> es;
         };
 
 
@@ -2480,7 +2482,7 @@ namespace jnif {
         class CodeAttr : public Attr {
         public:
 
-            CodeAttr(u2 nameIndex, ClassFile *constPool) :
+            CodeAttr(u2 nameIndex, ClassFile* constPool) :
                     Attr(ATTR_CODE, nameIndex, 0, constPool), maxStack(0), maxLocals(0), codeLen(
                     -1), instList(constPool), cfg(nullptr) {
             }
@@ -2502,15 +2504,15 @@ namespace jnif {
             }
 
             struct ExceptionHandler {
-                const LabelInst *const startpc;
-                const LabelInst *const endpc;
-                const LabelInst *const handlerpc;
+                const LabelInst* const startpc;
+                const LabelInst* const endpc;
+                const LabelInst* const handlerpc;
                 const ConstPool::Index catchtype;
             };
 
-            std::vector<ExceptionHandler> exceptions;
+            vector<ExceptionHandler> exceptions;
 
-            class ControlFlowGraph *cfg;
+            class ControlFlowGraph* cfg;
 
             Attrs attrs;
         };
@@ -2520,11 +2522,11 @@ namespace jnif {
 
             const ConstPool::Index signatureIndex;
 
-            SignatureAttr(ConstPool::Index nameIndex, ConstPool::Index signatureIndex, ClassFile *constPool) :
+            SignatureAttr(ConstPool::Index nameIndex, ConstPool::Index signatureIndex, ClassFile* constPool) :
                     Attr(ATTR_SIGNATURE, nameIndex, 2, constPool), signatureIndex(signatureIndex) {
             }
 
-            const char *signature() const;
+            const char* signature() const;
 
         };
 
@@ -2534,22 +2536,22 @@ namespace jnif {
             const ConstPool::Index sourceFileIndex;
 
             SourceFileAttr(ConstPool::Index nameIndex, ConstPool::Index sourceFileIndex,
-                           ClassFile *constPool) :
+                           ClassFile* constPool) :
                     Attr(ATTR_SOURCEFILE, nameIndex, 2, constPool), sourceFileIndex(sourceFileIndex) {
             }
 
-            const char *sourceFile() const;
+            const char* sourceFile() const;
 
         };
 
         class Signature {
         public:
 
-            Signature(const Attrs *attrs) : attrs(attrs) {
+            Signature(const Attrs* attrs) : attrs(attrs) {
             }
 
             bool hasSignature() const {
-                for (Attr *attr : *attrs) {
+                for (Attr* attr : *attrs) {
                     if (attr->kind == ATTR_SIGNATURE) {
                         return true;
                     }
@@ -2558,10 +2560,10 @@ namespace jnif {
                 return false;
             }
 
-            const char *signature() const {
-                for (Attr *attr : *attrs) {
+            const char* signature() const {
+                for (Attr* attr : *attrs) {
                     if (attr->kind == ATTR_SIGNATURE) {
-                        return ((SignatureAttr *) attr)->signature();
+                        return ((SignatureAttr*) attr)->signature();
                     }
                 }
 
@@ -2570,7 +2572,7 @@ namespace jnif {
 
         private:
 
-            const Attrs *attrs;
+            const Attrs* attrs;
 
         };
 
@@ -2601,9 +2603,9 @@ namespace jnif {
             Attrs attrs;
             Signature sig;
 
-            const char *getName() const;
+            const char* getName() const;
 
-            const char *getDesc() const;
+            const char* getDesc() const;
 
         private:
 
@@ -2727,7 +2729,7 @@ namespace jnif {
             }
 
             bool hasCode() const {
-                for (Attr *attr : attrs) {
+                for (Attr* attr : attrs) {
                     if (attr->kind == ATTR_CODE) {
                         return true;
                     }
@@ -2736,10 +2738,10 @@ namespace jnif {
                 return false;
             }
 
-            CodeAttr *codeAttr() const {
-                for (Attr *attr : attrs) {
+            CodeAttr* codeAttr() const {
+                for (Attr* attr : attrs) {
                     if (attr->kind == ATTR_CODE) {
-                        return (CodeAttr *) attr;
+                        return (CodeAttr*) attr;
                     }
                 }
 
@@ -2763,7 +2765,7 @@ namespace jnif {
             /**
              * Shows this method in the specified ostream.
              */
-            friend std::__1::ostream& operator<<(std::__1::ostream& os, const Method& m);
+            friend ostream& operator<<(ostream& os, const Method& m);
 
         };
 
@@ -2822,7 +2824,7 @@ namespace jnif {
             static constexpr const u4 MAGIC = 0xcafebabe;
 
             /// Java's root class
-            static constexpr const char *OBJECT = "java/lang/Object";
+            static constexpr const char* OBJECT = "java/lang/Object";
 
             /**
              * The constructed ClassFile has no class name neither super class name.
@@ -2833,7 +2835,7 @@ namespace jnif {
              * Constructs a ClassFile with a given class name.
              * @param className The class name of this ClassFile.
              */
-            explicit ClassFile(const char *className);
+            explicit ClassFile(const char* className);
 
             /**
              * Constructs a default class file given the class name, the super class
@@ -2841,7 +2843,7 @@ namespace jnif {
              *
              *
              */
-            ClassFile(const char *className, const char *superClassName, u2 accessFlags = PUBLIC,
+            ClassFile(const char* className, const char* superClassName, u2 accessFlags = PUBLIC,
                       const Version& version = Version());
 
             /**
@@ -2849,14 +2851,14 @@ namespace jnif {
              *
              * @return The class name of this class file.
              */
-            const char *getThisClassName() const {
+            const char* getThisClassName() const {
                 return getClassName(thisClassIndex);
             }
 
             /**
              *
              */
-            const char *getSuperClassName() const {
+            const char* getSuperClassName() const {
                 return getClassName(superClassIndex);
             }
 
@@ -2891,7 +2893,7 @@ namespace jnif {
              * @param accessFlags the access flags of the field to add.
              * @returns the newly created field.
              */
-            Field& addField(const char *fieldName, const char *fieldDesc, u2 accessFlags = Field::PUBLIC) {
+            Field& addField(const char* fieldName, const char* fieldDesc, u2 accessFlags = Field::PUBLIC) {
                 ConstPool::Index nameIndex = addUtf8(fieldName);
                 ConstPool::Index descIndex = addUtf8(fieldDesc);
 
@@ -2920,8 +2922,8 @@ namespace jnif {
              * @returns the newly created method.
              */
             Method& addMethod(
-                    const char *methodName,
-                    const char *methodDesc, u2 accessFlags = Method::PUBLIC
+                    const char* methodName,
+                    const char* methodDesc, u2 accessFlags = Method::PUBLIC
             ) {
                 ConstPool::Index nameIndex = addUtf8(methodName);
                 ConstPool::Index descIndex = addUtf8(methodDesc);
@@ -2929,7 +2931,7 @@ namespace jnif {
                 return addMethod(nameIndex, descIndex, accessFlags);
             }
 
-            list<Method>::iterator getMethod(const char *methodName);
+            list<Method>::iterator getMethod(const char* methodName);
 
             /**
              * Computes the size in bytes of this class file of the in-memory
@@ -2940,20 +2942,20 @@ namespace jnif {
             /**
              *
              */
-            void computeFrames(IClassPath *classPath);
+            void computeFrames(IClassPath* classPath);
 
             /**
              * Writes this class file in the specified buffer according to the
              * specification.
              */
-            void write(u1 *classFileData, int classFileLen);
+            void write(u1* classFileData, int classFileLen);
 
             /**
              * Export this class file to dot format.
              *
              * @see www.graphviz.org
              */
-            void dot(std::ostream& os) const;
+            void dot(ostream& os) const;
 
             // Must be the first member, as it is needed for the destructors of the other members.
             Arena _arena;
@@ -2962,14 +2964,14 @@ namespace jnif {
             u2 accessFlags = PUBLIC;
             ConstPool::Index thisClassIndex = ConstPool::NULLINDEX;
             ConstPool::Index superClassIndex = ConstPool::NULLINDEX;
-            std::list<ConstPool::Index> interfaces;
-            std::list<Field> fields;
-            std::list<Method> methods;
+            list<ConstPool::Index> interfaces;
+            list<Field> fields;
+            list<Method> methods;
             Attrs attrs;
             Signature sig;
         };
 
-        std::ostream& operator<<(std::ostream& os, const ClassFile& classFile);
+        ostream& operator<<(ostream& os, const ClassFile& classFile);
 
 
     }
@@ -2988,93 +2990,93 @@ namespace jnif {
             lva.reserve(256);
         }
 
-        Type pop(Inst *inst);
+        Type pop(Inst* inst);
 
-        Type popOneWord(Inst *inst);
+        Type popOneWord(Inst* inst);
 
-        Type popTwoWord(Inst *inst);
+        Type popTwoWord(Inst* inst);
 
-        Type popIntegral(Inst *inst);
+        Type popIntegral(Inst* inst);
 
-        Type popFloat(Inst *inst);
+        Type popFloat(Inst* inst);
 
-        Type popLong(Inst *inst);
+        Type popLong(Inst* inst);
 
-        Type popDouble(Inst *inst);
+        Type popDouble(Inst* inst);
 
-        Type popRef(Inst *inst) {
+        Type popRef(Inst* inst) {
             Type t = popOneWord(inst);
             //assert(t.is(), "invalid ref type on top of the stack");
             return t;
         }
 
-        Type popArray(Inst *inst) {
+        Type popArray(Inst* inst) {
             return popOneWord(inst);
         }
 
-        void popType(const Type& type, Inst *inst);
+        void popType(const Type& type, Inst* inst);
 
-        void pushType(const Type& type, Inst *inst);
+        void pushType(const Type& type, Inst* inst);
 
-        void push(const Type& t, Inst *inst);
+        void push(const Type& t, Inst* inst);
 
-        void pushInt(Inst *inst) {
+        void pushInt(Inst* inst) {
             push(TypeFactory::intType(), inst);
         }
 
-        void pushLong(Inst *inst) {
+        void pushLong(Inst* inst) {
             push(TypeFactory::topType(), inst);
             push(TypeFactory::longType(), inst);
         }
 
-        void pushFloat(Inst *inst) {
+        void pushFloat(Inst* inst) {
             push(TypeFactory::floatType(), inst);
         }
 
-        void pushDouble(Inst *inst) {
+        void pushDouble(Inst* inst) {
             push(TypeFactory::topType(), inst);
             push(TypeFactory::doubleType(), inst);
         }
 
-        void pushRef(const string& className, Inst *inst) {
+        void pushRef(const string& className, Inst* inst) {
             push(TypeFactory::objectType(className), inst);
         }
 
-        void pushArray(const Type& type, u4 dims, Inst *inst) {
+        void pushArray(const Type& type, u4 dims, Inst* inst) {
             push(TypeFactory::arrayType(type, dims), inst);
         }
 
-        void pushNull(Inst *inst) {
+        void pushNull(Inst* inst) {
             push(TypeFactory::nullType(), inst);
         }
 
-        Type getVar(u4 lvindex, Inst *inst);
+        Type getVar(u4 lvindex, Inst* inst);
 
-        void setVar(u4 *lvindex, const Type& t, Inst *inst);
+        void setVar(u4* lvindex, const Type& t, Inst* inst);
 
-        void setVar2(u4 lvindex, const Type& t, Inst *inst);
+        void setVar2(u4 lvindex, const Type& t, Inst* inst);
 
-        void setIntVar(u4 lvindex, Inst *inst) {
+        void setIntVar(u4 lvindex, Inst* inst) {
             setVar(&lvindex, TypeFactory::intType(), inst);
         }
 
-        void setLongVar(u4 lvindex, Inst *inst) {
+        void setLongVar(u4 lvindex, Inst* inst) {
             setVar(&lvindex, TypeFactory::longType(), inst);
         }
 
-        void setFloatVar(u4 lvindex, Inst *inst) {
+        void setFloatVar(u4 lvindex, Inst* inst) {
             setVar(&lvindex, TypeFactory::floatType(), inst);
         }
 
-        void setDoubleVar(u4 lvindex, Inst *inst) {
+        void setDoubleVar(u4 lvindex, Inst* inst) {
             setVar(&lvindex, TypeFactory::doubleType(), inst);
         }
 
-        void setRefVar(u4 lvindex, const string& className, Inst *inst) {
+        void setRefVar(u4 lvindex, const string& className, Inst* inst) {
             setVar(&lvindex, TypeFactory::objectType(className), inst);
         }
 
-        void setRefVar(u4 lvindex, const Type& type, Inst *inst);
+        void setRefVar(u4 lvindex, const Type& type, Inst* inst);
 
         void clearStack() {
             stack.clear();
@@ -3082,14 +3084,14 @@ namespace jnif {
 
         void cleanTops();
 
-        void join(Frame& how, class jnif::model::IClassPath *classPath);
+        void join(Frame& how, class jnif::model::IClassPath* classPath);
 
         void init(const Type& type);
 
-        typedef std::pair<Type, std::set<Inst *> > T;
+        typedef pair<Type, set<Inst*> > T;
 
-        std::vector<T> lva;
-        std::list<T> stack;
+        vector<T> lva;
+        list<T> stack;
         bool valid;
         bool topsErased;
 
@@ -3102,11 +3104,11 @@ namespace jnif {
 
     private:
 
-        void _setVar(u4 lvindex, const Type& t, Inst *inst);
+        void _setVar(u4 lvindex, const Type& t, Inst* inst);
 
     };
 
-    std::ostream& operator<<(std::ostream& os, const Frame& frame);
+    ostream& operator<<(ostream& os, const Frame& frame);
 
 /**
  * Represents a basic block of instructions.
@@ -3121,7 +3123,7 @@ namespace jnif {
 
         friend class ControlFlowGraph;
 
-        void addTarget(BasicBlock *target);
+        void addTarget(BasicBlock* target);
 
         model::InstList::Iterator start;
         model::InstList::Iterator exit;
@@ -3129,52 +3131,54 @@ namespace jnif {
         Frame in;
         Frame out;
 
-        std::vector<BasicBlock *>::iterator begin() {
+        vector<BasicBlock*>::iterator begin() {
             return targets.begin();
         }
 
-        std::vector<BasicBlock *>::iterator end() {
+        vector<BasicBlock*>::iterator end() {
             return targets.end();
         }
 
-        BasicBlock *next = nullptr;
+        BasicBlock* next = nullptr;
 
-        class ControlFlowGraph *const cfg;
+        class ControlFlowGraph* const cfg;
 
-        const Inst *last = nullptr;
+        const Inst* last = nullptr;
 
-        std::vector<BasicBlock *> targets;
-        std::vector<BasicBlock *> ins;
+        vector<BasicBlock*> targets;
+        vector<BasicBlock*> ins;
 
-        const BasicBlock *dom = nullptr;
+        const BasicBlock* dom = nullptr;
 
     private:
 
         BasicBlock(InstList::Iterator& start, InstList::Iterator& exit,
-                   const string& name, class ControlFlowGraph *cfg) :
+                   const string& name, class ControlFlowGraph* cfg) :
                 start(start), exit(exit), name(name), cfg(cfg) {
         }
 
     };
 
-    /// Represents a control flow graph of instructions.
+    /**
+     * Represents a control flow graph of instructions.
+     */
     class ControlFlowGraph {
         friend struct Dominator;
     public:
-        std::vector<BasicBlock *> basicBlocks;
+        vector<BasicBlock*> basicBlocks;
 
     public:
 
-        static constexpr const char *EntryName = ".Entry";
-        static constexpr const char *ExitName = ".Exit";
+        static constexpr const char* EntryName = ".Entry";
+        static constexpr const char* ExitName = ".Exit";
 
-        BasicBlock *const entry;
+        BasicBlock* const entry;
 
-        BasicBlock *const exit;
+        BasicBlock* const exit;
 
         const InstList& instList;
 
-        ControlFlowGraph(InstList& instList);
+        explicit ControlFlowGraph(InstList& instList);
 
         ~ControlFlowGraph();
 
@@ -3186,7 +3190,7 @@ namespace jnif {
          * @param name the name of the basic block to add.
          * @returns the newly created basic block added to this control flow graph.
          */
-        BasicBlock *addBasicBlock(InstList::Iterator start, InstList::Iterator end,
+        BasicBlock* addBasicBlock(InstList::Iterator start, InstList::Iterator end,
                                   const string& name);
 
         /**
@@ -3196,48 +3200,48 @@ namespace jnif {
          * @returns the basic block that starts at label with labelId. If the label
          * id is not found throws an exception.
          */
-        BasicBlock *findBasicBlockOfLabel(int labelId) const;
+        BasicBlock* findBasicBlockOfLabel(int labelId) const;
 
-        std::vector<BasicBlock *>::iterator begin() {
+        vector<BasicBlock*>::iterator begin() {
             return basicBlocks.begin();
         }
 
-        std::vector<BasicBlock *>::iterator end() {
+        vector<BasicBlock*>::iterator end() {
             return basicBlocks.end();
         }
 
-        std::vector<BasicBlock *>::const_iterator begin() const {
+        vector<BasicBlock*>::const_iterator begin() const {
             return basicBlocks.begin();
         }
 
-        std::vector<BasicBlock *>::const_iterator end() const {
+        vector<BasicBlock*>::const_iterator end() const {
             return basicBlocks.end();
         }
 
-        typedef std::map<BasicBlock *, std::set<BasicBlock *> > D;
+        typedef map<BasicBlock*, set<BasicBlock*> > D;
 
-        D dominance(BasicBlock *start);
+        D dominance(BasicBlock* start);
 
     private:
 
-        BasicBlock *addConstBb(InstList& instList, const char *name) {
+        BasicBlock* addConstBb(InstList& instList, const char* name) {
             return addBasicBlock(instList.end(), instList.end(), name);
         }
 
     };
 
-    std::ostream& operator<<(std::ostream& os, BasicBlock& bb);
+    ostream& operator<<(ostream& os, BasicBlock& bb);
 
-    std::ostream& operator<<(std::ostream& os, const ControlFlowGraph& cfg);
+    ostream& operator<<(ostream& os, const ControlFlowGraph& cfg);
 
     namespace parser {
 
         class ClassFileParser : public model::ClassFile {
         public:
 
-            explicit ClassFileParser(const u1 *data, u4 len);
+            explicit ClassFileParser(const u1* data, u4 len);
 
-            static void parse(const u1 *data, u4 len, ClassFile *classFile);
+            static void parse(const u1* data, u4 len, ClassFile* classFile);
 
         };
 
@@ -3256,7 +3260,7 @@ namespace jnif {
              *
              * @param fileName The name of the file to parse.
              */
-            explicit ClassFileStream(const char *fileName);
+            explicit ClassFileStream(const char* fileName);
 
         };
     }
@@ -3266,30 +3270,30 @@ namespace jnif {
         class JarException {
         public:
 
-            JarException(const char *message) : message(message) {
+            explicit JarException(const char* message) : message(message) {
             }
 
-            const char *message;
+            const char* message;
 
         };
 
         class JarFile {
         public:
 
-            typedef void (*ZipCallback)(void *args, int jarid, void *buffer, int size, const char *fileNameInZip);
+            typedef void (* ZipCallback)(void* args, int jarid, void* buffer, int size, const char* fileNameInZip);
 
-            JarFile(const char *zipPath);
+            explicit JarFile(const char* zipPath);
 
             ~JarFile();
 
-            int forEach(void *args, int jarid, ZipCallback callback);
+            int forEach(void* args, int jarid, ZipCallback callback);
 
         private:
 
-            int _extractCurrentFile(void *args, int jarid, ZipCallback callback);
+            int _extractCurrentFile(void* args, int jarid, ZipCallback callback);
 
         private:
-            void *_uf;
+            void* _uf;
         };
 
     }

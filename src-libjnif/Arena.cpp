@@ -11,7 +11,7 @@ namespace jnif {
     class Arena::Block {
     public:
 
-        Block(Block* next, int blockSize) :
+        Block(Block* next, size_t blockSize) :
                 _next(next), _buffer(malloc(blockSize)), _position(0) {
             JnifError::check(_buffer != nullptr, "Block alloc is NULL");
         }
@@ -37,7 +37,7 @@ namespace jnif {
         int _position;
     };
 
-    Arena::Arena(int blockSize) :
+    Arena::Arena(size_t blockSize) :
             blockSize(blockSize),
             _head(new Block(nullptr, blockSize)) {
     }
@@ -52,12 +52,12 @@ namespace jnif {
 
     void* Arena::alloc(int size) {
         void* res = _head->alloc(size);
-        if (res == NULL) {
+        if (res == nullptr) {
             _head = new Block(_head, blockSize);
             res = _head->alloc(size);
         }
 
-        JnifError::assert(res != NULL, "alloc == NULL");
+        JnifError::assert(res != nullptr, "alloc == NULL");
 
         return res;
     }
