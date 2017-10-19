@@ -138,19 +138,19 @@ static void testJoinFrame() {
     handlerLabel->isCatchHandler = true;
 
     instList.addLabel(tryLabel);
-    instList.addType(OPCODE_new, idx);
-    instList.addZero(OPCODE_dup);
-    instList.addInvoke(OPCODE_invokespecial, initidx);
-    instList.addZero(OPCODE_astore_0);
+    instList.addType(Opcode::NEW, idx);
+    instList.addZero(Opcode::dup);
+    instList.addInvoke(Opcode::invokespecial, initidx);
+    instList.addZero(Opcode::astore_0);
     instList.addLabel(endLabel);
-    instList.addJump(OPCODE_goto, l);
+    instList.addJump(Opcode::GOTO, l);
     instList.addLabel(handlerLabel);
-    instList.addZero(OPCODE_astore_1);
-    instList.addZero(OPCODE_aconst_null);
-    instList.addZero(OPCODE_astore_0);
+    instList.addZero(Opcode::astore_1);
+    instList.addZero(Opcode::aconst_null);
+    instList.addZero(Opcode::astore_0);
     instList.addLabel(l);
-    instList.addZero(OPCODE_aload_0);
-    instList.addZero(OPCODE_areturn);
+    instList.addZero(Opcode::aload_0);
+    instList.addZero(Opcode::areturn);
 
     code->exceptions.push_back({tryLabel, endLabel, handlerLabel, exidx});
 
@@ -214,31 +214,31 @@ static void testJoinStack() {
     //	label loopExit, B: Yes, TS: No, TE: No, C: No
     //    29: (177) return
 
-    instList.addZero(OPCODE_aconst_null);
-    instList.addZero(OPCODE_astore_1);
+    instList.addZero(Opcode::aconst_null);
+    instList.addZero(Opcode::astore_1);
     instList.addLabel(loopHeader);
-    instList.addZero(OPCODE_aload_1);
-    instList.addJump(OPCODE_ifnonnull, loopExit);
+    instList.addZero(Opcode::aload_1);
+    instList.addJump(Opcode::ifnonnull, loopExit);
     instList.addLabel(tryStart);
-    instList.addZero(OPCODE_aload_0);
-    instList.addZero(OPCODE_aload_1);
-    instList.addJump(OPCODE_ifnull, ifTrue);
-    instList.addZero(OPCODE_iconst_1);
-    instList.addJump(OPCODE_goto, ifEnd);
+    instList.addZero(Opcode::aload_0);
+    instList.addZero(Opcode::aload_1);
+    instList.addJump(Opcode::ifnull, ifTrue);
+    instList.addZero(Opcode::iconst_1);
+    instList.addJump(Opcode::GOTO, ifEnd);
     instList.addLabel(ifTrue);
-    instList.addZero(OPCODE_iconst_0);
+    instList.addZero(Opcode::iconst_0);
     instList.addLabel(ifEnd);
-    instList.addInvoke(OPCODE_invokevirtual, useidx);
+    instList.addInvoke(Opcode::invokevirtual, useidx);
     instList.addLabel(tryEnd);
-    instList.addJump(OPCODE_goto, afterTry);
+    instList.addJump(Opcode::GOTO, afterTry);
     instList.addLabel(catchHandler);
-    instList.addZero(OPCODE_astore_2);
+    instList.addZero(Opcode::astore_2);
     instList.addLabel(afterTry);
-    instList.addLdc(OPCODE_ldc, emptyString);
-    instList.addZero(OPCODE_astore_1);
-    instList.addJump(OPCODE_goto, loopHeader);
+    instList.addLdc(Opcode::ldc, emptyString);
+    instList.addZero(Opcode::astore_1);
+    instList.addJump(Opcode::GOTO, loopHeader);
     instList.addLabel(loopExit);
-    instList.addZero(OPCODE_return);
+    instList.addZero(Opcode::RETURN);
 
     code->exceptions.push_back({tryStart, tryEnd, catchHandler, exidx});
 
