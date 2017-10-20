@@ -643,7 +643,6 @@ namespace jnif::model {
     }
 
 
-
     u2 Type::getCpIndex() const {
         JnifError::check(isObject(), "Type is not object type to get cp index: ",
                          *this);
@@ -848,7 +847,6 @@ namespace jnif::model {
     Type TypeFactory::_shortType(TYPE_SHORT, "S");
     Type TypeFactory::_nullType(TYPE_NULL);
     Type TypeFactory::_voidType(TYPE_VOID);
-
 
 
     Attrs::~Attrs() {

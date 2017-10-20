@@ -108,9 +108,11 @@ namespace jnif {
     public:
 
         template<typename ... TArgs>
-        static void raise(const TArgs& ... args) __attribute__((noreturn)) {
+//        static void raise(const TArgs& ... args) __attribute__((noreturn)) {
+        static void raise(const TArgs& ... args) {
             stringstream message;
             _format(message, args...);
+
 
             throw TException(message.str());
         }
