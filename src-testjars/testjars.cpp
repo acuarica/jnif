@@ -98,7 +98,7 @@ int main(int argc, const char* argv[]) {
             jnif::jar::JarFile uf(j.c_str());
             int csc = uf.forEach(&classes, 0, [] (void* classes, int, void* buf, int s, const char* fileNameInZip) {
                     u1* b = new u1[s];
-                    memcpy(b, buf, s);
+                    ::memcpy(b, buf, s);
                     JavaFile jf = { b, s, fileNameInZip };
                     ((list<JavaFile>*)classes)->push_back(jf);
                 });
