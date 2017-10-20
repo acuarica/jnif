@@ -27,7 +27,8 @@ namespace jnif {
         free(symbols);
     }
 
-    JnifException::JnifException(const string& message) : message(message) {
+
+    JnifException::JnifException() {
         stringstream os;
         _backtrace(os);
 

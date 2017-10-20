@@ -55,17 +55,30 @@ namespace jnif {
     typedef unsigned int u4;
 
     /**
-     * Represents the base exception that jnif can throw.
+     * Represents the base exception that JNIF can throw.
      */
     class JnifException {
     public:
 
         /**
-         * Creates an exception given the message and the stack trace.
-         *
-         * @param message contains information about exceptional situation.
+         * Creates a default exception with the current stacktrace.
          */
-        explicit JnifException(const string& message);
+        JnifException();
+
+        /**
+         * Creates an exception given the message and the current stack trace.
+         *
+         * @tparam TArgs
+         * @param args contains information about exceptional situation.
+         */
+        template<typename ... TArgs>
+        JnifException(const TArgs& ... args) : JnifException() {
+            stringstream ss;
+            _format(ss, args...);
+
+            message = ss.str();
+        }
+
 
         /**
          * Returns information about the exceptional situation.
@@ -73,14 +86,25 @@ namespace jnif {
         string message;
 
         /**
-         * the stack trace where this exception happened.
+         * The stack trace where this exception happened.
          */
         string stackTrace;
 
         /**
-         * Shows this exception.
+         * Shows the exception in the specified ostream.
          */
         friend ostream& operator<<(ostream& os, const JnifException& ex);
+
+    private:
+
+        static void _format(ostream&) {
+        }
+
+        template<typename TArg, typename ... TArgs>
+        static void _format(ostream& os, const TArg& arg, const TArgs& ... args) {
+            os << arg;
+            _format(os, args...);
+        }
 
     };
 
@@ -108,19 +132,9 @@ namespace jnif {
     public:
 
         template<typename ... TArgs>
-//        static void raise(const TArgs& ... args) __attribute__((noreturn)) {
-        static void raise(const TArgs& ... args) {
-            stringstream message;
-            _format(message, args...);
-
-
-            throw TException(message.str());
-        }
-
-        template<typename ... TArgs>
-        static inline void assert(bool cond, const TArgs& ... args) {
+        static void assert(bool cond, const TArgs& ... args) {
             if (!cond) {
-                raise(args...);
+                throw build(args...);
             }
         }
 
@@ -135,19 +149,27 @@ namespace jnif {
         }
 
         template<typename ... TArgs>
-        static inline void check(bool cond, const TArgs& ... args) {
+        static void check(bool cond, const TArgs& ... args) {
             if (!cond) {
-                raise(args...);
+                throw build(args...);
             }
         }
 
     private:
 
-        static inline void _format(ostream&) {
+        template<typename ... TArgs>
+        static TException build(const TArgs& ... args) {
+            stringstream message;
+            _format(message, args...);
+
+            return TException(message.str());
+        }
+
+        static void _format(ostream&) {
         }
 
         template<typename TArg, typename ... TArgs>
-        static inline void _format(ostream& os, const TArg& arg, const TArgs& ... args) {
+        static void _format(ostream& os, const TArg& arg, const TArgs& ... args) {
             os << arg;
             _format(os, args...);
         }

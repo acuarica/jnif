@@ -10,20 +10,23 @@
 
 #include <jnif.hpp>
 
-namespace jnif::parser {
+namespace jnif {
 
-    struct SourceFileAttrParser {
+    namespace parser {
 
-        static constexpr const char* AttrName = "SourceFile";
+        struct SourceFileAttrParser {
 
-        Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex) {
-            u2 sourceFileIndex = br->readu2();
-            Attr* attr = cp->_arena.create<SourceFileAttr>(nameIndex, sourceFileIndex, cp);
-            return attr;
-        }
+            static constexpr const char* AttrName = "SourceFile";
 
-    };
+            Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex) {
+                u2 sourceFileIndex = br->readu2();
+                Attr* attr = cp->_arena.create<SourceFileAttr>(nameIndex, sourceFileIndex, cp);
+                return attr;
+            }
 
+        };
+
+    }
 }
 
 #endif

@@ -58,7 +58,8 @@ namespace jnif {
 
         for (BasicBlock* bb : cfg) {
             if (bb->start == instList.end()) {
-                JnifError::assert(bb->name ==  ControlFlowGraph::EntryName || bb->name == ControlFlowGraph::ExitName, "");
+                JnifError::assert(bb->name == ControlFlowGraph::EntryName || bb->name == ControlFlowGraph::ExitName,
+                                  "");
                 JnifError::assert(bb->exit == instList.end(), "");
                 continue;
             }
@@ -106,10 +107,9 @@ namespace jnif {
     }
 
     ControlFlowGraph::ControlFlowGraph(InstList& instList) :
-        entry(addConstBb(instList, ".Entry")),
-        exit(addConstBb(instList, ".Exit")),
-        instList(instList)
-    {
+            entry(addConstBb(instList, ".Entry")),
+            exit(addConstBb(instList, ".Exit")),
+            instList(instList) {
         buildCfg(instList, *this);
 
         // std::vector<BasicBlock*>::iterator it = basicBlocks.begin();
@@ -129,7 +129,7 @@ namespace jnif {
 
     BasicBlock* ControlFlowGraph::addBasicBlock(InstList::Iterator start,
                                                 InstList::Iterator end, const string& name) {
-        BasicBlock * const bb = new BasicBlock(start, end, name, this);
+        BasicBlock* const bb = new BasicBlock(start, end, name, this);
 
         if (basicBlocks.size() > 0) {
             BasicBlock* prevbb = basicBlocks.back();
@@ -155,8 +155,8 @@ namespace jnif {
             }
         }
 
-        JnifError::raise("Invalid label id: ", labelId, " for the instruction list: ",
-                         ", in cfg: ", *this, instList);
+        throw JnifException("Invalid label id: ", labelId, " for the instruction list: ",
+                            ", in cfg: ", *this, instList);
     }
 
     ControlFlowGraph::D ControlFlowGraph::dominance(BasicBlock* start) {

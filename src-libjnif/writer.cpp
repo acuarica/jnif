@@ -232,7 +232,7 @@ namespace jnif {
                         bw.writeu2(entry->invokedynamic.nameAndTypeIndex);
                         break;
                     default:
-                        Error::raise("invalid tag!");
+                        throw JnifException("invalid tag!");
                 }
             }
         }
@@ -393,7 +393,7 @@ namespace jnif {
                     offset = type.uninit.label->label()->offset;
                     bw.writeu2(offset);
                 } else {
-                    raise("Invalid type on write: ", type);
+                    throw JnifException("Invalid type on write: ", type);
                 }
 
 //			u1 tag = type.tag;
@@ -578,13 +578,13 @@ namespace jnif {
                         bw.writeu1(inst.multiarray()->dims);
                         break;
                     case KIND_PARSE4TODO:
-                        Error::raise("not implemetd");
+                        throw JnifException("not implemetd");
                         break;
                     case KIND_RESERVED:
-                        Error::raise("not implemetd");
+                        throw JnifException("not implemetd");
                         break;
                     default:
-                        Error::raise("default kind in instlist: ", inst.kind);
+                        throw JnifException("default kind in instlist: ", inst.kind);
                 }
             }
         }

@@ -11,7 +11,7 @@
 #include <jnif.hpp>
 #include "AttrsParser.hpp"
 
-namespace jnif::parser {
+namespace jnif { namespace parser {
 
     using namespace model;
 
@@ -108,6 +108,6 @@ namespace jnif::parser {
 
     };
 
-}
+}}
 
 #endif

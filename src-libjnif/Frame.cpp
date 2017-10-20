@@ -97,7 +97,7 @@ namespace jnif {
         } else if (type.isObject()) {
             popRef(inst);
         } else {
-            JnifError::raise("invalid pop type: ", type);
+            throw JnifException("invalid pop type: ", type);
         }
     }
 
@@ -129,7 +129,7 @@ namespace jnif {
         } else if (type.isObject() || type.isUninitThis()) {
             push(type, inst);
         } else {
-            JnifError::raise("invalid push type: ", type);
+            throw JnifException("invalid push type: ", type);
         }
     }
 

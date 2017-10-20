@@ -11,20 +11,23 @@
 #include "BufferReader.hpp"
 #include <jnif.hpp>
 
-namespace jnif::parser {
+namespace jnif {
 
-    struct SignatureAttrParser {
+    namespace parser {
 
-        static constexpr const char* AttrName = "Signature";
+        struct SignatureAttrParser {
 
-        Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex) {
-            ConstPool::Index sigIndex = br->readu2();
-            Attr* attr = cp->_arena.create<SignatureAttr>(nameIndex, sigIndex, cp);
-            return attr;
-        }
+            static constexpr const char* AttrName = "Signature";
 
-    };
+            Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex) {
+                ConstPool::Index sigIndex = br->readu2();
+                Attr* attr = cp->_arena.create<SignatureAttr>(nameIndex, sigIndex, cp);
+                return attr;
+            }
 
+        };
+
+    }
 }
 
 #endif
