@@ -2851,12 +2851,6 @@ namespace jnif {
             ClassFile();
 
             /**
-             * Constructs a ClassFile with a given class name.
-             * @param className The class name of this ClassFile.
-             */
-            explicit ClassFile(const char* className);
-
-            /**
              * Constructs a default class file given the class name, the super class
              * name and the access flags.
              * @param className
@@ -2864,8 +2858,8 @@ namespace jnif {
              * @param accessFlags
              * @param version
              */
-            ClassFile(const char* className, const char* superClassName, u2 accessFlags = PUBLIC,
-                      const Version& version = Version());
+            ClassFile(const char* className, const char* superClassName = OBJECT, u2 accessFlags = PUBLIC,
+                      Version version = Version());
 
             /**
              * Gets the class name of this class file.

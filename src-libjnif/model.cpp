@@ -265,10 +265,7 @@ namespace jnif {
         ClassFile::ClassFile() : sig(&attrs) {
         }
 
-        ClassFile::ClassFile(const char* className) : thisClassIndex(addClass(className)), sig(&attrs) {
-        }
-
-        ClassFile::ClassFile(const char* className, const char* superClassName, u2 accessFlags, const Version& version)
+        ClassFile::ClassFile(const char* className, const char* superClassName, u2 accessFlags, Version version)
                 : thisClassIndex(addClass(className)), superClassIndex(addClass(superClassName)),
                   accessFlags(accessFlags),
                   version(version), sig(&attrs) {
