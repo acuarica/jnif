@@ -4,7 +4,7 @@
 #include <jnif.hpp>
 #include "tests.hpp"
 
-#include <string.h>
+#include <cstring>
 
 #include <ftw.h>
 #include <iostream>
@@ -25,7 +25,7 @@ void apply(ostream& os, const list<JavaFile>& classes, TestFunc instr) {
     for (const JavaFile& jf : classes) {
         try {
             instr(jf);
-        } catch (JnifException& ex) {
+        } catch (Exception& ex) {
             os << "Error: Exception on class " << jf.name << endl;
             throw ex;
         }
@@ -116,7 +116,7 @@ int main(int argc, const char* argv[]) {
         try {
             apply(cerr, classes, t.second);
             cout << " [OK]" << endl;
-        } catch (const JnifException& ex) {
+        } catch (const Exception& ex) {
             cerr << ex << endl;
             return 1;
         }

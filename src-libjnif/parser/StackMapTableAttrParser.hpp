@@ -50,7 +50,7 @@ namespace jnif {
                     }
                 }
 
-                throw JnifException("Error on parse smt");
+                throw Exception("Error on parse smt");
             }
 
             void parseTs(BufferReader* br, int count, std::vector<Type>& locs,

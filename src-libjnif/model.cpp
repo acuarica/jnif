@@ -259,7 +259,7 @@ namespace jnif {
                 }
             }
 
-            throw JnifException("ERROR! get inst list");
+            throw Exception("ERROR! get inst list");
         }
 
         ClassFile::ClassFile() : sig(&attrs) {
@@ -766,7 +766,7 @@ namespace jnif {
                     return objectType(className);
                 }
                 default:
-                    throw JnifException("Invalid field desc ", originalFieldDesc);
+                    throw Exception("Invalid field desc ", originalFieldDesc);
             }
         }
 

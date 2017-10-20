@@ -7,11 +7,20 @@
 
 using namespace std;
 using namespace jnif;
+using namespace jnif::model;
 
 using jnif::JnifError;
 
+static void testException() {
+    try {
+        throw Exception("arg1: ", 1, ", arg2: ", "2", ", arg3: ", 3.4);
+    } catch (const Exception& ex) {
+        assertEquals(ex.message, string("arg1: 1, arg2: 2, arg3: 3.4"));
+    }
+}
+
 static void testConstPool() {
-    jnif::model::ConstPool cp;
+    ConstPool cp;
 
     auto si = cp.addString("String Test");
     auto ii = cp.addInteger(1);
@@ -27,7 +36,7 @@ static void testConstPool() {
     assertEquals(cp.getDouble(di), 4.2);
 }
 
-class UnitTestClassPath: public jnif::model::IClassPath {
+class UnitTestClassPath : public jnif::model::IClassPath {
 public:
 
     string getCommonSuperClass(const string&, const string&) {
@@ -37,7 +46,7 @@ public:
 };
 
 static void testEmptyModel() {
-    ClassFile cf("jnif/EmptyModel", ClassFile::OBJECT);
+    ClassFile cf("jnif/EmptyModel");
 
     assertEquals(string("java/lang/Object"), string(cf.getSuperClassName()));
     assertEquals(Version(51, 0), cf.version);
@@ -52,17 +61,6 @@ static void testPrinterModel() {
     cf2.addMethod("main", "([Ljava/lang/String;)V", Method::STATIC | Method::PUBLIC);
     ofstream os2;
     os2 << cf2;
-}
-
-static void testException() {
-//	try {
-//		JnifException ex();
-//		//ex << "arg1: " << 1 << ", arg2: " << "2" << ", arg3: " << 3.4;
-//
-//		throw ex;
-//	} catch (const JnifException& ex) {
-//		cerr << ex << endl;
-//	}
 }
 
 static void testJoinFrameObjectAndEmpty() {
@@ -113,8 +111,7 @@ static void testJoinFrame() {
     UnitTestClassPath cp;
 
     ClassFile cf("testunit/Class", ClassFile::OBJECT);
-    Method& m = cf.addMethod("method", "()Ltestunit/Class;",
-                             Method::PUBLIC | Method::STATIC);
+    Method& m = cf.addMethod("method", "()Ltestunit/Class;", Method::PUBLIC | Method::STATIC);
     ConstPool::Index cidx = cf.addUtf8("Code");
     CodeAttr* code = new CodeAttr(cidx, &cf);
     m.attrs.add(code);
@@ -244,7 +241,7 @@ static void testJoinStack() {
 
     try {
         cf.computeFrames(&cp);
-    } catch (const JnifException& ex) {
+    } catch (const Exception& ex) {
         //ofstream os("build/stack.dot");
         //cf.dot(os);
         throw ex;
@@ -258,7 +255,7 @@ static void run(TestFunc* testFunc, const string& testName) {
 
     try {
         testFunc();
-    } catch (const JnifException& ex) {
+    } catch (const Exception& ex) {
         cerr << ex << endl;
         exit(1);
     }
@@ -268,10 +265,10 @@ static void run(TestFunc* testFunc, const string& testName) {
 
 #define RUN(testName) run(&testName, #testName)
 
-int main(int, const char*[]) {
+int main(int, const char* []) {
+    RUN(testException);
     RUN(testEmptyModel);
     RUN(testPrinterModel);
-    RUN(testException);
     RUN(testJoinFrameObjectAndEmpty);
     RUN(testJoinFrameException);
     RUN(testJoinFrame);

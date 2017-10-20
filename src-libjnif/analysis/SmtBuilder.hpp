@@ -607,7 +607,7 @@ namespace jnif {
             case Opcode::breakpoint:
             case Opcode::impdep1:
             case Opcode::impdep2:
-                throw JnifException("goto_w, jsr_w breakpoint not implemented");
+                throw Exception("goto_w, jsr_w breakpoint not implemented");
                 break;
             case Opcode::invokedynamic: {
                 ConstPool::Index callSite = inst.indy()->callSite();
@@ -626,7 +626,7 @@ namespace jnif {
                 break;
             }
             default:
-                throw JnifException("unknown opcode not implemented: ", inst.opcode);
+                throw Exception("unknown opcode not implemented: ", inst.opcode);
             }
         }
 
@@ -685,7 +685,7 @@ namespace jnif {
                 frame.pushRef("java/lang/String", &inst);
                 break;
             default:
-                throw JnifException("Invalid tag entry: ", tag);
+                throw Exception("Invalid tag entry: ", tag);
             }
         }
 
@@ -699,7 +699,7 @@ namespace jnif {
                 frame.pushDouble(&inst);
                 break;
             default:
-                throw JnifException("Invalid constant for ldc2_w");
+                throw Exception("Invalid constant for ldc2_w");
             }
         }
 
@@ -914,7 +914,7 @@ namespace jnif {
                 iinc(inst.wide()->iinc.index, &inst);
                 break;
             default:
-                throw JnifException("Unsupported wide opcode: ", inst.wide()->subOpcode);
+                throw Exception("Unsupported wide opcode: ", inst.wide()->subOpcode);
             }
 
         }
@@ -939,7 +939,7 @@ namespace jnif {
                 return TypeFactory::doubleType();
             }
 
-            throw JnifException("invalid atype: ", atype);
+            throw Exception("invalid atype: ", atype);
         }
 
         TFrame& frame;

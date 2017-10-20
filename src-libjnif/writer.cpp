@@ -109,7 +109,7 @@ namespace jnif {
     };
 
     template<typename TWriter>
-    class ClassWriter : private Error<JnifException> {
+    class ClassWriter : private Error<Exception> {
     public:
 
         ClassWriter(TWriter& bw) :
@@ -232,7 +232,7 @@ namespace jnif {
                         bw.writeu2(entry->invokedynamic.nameAndTypeIndex);
                         break;
                     default:
-                        throw JnifException("invalid tag!");
+                        throw Exception("invalid tag!");
                 }
             }
         }
@@ -393,7 +393,7 @@ namespace jnif {
                     offset = type.uninit.label->label()->offset;
                     bw.writeu2(offset);
                 } else {
-                    throw JnifException("Invalid type on write: ", type);
+                    throw Exception("Invalid type on write: ", type);
                 }
 
 //			u1 tag = type.tag;
@@ -578,13 +578,13 @@ namespace jnif {
                         bw.writeu1(inst.multiarray()->dims);
                         break;
                     case KIND_PARSE4TODO:
-                        throw JnifException("not implemetd");
+                        throw Exception("not implemetd");
                         break;
                     case KIND_RESERVED:
-                        throw JnifException("not implemetd");
+                        throw Exception("not implemetd");
                         break;
                     default:
-                        throw JnifException("default kind in instlist: ", inst.kind);
+                        throw Exception("default kind in instlist: ", inst.kind);
                 }
             }
         }
@@ -606,7 +606,7 @@ namespace jnif {
                 Error::check(attr.codeLen < 65536,
                              "Method code must be less than 65536 but it is equals to ",
                              attr.codeLen);
-            } catch (const JnifException& ex) {
+            } catch (const Exception& ex) {
                 throw InvalidMethodLengthException(ex.message);
             }
             //}

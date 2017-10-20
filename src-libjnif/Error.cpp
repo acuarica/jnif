@@ -28,7 +28,7 @@ namespace jnif {
     }
 
 
-    JnifException::JnifException() {
+    Exception::Exception() {
         stringstream os;
         _backtrace(os);
 

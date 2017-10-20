@@ -155,7 +155,7 @@ namespace jnif {
             }
         }
 
-        throw JnifException("Invalid label id: ", labelId, " for the instruction list: ",
+        throw Exception("Invalid label id: ", labelId, " for the instruction list: ",
                             ", in cfg: ", *this, instList);
     }
 

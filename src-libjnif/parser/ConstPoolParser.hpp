@@ -105,7 +105,7 @@ namespace jnif {
                             break;
                         }
                         default:
-                            throw JnifException("Error while reading tag: ", tag);
+                            throw Exception("Error while reading tag: ", tag);
                     }
                 }
             }

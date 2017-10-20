@@ -25,7 +25,7 @@ static constexpr const char* keyword = blue;
 namespace jnif {
 
 
-    std::ostream& operator<<(std::ostream& os, const JnifException& ex) {
+    std::ostream& operator<<(std::ostream& os, const Exception& ex) {
         os << "Error: JNIF Exception: " << ex.message << " @ " << endl;
         os << ex.stackTrace;
 
@@ -329,16 +329,16 @@ namespace jnif {
                     break;
                 }
                 case KIND_PARSE4TODO:
-                    throw JnifException("FrParse4__TODO__Instr not implemented");
+                    throw Exception("FrParse4__TODO__Instr not implemented");
                     break;
                 case KIND_RESERVED:
-                    throw JnifException("FrParseReservedInstr not implemented");
+                    throw Exception("FrParseReservedInstr not implemented");
                     break;
                 case KIND_FRAME:
                     //	os << "Frame " << inst.frame.frame;
                     break;
                 default:
-                    throw JnifException("print inst: unknown inst kind!");
+                    throw Exception("print inst: unknown inst kind!");
             }
 
             return os;
@@ -382,7 +382,7 @@ namespace jnif {
             } else {
                 os << "UNKNOWN TYPE!!!";
 
-                throw JnifException("Invalid type on write: ", type);
+                throw Exception("Invalid type on write: ", type);
             }
 
             return os;
@@ -447,7 +447,7 @@ namespace jnif {
             return os;
         }
 
-        class ClassPrinter : private Error<JnifException> {
+        class ClassPrinter : private Error<Exception> {
         public:
 
             ClassPrinter(const ClassFile& cf, ostream& os, int tabs) :
@@ -601,7 +601,7 @@ namespace jnif {
                                << ".#" << entry->invokedynamic.nameAndTypeIndex;
                             break;
                         default:
-                            throw JnifException("invalid tag in printer!");
+                            throw Exception("invalid tag in printer!");
                     }
 
                     os << endl;

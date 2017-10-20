@@ -57,13 +57,13 @@ namespace jnif {
     /**
      * Represents the base exception that JNIF can throw.
      */
-    class JnifException {
+    class Exception {
     public:
 
         /**
          * Creates a default exception with the current stacktrace.
          */
-        JnifException();
+        Exception();
 
         /**
          * Creates an exception given the message and the current stack trace.
@@ -72,13 +72,12 @@ namespace jnif {
          * @param args contains information about exceptional situation.
          */
         template<typename ... TArgs>
-        JnifException(const TArgs& ... args) : JnifException() {
+        explicit Exception(const TArgs& ... args) : Exception() {
             stringstream ss;
             _format(ss, args...);
 
             message = ss.str();
         }
-
 
         /**
          * Returns information about the exceptional situation.
@@ -93,7 +92,7 @@ namespace jnif {
         /**
          * Shows the exception in the specified ostream.
          */
-        friend ostream& operator<<(ostream& os, const JnifException& ex);
+        friend ostream& operator<<(ostream& os, const Exception& ex);
 
     private:
 
@@ -108,17 +107,17 @@ namespace jnif {
 
     };
 
-    class WriterException : public JnifException {
+    class WriterException : public Exception {
     public:
 
-        explicit WriterException(const string& message) : JnifException(message) {}
+        explicit WriterException(const string& message) : Exception(message) {}
 
     };
 
     class InvalidMethodLengthException : public WriterException {
     public:
 
-        InvalidMethodLengthException(const string& message) : WriterException(message) {
+        explicit InvalidMethodLengthException(const string& message) : WriterException(message) {
         }
     };
 
@@ -139,11 +138,7 @@ namespace jnif {
         }
 
         template<typename T, typename ... TArgs>
-        static inline void assertEquals(
-                const T& expected,
-                const T& actual,
-                const TArgs& ... args
-        ) {
+        static void assertEquals(const T& expected, const T& actual, const TArgs& ... args) {
             assert(expected == actual, "assertEqual failed: expected=", expected,
                    ", actual=", actual, ", message: ", args...);
         }
@@ -176,14 +171,11 @@ namespace jnif {
 
     };
 
-    class JnifError : public Error<JnifException> {
+    class JnifError : public Error<Exception> {
     };
 
     template<class T, class ... TArgs>
-    static inline void assertEquals(
-            const T& actual,
-            const T& expected,
-            const TArgs& ... args) {
+    static void assertEquals(const T& actual, const T& expected, const TArgs& ... args) {
         JnifError::assert(
                 actual == expected,
                 "assertEqual failed: expected=",
@@ -1298,9 +1290,9 @@ namespace jnif {
                 return kind == KIND_MULTIARRAY;
             }
 
-            bool isJsrOrRet() const {
-                return opcode == Opcode::jsr || opcode == Opcode::jsr_w || opcode == Opcode::ret;
-            }
+//            bool isJsrOrRet() const {
+//                return opcode == Opcode::jsr || opcode == Opcode::jsr_w || opcode == Opcode::ret;
+//            }
 
             /**
              * The opcode of this instruction.
@@ -1584,7 +1576,7 @@ namespace jnif {
             WideInst(Opcode subOpcode, u2 lvindex, ConstPool* constPool) :
                     Inst(Opcode::wide, KIND_ZERO, constPool), subOpcode(subOpcode) {
                 if (subOpcode == Opcode::ret) {
-                    throw JnifException("Ret found in wide instruction!!!");
+                    throw Exception("Ret found in wide instruction!!!");
                 }
 
                 var.lvindex = lvindex;
@@ -2798,6 +2790,7 @@ namespace jnif {
          * Models a Java Class File following the specification of the JVM version 7.
          */
         class ClassFile : public ConstPool {
+        public:
 
             ClassFile(const ClassFile&) = delete;
 
@@ -2806,8 +2799,6 @@ namespace jnif {
             ClassFile& operator=(const ClassFile&) = delete;
 
             ClassFile& operator=(ClassFile&&) = delete;
-
-        public:
 
             /**
              * Access flags for the class itself.
@@ -2842,12 +2833,16 @@ namespace jnif {
                         ENUM = 0x4000
             };
 
-            /// The magic number signature that must appear at the beginning of each
-            /// class file, identifying the class file format;
-            /// it has the value 0xCAFEBABE.
+            /**
+             * The magic number signature that must appear at the beginning of each
+             * class file, identifying the class file format;
+             * it has the value 0xCAFEBABE.
+             */
             static constexpr const u4 MAGIC = 0xcafebabe;
 
-            /// Java's root class
+            /**
+             * Java's root class
+             */
             static constexpr const char* OBJECT = "java/lang/Object";
 
             /**
@@ -2864,8 +2859,10 @@ namespace jnif {
             /**
              * Constructs a default class file given the class name, the super class
              * name and the access flags.
-             *
-             *
+             * @param className
+             * @param superClassName
+             * @param accessFlags
+             * @param version
              */
             ClassFile(const char* className, const char* superClassName, u2 accessFlags = PUBLIC,
                       const Version& version = Version());

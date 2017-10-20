@@ -173,7 +173,7 @@ namespace jnif {
 //			case KIND_RESERVED:
                             //			break;
                         default:
-                            throw JnifException("default kind in parseInstTargets: "
+                            throw Exception("default kind in parseInstTargets: "
                                                      "opcode: ", opcode, ", kind: ", kind);
                     }
                 }
@@ -343,11 +343,11 @@ namespace jnif {
 
                     return instList.addMultiArray(classIndex, dims);
                 } else if (kind == KIND_PARSE4TODO) {
-                    throw JnifException("FrParse4__TODO__Instr not implemented");
+                    throw Exception("FrParse4__TODO__Instr not implemented");
                 } else if (kind == KIND_RESERVED) {
-                    throw JnifException("FrParseReservedInstr not implemented");
+                    throw Exception("FrParseReservedInstr not implemented");
                 } else {
-                    throw JnifException("default kind in parseInstList");
+                    throw Exception("default kind in parseInstList");
                 }
             }
 
