@@ -2,15 +2,16 @@
 // Created by Luigi on 10.10.17.
 //
 
-#include "unzip.h"
-#include <jnif.hpp>
+#include "jnif.hpp"
+#include "zip/unzip.h"
 
 namespace jnif {
+
     namespace jar {
 
         JarFile::JarFile(const char* zipPath) {
             _uf = unzOpen64(zipPath);
-            if (_uf == NULL) {
+            if (_uf == nullptr) {
                 throw JarException("Can't open file");
             }
         }
@@ -67,13 +68,13 @@ namespace jnif {
                 return 0;
             }
 
-            void* buf = (void*) malloc(size);
-            if (buf == NULL) {
+            void* buf = malloc(size);
+            if (buf == nullptr) {
                 fprintf(stderr, "PANIC: Error allocating memory\n");
                 exit(1);
             }
 
-            err = unzOpenCurrentFilePassword(_uf, NULL);
+            err = unzOpenCurrentFilePassword(_uf, nullptr);
             if (err != UNZ_OK) {
                 printf("error %d with zipfile in unzOpenCurrentFilePassword\n", err);
                 // return UNZ_INTERNALERROR;
@@ -99,9 +100,6 @@ namespace jnif {
 
             free(buf);
             return err;
-
-
         }
-
     }
 }

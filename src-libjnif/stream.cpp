@@ -2,11 +2,12 @@
 // Created by Luigi on 07.10.17.
 //
 
-#include <jnif.hpp>
+#include "jnif.hpp"
 #include <fstream>
 #include <iostream>
 
 namespace jnif {
+
     namespace stream {
 
         ClassFileStream::ClassFileStream(const char* fileName) {

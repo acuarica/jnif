@@ -4,10 +4,6 @@
 
 #include "jnif.hpp"
 
-#include "analysis/SmtBuilder.hpp"
-#include "analysis/ComputeFrames.hpp"
-#include "analysis/FrameGenerator.hpp"
-
 namespace jnif {
 
     namespace model {
@@ -193,14 +189,14 @@ namespace jnif {
             return _minor;
         }
 
-        std::string Version::supportedByJdk() const {
+        string Version::supportedByJdk() const {
             if (Version(45, 3) <= *this && *this < Version(45, 0)) {
                 return "1.0.2";
             } else if (Version(45, 0) <= *this && *this <= Version(45, 65535)) {
                 return "1.1.*";
             } else {
                 u2 k = _major - 44;
-                std::stringstream ss;
+                stringstream ss;
                 ss << "1." << k;
                 return ss.str();
             }
@@ -218,7 +214,6 @@ namespace jnif {
         bool operator<=(const Version& lhs, const Version& rha) {
             return lhs < rha || lhs == rha;
         }
-
 
         Member::Member(u2 accessFlags, ConstPool::Index nameIndex, ConstPool::Index descIndex,
                        const ConstPool& constPool) :
@@ -295,25 +290,6 @@ namespace jnif {
             return methods.end();
         }
 
-        void ClassFile::computeFrames(IClassPath* classPath) {
-            computeSize();
-
-            FrameGenerator fg(*this, classPath);
-
-            for (Method& method : methods) {
-                CodeAttr* code = method.codeAttr();
-
-                if (code != NULL) {
-                    bool hasJsrOrRet = code->instList.hasJsrOrRet();
-                    if (hasJsrOrRet) {
-                        return;
-                    }
-
-                    fg.computeFrames(code, &method);
-                }
-            }
-        }
-
         static std::ostream& dotFrame(std::ostream& os, const Frame& frame) {
             os << " LVA: ";
             for (u4 i = 0; i < frame.lva.size(); i++) {
@@ -367,7 +343,7 @@ namespace jnif {
 
             int methodId = 0;
             for (const Method& method : methods) {
-                if (method.hasCode() && method.codeAttr()->cfg != NULL) {
+                if (method.hasCode() && method.codeAttr()->cfg != nullptr) {
                     const std::string& methodName = getUtf8(method.nameIndex);
                     const std::string& methodDesc = getUtf8(method.descIndex);
 
@@ -391,37 +367,37 @@ namespace jnif {
 
 
         Inst* InstList::Iterator::operator*() {
-            JnifError::assert(position != NULL, "Dereferencing * on NULL");
+            JnifError::assert(position != nullptr, "Dereferencing * on NULL");
             return position;
         }
 
         Inst* InstList::Iterator::operator->() const {
-            JnifError::assert(position != NULL, "Dereferencing -> on NULL");
+            JnifError::assert(position != nullptr, "Dereferencing -> on NULL");
 
             return position;
         }
 
         InstList::Iterator& InstList::Iterator::operator++() {
-            JnifError::assert(position != NULL, "Doing ++ at NULL");
+            JnifError::assert(position != nullptr, "Doing ++ at NULL");
             position = position->next;
 
             return *this;
         }
 
         InstList::Iterator& InstList::Iterator::operator--() {
-            if (position == NULL) {
+            if (position == nullptr) {
                 position = last;
             } else {
                 position = position->prev;
             }
 
-            JnifError::assert(position != NULL, "Doing -- at NULL after last");
+            JnifError::assert(position != nullptr, "Doing -- at NULL after last");
 
             return *this;
         }
 
         InstList::~InstList() {
-            for (Inst* inst = first; inst != NULL;) {
+            for (Inst* inst = first; inst != nullptr;) {
                 Inst* next = inst->next;
                 inst->~Inst();
                 inst = next;
@@ -601,27 +577,27 @@ namespace jnif {
         }
 
         void InstList::addInst(Inst* inst, Inst* pos) {
-            JnifError::assert((first == NULL) == (last == NULL),
+            JnifError::assert((first == nullptr) == (last == nullptr),
                               "Invalid head/tail/size: head: ", first, ", tail: ", last,
                               ", size: ", _size);
 
-            JnifError::assert((first == NULL) == (_size == 0),
+            JnifError::assert((first == nullptr) == (_size == 0),
                               "Invalid head/tail/size: head: ", first, ", tail: ", last,
                               ", size: ", _size);
 
             Inst* p;
             Inst* n;
-            if (first == NULL) {
-                JnifError::assert(pos == NULL, "Invalid pos");
+            if (first == nullptr) {
+                JnifError::assert(pos == nullptr, "Invalid pos");
 
-                p = NULL;
-                n = NULL;
+                p = nullptr;
+                n = nullptr;
                 //first = inst;
                 //last = inst;
             } else {
-                if (pos == NULL) {
+                if (pos == nullptr) {
                     p = last;
-                    n = NULL;
+                    n = nullptr;
                     //last = inst;
                 } else {
                     p = pos->prev;
@@ -632,13 +608,13 @@ namespace jnif {
             inst->prev = p;
             inst->next = n;
 
-            if (inst->prev != NULL) {
+            if (inst->prev != nullptr) {
                 inst->prev->next = inst;
             } else {
                 first = inst;
             }
 
-            if (inst->next != NULL) {
+            if (inst->next != nullptr) {
                 inst->next->prev = inst;
             } else {
                 last = inst;
