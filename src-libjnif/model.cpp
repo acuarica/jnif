@@ -9,8 +9,8 @@
 #include "analysis/FrameGenerator.hpp"
 
 namespace jnif {
-    namespace model {
 
+    namespace model {
 
         u4 ConstPool::size() const {
             return entries.size();
@@ -271,6 +271,10 @@ namespace jnif {
                   version(version), sig(&attrs) {
         }
 
+        const char* ClassFile::getThisClassName() const {
+            return getClassName(thisClassIndex);
+        }
+
         Field& ClassFile::addField(ConstPool::Index nameIndex, ConstPool::Index descIndex, u2 accessFlags) {
             fields.emplace_back(accessFlags, nameIndex, descIndex, *this);
             return fields.back();
@@ -282,7 +286,7 @@ namespace jnif {
         }
 
         list<Method>::iterator ClassFile::getMethod(const char* methodName) {
-            for (list<Method>::iterator it = methods.begin(); it != methods.end(); it++) {
+            for (auto it = methods.begin(); it != methods.end(); it++) {
                 if (it->getName() == string(methodName)) {
                     return it;
                 }
@@ -380,7 +384,6 @@ namespace jnif {
 
             os << "}" << std::endl;
         }
-
 
         void Inst::checkCast(bool cond, const char* kindName) const {
             JnifError::assert(cond, "Inst is not a ", kindName, ": ", *this);

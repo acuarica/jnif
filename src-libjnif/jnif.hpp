@@ -2858,17 +2858,15 @@ namespace jnif {
              * @param accessFlags
              * @param version
              */
-            ClassFile(const char* className, const char* superClassName = OBJECT, u2 accessFlags = PUBLIC,
-                      Version version = Version());
+            explicit ClassFile(const char* className, const char* superClassName = OBJECT, u2 accessFlags = PUBLIC,
+                               Version version = Version());
 
             /**
              * Gets the class name of this class file.
              *
              * @return The class name of this class file.
              */
-            const char* getThisClassName() const {
-                return getClassName(thisClassIndex);
-            }
+            const char* getThisClassName() const;
 
             /**
              *
