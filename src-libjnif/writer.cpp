@@ -210,8 +210,8 @@ namespace jnif {
                         break;
                     }
                     case ConstPool::NAMEANDTYPE:
-                        bw.writeu2(entry->nameandtype.nameIndex);
-                        bw.writeu2(entry->nameandtype.descriptorIndex);
+                        bw.writeu2(entry->nameAndType.nameIndex);
+                        bw.writeu2(entry->nameAndType.descriptorIndex);
                         break;
                     case ConstPool::UTF8: {
                         u2 len = entry->utf8.str.length();
@@ -221,15 +221,15 @@ namespace jnif {
                         break;
                     }
                     case ConstPool::METHODHANDLE:
-                        bw.writeu1(entry->methodhandle.referenceKind);
-                        bw.writeu2(entry->methodhandle.referenceIndex);
+                        bw.writeu1(entry->methodHandle.referenceKind);
+                        bw.writeu2(entry->methodHandle.referenceIndex);
                         break;
                     case ConstPool::METHODTYPE:
-                        bw.writeu2(entry->methodtype.descriptorIndex);
+                        bw.writeu2(entry->methodType.descriptorIndex);
                         break;
                     case ConstPool::INVOKEDYNAMIC:
-                        bw.writeu2(entry->invokedynamic.bootstrapMethodAttrIndex);
-                        bw.writeu2(entry->invokedynamic.nameAndTypeIndex);
+                        bw.writeu2(entry->invokeDynamic.bootstrapMethodAttrIndex);
+                        bw.writeu2(entry->invokeDynamic.nameAndTypeIndex);
                         break;
                     default:
                         throw Exception("invalid tag!");

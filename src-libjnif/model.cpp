@@ -270,6 +270,10 @@ namespace jnif {
             return getClassName(thisClassIndex);
         }
 
+        const char* ClassFile::getSuperClassName() const {
+            return getClassName(superClassIndex);
+        }
+
         Field& ClassFile::addField(ConstPool::Index nameIndex, ConstPool::Index descIndex, u2 accessFlags) {
             fields.emplace_back(accessFlags, nameIndex, descIndex, *this);
             return fields.back();

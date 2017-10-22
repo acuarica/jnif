@@ -436,7 +436,9 @@ namespace jnif {
                         INVOKEDYNAMIC = 18
             };
 
-            /// The const item.
+            /**
+             * The const item.
+             */
             struct Item {
 
                 Item() : tag(NULLENTRY) {}
@@ -455,13 +457,13 @@ namespace jnif {
 
                 Item(Double d) : tag(DOUBLE), d(d) {}
 
-                Item(NameAndType nat) : tag(NAMEANDTYPE), nameandtype(nat) {}
+                Item(NameAndType nat) : tag(NAMEANDTYPE), nameAndType(nat) {}
 
-                Item(MethodHandle mh) : tag(METHODHANDLE), methodhandle(mh) {}
+                Item(MethodHandle mh) : tag(METHODHANDLE), methodHandle(mh) {}
 
-                Item(MethodType mt) : tag(METHODTYPE), methodtype(mt) {}
+                Item(MethodType mt) : tag(METHODTYPE), methodType(mt) {}
 
-                Item(InvokeDynamic id) : tag(INVOKEDYNAMIC), invokedynamic(id) {}
+                Item(InvokeDynamic id) : tag(INVOKEDYNAMIC), invokeDynamic(id) {}
 
                 Item(const string& value) : tag(UTF8), utf8(value) {}
 
@@ -481,10 +483,10 @@ namespace jnif {
                     Float f;
                     Long l;
                     Double d;
-                    NameAndType nameandtype;
-                    MethodHandle methodhandle;
-                    MethodType methodtype;
-                    InvokeDynamic invokedynamic;
+                    NameAndType nameAndType;
+                    MethodHandle methodHandle;
+                    MethodType methodType;
+                    InvokeDynamic invokeDynamic;
                 };
 
                 const Utf8 utf8;
@@ -754,8 +756,8 @@ namespace jnif {
 
             void getNameAndType(Index index, string* name, string* desc) const {
                 const Item* e = _getEntry(index, NAMEANDTYPE, "NameAndType");
-                u2 nameIndex = e->nameandtype.nameIndex;
-                u2 descIndex = e->nameandtype.descriptorIndex;
+                u2 nameIndex = e->nameAndType.nameIndex;
+                u2 descIndex = e->nameAndType.descriptorIndex;
 
                 *name = getUtf8(nameIndex);
                 *desc = getUtf8(descIndex);
@@ -763,7 +765,7 @@ namespace jnif {
 
             const InvokeDynamic& getInvokeDynamic(Index index) const {
                 const Item* e = _getEntry(index, INVOKEDYNAMIC, "Indy");
-                return e->invokedynamic;
+                return e->invokeDynamic;
             }
 
             Index getIndexOfUtf8(const char* utf8);
@@ -793,7 +795,6 @@ namespace jnif {
             vector<Item> entries;
 
         private:
-
 
             template<class... TArgs>
             Index _addSingle(TArgs... args);
@@ -2583,7 +2584,7 @@ namespace jnif {
                     }
                 }
 
-                return NULL;
+                return nullptr;
             }
 
         private:
@@ -2597,6 +2598,7 @@ namespace jnif {
 /// @see Field
 /// @see Method
         class Member {
+        public:
 
             Member(const Member&) = delete;
 
@@ -2609,8 +2611,6 @@ namespace jnif {
             friend class Field;
 
             friend class Method;
-
-        public:
 
             const u2 accessFlags;
             const ConstPool::Index nameIndex;
@@ -2630,6 +2630,7 @@ namespace jnif {
         };
 
         class Field : public Member {
+        public:
 
             Field(const Field&) = delete;
 
@@ -2638,8 +2639,6 @@ namespace jnif {
             Field& operator=(const Field&) = delete;
 
             Field& operator=(Field&&) = delete;
-
-        public:
 
             /// Access flags used by fields.
             enum Flags {
@@ -2672,11 +2671,8 @@ namespace jnif {
                         ENUM = 0x4000
             };
 
-            Field(
-                    jnif::u2 accessFlags,
-                    jnif::model::ConstPool::Index nameIndex,
-                    jnif::model::ConstPool::Index descIndex,
-                    const jnif::model::ConstPool& constPool) :
+            Field(u2 accessFlags, ConstPool::Index nameIndex, ConstPool::Index descIndex,
+                  const ConstPool& constPool) :
                     Member(accessFlags, nameIndex, descIndex, constPool) {
             }
 
@@ -2684,6 +2680,7 @@ namespace jnif {
 
 /// Represents a Java method.
         class Method : public Member {
+        public:
 
             Method(const Method&) = delete;
 
@@ -2692,8 +2689,6 @@ namespace jnif {
             Method& operator=(const Method&) = delete;
 
             Method& operator=(Method&&) = delete;
-
-        public:
 
             /// Access flags used by methods.
             enum Flags {
@@ -2736,11 +2731,8 @@ namespace jnif {
 
             };
 
-            Method(
-                    jnif::u2 accessFlags,
-                    jnif::model::ConstPool::Index nameIndex,
-                    jnif::model::ConstPool::Index descIndex,
-                    const jnif::model::ConstPool& constPool) :
+            Method(u2 accessFlags, ConstPool::Index nameIndex, ConstPool::Index descIndex,
+                   const ConstPool& constPool) :
                     Member(accessFlags, nameIndex, descIndex, constPool) {
             }
 
@@ -2761,7 +2753,7 @@ namespace jnif {
                     }
                 }
 
-                return NULL;
+                return nullptr;
             }
 
             InstList& instList();
@@ -2869,11 +2861,11 @@ namespace jnif {
             const char* getThisClassName() const;
 
             /**
+             * Gets the class name of the super class of this class file.
              *
+             * @return The super class name.
              */
-            const char* getSuperClassName() const {
-                return getClassName(superClassIndex);
-            }
+            const char* getSuperClassName() const;
 
             /**
              * Determines whether this class file is an interface.

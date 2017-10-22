@@ -583,22 +583,22 @@ namespace jnif {
                             //i++;
                             break;
                         case ConstPool::NAMEANDTYPE:
-                            os << "#" << entry->nameandtype.nameIndex << ".#"
-                               << entry->nameandtype.descriptorIndex;
+                            os << "#" << entry->nameAndType.nameIndex << ".#"
+                               << entry->nameAndType.descriptorIndex;
                             break;
                         case ConstPool::UTF8:
                             os << entry->utf8.str;
                             break;
                         case ConstPool::METHODHANDLE:
-                            os << entry->methodhandle.referenceKind << " #"
-                               << entry->methodhandle.referenceIndex;
+                            os << entry->methodHandle.referenceKind << " #"
+                               << entry->methodHandle.referenceIndex;
                             break;
                         case ConstPool::METHODTYPE:
-                            os << "#" << entry->methodtype.descriptorIndex;
+                            os << "#" << entry->methodType.descriptorIndex;
                             break;
                         case ConstPool::INVOKEDYNAMIC:
-                            os << "#" << entry->invokedynamic.bootstrapMethodAttrIndex
-                               << ".#" << entry->invokedynamic.nameAndTypeIndex;
+                            os << "#" << entry->invokeDynamic.bootstrapMethodAttrIndex
+                               << ".#" << entry->invokeDynamic.nameAndTypeIndex;
                             break;
                         default:
                             throw Exception("invalid tag in printer!");
