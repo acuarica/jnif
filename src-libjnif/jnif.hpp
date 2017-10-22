@@ -66,9 +66,9 @@ namespace jnif {
         Exception();
 
         /**
-         * Creates an exception given the message and the current stack trace.
+         * Creates an exception given the message and the current stacktrace.
          *
-         * @tparam TArgs
+         * @tparam TArgs the types of the arguments to be put in the message.
          * @param args contains information about exceptional situation.
          */
         template<typename ... TArgs>
@@ -80,7 +80,7 @@ namespace jnif {
         }
 
         /**
-         * Returns information about the exceptional situation.
+         * Information about the exceptional situation.
          */
         string message;
 
