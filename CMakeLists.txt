@@ -33,7 +33,7 @@ add_executable(testjars
         src-testjars/tests.cpp
         src-testjars/tests.hpp)
 
-add_library(testagent
+add_library(testagent STATIC
         src-testagent/testagent.cpp
         src-testagent/frtlog.hpp
         src-testagent/frexception.hpp
@@ -56,3 +56,6 @@ target_link_libraries(jnifp jnif)
 target_link_libraries(testunit jnif)
 target_link_libraries(testjars jnif)
 target_link_libraries(testagent jnif)
+
+#add_custom_command(TARGET testagent POST_BUILD
+#        COMMAND ${Java_JAVAC_EXECUTABLE} ../src-testagent/frproxy/FrInstrProxy.java)
