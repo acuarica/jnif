@@ -89,4 +89,103 @@ namespace jnif {
         return res;
     }
 
+    void ClassHierarchy::addClass(const ClassFile& classFile) {
+        ClassEntry e;
+        e.className = classFile.getThisClassName();
+
+        if (classFile.superClassIndex == ConstPool::NULLENTRY) {
+            JnifError::check(e.className == "java/lang/Object",
+                             "invalid class name for null super class: ", e.className,
+                             "asdfasf");
+            e.superClassName = "0";
+        } else {
+            e.superClassName = classFile.getClassName(classFile.superClassIndex);
+        }
+
+        //for (ConstIndex interIndex : classFile.interfaces) {
+        //const string& interName = classFile.getClassName(interIndex);
+        //e.interfaces.push_back(interName);
+        //}
+
+        classes[e.className] = e;
+        //classes.push_front(e);
+    }
+
+    const string& ClassHierarchy::getSuperClass(const string& className) const {
+        auto it = getEntry(className);
+        JnifError::assert(it != classes.end(), "Class not defined");
+
+        return it->second.superClassName;
+    }
+
+    bool ClassHierarchy::isAssignableFrom(const string& sub,
+                                          const string& sup) const {
+
+        string cls = sub;
+        while (cls != "0") {
+            if (cls == sup) {
+                return true;
+            }
+
+            cls = getSuperClass(cls);
+        }
+
+        return false;
+    }
+
+    bool ClassHierarchy::isDefined(const string& className) const {
+//	const ClassHierarchy::ClassEntry* e = getEntry(className);
+//	return e != NULL;
+        auto it = getEntry(className);
+        return it != classes.end();
+    }
+
+    map<string, ClassHierarchy::ClassEntry>::const_iterator ClassHierarchy::getEntry(
+            const string& className) const {
+
+        auto it = classes.find(className);
+
+        return it;
+
+//	if (it != classes.end()) {
+//		return &it->second;
+//	} else {
+//		return NULL;
+//	}
+//	for (const ClassHierarchy::ClassEntry& e : *this) {
+//		if (e.className == className) {
+//			return &e;
+//		}
+//	}
+//
+//	return NULL;
+    }
+
+    ostream& operator<<(ostream& os, const ClassHierarchy&) {
+//	for (const ClassHierarchy::ClassEntry& e : ch) {
+//		os << "Class: " << e.className << ", ";
+//		os << "Super: " << e.superClassName << ", ";
+//		os << "Interfaces: { ";
+//		for (const string& interName : e.interfaces) {
+//			os << interName << " ";
+//		}
+//
+//		os << " }" << endl;
+//	}
+
+        return os;
+    }
+
+    ostream& operator<<(ostream& os, const DomMap& ds) {
+        for (const pair<BasicBlock*, set<BasicBlock*> >& d : ds) {
+            os << d.first->name << ": ";
+            for (const BasicBlock* bb : d.second) {
+                os << bb->name << " ";
+            }
+            os << std::endl;
+        }
+
+        return os;
+    }
+
 }

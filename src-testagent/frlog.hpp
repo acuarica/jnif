@@ -22,7 +22,7 @@ static inline int nothing() {
 //	fprintf(stderr, levelmsg " | %4d %8ld | " format " | %s @ " __FILE__ ":" _STR(__LINE__) "\n", \
 //			tldget()->threadId, tldget()->threadTag, ##__VA_ARGS__, __func__)
 #define _LOG(levelmsg, format, ...) \
-	fprintf(stderr, levelmsg " | %4d %8ld | " format "\n", \
+	fprintf(stderr, levelmsg " | %4d %8lld | " format "\n", \
 			tldget()->threadId, tldget()->threadTag, ##__VA_ARGS__)
 #else
 #define _LOG(levelmsg, format, ...) nothing()

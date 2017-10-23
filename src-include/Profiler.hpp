@@ -8,7 +8,7 @@
 #ifndef PROFILER_HPP
 #define PROFILER_HPP
 
-#include <jnif-TODELETE.hpp>
+#include <jnif.hpp>
 
 #include <time.h>
 #include <ctime>

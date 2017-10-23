@@ -21,7 +21,7 @@
 
 #include <mutex>
 
-#include <jnif-TODELETE.hpp>
+#include <jnif.hpp>
 
 #include "testagent.hpp"
 
@@ -33,26 +33,26 @@ ClassHierarchy classHierarchy;
 class ClassNotLoadedException {
 public:
 
-	ClassNotLoadedException(const String& className) :
+	ClassNotLoadedException(const string& className) :
 			className(className) {
 	}
 
-	String className;
+	string className;
 
 };
 
 class TooEarlyException {
 public:
 
-	TooEarlyException(const String& className) :
+	TooEarlyException(const string& className) :
 			className(className) {
 	}
 
-	const String className;
+	const string className;
 
 };
 
-bool isPrefix(const String& prefix, const String& text) {
+bool isPrefix(const string& prefix, const string& text) {
 	auto res = std::mismatch(prefix.begin(), prefix.end(), text.begin());
 	return res.first == prefix.end();
 }
@@ -95,8 +95,8 @@ public:
 //		}
 	}
 
-	String getCommonSuperClass(const String& className1,
-			const String& className2) {
+	string getCommonSuperClass(const string& className1,
+			const string& className2) {
 		ProfEntry __pe(getProf(), "@getCommonSuperClass");
 
 		_TLOG("Common super class: left: %s, right: %s, loader: %s",
@@ -119,8 +119,8 @@ public:
 			loadClassIfNotLoaded(className1);
 			loadClassIfNotLoaded(className2);
 
-			String sup = className1;
-			const String& sub = className2;
+			string sup = className1;
+			const string& sub = className2;
 
 			while (!isAssignableFrom(sub, sup)) {
 				loadClassIfNotLoaded(sup);
@@ -141,7 +141,7 @@ public:
 			//	WARN("Too early for Class : %s", e.className.c_str());
 			//	return res;
 		} catch (const ClassNotLoadedException& e) {
-			String res = "java/lang/Object";
+			string res = "java/lang/Object";
 			WARN("Class not found: %s", e.className.c_str());
 //			_TLOG(
 //					"Class not loaded while looking the common super class between %s and %s, returning %s",
@@ -180,13 +180,13 @@ public:
 
 private:
 
-	void loadClassIfNotLoaded(const String& className) {
+	void loadClassIfNotLoaded(const string& className) {
 		if (!classHierarchy.isDefined(className)) {
 			loadClassAsResource(className);
 		}
 	}
 
-	void loadClassAsResource(const String& className) {
+	void loadClassAsResource(const string& className) {
 		ProfEntry __pe(getProf(), "@loadClassAsResource");
 
 //		_TLOG("loadClassAsResource: Trying to load class %s as a resource...",
@@ -218,7 +218,7 @@ private:
 		u1* bytes = (u1*) jni->GetByteArrayElements((jbyteArray) res, NULL);
 		ASSERT(bytes != NULL, "loadClassAsResource: ");
 
-		ClassFile cf(bytes, len);
+		parser::ClassFileParser cf(bytes, len);
 
 		jni->ReleaseByteArrayElements((jbyteArray) res, (jbyte*) bytes,
 		JNI_ABORT);
@@ -260,7 +260,7 @@ static unsigned char* Allocate(jvmtiEnv* jvmti, jlong size) {
 
 static string outFileName(const char* className, const char* ext,
 		const char* prefix = "./build/instr/") {
-	String fileName = className == NULL ? "null" : className;
+	string fileName = className == NULL ? "null" : className;
 
 	for (u4 i = 0; i < fileName.length(); i++) {
 		fileName[i] = fileName[i] == '/' ? '.' : fileName[i];
@@ -308,7 +308,7 @@ void InstrClassEmpty(jvmtiEnv*, u1* data, int len, const char* className, int*,
 void InstrClassIdentity(jvmtiEnv* jvmti, u1* data, int len,
 		const char* className, int* newlen, u1** newdata, JNIEnv*,
 		InstrArgs* args) {
-	ClassFile cf(data, len);
+	parser::ClassFileParser cf(data, len);
 	*newlen = cf.computeSize();
 	*newdata = Allocate(jvmti, *newlen);
 	cf.write(*newdata, *newlen);
@@ -324,7 +324,7 @@ void InstrClassCompute(jvmtiEnv* jvmti, u1* data, int len,
 	getProf().prof("@LoadClassEvent:Mutex", ProfEntry::getTime() - start);
 
 	start = ProfEntry::getTime();
-	ClassFile cf(data, len);
+	parser::ClassFileParser cf(data, len);
 	getProf().prof("@ClassParser", ProfEntry::getTime() - start);
 
 	{
@@ -359,7 +359,7 @@ class Instr {
 public:
 
     static void instrObjectInit(ClassFile& cf, ConstPool::Index classIndex) {
-		if (cf.getThisClassName() != String("java/lang/Object")) {
+		if (cf.getThisClassName() != string("java/lang/Object")) {
 			return;
 		}
 
@@ -371,8 +371,8 @@ public:
 				InstList& instList = m.instList();
 
 				Inst* p = *instList.begin();
-				instList.addZero(OPCODE_aload_0, p);
-				instList.addInvoke(OPCODE_invokestatic, mid, p);
+				instList.addZero(Opcode::aload_0, p);
+				instList.addInvoke(Opcode::invokestatic, mid, p);
 			}
 		}
 	}
@@ -386,26 +386,26 @@ public:
 				InstList& instList = m.instList();
 
 				for (Inst* inst : instList) {
-					if (inst->opcode == OPCODE_newarray) {
+					if (inst->opcode == Opcode::newarray) {
 						// FORMAT: newarray atype
 						// OPERAND STACK: ... | count: int -> ... | arrayref
 
 						// STACK: ... | count
-						instList.addZero(OPCODE_dup, inst);
+						instList.addZero(Opcode::dup, inst);
 
 						// STACK: ... | count | count
 
 						Inst* p = inst->next; // newarray
 						// STACK: ... | count | arrayref
 
-						instList.addZero(OPCODE_dup_x1, p);
+						instList.addZero(Opcode::dup_x1, p);
 						// STACK: ... | arrayref | count | arrayref
 
 						instList.addBiPush(inst->newarray()->atype, p);
 
 						// STACK: ... | arrayref | count | arrayref | atype
 
-						instList.addInvoke(OPCODE_invokestatic, mid, p);
+						instList.addInvoke(Opcode::invokestatic, mid, p);
 						// STACK: ... | arrayref
 					}
 				}
@@ -424,28 +424,28 @@ public:
 				InstList& instList = m.instList();
 
 				for (Inst* inst : instList) {
-					if (inst->opcode == OPCODE_anewarray) {
+					if (inst->opcode == Opcode::anewarray) {
 						// FORMAT: anewarray (indexbyte1 << 8) | indexbyte2
 						// OPERAND STACK: ... | count: int -> ... | arrayref
 
 						// STACK: ... | count
 
-						instList.addZero(OPCODE_dup, inst);
+						instList.addZero(Opcode::dup, inst);
 						// STACK: ... | count | count
 
 						Inst* p = inst->next; // anewarray
 						// STACK: ... | count | arrayref
 
-						instList.addZero(OPCODE_dup_x1, p);
+						instList.addZero(Opcode::dup_x1, p);
 						// STACK: ... | arrayref | count | arrayref
 
 						auto ci = inst->type()->classIndex;
 						auto strIndex = cf.addStringFromClass(ci);
 
-						instList.addLdc(OPCODE_ldc_w, strIndex, p);
+						instList.addLdc(Opcode::ldc_w, strIndex, p);
 						// STACK: ... | arrayref | count | arrayref | classname
 
-						instList.addInvoke(OPCODE_invokestatic, mid, p);
+						instList.addInvoke(Opcode::invokestatic, mid, p);
 						// STACK: ... | arrayref
 					}
 				}
@@ -473,15 +473,15 @@ public:
 
 				Inst* p = *instList.begin();
 
-				instList.addLdc(OPCODE_ldc_w, classNameIdx, p);
-				instList.addLdc(OPCODE_ldc_w, methodIndex, p);
-				instList.addInvoke(OPCODE_invokestatic, sid, p);
+				instList.addLdc(Opcode::ldc_w, classNameIdx, p);
+				instList.addLdc(Opcode::ldc_w, methodIndex, p);
+				instList.addInvoke(Opcode::invokestatic, sid, p);
 
 				for (Inst* inst : instList) {
 					if (inst->isExit()) {
-						instList.addLdc(OPCODE_ldc_w, classNameIdx, inst);
-						instList.addLdc(OPCODE_ldc_w, methodIndex, inst);
-						instList.addInvoke(OPCODE_invokestatic, eid, inst);
+						instList.addLdc(Opcode::ldc_w, classNameIdx, inst);
+						instList.addLdc(Opcode::ldc_w, methodIndex, inst);
+						instList.addInvoke(Opcode::invokestatic, eid, inst);
 					}
 				}
 			}
@@ -497,11 +497,11 @@ public:
 				InstList& instList = m.instList();
 
 				Inst* p = *instList.begin();
-				instList.addInvoke(OPCODE_invokestatic, sid, p);
+				instList.addInvoke(Opcode::invokestatic, sid, p);
 
 				for (Inst* inst : instList) {
 					if (inst->isExit()) {
-						instList.addInvoke(OPCODE_invokestatic, eid, inst);
+						instList.addInvoke(Opcode::invokestatic, eid, inst);
 					}
 				}
 			}
@@ -520,7 +520,7 @@ public:
 						//cerr << "asdafasdf" << endl;
 						//throw JnifException("Indy found");
 						instList.addSiPush(inst->indy()->callSite(), inst);
-						instList.addInvoke(OPCODE_invokestatic, mid, inst);
+						instList.addInvoke(Opcode::invokestatic, mid, inst);
 					}
 				}
 			}
@@ -539,7 +539,7 @@ public:
 //							|| inst->opcode == OPCODE_anewarray
 //							|| inst->opcode == OPCODE_invokestatic)
 					if (inst->kind != KIND_LABEL) {
-						instList.addZero(OPCODE_nop, inst);
+						instList.addZero(Opcode::nop, inst);
 						//instList.addBiPush(inst->opcode, inst);
 						//instList.addInvoke(OPCODE_invokestatic, mid, inst);
 					}
@@ -557,7 +557,7 @@ void InstrClassStats(jvmtiEnv* jvmti, unsigned char* data, int len,
 		JNIEnv* jni, InstrArgs* args) {
 	LoadClassEvent m;
 
-	ClassFile cf(data, len);
+	parser::ClassFileParser cf(data, len);
 	classHierarchy.addClass(cf);
 
   ConstPool::Index proxyClass = cf.addClass("frproxy/FrInstrProxy");
@@ -588,7 +588,7 @@ void InstrClassAll(jvmtiEnv* jvmti, unsigned char* data, int len,
 		JNIEnv* jni, InstrArgs* args) {
 	LoadClassEvent m;
 
-	ClassFile cf(data, len);
+	parser::ClassFileParser cf(data, len);
 	classHierarchy.addClass(cf);
 
   ConstPool::Index proxyClass = cf.addClass("frproxy/FrInstrProxy");
@@ -604,21 +604,21 @@ void InstrClassAll(jvmtiEnv* jvmti, unsigned char* data, int len,
 		*newlen = cf.computeSize();
 		*newdata = Allocate(jvmti, *newlen);
 		cf.write(*newdata, *newlen);
-	} catch (const JnifException& ex) {
+	} catch (const jnif::Exception& ex) {
 		//cerr << ex;
 	}
 }
 
 void InstrClassPrint(jvmtiEnv*, u1* data, int len, const char* className, int*,
 		u1**, JNIEnv*, InstrArgs* args) {
-	ClassFile cf(data, len);
+	parser::ClassFileParser cf(data, len);
 	ofstream os(outFileName(className, "disasm").c_str());
 	os << cf;
 }
 
 void InstrClassDot(jvmtiEnv*, u1* data, int len, const char* className, int*,
 		u1**, JNIEnv* jni, InstrArgs* args) {
-	ClassFile cf(data, len);
+	parser::ClassFileParser cf(data, len);
 
 	if (isPrefix("java", cf.getThisClassName())
 			|| isPrefix("sun", cf.getThisClassName())) {

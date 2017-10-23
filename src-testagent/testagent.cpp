@@ -16,7 +16,7 @@
 #include "frinstr.hpp"
 #include "testagent.hpp"
 
-#include <jnif-TODELETE.hpp>
+#include <jnif.hpp>
 
 #include <sstream>
 #include <fstream>
@@ -41,7 +41,7 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 			ProfEntry __pe(getProf(), clsn);
 			(*instrFunc)(jvmti, data, len, clsn, newlen, newdata, jni, args2);
 		}
-	} catch (const JnifException& ex) {
+	} catch (const jnif::Exception& ex) {
 		cerr << ex << endl;
 		throw ex;
 	}
@@ -49,7 +49,7 @@ void InvokeInstrFunc(InstrFunc* instrFunc, jvmtiEnv* jvmti, u1* data, int len,
 
 typedef struct {
 	InstrFunc* instrFunc;
-	String name;
+	std::string name;
 } InstrFuncEntry;
 
 InstrFuncEntry instrFuncEntry;
@@ -195,16 +195,16 @@ Options args;
 
 static void ParseOptions(const char* commandLineOptions) {
 	const char* start = commandLineOptions;
-	vector<String> options;
+	vector<std::string> options;
 	for (const char* pos = commandLineOptions; *pos != '\0'; ++pos) {
 		if (*pos == ':') {
-			String str(start, pos - start);
+			std::string str(start, pos - start);
 			options.push_back(str);
 			start = pos + 1;
 		}
 	}
 
-	String str(start);
+	std::string str(start);
 	options.push_back(str);
 
 	if (options.size() >= 4) {
@@ -245,7 +245,7 @@ static void ParseOptions(const char* commandLineOptions) {
 
 	};
 
-	String instrFuncName = args.instrFuncName;
+	std::string instrFuncName = args.instrFuncName;
 
 	_TLOG("func index: %s", instrFuncName.c_str());
 

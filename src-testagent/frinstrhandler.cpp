@@ -10,7 +10,7 @@
 #include "frinstr.hpp"
 #include "frtlog.hpp"
 
-#include <jnif-TODELETE.hpp>
+#include <jnif.hpp>
 
 using namespace std;
 using namespace jnif;

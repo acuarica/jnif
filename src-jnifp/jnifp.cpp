@@ -5,10 +5,6 @@
 #include <iostream>
 #include <jnif.hpp>
 
-
-#include "../src-libjnif/Dominator.hpp"
-
-
 using namespace std;
 using namespace jnif;
 using namespace jnif::stream;

@@ -7,15 +7,15 @@
 #ifndef TESTAGENT_HPP
 #define TESTAGENT_HPP
 
-#include <jnif-TODELETE.hpp>
+#include <string>
 
 class Options {
 public:
 
-	jnif::String instrFuncName;
-	jnif::String profPath;
-	jnif::String outputPath;
-	jnif::String runId;
+	std::string instrFuncName;
+	std::string profPath;
+	std::string outputPath;
+	std::string runId;
 
 };
 
