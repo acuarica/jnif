@@ -638,7 +638,7 @@ namespace jnif {
             JnifError::check(isObject(), "Type is not object type to get class name: ",
                              *this);
             if (isArray()) {
-                std::stringstream ss;
+                stringstream ss;
                 for (u4 i = 0; i < dims; i++) {
                     ss << "[";
                 }

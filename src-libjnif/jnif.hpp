@@ -133,7 +133,7 @@ namespace jnif {
         template<typename ... TArgs>
         static void assert(bool cond, const TArgs& ... args) {
             if (!cond) {
-                throw build(args...);
+                throw TException(args...);
             }
         }
 
@@ -146,27 +146,8 @@ namespace jnif {
         template<typename ... TArgs>
         static void check(bool cond, const TArgs& ... args) {
             if (!cond) {
-                throw build(args...);
+                throw TException(args...);
             }
-        }
-
-    private:
-
-        template<typename ... TArgs>
-        static TException build(const TArgs& ... args) {
-            stringstream message;
-            _format(message, args...);
-
-            return TException(message.str());
-        }
-
-        static void _format(ostream&) {
-        }
-
-        template<typename TArg, typename ... TArgs>
-        static void _format(ostream& os, const TArg& arg, const TArgs& ... args) {
-            os << arg;
-            _format(os, args...);
         }
 
     };
@@ -1444,10 +1425,10 @@ namespace jnif {
         private:
 
             Inst() :
-                    opcode(Opcode::nop), kind(KIND_ZERO), _offset(0), constPool(NULL), prev(NULL), next(NULL) {
+                    opcode(Opcode::nop), kind(KIND_ZERO), _offset(0), constPool(nullptr), prev(nullptr), next(nullptr) {
             }
 
-            Inst(Opcode opcode, OpKind kind, const ConstPool* constPool, Inst* prev = NULL, Inst* next = NULL) :
+            Inst(Opcode opcode, OpKind kind, const ConstPool* constPool, Inst* prev = nullptr, Inst* next = nullptr) :
                     opcode(opcode), kind(kind), _offset(0), constPool(constPool), prev(prev), next(next) {
             }
 
