@@ -3,7 +3,7 @@
 //
 
 #include "jnif.hpp"
-#include <unzip.h>
+#include "zip/unzip.h"
 
 namespace jnif {
 

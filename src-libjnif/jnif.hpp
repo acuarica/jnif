@@ -917,12 +917,14 @@ namespace jnif {
 
         };
 
-        /// OPCODES constants definitions.
-        ///
-        /// This enumeration type was taken from
-        ///
-        /// http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-6.html
-        /// http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-7.html
+        /**
+         * OPCODES constants definitions.
+         *
+         * This enumeration type was taken from
+         *
+         * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-6.html
+         * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-7.html
+         */
         enum class Opcode {
             nop = 0x00,
             aconst_null = 0x01,
