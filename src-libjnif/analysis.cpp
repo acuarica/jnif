@@ -162,7 +162,7 @@ namespace jnif {
                         ", in cfg: ", *this, instList);
     }
 
-    ControlFlowGraph::D ControlFlowGraph::dominance(BasicBlock* start) {
+    ControlFlowGraph::D ControlFlowGraph::dominance(BasicBlock*) {
         ControlFlowGraph& cfg = *this;
         map<BasicBlock*, set<BasicBlock*> > ds;
 

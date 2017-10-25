@@ -2948,10 +2948,10 @@ namespace jnif {
             // Must be the first member, as it is needed for the destructors of the other members.
             Arena _arena;
 
-            Version version;
-            u2 accessFlags = PUBLIC;
             ConstPool::Index thisClassIndex = ConstPool::NULLINDEX;
             ConstPool::Index superClassIndex = ConstPool::NULLINDEX;
+            u2 accessFlags = PUBLIC;
+            Version version;
             list<ConstPool::Index> interfaces;
             list<Field> fields;
             list<Method> methods;
