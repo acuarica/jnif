@@ -13,3 +13,10 @@ pages:
     - public
   only:
   - master
+
+build:
+        script:
+        - mkdir cmake-build-debug
+        - cd cmake-build-debug
+        - cmake ..
+        - make
