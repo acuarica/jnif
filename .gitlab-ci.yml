@@ -16,7 +16,8 @@ pages:
 
 build:
         before_script:
-        - apt update && apt -y install cmake autoconf
+        - apk update
+        - apk add cmake
         script:
         - mkdir cmake-build-debug
         - cd cmake-build-debug
