@@ -18,6 +18,7 @@ build:
         before_script:
         - apk update
         - apk add gcc g++ make cmake
+        - apk add openjdk7-jre
         script:
         - mkdir cmake-build-debug
         - cd cmake-build-debug
