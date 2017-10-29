@@ -1,3 +1,5 @@
+![Build Status](https://gitlab.com/pages/doxygen/badges/master/build.svg)
+
 
 # Java Native Instrumentation Framework
 
