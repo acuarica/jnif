@@ -1,0 +1,15 @@
+image: alpine
+
+before_script:
+- apk update
+- apk add doxygen
+- apk add ttf-freefont graphviz
+
+pages:
+  script:
+  - doxygen
+  artifacts:
+    paths:
+    - docs
+  only:
+  - master
