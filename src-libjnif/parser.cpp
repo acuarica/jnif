@@ -20,7 +20,7 @@ namespace jnif {
              * @param size The size of the buffer in bytes.
              *
              */
-            BufferReader(const u1* buffer, u4 size) : buffer(buffer), _size(size), off(0) {
+            BufferReader(const u1 *buffer, u4 size) : buffer(buffer), _size(size), off(0) {
             }
 
             /**
@@ -80,7 +80,7 @@ namespace jnif {
             }
 
             void skip(int count) {
-                const char* const m = "Invalid read: %d (offset: %d)";
+                const char *const m = "Invalid read: %d (offset: %d)";
                 JnifError::check(off + count <= _size, m, count, off);
 
                 off += count;
@@ -90,7 +90,7 @@ namespace jnif {
                 return off;
             }
 
-            const u1* pos() const {
+            const u1 *pos() const {
                 return buffer + off;
             }
 
@@ -100,7 +100,7 @@ namespace jnif {
 
         private:
 
-            const u1* const buffer;
+            const u1 *const buffer;
             const int _size;
             int off;
 
@@ -108,7 +108,7 @@ namespace jnif {
 
         struct ConstPoolParser {
 
-            void parse(BufferReader* br, ConstPool* cp) {
+            void parse(BufferReader *br, ConstPool *cp) {
                 u2 count = br->readu2();
 
                 for (int i = 1; i < count; i++) {
@@ -150,7 +150,7 @@ namespace jnif {
                         }
                         case ConstPool::FLOAT: {
                             u4 value = br->readu4();
-                            float fvalue = *(float*) &value;
+                            float fvalue = *(float *) &value;
                             cp->addFloat(fvalue);
                             break;
                         }
@@ -166,7 +166,7 @@ namespace jnif {
                             u4 high = br->readu4();
                             u4 low = br->readu4();
                             long lvalue = ((long) high << 32) + low;
-                            double dvalue = *(double*) &lvalue;
+                            double dvalue = *(double *) &lvalue;
                             cp->addDouble(dvalue);
                             i++;
                             break;
@@ -179,7 +179,7 @@ namespace jnif {
                         }
                         case ConstPool::UTF8: {
                             u2 len = br->readu2();
-                            cp->addUtf8((const char*) br->pos(), len);
+                            cp->addUtf8((const char *) br->pos(), len);
                             br->skip(len);
                             break;
                         }
@@ -210,9 +210,9 @@ namespace jnif {
         template<class... TAttrParsers>
         struct AttrParser {
             template<class... TArgs>
-            Attr* parse(
-                    u2 nameIndex, u4 len, const u1* data, const string&,
-                    ClassFile* cp, TArgs...
+            Attr *parse(
+                    u2 nameIndex, u4 len, const u1 *data, const string &,
+                    ClassFile *cp, TArgs...
             ) {
                 return cp->_arena.create<UnknownAttr>(nameIndex, len, data, cp);
             }
@@ -222,8 +222,8 @@ namespace jnif {
         struct AttrParser<TAttrParser, TAttrParsers...> : AttrParser<TAttrParsers...> {
 
             template<class... TArgs>
-            Attr* parse(u2 nameIndex, u4 len, const u1* data, const string& attrName,
-                        ClassFile* cp, TArgs... args) {
+            Attr *parse(u2 nameIndex, u4 len, const u1 *data, const string &attrName,
+                        ClassFile *cp, TArgs... args) {
                 if (attrName == TAttrParser::AttrName) {
                     BufferReader br(data, len);
                     return TAttrParser().parse(&br, cp, nameIndex, args...);
@@ -239,19 +239,19 @@ namespace jnif {
         struct AttrsParser {
 
             template<class... TArgs>
-            void parse(BufferReader* br, ClassFile* cp, Attrs* as, TArgs... args) {
+            void parse(BufferReader *br, ClassFile *cp, Attrs *as, TArgs... args) {
                 u2 attrCount = br->readu2();
 
                 for (int i = 0; i < attrCount; i++) {
                     u2 nameIndex = br->readu2();
                     u4 len = br->readu4();
-                    const u1* data = br->pos();
+                    const u1 *data = br->pos();
 
                     br->skip(len);
 
                     string attrName = cp->getUtf8(nameIndex);
 
-                    Attr* a = AttrParser<TAttrParsers...>().parse(
+                    Attr *a = AttrParser<TAttrParsers...>().parse(
                             nameIndex, len, data, attrName, cp, args...);
                     as->add(a);
                 }
@@ -311,21 +311,21 @@ namespace jnif {
         class LabelManager {
         public:
 
-            LabelManager(u4 codeLen, InstList& instList) :
+            LabelManager(u4 codeLen, InstList &instList) :
                     codeLen(codeLen),
                     instList(instList),
-                    labels(instList.constPool->_arena.newArray<LabelInst*>(codeLen + 1)) {
+                    labels(instList.constPool->_arena.newArray<LabelInst *>(codeLen + 1)) {
                 for (u4 i = 0; i < codeLen + 1; i++) {
                     labels[i] = nullptr;
                 }
             }
 
-            LabelInst* createLabel(int labelPos) {
+            LabelInst *createLabel(int labelPos) {
                 JnifError::check(0 <= labelPos, "Invalid position for label: ", labelPos);
                 JnifError::check((u4) labelPos < codeLen + 1,
                                  "Invalid position for label: ", labelPos, ", : ", codeLen);
 
-                LabelInst*& lab = labels[labelPos];
+                LabelInst *&lab = labels[labelPos];
                 if (lab == nullptr) {
                     lab = instList.createLabel();
                 }
@@ -333,12 +333,12 @@ namespace jnif {
                 return lab;
             }
 
-            LabelInst* createExceptionLabel(u2 labelPos, bool isTryStart, bool isTryEnd,
+            LabelInst *createExceptionLabel(u2 labelPos, bool isTryStart, bool isTryEnd,
                                             bool isCatchHandler) {
                 JnifError::check(labelPos != codeLen || isTryEnd,
                                  "Only tryEnd can have a labelPos equal to codeLen.");
 
-                LabelInst* label = createLabel(labelPos);
+                LabelInst *label = createLabel(labelPos);
                 label->isTryStart = label->isTryStart || isTryStart;
                 label->isCatchHandler = label->isCatchHandler || isCatchHandler;
 
@@ -354,13 +354,13 @@ namespace jnif {
 
             void putLabelIfExists(u2 labelPos) const {
                 if (hasLabel(labelPos)) {
-                    LabelInst* label = (*this)[labelPos];
+                    LabelInst *label = (*this)[labelPos];
                     label->_offset = labelPos;
                     instList.addLabel(label);
                 }
             }
 
-            LabelInst* operator[](u2 labelPos) const {
+            LabelInst *operator[](u2 labelPos) const {
                 JnifError::assert(hasLabel(labelPos), "No label in position: ", labelPos);
 
                 return labels[labelPos];
@@ -368,22 +368,22 @@ namespace jnif {
 
             u4 codeLen;
 
-            InstList& instList;
+            InstList &instList;
         private:
 
-            LabelInst** labels;
+            LabelInst **labels;
         };
 
         struct LineNumberTableAttrParser {
 
-            static constexpr const char* AttrName = "LineNumberTable";
+            static constexpr const char *AttrName = "LineNumberTable";
 
-            Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex,
-                        LabelManager* labelManager) {
+            Attr *parse(BufferReader *br, ClassFile *cp, ConstPool::Index nameIndex,
+                        LabelManager *labelManager) {
 
                 u2 lntlen = br->readu2();
 
-                LntAttr* lnt = cp->_arena.create<LntAttr>(nameIndex, cp);
+                LntAttr *lnt = cp->_arena.create<LntAttr>(nameIndex, cp);
 
                 for (int i = 0; i < lntlen; i++) {
                     LntAttr::LnEntry e;
@@ -405,11 +405,11 @@ namespace jnif {
 
         struct SourceFileAttrParser {
 
-            static constexpr const char* AttrName = "SourceFile";
+            static constexpr const char *AttrName = "SourceFile";
 
-            Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex) {
+            Attr *parse(BufferReader *br, ClassFile *cp, ConstPool::Index nameIndex) {
                 u2 sourceFileIndex = br->readu2();
-                Attr* attr = cp->_arena.create<SourceFileAttr>(nameIndex, sourceFileIndex, cp);
+                Attr *attr = cp->_arena.create<SourceFileAttr>(nameIndex, sourceFileIndex, cp);
                 return attr;
             }
 
@@ -417,11 +417,11 @@ namespace jnif {
 
         struct SignatureAttrParser {
 
-            static constexpr const char* AttrName = "Signature";
+            static constexpr const char *AttrName = "Signature";
 
-            Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex) {
+            Attr *parse(BufferReader *br, ClassFile *cp, ConstPool::Index nameIndex) {
                 ConstPool::Index sigIndex = br->readu2();
-                Attr* attr = cp->_arena.create<SignatureAttr>(nameIndex, sigIndex, cp);
+                Attr *attr = cp->_arena.create<SignatureAttr>(nameIndex, sigIndex, cp);
                 return attr;
             }
 
@@ -429,14 +429,14 @@ namespace jnif {
 
         struct LocalVariableTypeTableAttrParser {
 
-            static constexpr const char* AttrName = "LocalVariableTypeTable";
+            static constexpr const char *AttrName = "LocalVariableTypeTable";
 
-            Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex,
-                        LabelManager* labelManager) {
+            Attr *parse(BufferReader *br, ClassFile *cp, ConstPool::Index nameIndex,
+                        LabelManager *labelManager) {
 
                 u2 count = br->readu2();
 
-                LvtAttr* lvt = cp->_arena.create<LvtAttr>(ATTR_LVTT, nameIndex, cp);
+                LvtAttr *lvt = cp->_arena.create<LvtAttr>(ATTR_LVTT, nameIndex, cp);
 
                 for (u2 i = 0; i < count; i++) {
                     LvtAttr::LvEntry e;
@@ -463,9 +463,9 @@ namespace jnif {
 
         struct StackMapTableAttrParser {
 
-            static constexpr const char* AttrName = "StackMapTable";
+            static constexpr const char *AttrName = "StackMapTable";
 
-            Type parseType(BufferReader* br, const ConstPool* cp, LabelManager* labelManager) {
+            Type parseType(BufferReader *br, const ConstPool *cp, LabelManager *labelManager) {
                 u1 tag = br->readu1();
 
                 switch (tag) {
@@ -491,7 +491,7 @@ namespace jnif {
                     }
                     case TYPE_UNINIT: {
                         u2 offset = br->readu2();
-                        LabelInst* label = labelManager->createLabel(offset);
+                        LabelInst *label = labelManager->createLabel(offset);
                         return TypeFactory::uninitType(offset, label);
                     }
                     default:
@@ -499,16 +499,16 @@ namespace jnif {
                 }
             }
 
-            void parseTs(BufferReader* br, int count, std::vector<Type>& locs,
-                         const ConstPool* cp, LabelManager* labelManager) {
+            void parseTs(BufferReader *br, int count, std::vector<Type> &locs,
+                         const ConstPool *cp, LabelManager *labelManager) {
                 for (u1 i = 0; i < count; i++) {
                     Type t = parseType(br, cp, labelManager);
                     locs.push_back(t);
                 }
             }
 
-            Attr* parse(BufferReader* br, ClassFile* cp, u2 nameIndex, LabelManager* labelManager) {
-                SmtAttr* smt = cp->_arena.create<SmtAttr>(nameIndex, cp);
+            Attr *parse(BufferReader *br, ClassFile *cp, u2 nameIndex, LabelManager *labelManager) {
+                SmtAttr *smt = cp->_arena.create<SmtAttr>(nameIndex, cp);
 
                 u2 numberOfEntries = br->readu2();
 
@@ -563,7 +563,7 @@ namespace jnif {
 
                     toff += 1;
 
-                    LabelInst* label = labelManager->createLabel(toff);
+                    LabelInst *label = labelManager->createLabel(toff);
 
                     e.label = label;
 
@@ -580,9 +580,9 @@ namespace jnif {
  */
         struct ExceptionsAttrParser {
 
-            static constexpr const char* AttrName = "Exceptions";
+            static constexpr const char *AttrName = "Exceptions";
 
-            Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex) {
+            Attr *parse(BufferReader *br, ClassFile *cp, ConstPool::Index nameIndex) {
                 u2 len = br->readu2();
 
                 vector<ConstPool::Index> es;
@@ -592,7 +592,7 @@ namespace jnif {
                     es.push_back(exceptionIndex);
                 }
 
-                Attr* attr = cp->_arena.create<ExceptionsAttr>(nameIndex, cp, es);
+                Attr *attr = cp->_arena.create<ExceptionsAttr>(nameIndex, cp, es);
 
                 return attr;
             }
@@ -601,14 +601,14 @@ namespace jnif {
 
         struct LocalVariableTableAttrParser {
 
-            static constexpr const char* AttrName = "LocalVariableTable";
+            static constexpr const char *AttrName = "LocalVariableTable";
 
-            Attr* parse(BufferReader* br, ClassFile* cp, ConstPool::Index nameIndex,
-                        LabelManager* labelManager) {
+            Attr *parse(BufferReader *br, ClassFile *cp, ConstPool::Index nameIndex,
+                        LabelManager *labelManager) {
 
                 u2 count = br->readu2();
 
-                LvtAttr* lvt = cp->_arena.create<LvtAttr>(ATTR_LVT, nameIndex, cp);
+                LvtAttr *lvt = cp->_arena.create<LvtAttr>(ATTR_LVT, nameIndex, cp);
 
                 for (u2 i = 0; i < count; i++) {
                     LvtAttr::LvEntry e;
@@ -645,9 +645,9 @@ namespace jnif {
         template<typename ... TAttrParserList>
         struct CodeAttrParser {
 
-            static constexpr const char* AttrName = "Code";
+            static constexpr const char *AttrName = "Code";
 
-            void parseInstTargets(BufferReader& br, LabelManager& labelManager) {
+            void parseInstTargets(BufferReader &br, LabelManager &labelManager) {
                 while (!br.eor()) {
                     int offset = br.offset();
 
@@ -756,8 +756,8 @@ namespace jnif {
                 }
             }
 
-            Inst* parseInst(BufferReader& br, InstList& instList,
-                            const LabelManager& labelManager) {
+            Inst *parseInst(BufferReader &br, InstList &instList,
+                            const LabelManager &labelManager) {
                 int offset = br.offset();
 
 //		if (labelManager.hasLabel(offset)) {
@@ -826,7 +826,7 @@ namespace jnif {
 
                     //	fprintf(stderr, "target offset @ parse: %d\n", targetOffset);
 
-                    LabelInst* targetLabel = labelManager[offset + targetOffset];
+                    LabelInst *targetLabel = labelManager[offset + targetOffset];
                     JnifError::check(targetLabel != NULL, "invalid label");
 
                     return instList.addJump(opcode, targetLabel);
@@ -842,14 +842,14 @@ namespace jnif {
                     }
 
                     int defOffset = br.readu4();
-                    LabelInst* def = labelManager[offset + defOffset];
+                    LabelInst *def = labelManager[offset + defOffset];
                     int low = br.readu4();
                     int high = br.readu4();
 
                     JnifError::assert(low <= high,
                                       "low (%d) must be less or equal than high (%d)", low, high);
 
-                    TableSwitchInst* ts = instList.addTableSwitch(def, low, high);
+                    TableSwitchInst *ts = instList.addTableSwitch(def, low, high);
                     for (int i = 0; i < high - low + 1; i++) {
                         u4 targetOffset = br.readu4();
                         //ts->targets.push_back(labelManager[offset + targetOffset]);
@@ -866,10 +866,10 @@ namespace jnif {
                     }
 
                     int defOffset = br.readu4();
-                    LabelInst* defbyte = labelManager[offset + defOffset];
+                    LabelInst *defbyte = labelManager[offset + defOffset];
                     u4 npairs = br.readu4();
 
-                    LookupSwitchInst* ls = instList.addLookupSwitch(defbyte, npairs);
+                    LookupSwitchInst *ls = instList.addLookupSwitch(defbyte, npairs);
                     for (u4 i = 0; i < npairs; i++) {
                         u4 key = br.readu4();
                         u4 offsetTarget = br.readu4();
@@ -928,18 +928,18 @@ namespace jnif {
                 }
             }
 
-            void parseInstList(BufferReader& br, InstList& instList,
-                               const LabelManager& labelManager) {
+            void parseInstList(BufferReader &br, InstList &instList,
+                               const LabelManager &labelManager) {
                 while (!br.eor()) {
                     int offset = br.offset();
-                    Inst* inst = parseInst(br, instList, labelManager);
+                    Inst *inst = parseInst(br, instList, labelManager);
                     inst->_offset = offset;
                 }
             }
 
-            Attr* parse(BufferReader* br, ClassFile* cp, u2 nameIndex) {
+            Attr *parse(BufferReader *br, ClassFile *cp, u2 nameIndex) {
 
-                CodeAttr* ca = cp->_arena.create<CodeAttr>(nameIndex, cp);
+                CodeAttr *ca = cp->_arena.create<CodeAttr>(nameIndex, cp);
 
                 ca->maxStack = br->readu2();
                 ca->maxLocals = br->readu2();
@@ -951,7 +951,7 @@ namespace jnif {
 
                 ca->codeLen = codeLen;
 
-                const u1* codeBuf = br->pos();
+                const u1 *codeBuf = br->pos();
                 br->skip(ca->codeLen);
 
                 LabelManager labelManager(codeLen, ca->instList);
@@ -1038,7 +1038,7 @@ namespace jnif {
             /**
              *
              */
-            void parse(BufferReader* br, ClassFile* cf) {
+            void parse(BufferReader *br, ClassFile *cf) {
                 u4 magic = br->readu4();
 
                 JnifError::check(
@@ -1069,7 +1069,7 @@ namespace jnif {
                     u2 nameIndex = br->readu2();
                     u2 descIndex = br->readu2();
 
-                    Field& f = cf->addField(nameIndex, descIndex, accessFlags);
+                    Field &f = cf->addField(nameIndex, descIndex, accessFlags);
                     FieldAttrsParser().parse(br, cf, &f.attrs);
                 }
 
@@ -1079,7 +1079,7 @@ namespace jnif {
                     u2 nameIndex = br->readu2();
                     u2 descIndex = br->readu2();
 
-                    Method& m = cf->addMethod(nameIndex, descIndex, accessFlags);
+                    Method &m = cf->addMethod(nameIndex, descIndex, accessFlags);
                     MethodAttrsParser().parse(br, cf, &m.attrs);
                 }
 
@@ -1088,11 +1088,11 @@ namespace jnif {
 
         };
 
-        ClassFileParser::ClassFileParser(const u1* data, u4 len) {
+        ClassFileParser::ClassFileParser(const u1 *data, u4 len) {
             parse(data, len, this);
         }
 
-        void ClassFileParser::parse(const u1* data, u4 len, ClassFile* classFile) {
+        void ClassFileParser::parse(const u1 *data, u4 len, ClassFile *classFile) {
             BufferReader br(data, len);
             ClassParser<
                     ConstPoolParser,
