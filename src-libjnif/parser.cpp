@@ -407,9 +407,9 @@ namespace jnif {
 
             static constexpr const char *AttrName = "SourceFile";
 
-            Attr *parse(BufferReader *br, ClassFile *cp, ConstPool::Index nameIndex) {
+            SourceFileAttr *parse(BufferReader *br, ClassFile *cp, ConstPool::Index nameIndex) {
                 u2 sourceFileIndex = br->readu2();
-                Attr *attr = cp->_arena.create<SourceFileAttr>(nameIndex, sourceFileIndex, cp);
+                SourceFileAttr *attr = cp->_arena.create<SourceFileAttr>(nameIndex, sourceFileIndex, cp);
                 return attr;
             }
 
@@ -419,9 +419,9 @@ namespace jnif {
 
             static constexpr const char *AttrName = "Signature";
 
-            Attr *parse(BufferReader *br, ClassFile *cp, ConstPool::Index nameIndex) {
+            SignatureAttr *parse(BufferReader *br, ClassFile *cp, ConstPool::Index nameIndex) {
                 ConstPool::Index sigIndex = br->readu2();
-                Attr *attr = cp->_arena.create<SignatureAttr>(nameIndex, sigIndex, cp);
+                SignatureAttr *attr = cp->_arena.create<SignatureAttr>(nameIndex, sigIndex, cp);
                 return attr;
             }
 

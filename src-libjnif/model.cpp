@@ -57,7 +57,7 @@ namespace jnif {
             return _addSingle(String({utf8Index}));
         }
 
-        ConstPool::Index ConstPool::addString(const std::string& str) {
+        ConstPool::Index ConstPool::addString(const std::string &str) {
             Index utf8Index = addUtf8(str.c_str());
             return addString(utf8Index);
         }
@@ -202,21 +202,21 @@ namespace jnif {
             }
         }
 
-        bool operator==(const Version& lhs, const Version& rhs) {
+        bool operator==(const Version &lhs, const Version &rhs) {
             return lhs._major == rhs._major && lhs._major == rhs._major;
         }
 
-        bool operator<(const Version& lhs, const Version& rhs) {
+        bool operator<(const Version &lhs, const Version &rhs) {
             return lhs._major < rhs._major
                    || (lhs._major == rhs._major && lhs._minor < rhs._minor);
         }
 
-        bool operator<=(const Version& lhs, const Version& rha) {
+        bool operator<=(const Version &lhs, const Version &rha) {
             return lhs < rha || lhs == rha;
         }
 
         Member::Member(u2 accessFlags, ConstPool::Index nameIndex, ConstPool::Index descIndex,
-                       const ConstPool& constPool) :
+                       const ConstPool &constPool) :
                 accessFlags(accessFlags),
                 nameIndex(nameIndex),
                 descIndex(descIndex),
@@ -247,7 +247,7 @@ namespace jnif {
             return constPool.getUtf8(descIndex);
         }
 
-        InstList& Method::instList() {
+        InstList &Method::instList() {
             for (Attr* attr : attrs) {
                 if (attr->kind == ATTR_CODE) {
                     return ((CodeAttr*) attr)->instList;
@@ -274,12 +274,12 @@ namespace jnif {
             return getClassName(superClassIndex);
         }
 
-        Field& ClassFile::addField(ConstPool::Index nameIndex, ConstPool::Index descIndex, u2 accessFlags) {
+        Field &ClassFile::addField(ConstPool::Index nameIndex, ConstPool::Index descIndex, u2 accessFlags) {
             fields.emplace_back(accessFlags, nameIndex, descIndex, *this);
             return fields.back();
         }
 
-        Method& ClassFile::addMethod(ConstPool::Index nameIndex, ConstPool::Index descIndex, u2 accessFlags) {
+        Method &ClassFile::addMethod(ConstPool::Index nameIndex, ConstPool::Index descIndex, u2 accessFlags) {
             methods.emplace_back(accessFlags, nameIndex, descIndex, *this);
             return methods.back();
         }
@@ -294,7 +294,7 @@ namespace jnif {
             return methods.end();
         }
 
-        static std::ostream& dotFrame(std::ostream& os, const Frame& frame) {
+        static std::ostream &dotFrame(std::ostream &os, const Frame &frame) {
             os << " LVA: ";
             for (u4 i = 0; i < frame.lva.size(); i++) {
                 os << (i == 0 ? "" : ",\n ") << i << ": " << frame.lva[i].first;
@@ -311,7 +311,7 @@ namespace jnif {
             return os << " ";
         }
 
-        static void dotCfg(std::ostream& os, const ControlFlowGraph& cfg, int mid) {
+        static void dotCfg(std::ostream &os, const ControlFlowGraph &cfg, int mid) {
 
             for (BasicBlock* bb : cfg) {
                 os << "    m" << mid << bb->name << " [ label = \"<port0> " << bb->name;
@@ -339,17 +339,17 @@ namespace jnif {
             }
         }
 
-        void ClassFile::dot(std::ostream& os) const {
+        void ClassFile::dot(std::ostream &os) const {
             os << "digraph Cfg {" << std::endl;
             os << "  graph [ label=\"Class " << getThisClassName() << "\" ]"
                << std::endl;
             os << "  node [ shape = \"record\" ]" << std::endl;
 
             int methodId = 0;
-            for (const Method& method : methods) {
+            for (const Method &method : methods) {
                 if (method.hasCode() && method.codeAttr()->cfg != nullptr) {
-                    const std::string& methodName = getUtf8(method.nameIndex);
-                    const std::string& methodDesc = getUtf8(method.descIndex);
+                    const std::string &methodName = getUtf8(method.nameIndex);
+                    const std::string &methodDesc = getUtf8(method.descIndex);
 
                     os << "  subgraph method" << methodId << "{" << std::endl;
                     os << "    graph [bgcolor=gray90, label=\"Method " << methodName
@@ -381,14 +381,14 @@ namespace jnif {
             return position;
         }
 
-        InstList::Iterator& InstList::Iterator::operator++() {
+        InstList::Iterator &InstList::Iterator::operator++() {
             JnifError::assert(position != nullptr, "Doing ++ at NULL");
             position = position->next;
 
             return *this;
         }
 
-        InstList::Iterator& InstList::Iterator::operator--() {
+        InstList::Iterator &InstList::Iterator::operator--() {
             if (position == nullptr) {
                 position = last;
             } else {
@@ -576,7 +576,7 @@ namespace jnif {
         }
 
         template<typename TInst, typename ... TArgs>
-        TInst* InstList::_create(const TArgs& ... args) {
+        TInst* InstList::_create(const TArgs &... args) {
             return constPool->_arena.create<TInst>(args ...);
         }
 
@@ -679,7 +679,7 @@ namespace jnif {
             return Type(TYPE_UNINIT, offset, label);
         }
 
-        Type TypeFactory::objectType(const string& className, u2 cpindex) {
+        Type TypeFactory::objectType(const string &className, u2 cpindex) {
             JnifError::check(
                     !className.empty(),
                     "Expected non-empty class name for object type");
@@ -687,7 +687,7 @@ namespace jnif {
             return Type(TYPE_OBJECT, className, cpindex);
         }
 
-        Type TypeFactory::arrayType(const Type& baseType, u4 dims) {
+        Type TypeFactory::arrayType(const Type &baseType, u4 dims) {
             //u4 d = baseType.dims + dims;
             JnifError::check(dims > 0, "Invalid dims: ", dims);
             JnifError::check(dims <= 255, "Invalid dims: ", dims);
@@ -699,12 +699,12 @@ namespace jnif {
             return Type(baseType, dims);
         }
 
-        Type TypeFactory::fromConstClass(const string& className) {
+        Type TypeFactory::fromConstClass(const string &className) {
             JnifError::assert(!className.empty(), "Invalid string class");
 
             if (className[0] == '[') {
                 const char* classNamePtr = className.c_str();
-                const Type& arrayType = fromFieldDesc(classNamePtr);
+                const Type &arrayType = fromFieldDesc(classNamePtr);
                 JnifError::assert(arrayType.isArray(), "Not an array: ", arrayType);
                 return arrayType;
             } else {
@@ -712,7 +712,7 @@ namespace jnif {
             }
         }
 
-        Type TypeFactory::_parseBaseType(const char*& fieldDesc,
+        Type TypeFactory::_parseBaseType(const char*&fieldDesc,
                                          const char* originalFieldDesc) {
             switch (*fieldDesc) {
                 case 'Z':
@@ -750,9 +750,9 @@ namespace jnif {
             }
         }
 
-        Type TypeFactory::_getType(const char*& fieldDesc,
+        Type TypeFactory::_getType(const char*&fieldDesc,
                                    const char* originalFieldDesc, int dims) {
-            const Type& baseType = _parseBaseType(fieldDesc, originalFieldDesc);
+            const Type &baseType = _parseBaseType(fieldDesc, originalFieldDesc);
             if (dims == 0) {
                 return baseType;
             } else {
@@ -760,7 +760,7 @@ namespace jnif {
             }
         }
 
-        Type TypeFactory::fromFieldDesc(const char*& fieldDesc) {
+        Type TypeFactory::fromFieldDesc(const char*&fieldDesc) {
             const char* originalFieldDesc = fieldDesc;
 
             int dims = 0;
@@ -774,14 +774,14 @@ namespace jnif {
 
             JnifError::check(*fieldDesc != '\0', "");
 
-            const Type& t = _getType(fieldDesc, originalFieldDesc, dims);
+            const Type &t = _getType(fieldDesc, originalFieldDesc, dims);
 
             fieldDesc++;
 
             return t;
         }
 
-        Type TypeFactory::_getReturnType(const char*& methodDesc) {
+        Type TypeFactory::_getReturnType(const char*&methodDesc) {
             if (*methodDesc == 'V') {
                 methodDesc++;
                 return voidType();
@@ -791,7 +791,7 @@ namespace jnif {
         }
 
         Type TypeFactory::fromMethodDesc(const char* methodDesc,
-                                         std::vector<Type>* argsType) {
+                                         std::vector <Type>* argsType) {
             const char* originalMethodDesc = methodDesc;
 
             JnifError::check(*methodDesc == '(', "Invalid beginning of method descriptor: ",
@@ -802,7 +802,7 @@ namespace jnif {
                 JnifError::check(*methodDesc != '\0', "Reached end of string: ",
                                  originalMethodDesc);
 
-                const Type& t = fromFieldDesc(methodDesc);
+                const Type &t = fromFieldDesc(methodDesc);
                 argsType->push_back(t);
             }
 
@@ -813,7 +813,7 @@ namespace jnif {
             JnifError::check(*methodDesc != '\0', "Reached end of string: ",
                              originalMethodDesc);
 
-            const Type& returnType = _getReturnType(methodDesc);
+            const Type &returnType = _getReturnType(methodDesc);
 
             JnifError::check(*methodDesc == '\0', "Expected end of string: %s",
                              originalMethodDesc);
@@ -853,7 +853,6 @@ namespace jnif {
         const char* SourceFileAttr::sourceFile() const {
             return constPool->getUtf8(sourceFileIndex);
         }
-
 
     }
 }

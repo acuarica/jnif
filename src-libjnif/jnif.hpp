@@ -2865,6 +2865,7 @@ namespace jnif {
              *
              * @param nameIndex the utf8 index in the constant pool that contains the
              * name of the field to add.
+
              * @param descIndex the utf8 index in the constant pool that contains the
              * descriptor of the field to add.
              * @param accessFlags the access flags of the field to add.
