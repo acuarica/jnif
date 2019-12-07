@@ -7,8 +7,9 @@ enum ConstPool {
 }
 
 fn main() -> std::io::Result<()> {
-    // let mut file = File::open("hola.txt")?;
-    let mut file = File::open("test/Test.class")?;
+    println!("Hello, world!");
+    let mut file = File::open("test/Test.java")?;
+    // let mut file = File::open("test/Test.class")?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     println!("Hello, world!");
