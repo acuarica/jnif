@@ -15,6 +15,8 @@ fn main() -> std::io::Result<()> {
     file.read_to_end(&mut data);
     println!("{}", data[0]);
     println!("{}", data[1]);
+    println!("{}", data[2]);
+    println!("{}", data[3]);
 
     println!("Hello, world!");
     // println!("{}", contents);
