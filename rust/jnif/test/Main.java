@@ -73,10 +73,34 @@ public class Main {
         return d;
     }
 
-    public static void main(final String[] args) {
+    public static boolean solution(int[] A) {
+        // a = b = c: return true
+        // a = b < c, a > b = c: return false
+        // a < b > c, a = c: move both inwards
+        // a > b < c, a = c: return false
+        // a = b > c, a < b = c: move both inwards
+        // a < b < c, a > b > c: &a++
+        int i = 1;
+        int j = A.length - 2;
+
+        int a = A[i-1];
+        int b = 0;
+        for (int x = i+1; x<j; x++ ) {
+            b += A[x];
+        }
+        int c = A[j+1];
+
+        while () {
+
+        }
+
+        return true;
+    }
+
+    public static void main2(final String[] args) {
         int x = 100000;
         int y = 100000;
-        out.println(x*y);
+        out.println(x * y);
         // out.println("Main");
         // Node a = new Node("a");
         // Node b = new Node("b");
@@ -97,8 +121,8 @@ public class Main {
 
         // Map<Node, Integer> ds = sp(visited, a);
         // for (Entry<Node, Integer> entry : ds.entrySet()) {
-        //     out.print(entry.getKey().value);
-        //     out.println(entry.getValue());
+        // out.print(entry.getKey().value);
+        // out.println(entry.getValue());
         // }
     }
 }
