@@ -90,17 +90,28 @@ public class Main {
         }
         int c = A[j+1];
 
-        while () {
-
+        while (i < j -1 && b > a && b > c) {
+            if (a <= c) {
+                a += A[i];
+                i++;
+                b -= A[i];
+            } else {
+                c += A[j];
+                j--;
+                b -= A[j];
+            }
         }
-
-        return true;
+        if (a == b && b == c) {
+            return true;
+        }
+        return false;
     }
 
-    public static void main2(final String[] args) {
-        int x = 100000;
-        int y = 100000;
-        out.println(x * y);
+    public static void main(final String[] args) {
+        int[] Aa = new int[] {1,3,2,4,1,2,2};
+        int[] A = new int[] {1,1,1,1,1,1,1,1,1,1,1};
+        boolean b = solution(A);
+        out.println(b);
         // out.println("Main");
         // Node a = new Node("a");
         // Node b = new Node("b");
