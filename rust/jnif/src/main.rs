@@ -9,8 +9,7 @@ enum ConstPool {
 }
 
 fn solution() -> bool {
-
-
+    true
 }
 
 fn main2() -> std::io::Result<()> {
