@@ -8,14 +8,10 @@ enum ConstPool {
 
 }
 
-fn solution() -> bool {
-    true
-}
-
 fn main2() -> std::io::Result<()> {
     println!("Hello, world!");
     // let mut file = File::open("test/Test.java")?;
-    let mut file = File::open("test/Test.class")?;
+    let mut file = File::open("test/Main.class")?;
     let mut data = Vec::new();
     file.read_to_end(&mut data);
     println!("{}", data[0]);
@@ -32,7 +28,7 @@ fn main2() -> std::io::Result<()> {
 fn main() -> std::io::Result<()> {
     println!("Hello, world!");
     // let mut file = File::open("test/Test.java")?;
-    let mut file = File::open("test/Test.class")?;
+    let mut file = File::open("test/Main.class")?;
     let mut data = Vec::new();
     file.read_to_end(&mut data);
     println!("{}", data[0]);
