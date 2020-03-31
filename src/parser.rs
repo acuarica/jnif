@@ -1,19 +1,22 @@
-// use std::io::*;
-use std::fs;
-// use std::fs::*;
-
 use bytes::Buf;
-use bytes::Bytes;
-
-use std::process::exit;
-use std::io::{BufRead, Read};
 use std::str::from_utf8;
+use std::result;
 
-mod ConstPoolTag {
+pub const MAGIC: u32 = 0xcafebabe;
+
+/// The Index type represents how each item within the constant pool can be addressed.
+/// The specification indicates that this is an u16 value.
+type Idx = u16;
+
+// struct ConstPool {
+
+// }
+
+pub mod const_pool_tag {
     /// Represents the null entry which cannot be addressed.
     /// This is used for the NULLENTRY (position zero) and
     /// for long and double entries.
-    pub const NULLENTRY: u8 = 0;
+    // pub const NULL_ENTRY: u8 = 0;
 
     /// Represents a class or an interface.
     pub const CLASS: u8 = 7;
@@ -55,116 +58,141 @@ mod ConstPoolTag {
     /// Used to represent a method type.
     pub const METHODTYPE: u8 = 16;
 
-    /// Used by an invokedynamic instruction to specify a bootstrap method,
+    /// Used by an `invokedynamic` instruction to specify a bootstrap method,
     /// the dynamic invocation name, the argument and return types of the
     /// call, and optionally, a sequence of additional constants called
     /// static arguments to the bootstrap method.
-    pub const INVOKEDYNAMIC: u8 = 18;
+    pub const INVOKE_DYNAMIC: u8 = 18;
 }
 
-fn main() -> std::io::Result<()> {
-    // let mut file = File::open("test/Main.class")?;
-    // let mut data = Vec::new();
-    let data = fs::read("test/Main.class")?;
-    // file.read_to_end(&mut data);
+#[derive(Debug)]
+#[repr(u8)]
+pub enum Entry {
+    Class { name_idx: Idx },
+    FieldRef { class_idx: Idx, name_and_type_idx: Idx },
+    MethodRef { class_idx: Idx, name_and_type_idx: Idx },
+    InterfaceRef { class_idx: Idx, name_and_type_idx: Idx },
+}
+
+pub struct ClassFile {
+    pub minor: u16,
+    pub major: u16,
+}
+
+
+pub fn parse(data: &Vec<u8>) -> result::Result<ClassFile, &str> {
     let mut c: &[u8] = &data;
     let magic = c.get_u32();
-    assert_eq!(0xcafebabe, magic);
+    if magic != MAGIC {
+        return Err("Invalid magic header");
+    }
 
     let minor = c.get_u16();
     let major = c.get_u16();
 
     let count = c.get_u16();
 
-    for mut i in 1..count {
+    let mut i = 1;
+    while i < count {
         let tag = c.get_u8();
+        print!("index: {}, ", i);
         match tag {
-            ConstPoolTag::CLASS => {
-                let classNameIndex = c.get_u16();
-                println!("CP Class");
+            const_pool_tag::CLASS => {
+                let name_idx = c.get_u16();
+                let entry = Entry::Class { name_idx };
+                println!("Class: {:?}", entry);
             }
-            ConstPoolTag::FIELDREF => {
-                let classIndex = c.get_u16();
-                let nameAndTypeIndex = c.get_u16();
-                println!("CP Field");
+            const_pool_tag::FIELDREF => {
+                let class_idx = c.get_u16();
+                let name_and_type_idx = c.get_u16();
+                let entry = Entry::FieldRef { class_idx, name_and_type_idx };
+                println!("CP Field: {:?}", entry);
             }
-            ConstPoolTag::METHODREF => {
-                let classIndex = c.get_u16();
-                let nameAndTypeIndex = c.get_u16();
-                println!("CP Method");
+            const_pool_tag::METHODREF => {
+                let class_idx = c.get_u16();
+                let name_and_type_idx = c.get_u16();
+                let entry = Entry::MethodRef { class_idx, name_and_type_idx };
+                println!("CP Method: {:?}", entry);
             }
-            ConstPoolTag::INTERMETHODREF => {
-                let classIndex = c.get_u16();
-                let nameAndTypeIndex = c.get_u16();
-                println!("CP Interface");
+            const_pool_tag::INTERMETHODREF => {
+                let class_idx = c.get_u16();
+                let name_and_type_idx = c.get_u16();
+                let entry = Entry::InterfaceRef { class_idx, name_and_type_idx };
+                println!("CP Interface: {:?}", entry);
             }
-            ConstPoolTag::STRING => {
-                let utf8Index = c.get_u16();
-                println!("String");
+            const_pool_tag::STRING => {
+                let utf8_idx = c.get_u16();
+                println!("String idx: {}", utf8_idx);
             }
-            ConstPoolTag::INTEGER => {
-                let value = c.get_u32();
-                // cp -> addInteger(value);
+            const_pool_tag::INTEGER => {
+                let val = c.get_u32();
+                println!("integer val: {}", val);
             }
-            ConstPoolTag::FLOAT => {
-                let value = c.get_u32();
+            const_pool_tag::FLOAT => {
+                let val = c.get_f32();
                 // float fvalue = *(float *) & value;
                 // cp -> addFloat(fvalue);
+                println!("float val: {}", val);
             }
-            ConstPoolTag::LONG => {
-                let high = c.get_u32();
-                let low = c.get_u32();
+            const_pool_tag::LONG => {
+                let val = c.get_i64();
                 // long value = ((long) high << 32) + low;
                 // cp -> addLong(value);
+                println!("long val: {}", val);
                 i += 1;
             }
-            ConstPoolTag::DOUBLE => {
-                let high = c.get_u32();
-                let low = c.get_u32();
+            const_pool_tag::DOUBLE => {
+                // let _high = c.get_u32();
+                // let _low = c.get_u32();
+                let val = c.get_f64();
+                println!("double val: {}", val);
                 // long lvalue = ((long) high << 32) + low;
                 // double dvalue = *(double *) &lvalue;
                 // cp->addDouble(dvalue);
                 i += 1;
             }
-            ConstPoolTag::NAMEANDTYPE => {
-                let nameIndex = c.get_u16();
-                let descIndex = c.get_u16();
+            const_pool_tag::NAMEANDTYPE => {
+                let _name_index = c.get_u16();
+                let _desc_index = c.get_u16();
                 // cp -> addNameAndType(nameIndex, descIndex);
             }
-            ConstPoolTag::UTF8 => {
+            const_pool_tag::UTF8 => {
                 let len = c.get_u16() as usize;
                 // cp -> addUtf8((const char *) c.pos(), len);
                 // let bs= c.to_bytes();
                 let mut arr = vec![0 as u8; len];
                 c.copy_to_slice(arr.as_mut_slice());
                 // let mut utfbuf: &[u8]= &bs.slice(0..len);
-                let mut utfbuf: &[u8]= arr.as_slice();
-                print!("UTF-8: {:?}", from_utf8( utfbuf));
+                let utfbuf: &[u8] = arr.as_slice();
+                println!("UTF-8: {:?}", from_utf8(utfbuf));
             }
-            ConstPoolTag::METHODHANDLE => {
-                let refKind = c.get_u8();
-                let refIndex = c.get_u16();
+            const_pool_tag::METHODHANDLE => {
+                let _ref_kind = c.get_u8();
+                let _ref_index = c.get_u16();
                 // cp -> addMethodHandle(refKind, refIndex);
             }
-            ConstPoolTag::METHODTYPE => {
-                let descIndex = c.get_u16();
+            const_pool_tag::METHODTYPE => {
+                let _desc_index = c.get_u16();
                 // cp -> addMethodType(descIndex);
             }
-            ConstPoolTag::INVOKEDYNAMIC => {
-                let bootMethodAttrIndex = c.get_u16();
-                let nameAndTypeIndex = c.get_u16();
+            const_pool_tag::INVOKE_DYNAMIC => {
+                let _boot_method_attr_index = c.get_u16();
+                let _name_and_type_index = c.get_u16();
                 // cp -> addInvokeDynamic(bootMethodAttrIndex, nameAndTypeIndex);
             }
             _ => {
                 panic!("invalid tag");
             }
         }
+
+        i += 1;
     }
+
+    let cf = ClassFile { major, minor };
 
     println!("Magic: {:x}", magic);
     println!("major.minor: {}.{}", major, minor);
     println!("CP count: {}", count);
 
-    println!("Magic: {:x} {:x} {:x} {:x}", data[0], data[1], data[2], data[3]);
-    Ok(())
+    Ok(cf)
 }
