@@ -2,8 +2,6 @@ use bytes::Buf;
 use std::str::from_utf8;
 use std::result;
 
-pub const MAGIC: u32 = 0xcafebabe;
-
 /// The Index type represents how each item within the constant pool can be addressed.
 /// The specification indicates that this is an u16 value.
 type Idx = u16;
@@ -79,11 +77,14 @@ pub struct ClassFile {
     pub major: u16,
 }
 
+impl ClassFile {
+    const MAGIC: u32 = 0xcafebabe;
+}
 
 pub fn parse(data: &Vec<u8>) -> result::Result<ClassFile, &str> {
     let mut c: &[u8] = &data;
     let magic = c.get_u32();
-    if magic != MAGIC {
+    if magic != ClassFile::MAGIC {
         return Err("Invalid magic header");
     }
 
