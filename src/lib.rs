@@ -68,107 +68,56 @@ pub enum Entry {
     Empty,
 
     /// Represents a class, interface or array type.
-    /// @see CLASS
-    Class {
-
-        /// The name of the class of this type.
-        /// @see UTF8
-        /// @see Utf8
-        name_idx: Idx },
+    /// The name of the class of this type.
+    Class { name_idx: Idx },
     FieldRef { class_idx: Idx, name_n_type_idx: Idx },
     MethodRef { class_idx: Idx, name_n_type_idx: Idx },
     InterfaceRef { class_idx: Idx, name_n_type_idx: Idx },
 
     /// Represents a String constant value.
-    String {
-
-        /// The index of the utf8 entry containing this string value.
-        /// See [`Entry::Class`].
-        utf8_idx: Idx
-    },
+    /// The index of the utf8 entry containing this string value.
+    /// See [`Entry::Class`].
+    String { utf8_idx: Idx },
 
     /// Represents an integer constant value.
-    /// @see INTEGER
-    Integer {
-
-        /// The integer value of this entry.
-        val: i32
-    },
+    /// The integer value of this entry.
+    Integer { val: i32 },
 
     /// Represent a float constant value.
-    /// @see FLOAT
-    Float {
-
-        /// The float value of this entry.
-        val: f32
-    },
+    /// The float value of this entry.
+    Float { val: f32 },
 
     /// Represents a long constant value.
-    /// @see LONG
-    Long {
-
-        /// The long value of this entry.
-        val: i64
-    },
+    /// The long value of this entry.
+    Long { val: i64 },
 
     /// Represents a double constant value.
-    /// @see DOUBLE
-    Double {
-
-        /// The double value of this entry.
-        val: f64
-    },
+    /// The double value of this entry.
+    Double { val: f64 },
 
     /// Represents a tuple of name and descriptor.
-    NameAndType {
-
-        /// The index of the utf8 entry containing its name.
-        name_idx: Idx,
-
-        /// The utf8 entry index containing its descriptor.
-        desc_idx: Idx,
-    },
+    /// The index of the utf8 entry containing its name.
+    /// The utf8 entry index containing its descriptor.
+    NameAndType { name_idx: Idx, desc_idx: Idx },
 
     /// Contains a modified UTF-8 string.
-    /// @see UTF8
-    Utf8 {
-
-        //// The string data.
-        // str: string,
-        utf8_buf: Vec<u8>,
-    },
+    /// The string data.
+    Utf8 { utf8_buf: Vec<u8> },
 
     /// Represents a method handle entry.
-    /// @see METHODHANDLE
-    MethodHandle {
-
-        /// The reference kind of this entry.
-        ref_kind: u8,
-
-        /// The reference index of this entry.
-        ref_idx: u16,
-    },
+    /// The reference kind of this entry.
+    /// The reference index of this entry.
+    MethodHandle { ref_kind: u8, ref_idx: u16 },
 
     /// Represents the type of a method.
-    /// @see METHODTYPE
-    MethodType {
-
-        /// The utf8 index containing the descriptor of this entry.
-        desc_idx: Idx,
-    },
+    /// The utf8 index containing the descriptor of this entry.
+    MethodType { desc_idx: Idx },
 
     /// Represents an invoke dynamic call site.
-    /// @see INVOKEDYNAMIC
-    InvokeDynamic {
-
-        /// The bootstrap method attribute index.
-        bootstrap_method_attr_idx: Idx,
-
-        /// The name and type index of this entry.
-        /// @see ConstNameAndType
-        name_n_type_idx: Idx,
-    },
-
+    /// The bootstrap method attribute index.
+    /// The name and type index of this entry.
+    /// @see ConstNameAndType
+    InvokeDynamic { bootstrap_method_attr_idx: Idx, name_n_type_idx: Idx },
 }
 
 impl fmt::Display for Entry {
@@ -177,26 +126,39 @@ impl fmt::Display for Entry {
             Entry::Utf8 { utf8_buf } => {
                 let xs: &[u8] = utf8_buf.as_slice();
                 write!(f, "Utf8 entry: `{:?}'", from_utf8(xs))
-            },
+            }
             _ => fmt::Debug::fmt(self, f)
         }
     }
 }
 
-type ConstPool = Vec<Entry>;
-
+#[derive(Debug)]
 pub struct ClassFile {
     pub minor: u16,
     pub major: u16,
-
     pub cp: ConstPool,
+    pub access_flags: u16,
+    pub this_class_idx: Idx,
+    pub super_class_idx: Idx,
+    pub interfaces: Vec<Idx>,
+    pub fields: Vec<Member>,
+    pub methods: Vec<Member>,
 }
+
+type ConstPool = Vec<Entry>;
 
 impl ClassFile {
     pub const MAGIC: u32 = 0xcafebabe;
 }
 
-pub fn parse_cp(mut c: &[u8], cp: &mut ConstPool) {
+#[derive(Debug)]
+pub struct Member {
+    pub access_flags: u16,
+    pub name_idx: Idx,
+    pub desc_idx: Idx,
+}
+
+pub fn parse_cp<TBuf: Buf>(c: &mut TBuf, cp: &mut ConstPool) {
     let count = c.get_u16();
 
     let mut i = 1;
@@ -289,9 +251,49 @@ pub fn parse(data: &Vec<u8>) -> result::Result<ClassFile, &str> {
 
     let minor = c.get_u16();
     let major = c.get_u16();
-    let mut cf = ClassFile { major, minor, cp: vec![] };
+    let mut cf = ClassFile {
+        major,
+        minor,
+        cp: vec![],
+        access_flags: 0,
+        this_class_idx: 0,
+        super_class_idx: 0,
+        interfaces: vec![],
+        fields: vec![],
+        methods: vec![],
+    };
 
-    parse_cp(c, &mut cf.cp);
+    parse_cp(&mut c, &mut cf.cp);
+
+    cf.access_flags = c.get_u16();
+    cf.this_class_idx = c.get_u16();
+    cf.super_class_idx = c.get_u16();
+
+    let inter_count = c.get_u16();
+    for _i in 0..inter_count {
+        let inter_index = c.get_u16();
+        cf.interfaces.push(inter_index);
+    }
+
+    let field_count = c.get_u16();
+    for _i in 0..field_count {
+        let access_flags = c.get_u16();
+        let name_idx = c.get_u16();
+        let desc_idx = c.get_u16();
+        cf.fields.push( Member { access_flags, name_idx, desc_idx });
+        // FieldAttrsParser().parse(br, cf, &f.attrs);
+    }
+
+    let method_count = c.get_u16();
+    for _i in 0..method_count {
+        let access_flags = c.get_u16();
+        let name_idx = c.get_u16();
+        let desc_idx = c.get_u16();
+        cf.methods.push( Member { access_flags, name_idx, desc_idx });
+        // MethodAttrsParser().parse(br, cf, &m.attrs);
+    }
+
+    // ClassAttrsParser().parse(br, cf, &cp.attrs);
 
     Ok(cf)
 }
