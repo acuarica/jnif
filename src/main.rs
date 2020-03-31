@@ -9,6 +9,11 @@ fn main() -> std::io::Result<()> {
         assert_eq!(0, cf.minor);
         println!("Magic: {:x}", jnif::ClassFile::MAGIC);
         println!("major.minor: {}.{}", cf.major, cf.minor);
+        println!("CP count: {}", cf.cp.len());
+
+        for e in cf.cp {
+            println!("Entry: {}", e);
+        }
     }
 
     Ok(())
